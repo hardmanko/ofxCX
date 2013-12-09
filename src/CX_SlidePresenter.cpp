@@ -30,8 +30,8 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 	if (_slides.size() > 0) {
 
 		if (_lastFramebufferActive) {
-			ofLogWarning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call finishCurrentSlide() before starting slide presentation.";
-			finishCurrentSlide();
+			ofLogWarning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
+			endDrawingCurrentSlide();
 		}
 
 		//Wait until all openGL operations are complete.
@@ -190,11 +190,11 @@ void CX_SlidePresenter::clearSlides (void) {
 
 
 
-void CX_SlidePresenter::startNextSlide (string slideName, uint64_t slideDuration) {
+void CX_SlidePresenter::beginDrawingNextSlide (string slideName, uint64_t slideDuration) {
 
 	if (_lastFramebufferActive) {
-		ofLogVerbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call finishCurrentSlide() before starting slide presentation.";
-		finishCurrentSlide();
+		ofLogVerbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
+		endDrawingCurrentSlide();
 	}
 
 	if (_display == NULL) {
@@ -219,7 +219,7 @@ void CX_SlidePresenter::startNextSlide (string slideName, uint64_t slideDuration
 
 }
 
-void CX_SlidePresenter::finishCurrentSlide (void) {
+void CX_SlidePresenter::endDrawingCurrentSlide (void) {
 	_slides.back().framebuffer.end();
 	_lastFramebufferActive = false;
 }
@@ -256,4 +256,11 @@ int CX_SlidePresenter::checkForPresentationErrors (void) {
 	}
 
 	return presentationErrors;
+}
+
+string CX_SlidePresenter::getActiveSlideName (void) {
+	if (_currentSlide < _slides.size()) {
+		return _slides.at(_currentSlide).slideName;
+	}
+	return "Active slide index out of range.";
 }

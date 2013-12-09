@@ -45,7 +45,7 @@ namespace CX {
 		~CX_Keyboard (void);
 
 		int availableEvents (void);
-		CX_KeyEvent_t popEvent (void);
+		CX_KeyEvent_t getNextEvent (void);
 		void clearEvents (void);
 
 	private:

@@ -18,7 +18,7 @@ int CX_Mouse::availableEvents (void) {
 	return _mouseEvents.size();
 }
 
-CX_MouseEvent_t CX_Mouse::popEvent (void) {
+CX_MouseEvent_t CX_Mouse::getNextEvent (void) {
 	CX_MouseEvent_t front = _mouseEvents.front();
 	_mouseEvents.pop();
 	return front;

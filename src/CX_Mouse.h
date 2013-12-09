@@ -41,7 +41,7 @@ namespace CX {
 		~CX_Mouse (void);
 
 		int availableEvents (void);
-		CX_MouseEvent_t popEvent (void);
+		CX_MouseEvent_t getNextEvent (void);
 		void clearEvents (void);
 
 		void showCursor (bool show);

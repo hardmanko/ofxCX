@@ -121,7 +121,7 @@ int CX_Joystick::availableEvents (void) {
 	return _joystickEvents.size();
 }
 
-CX_JoystickEvent_t CX_Joystick::popEvent (void) {
+CX_JoystickEvent_t CX_Joystick::getNextEvent (void) {
 	CX_JoystickEvent_t front = _joystickEvents.front();
 	_joystickEvents.pop();
 	return front;
@@ -136,7 +136,7 @@ void CX_Joystick::clearEvents (void) {
 /*!
 This function is to be used for direct access to the axis positions of the joystick. It does not 
 generate events (i.e. CX_JoystickEvent_t), nor does it do any timestamping. If timestamps and 
-uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. popEvent()).
+uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()).
 */
 vector<float> CX_Joystick::getAxisPositions (void) {
 	vector<float> pos;
@@ -156,7 +156,7 @@ vector<float> CX_Joystick::getAxisPositions (void) {
 /*!
 This function is to be used for direct access to the button states of the joystick. It does not 
 generate events (i.e. CX_JoystickEvent_t), nor does it do any timestamping. If timestamps and 
-uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. popEvent()).
+uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()).
 */
 vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	vector<unsigned char> but;

@@ -53,15 +53,16 @@ namespace CX {
 		void appendSlide (CX_Slide_t slide); //This is kind of sucky because people have to manually allocate the FBOs
 
 		//Much easier way of doing things.
-		void startNextSlide (string slideName, uint64_t duration);
-		void finishCurrentSlide (void);
+		void beginDrawingNextSlide (string slideName, uint64_t duration);
+		void endDrawingCurrentSlide (void);
 
 		void clearSlides (void);
 	
 
 		void startSlidePresentation (void);
 		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
-
+		int getActiveSlideIndex (void) { return _currentSlide; };
+		string getActiveSlideName (void);
 
 		vector<CX_Slide_t> getSlides (void);
 		vector<uint64_t> getActualPresentationDurations (void);

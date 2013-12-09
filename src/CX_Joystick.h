@@ -41,10 +41,10 @@ namespace CX {
 		//Preferred interface. This interface collects response time data.
 		bool pollEvents (void);
 		int availableEvents (void);
-		CX_JoystickEvent_t popEvent (void);
+		CX_JoystickEvent_t getNextEvent (void);
 		void clearEvents (void);
 
-		//Direct access functions. The preferred interface is pollEvents() and popEvent().
+		//Direct access functions. The preferred interface is pollEvents() and getNextEvent().
 		vector<float> getAxisPositions (void);
 		vector<unsigned char> getButtonStates (void);
 

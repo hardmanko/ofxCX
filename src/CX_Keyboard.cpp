@@ -30,7 +30,7 @@ int CX_Keyboard::availableEvents (void) {
 	return _keyEvents.size();
 }
 
-CX_KeyEvent_t CX_Keyboard::popEvent (void) {
+CX_KeyEvent_t CX_Keyboard::getNextEvent (void) {
 	CX_KeyEvent_t front = _keyEvents.front();
 	_keyEvents.pop();
 	return front;
