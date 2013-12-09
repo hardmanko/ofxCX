@@ -27,9 +27,8 @@ void CX_Display::setup (void) {
 
 	_swapThread = new CX_ConstantlySwappingThread(); //This is a work-around for some stupidity in OF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea what too early means).
-	BLOCKING_setSwappingState(true);
+
 	BLOCKING_estimateFramePeriod( 200 * 1000 ); //Estimate for 200 ms.
-	BLOCKING_setSwappingState(false);
 }
 
 void CX_Display::update (void) {
@@ -133,10 +132,14 @@ This function does nothing if there is some kind of introduction to the experime
 will have time to learn what the period is.
 */
 void CX_Display::BLOCKING_estimateFramePeriod (uint64_t estimationInterval) {
-	uint64_t endTime = CX::Instances::Clock.getTime() + estimationInterval;
+	bool wasSwapping = isAutomaticallySwapping();
+	BLOCKING_setSwappingState(true);
 
-	while (endTime > CX::Instances::Clock.getTime())
+	uint64_t startTime = CX::Instances::Clock.getTime();
+	while (CX::Instances::Clock.getTime() - startTime < estimationInterval)
 		;
+
+	BLOCKING_setSwappingState(wasSwapping);
 }
 
 uint64_t CX_Display::estimateNextSwapTime (void) {
