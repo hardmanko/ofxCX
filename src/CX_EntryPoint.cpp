@@ -1,4 +1,4 @@
-#include "NonAppEntryPoint.h"
+#include "CX_EntryPoint.h"
 
 #include "ofAppGLFWWindow.h"
 
