@@ -1,7 +1,5 @@
 #include "CX_Clock.h"
 
-
-
 #ifdef TARGET_WIN32
 #include "Windows.h"
 #else
