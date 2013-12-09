@@ -1,0 +1,174 @@
+#include "CX_Joystick.h"
+
+#include "ofAppGLFWWindow.h"
+
+using namespace CX;
+
+CX_Joystick::CX_Joystick (void) :
+	_joystickName("NULL"),
+	_joystickIndex(-1)
+{
+}
+
+CX_Joystick::~CX_Joystick (void) {
+}
+
+/*!
+Set up the joystick by attempting to initialize the joystick at the given index. If the
+joystick is present on the system, it will be initialized and its name can be accessed
+by calling getJoystickName().
+
+If the set up is successful (i.e. if the selected joystick is present on the system), this
+function will return true. If the joystick is not present, it will return false.
+*/
+bool CX_Joystick::setup (int joystickIndex) {
+	if (glfwJoystickPresent(joystickIndex) == GL_TRUE) {
+		_joystickIndex = joystickIndex;
+
+		const char *name = glfwGetJoystickName(_joystickIndex);
+		if (name != NULL) {
+			string s(name);
+			_joystickName = s;
+		}
+
+		int axisCount = 0;
+		glfwGetJoystickAxes(_joystickIndex, &axisCount);
+		_axisPositions.resize(axisCount);
+
+		int buttonCount = 0;
+		glfwGetJoystickButtons(_joystickIndex, &buttonCount);
+		_buttonStates.resize(buttonCount);
+
+		return true;
+	}
+	return false;
+}
+
+string CX_Joystick::getJoystickName (void) {
+	return _joystickName;
+}
+
+
+bool CX_Joystick::pollEvents (void) {
+	if (_joystickIndex == -1) {
+		return false;
+	}
+
+	int axisCount = 0;
+	const float *axes = glfwGetJoystickAxes(_joystickIndex, &axisCount);
+
+	int buttonCount = 0;
+	const unsigned char *buttons = glfwGetJoystickButtons(_joystickIndex, &buttonCount);
+
+	uint64_t pollTime = CX::Instances::Clock.getTime();
+
+	if (axisCount == _axisPositions.size()) {
+		for (int i = 0; i < axisCount; i++) {
+			if (_axisPositions[i] != axes[i]) {
+				CX_JoystickEvent_t ev;
+
+				ev.eventType = CX_JoystickEvent_t::AXIS_POSITION_CHANGE;
+				ev.axisIndex = i;
+				ev.axisPosition = axes[i];
+
+				ev.eventTime = pollTime;
+				ev.uncertainty = ev.eventTime - _lastEventPollTime;
+
+				_joystickEvents.push( ev );
+
+				//Only do the assignment if the state is different.
+				_axisPositions[i] = axes[i];
+			}
+		}
+	}
+	
+	if (buttonCount == _buttonStates.size()) {
+		for (int i = 0; i < buttonCount; i++) {
+			if (_buttonStates[i] != buttons[i]) {
+				CX_JoystickEvent_t ev;
+
+				//I'm just guessing about button state here. 1 might be PRESSED, but it could also be UNDEFINED_BUTTON.
+				if (buttons[i] == 1) {
+					ev.eventType = CX_JoystickEvent_t::BUTTON_PRESS;
+				} else {
+					ev.eventType = CX_JoystickEvent_t::BUTTON_RELEASE;
+				}
+
+				ev.buttonIndex = i;
+				ev.buttonState = buttons[i];
+
+				ev.eventTime = pollTime;
+				ev.uncertainty = ev.eventTime - _lastEventPollTime;
+
+				_joystickEvents.push( ev );
+
+				//Only do the assignment if the state is different.
+				_buttonStates[i] = buttons[i];
+			}
+		}
+	}
+
+	_lastEventPollTime = CX::Instances::Clock.getTime();
+
+	if (_joystickEvents.size() > 0) {
+		return true;
+	}
+	return false;
+}
+
+
+int CX_Joystick::availableEvents (void) {
+	return _joystickEvents.size();
+}
+
+CX_JoystickEvent_t CX_Joystick::popEvent (void) {
+	CX_JoystickEvent_t front = _joystickEvents.front();
+	_joystickEvents.pop();
+	return front;
+}
+
+void CX_Joystick::clearEvents (void) {
+	while (!_joystickEvents.empty()) {
+		_joystickEvents.pop();
+	}
+}
+
+/*!
+This function is to be used for direct access to the axis positions of the joystick. It does not 
+generate events (i.e. CX_JoystickEvent_t), nor does it do any timestamping. If timestamps and 
+uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. popEvent()).
+*/
+vector<float> CX_Joystick::getAxisPositions (void) {
+	vector<float> pos;
+	if (_joystickIndex == -1) {
+		return pos;
+	}
+
+	int axisCount = 0;
+	const float *axes = glfwGetJoystickAxes(_joystickIndex, &axisCount);
+	pos.resize(axisCount);
+	for (int i = 0; i < axisCount; i++) {
+		pos[i] = axes[i];
+	}
+	return pos;
+}
+
+/*!
+This function is to be used for direct access to the button states of the joystick. It does not 
+generate events (i.e. CX_JoystickEvent_t), nor does it do any timestamping. If timestamps and 
+uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. popEvent()).
+*/
+vector<unsigned char> CX_Joystick::getButtonStates (void) {
+	vector<unsigned char> but;
+	if (_joystickIndex == -1) {
+		return but;
+	}
+
+	int buttonCount = 0;
+	const unsigned char *buttons = glfwGetJoystickButtons(_joystickIndex, &buttonCount);
+	but.resize(buttonCount);
+	for (int i = 0; i < buttonCount; i++) {
+		but[i] = buttons[i];
+	}
+	return but;
+}
