@@ -12,7 +12,7 @@
 #include "CX_RandomNumberGenerator.h"
 #include "CX_InputManager.h"
 
-#include "CX_TrialController NonOO.h" //Do not instantiate one of these.
+#include "CX_TrialController NonOO.h" //Do not instantiate one of these, just include the header.
 
 namespace CX {
 

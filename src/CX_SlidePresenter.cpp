@@ -34,6 +34,11 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 			finishCurrentSlide();
 		}
 
+		//Wait until all openGL operations are complete.
+		GLsync fence = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
+		glFlush();
+		glWaitSync( fence, 0, GL_TIMEOUT_IGNORED );
+
 		uint64_t framePeriod = _display->getFramePeriod();
 
 		for (int i = 0; i < _slides.size(); i++) {
@@ -45,8 +50,6 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 
 			_slides.at(i).slideStatus = CX_Slide_t::NOT_STARTED;
 		}
-
-		//_slides.at(0).intendedOnsetFrameNumber = 0; //For the first frame, mark the intended onset frame to be essentially "yesterday".
 
 		_synchronizing = true;
 		_presentingSlides = false;
@@ -117,7 +120,7 @@ void CX_SlidePresenter::update (void) {
 					
 					//This code is duplicated below
 					_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
-					_fenceSyncObject = glFenceSync( 37143, 0 );
+					_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
 					glFlush();
 					_awaitingFenceSync = true;
 					_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
@@ -131,7 +134,7 @@ void CX_SlidePresenter::update (void) {
 
 			//This code is duplicated above
 			_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
-			_fenceSyncObject = glFenceSync( 37143, 0 );
+			_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
 			glFlush();
 			_awaitingFenceSync = true;
 			_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
