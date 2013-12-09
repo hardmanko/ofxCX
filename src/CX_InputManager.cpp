@@ -33,13 +33,20 @@ bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex)
 
 
 bool CX_InputManager::pollEvents (void) {
-	if (_usingKeyboard || _usingMouse) {
-		glfwPollEvents();
 
-		uint64_t pollCompleteTime = CX::Instances::Clock.getTime();
+	glfwPollEvents();
+	uint64_t pollCompleteTime = CX::Instances::Clock.getTime();
 
+	if (_usingKeyboard) {
 		Keyboard._lastEventPollTime = pollCompleteTime;
+	} else {
+		Keyboard.clearEvents();
+	}
+
+	if (_usingMouse) {
 		Mouse._lastEventPollTime = pollCompleteTime;
+	} else {
+		Mouse.clearEvents();
 	}
 
 	if (_usingJoystick) {
