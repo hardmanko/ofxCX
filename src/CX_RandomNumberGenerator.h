@@ -55,6 +55,11 @@ namespace CX {
 		return v;
 	}
 
+	/*!
+	Returns a vector of count values drawn from source, with or without replacement. The returned values
+	are in a random order.
+	If (count > source.size() && withReplacement == false), an empty vector is returned.
+	*/
 	template <typename T>
 	vector<T> CX_RandomNumberGenerator::sample (unsigned int count, const vector<T> &source, bool withReplacement) {
 		vector<T> samples;

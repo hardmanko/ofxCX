@@ -114,11 +114,17 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 	glfwSwapBuffers( CX::Private::glfwContext );
 }
 
-
+/*!
+Returns the resolution of the current window, not the resolution of the monitor
+(unless you are in full screen mode). You can use either x and y or width and height.
+*/
 ofRectangle CX_Display::getResolution (void) {
 	return ofRectangle( ofGetWidth(), ofGetHeight(), ofGetWidth(), ofGetHeight() );
 }
 
+/*!
+Sets the resolution of the window. Has no effect if called while in full screen mode.
+*/
 void CX_Display::setWindowResolution (int width, int height) {
 	if (ofGetWindowMode() == OF_WINDOW) {
 		ofSetWindowShape( width, height );

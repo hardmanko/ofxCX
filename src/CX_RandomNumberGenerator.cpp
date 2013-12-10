@@ -63,10 +63,8 @@ int64_t CX_RandomNumberGenerator::randomInt (int64_t rangeLower, int64_t rangeUp
 }
 */
 
-/*!
-This function returns a random unsigned 64-bit integer in the set {rangeLower, rangeLower + 1, ..., rangeUpper - 1, rangeUpper}.
-
-This function returns an x such that x is an element of [rangeLower, rangeUpper] intersection Z.
+/*! This function returns an integer from the range [rangeLower, rangeUpper]. The minimum and maximum values for the
+int returned from this function are given by getMinimumRandomInt() and getMaximumRandomInt().
 
 If rangeLower > rangeUpper, the lower and upper ranges are swapped. If rangeLower == rangeUpper, it returns rangeLower.
 */
@@ -97,6 +95,9 @@ CX_RandomInt_t CX_RandomNumberGenerator::getMinimumRandomInt (void) {
 	return _mersenneTwister.min();
 }
 
+/*!
+Returns a vector of count integers from the range [lowerBound, upperBound] with or without replacement.
+*/
 vector<int> CX_RandomNumberGenerator::sample (unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
 	return sample(count, CX::intVector(lowerBound, upperBound), withReplacement);
 }
