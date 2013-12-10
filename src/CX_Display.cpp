@@ -115,6 +115,17 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 }
 
 /*!
+Wait until all OpenGL instructions that were given before
+this was called to complete. Any commands put into the pipeline
+after this is called (from other threads) are not waited for. 
+*/
+void CX_Display::BLOCKING_waitForOpenGL (void) {
+	GLsync fence = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
+	glFlush();
+	glWaitSync( fence, 0, GL_TIMEOUT_IGNORED );
+}
+
+/*!
 Returns the resolution of the current window, not the resolution of the monitor
 (unless you are in full screen mode). You can use either x and y or width and height.
 */

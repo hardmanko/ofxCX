@@ -7,12 +7,15 @@
 
 #include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Clock
 
+//Make instances of these
 #include "CX_Display.h"
 #include "CX_SlidePresenter.h"
 #include "CX_RandomNumberGenerator.h"
 #include "CX_InputManager.h"
 
-#include "CX_TrialController NonOO.h" //Do not instantiate one of these, just include the header.
+//Do not instantiate these, just include the header.
+#include "CX_TrialController.h" 
+#include "CX_TrialController_Class.h"
 
 namespace CX {
 
@@ -22,7 +25,6 @@ namespace CX {
 			void setup (void);
 			void update (void);
 			void exit (ofEventArgs &a);
-
 		};
 	}
 
@@ -42,6 +44,5 @@ using namespace CX::Instances;
 //Declarations of user functions. To be implemented in user code.
 void setupExperiment (void);
 void updateExperiment (void);
-//void exitExperiment (void); ???
 
 #endif //_CX_NON_APP_ENTRY_POINT_H_

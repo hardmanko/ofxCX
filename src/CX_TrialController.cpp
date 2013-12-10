@@ -1,22 +1,22 @@
-#include "CX_TrialController NonOO.h"
+#include "CX_TrialController.h"
 
 using namespace CX;
 
-CX_TrialController_NonOO::CX_TrialController_NonOO (void) :
+CX_TrialController::CX_TrialController (void) :
 	_functionIndex(0)
 {
 }
 
-void CX_TrialController_NonOO::appendFunction (int (*userFunction)(void)) {
+void CX_TrialController::appendFunction (int (*userFunction)(void)) {
 	_userFunctions.push_back(userFunction);
 }
 
-void CX_TrialController_NonOO::reset (void) {
+void CX_TrialController::reset (void) {
 	_userFunctions.clear();
 	_functionIndex = 0;
 }
 
-int CX_TrialController_NonOO::update (void) {
+int CX_TrialController::update (void) {
 
 	int result = _userFunctions.at(_functionIndex)();
 
@@ -29,7 +29,7 @@ int CX_TrialController_NonOO::update (void) {
 	return result;
 }
 
-bool CX_TrialController_NonOO::setCurrentFunction (int currentFunction) {
+bool CX_TrialController::setCurrentFunction (int currentFunction) {
 	if ((unsigned int)currentFunction >= _userFunctions.size()) {
 		return false;
 	}

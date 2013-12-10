@@ -48,6 +48,8 @@ namespace CX {
 		void BLOCKING_estimateFramePeriod (uint64_t estimationInterval);
 		uint64_t estimateNextSwapTime (void);
 
+		void BLOCKING_waitForOpenGL (void);
+
 	private:
 		ofPtr<ofGLProgrammableRenderer> _renderer;
 

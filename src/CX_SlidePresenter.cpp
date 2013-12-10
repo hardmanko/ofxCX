@@ -34,11 +34,6 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 			endDrawingCurrentSlide();
 		}
 
-		//Wait until all openGL operations are complete.
-		GLsync fence = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
-		glFlush();
-		glWaitSync( fence, 0, GL_TIMEOUT_IGNORED );
-
 		uint64_t framePeriod = _display->getFramePeriod();
 
 		for (int i = 0; i < _slides.size(); i++) {
@@ -53,6 +48,9 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 
 		_synchronizing = true;
 		_presentingSlides = false;
+
+		//Wait for any ongoing operations to complete before starting frame presentation.
+		_display->BLOCKING_waitForOpenGL();
 
 		_display->hasSwappedSinceLastCheck(); //Throw away any very recent swaps.
 

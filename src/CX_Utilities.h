@@ -1,6 +1,8 @@
 #ifndef _CX_UTILITIES_H_
 #define _CX_UTILITIES_H_
 
+#include "ofConstants.h"
+
 #include <vector>
 #include <algorithm>
 
