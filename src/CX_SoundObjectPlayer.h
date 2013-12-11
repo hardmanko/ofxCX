@@ -1,6 +1,10 @@
 #ifndef _CX_SOUND_OBJECT_PLAYER_H_
 #define _CX_SOUND_OBJECT_PLAYER_H_
 
+/* \class CX_SoundObjectPlayer
+This class is used for playing CX_SoundObjects.
+*/
+
 #include "CX_SoundObject.h"
 #include "CX_SoundStream.h"
 
@@ -10,9 +14,6 @@ namespace CX  {
 
 	typedef CX_SoundStreamConfiguration_t CX_SoundObjectPlayerConfiguration_t;
 
-	/*!
-	This class is used for playing CX_SoundObjects.
-	*/
 	class CX_SoundObjectPlayer {
 	public:
 
@@ -20,7 +21,6 @@ namespace CX  {
 		~CX_SoundObjectPlayer (void);
 
 		bool setup (CX_SoundObjectPlayerConfiguration_t config);
-		
 
 		bool play (void);
 		bool startPlayingAt (uint64_t time);

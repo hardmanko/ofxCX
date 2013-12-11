@@ -169,11 +169,11 @@ The data from nso and this CX_SoundObject are merged by adding the amplitudes of
 @return True if nso was successfully added to this CX_SoundObject, false otherwise.
 */
 bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
-	if (!nso.ready()) {
+	if (!nso._successfullyLoaded) {
 		return false;
 	}
 
-	if (!this->ready()) {
+	if (!this->_successfullyLoaded) {
 		*this = nso;
 		this->addSilence(timeOffset, true);
 		return true;
@@ -209,6 +209,10 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
 	}
 
 	return true;
+}
+
+bool CX_SoundObject::isReadyToPlay (void) {
+	return ((_soundChannels != 0) && (_soundData.size() != 0)); //_successfullyLoaded? _soundSampleRate? Remove _soundChannels?
 }
 
 /*!

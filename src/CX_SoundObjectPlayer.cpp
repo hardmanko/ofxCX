@@ -31,10 +31,10 @@ void CX_SoundObjectPlayer::_exitHandler (ofEventArgs &a) {
 /*!
 Attempts to start playing the current CX_SoundObject associated with the player.
 
-@return True if the sound object associated with the player is ready(), false otherwise.
+@return True if the sound object associated with the player isReadyToPlay(), false otherwise.
 */
 bool CX_SoundObjectPlayer::play (void) {
-	if (_activeSoundObject != NULL && _activeSoundObject->ready()) {
+	if (_activeSoundObject != NULL && _activeSoundObject->isReadyToPlay()) {
 		_playing = true;
 		_currentConcurrentSample = 0;
 		return true;
@@ -127,8 +127,9 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 		return false;
 	}
 
-	if (!sound->ready()) {
-		ofLogError("CX_SoundObjectPlayer") << "Sound is not ready. It will not be set as the active sound.";
+	//I'm not entirely sure what this check is for. What exactly am I wanting to know about the status of the sound object?
+	if (!sound->isLoadedSuccessfully()) {
+		ofLogError("CX_SoundObjectPlayer") << "Sound is not loaded successfully. It will not be set as the active sound.";
 		return false;
 	}
 

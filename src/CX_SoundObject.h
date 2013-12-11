@@ -1,6 +1,14 @@
 #ifndef _CX_SOUND_OBJECT_H_
 #define _CX_SOUND_OBJECT_H_
 
+/* \class CX_SoundObject
+
+Note: Nearly all functions of this class should be considered blocking. Many of
+the operations take quite a while to complete because they are performed on
+a fairly large vector of sound samples.
+
+*/
+
 #include <algorithm>
 
 #include "ofLog.h"
@@ -15,7 +23,8 @@ namespace CX {
 		bool addSound (string fileName, uint64_t timeOffset); //I'm really not sure I want to have this.
 		bool addSound (CX_SoundObject so, uint64_t timeOffset);
 
-		bool ready (void) { return _successfullyLoaded; }; //This can possibly be expanded.
+		bool isReadyToPlay (void);
+		bool isLoadedSuccessfully (void) { return _successfullyLoaded; };
 
 		bool applyGain (float gain, int channel = -1);
 		bool multiplyAmplitudeBy (float amount, int channel = -1);
