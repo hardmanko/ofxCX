@@ -29,13 +29,17 @@ void setupExperiment (void) {
 
 	config.api = RtAudio::Api::WINDOWS_DS; //Use Windows Direct Sound (more likely to do work at all than ASIO).
 		//However, ASIO is preferred. If your sound card supports ASIO, use it, period.
+		//Of course, if you are not on Windows, use one of the APIs for your OS. You can see
+		//which APIs are available for your OS by using:
+		//cout << CX_SoundStream::convertApisToString( CX_SoundStream::getCompiledApis() ) << endl;
 
 	config.outputDeviceId = -1; //Using -1 means to use the default output device.
 	config.outputChannels = 2; //We want at least stereo output for this example. CX does not gracefully
 		//support channel configurations past stereo.
 	
 	config.sampleRate = 48000; //Note that this sample rate is only requested: it may not be supported by your
-		//audio hardware.
+		//audio hardware. In that case, the closest sample rate greater than the requested rate will be chosen,
+		//if available. If not, the closest rate below will be chosen.
 
 	config.bufferSize = 4096; //Bigger buffers mean fewer audio glitches and more latency.
 	config.streamOptions.numberOfBuffers = 4; //More buffers means fewer audio glitches and more latency.
@@ -43,7 +47,7 @@ void setupExperiment (void) {
 	if (!player.setup(config)) { //Use the configuration settings to set up the CX_SoundObjectPlayer.
 		cout << "There was an error setting up the sound player." << endl;
 	}
-	//If you are having a hard time getting sound to work at all, try the commented out code below to 
+	//If you are having a hard time getting sound to work, try the commented out code below to 
 	//check out what devices you have available on your system for the specified API:
 	//cout << CX_SoundStream::listDevices(RtAudio::Api::WINDOWS_DS) << endl;
 
