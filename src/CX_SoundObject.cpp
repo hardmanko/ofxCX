@@ -175,6 +175,7 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
 
 	if (!this->ready()) {
 		*this = nso;
+		this->addSilence(timeOffset, true);
 		return true;
 	}
 
@@ -189,9 +190,7 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
 	}
 
 	//Time is in microseconds, so do samples/second * seconds * channels to get the (absolute) sample at which the new sound starts.
-	unsigned int insertionSample = (unsigned int)(this->getSampleRate() * ((double)timeOffset / 1000000) * nso.getChannelCount());
-	//Make sure that the insertion sample is a multiple of the channel count.
-	insertionSample -= insertionSample % this->getChannelCount();
+	unsigned int insertionSample = (unsigned int)(this->getSampleRate() * ((double)timeOffset / 1000000)) * getChannelCount();
 
 	//Get the new data that will be merged.
 	vector<float> &newData = nso.getRawDataReference();
@@ -217,8 +216,9 @@ Set the length of the sound to the specified length in microseconds. If the new 
 the new data is zeroed (i.e. set to silence).
 */
 void CX_SoundObject::setLength (uint64_t lengthInMicroseconds) {
-	double endOfDurationSample = getSampleRate() * ((double)lengthInMicroseconds / 1000000) * getChannelCount();
-	_soundData.resize( (unsigned int)endOfDurationSample, 0 );
+	unsigned int endOfDurationSample = (unsigned int)(getSampleRate() * ((double)lengthInMicroseconds / 1000000)) * getChannelCount();
+
+	_soundData.resize( endOfDurationSample, 0 );
 }
 
 /*!
@@ -281,8 +281,8 @@ so does the duration of silence.
 @param atBeginning If true, silence is added at the beginning of the CX_SoundObject. If false, the silence is added at the end.
 */
 void CX_SoundObject::addSilence (uint64_t durationUs, bool atBeginning) {
-	//Time is in microseconds, so do samples/second * channels * seconds to get the absolute sample count for the new silence.
-	unsigned int absoluteSampleCount = (unsigned int)(getSampleRate() * getChannelCount() * ((double)durationUs / 1000000) );
+	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count for the new silence.
+	unsigned int absoluteSampleCount = (getSampleRate() * ((double)durationUs / 1000000)) * getChannelCount();
 
 	if (atBeginning) {
 		_soundData.insert( _soundData.begin(), absoluteSampleCount, 0 );
@@ -300,8 +300,8 @@ so does the duration of removed sound.
 If false, the sound is deleted from the end, toward the beginning.
 */
 void CX_SoundObject::deleteAmount (uint64_t durationUs, bool fromBeginning) {
-	//Time is in microseconds, so do samples/second * channels * seconds to get the absolute sample count to delete.
-	unsigned int absoluteSampleCount = (unsigned int)(getSampleRate() * getChannelCount() * ((double)durationUs / 1000000) );
+	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count to delete.
+	unsigned int absoluteSampleCount = (getSampleRate() * ((double)durationUs / 1000000)) * getChannelCount();
 
 	if (absoluteSampleCount >= _soundData.size()) {
 		_soundData.clear();

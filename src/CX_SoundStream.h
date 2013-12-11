@@ -21,7 +21,7 @@ namespace CX {
 			inputChannels(0),
 			outputChannels(0),
 			sampleRate(48000),
-			bufferSize(1024),
+			bufferSize(4096),
 
 			api(RtAudio::UNSPECIFIED),
 
