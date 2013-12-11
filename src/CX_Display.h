@@ -43,6 +43,7 @@ namespace CX {
 		uint64_t getFramePeriod (void);
 		void setWindowResolution (int width, int height);
 		ofRectangle getResolution (void);
+		ofPoint getCenterOfDisplay (void);
 		uint64_t getFrameNumber (void);
 
 		void BLOCKING_estimateFramePeriod (uint64_t estimationInterval);

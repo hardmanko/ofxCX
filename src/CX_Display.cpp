@@ -133,6 +133,13 @@ ofRectangle CX_Display::getResolution (void) {
 	return ofRectangle( ofGetWidth(), ofGetHeight(), ofGetWidth(), ofGetHeight() );
 }
 
+ofPoint CX_Display::getCenterOfDisplay (void) {
+	ofPoint rval;
+	rval.x = getResolution().x/2;
+	rval.y = getResolution().y/2;
+	return rval;
+}
+
 /*!
 Sets the resolution of the window. Has no effect if called while in full screen mode.
 */
