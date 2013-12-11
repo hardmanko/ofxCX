@@ -26,6 +26,8 @@ namespace CX  {
 		bool startPlayingAt (uint64_t time);
 		bool stop (void);
 
+		bool isPlaying (void) { return _playing; };
+
 		CX_SoundObjectPlayerConfiguration_t getConfiguration (void) { return (CX_SoundObjectPlayerConfiguration_t)_soundStream.getConfiguration(); };
 		//void update (void);
 

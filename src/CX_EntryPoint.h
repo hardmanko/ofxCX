@@ -16,6 +16,7 @@
 //Do not instantiate these, just include the header.
 #include "CX_TrialController.h" 
 #include "CX_TrialController_Class.h"
+#include "CX_SoundObjectPlayer.h"
 
 namespace CX {
 

@@ -173,6 +173,11 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
 		return false;
 	}
 
+	if (!this->ready()) {
+		*this = nso;
+		return true;
+	}
+
 	if (nso.getSampleRate() != this->getSampleRate()) {
 		nso.resample( this->getSampleRate() );
 	}
@@ -183,12 +188,10 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
 		}
 	}
 
-	if (this->name == "") {
-		this->name = nso.name;
-	}
-
 	//Time is in microseconds, so do samples/second * seconds * channels to get the (absolute) sample at which the new sound starts.
 	unsigned int insertionSample = (unsigned int)(this->getSampleRate() * ((double)timeOffset / 1000000) * nso.getChannelCount());
+	//Make sure that the insertion sample is a multiple of the channel count.
+	insertionSample -= insertionSample % this->getChannelCount();
 
 	//Get the new data that will be merged.
 	vector<float> &newData = nso.getRawDataReference();
@@ -325,9 +328,17 @@ Any other combination of M and N is an error condition.
 @return True if the conversion was successful, false if the attempted conversion is unsupported.
 */
 bool CX_SoundObject::setChannelCount (int newChannelCount) {
+
 	if (newChannelCount == _soundChannels) {
 		return true;
-	} else if (_soundChannels == 1) {
+	}
+
+	if (_soundChannels == 0) {
+		_soundChannels = newChannelCount;
+		return true;
+	}
+
+	if (_soundChannels == 1) {
 		//Mono to anything is easy: Just multiply the data.
 
 		unsigned int originalSize = _soundData.size();
