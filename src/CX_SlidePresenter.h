@@ -12,12 +12,14 @@ namespace CX {
 	struct CX_Slide_t {
 
 		CX_Slide_t () :
+			drawingFunction(NULL),
 			slideStatus(NOT_STARTED)
 		{}
 
 		string slideName;
 
 		ofFbo framebuffer;
+		void (*drawingFunction) (void);
 
 		enum {
 			NOT_STARTED,
@@ -51,12 +53,15 @@ namespace CX {
 
 	
 		void appendSlide (CX_Slide_t slide); //This is kind of sucky because people have to manually allocate the FBOs
+		void appendSlideFunction (void (*drawingFunction) (void), uint64_t duration, string slideName = "");
 
 		//Much easier way of doing things.
-		void beginDrawingNextSlide (string slideName, uint64_t duration);
+		void beginDrawingNextSlide (uint64_t duration, string slideName = "");
 		void endDrawingCurrentSlide (void);
 
 		void clearSlides (void);
+
+		void setThreadingMode (bool singleThreaded); //Flesh this out.
 	
 
 		void startSlidePresentation (void);

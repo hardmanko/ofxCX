@@ -124,18 +124,18 @@ void updateExperiment (void) {
 		//To draw to a slide, call beginDrawingNextSlide() with the name of the slide and the duration
 		//that you want the contents of the slide to be presented for. The time unit used in CX is
 		//microseconds (10^-6 seconds; 10^-3 milliseconds), with no exceptions.
-		SlidePresenter.beginDrawingNextSlide("fixation", 1000000);
+		SlidePresenter.beginDrawingNextSlide(1000000, "fixation");
 		//After calling beginDrawingNextSlide(), all drawing commands will be directed to the current
 		//slide until beginDrawingNextSlide() is called again or endDrawingCurrentSlide() is called.
 		drawFixation();
 	
-		SlidePresenter.beginDrawingNextSlide("blank1", 250000);
+		SlidePresenter.beginDrawingNextSlide(250000, "blank");
 		drawBlank();
 
-		SlidePresenter.beginDrawingNextSlide("sample", 500000);
+		SlidePresenter.beginDrawingNextSlide(500000, "sample");
 		drawSampleArray( trials.at( trialIndex ) );
 
-		SlidePresenter.beginDrawingNextSlide("maintenance", 1000000);
+		SlidePresenter.beginDrawingNextSlide(1000000, "maintenance");
 		drawBlank();
 
 		//The duration given for the last slide must be > 0, but is otherwise ignored.
@@ -144,7 +144,7 @@ void updateExperiment (void) {
 		//remove it from the screen after the duration is complete). If this is confusing
 		//to you, consider the question of what the slide presenter should replace the
 		//last frame with that will be generally (i.e. in all cases) correct.
-		SlidePresenter.beginDrawingNextSlide("test", 1);
+		SlidePresenter.beginDrawingNextSlide(1, "test");
 		drawTestArray( trials.at( trialIndex ) );
 		SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
 

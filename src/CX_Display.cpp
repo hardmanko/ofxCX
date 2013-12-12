@@ -24,6 +24,9 @@ void CX_Display::setup (void) {
 	setFullScreen(false); //Default to windowed mode (for development).
 
 	_renderer = ofGetGLProgrammableRenderer();
+	if (!_renderer) {
+		ofLogWarning("CX_Display") << "Programmable renderer not avilable.";
+	}
 
 	_swapThread = new CX_ConstantlySwappingThread(); //This is a work-around for some stupidity in OF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea what too early means).

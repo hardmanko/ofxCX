@@ -23,8 +23,8 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 	}
 
 	if (!_display->isAutomaticallySwapping()) {
-		ofLogNotice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
 		_display->BLOCKING_setSwappingState(true); //This class requires that the monitor be swapping constantly while presenting slides.
+		ofLogNotice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
 	}
 
 	if (_slides.size() > 0) {
@@ -117,7 +117,13 @@ void CX_SlidePresenter::update (void) {
 					_currentSlide++;
 					
 					//This code is duplicated below
-					_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
+					if (_slides.at(_currentSlide).drawingFunction != NULL) {
+						_display->beginDrawingToBackBuffer();
+						_slides.at(_currentSlide).drawingFunction();
+						_display->endDrawingToBackBuffer();
+					} else {
+						_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
+					}
 					_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
 					glFlush();
 					_awaitingFenceSync = true;
@@ -131,7 +137,13 @@ void CX_SlidePresenter::update (void) {
 			_currentSlide = 0;
 
 			//This code is duplicated above
-			_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
+			if (_slides.at(_currentSlide).drawingFunction != NULL) {
+				_display->beginDrawingToBackBuffer();
+				_slides.at(_currentSlide).drawingFunction();
+				_display->endDrawingToBackBuffer();
+			} else {
+				_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
+			}
 			_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
 			glFlush();
 			_awaitingFenceSync = true;
@@ -188,7 +200,7 @@ void CX_SlidePresenter::clearSlides (void) {
 
 
 
-void CX_SlidePresenter::beginDrawingNextSlide (string slideName, uint64_t slideDuration) {
+void CX_SlidePresenter::beginDrawingNextSlide (uint64_t slideDuration, string slideName) {
 
 	if (_lastFramebufferActive) {
 		ofLogVerbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
@@ -196,7 +208,7 @@ void CX_SlidePresenter::beginDrawingNextSlide (string slideName, uint64_t slideD
 	}
 
 	if (_display == NULL) {
-		ofLogError("CX_SlidePresenter") << "Cannot start slide presentation without a valid monitor attached. Use setMonitor() to attach a monitor to the SlidePresenter";
+		ofLogError("CX_SlidePresenter") << "Cannot draw slides without a valid monitor attached. Use setMonitor() to attach a monitor to the SlidePresenter";
 		return;
 	}
 
@@ -208,10 +220,13 @@ void CX_SlidePresenter::beginDrawingNextSlide (string slideName, uint64_t slideD
 	_slides.push_back( CX_Slide_t() );
 
 	_slides.back().slideName = slideName;
+	ofLogVerbose("CX_SlidePresenter") << "Allocating framebuffer...";
 	_slides.back().framebuffer.allocate( _display->getResolution().x, _display->getResolution().y );
+	ofLogVerbose("CX_SlidePresenter") << "Finished allocating.";
 	
 	_slides.back().intendedSlideDuration = slideDuration;
 
+	ofLogVerbose("CX_SlidePresenter") << "Beginning to draw to framebuffer.";
 	_slides.back().framebuffer.begin();
 	_lastFramebufferActive = true;
 
@@ -228,6 +243,29 @@ void CX_SlidePresenter::appendSlide (CX_Slide_t slide) {
 		return;
 	}
 	_slides.push_back( slide );
+}
+
+void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), uint64_t slideDuration, string slideName) {
+	if (_lastFramebufferActive) {
+		ofLogVerbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
+		endDrawingCurrentSlide();
+	}
+
+	if (slideDuration == 0) {
+		ofLogWarning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration 0 ignored.";
+		return;
+	}
+
+	if (drawingFunction == NULL) {
+		ofLogError("CX_SlidePresenter") << "NULL pointer to drawing function given.";
+		return;
+	}
+
+	_slides.push_back( CX_Slide_t() );
+
+	_slides.back().slideName = slideName;
+	_slides.back().drawingFunction = drawingFunction;
+	_slides.back().intendedSlideDuration = slideDuration;
 }
 
 vector<CX_Slide_t> CX_SlidePresenter::getSlides (void) {

@@ -35,20 +35,67 @@ void CX::Private::App::exit (ofEventArgs &a) {
 	ofRemoveListener( ofEvents().exit, this, &Private::App::exit, OF_EVENT_ORDER_APP );
 }
 
+void glfwErrorCallback (int code, const char *message) {
+	ofLogError("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
+}
+
 
 int main (void) {
+
+	ofSetLogLevel(OF_LOG_VERBOSE);
 	
 	ofSetWorkingDirectoryToDefault();
 
-	ofSetupOpenGL(800, 600, OF_WINDOW);
+	glfwSetErrorCallback( &glfwErrorCallback );
+
+	
+
+	cout << "Enter \"p\" for programmable renderer, anything else for standard renderer." << endl;
+	string s;
+	cin >> s;
+	if (s == "p") {
+		ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLProgrammableRenderer), true );
+		ofSetupOpenGL(ofPtr<ofAppBaseWindow>(new ofAppGLFWWindow), 800, 600, OF_WINDOW);
+	} else {
+		ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
+		ofSetupOpenGL(ofPtr<ofAppBaseWindow>(new ofAppGLFWWindow), 800, 600, OF_WINDOW);
+
+		ofGetCurrentRenderer()->update(); //This function should be called "setup"
+
+		ofDisableArbTex(); //Test to see if this helps FBOs in some cases.
+	}
+
+	/*
+	bool programmableRendererUsed = true;
+
+	try {
+		ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLProgrammableRenderer), true );
+		ofSetupOpenGL(ofPtr<ofAppBaseWindow>(new ofAppGLFWWindow), 800, 600, OF_WINDOW);
+		ofLogNotice("CX_EntryPoint") << "Sucessfully got an ofGLProgrammableRenderer";
+	} catch (exception e) {
+		ofLogError("CX_EntryPoint") << "Exception thrown while getting ofGLProgrammableRenderer: " << e.what();
+		programmableRendererUsed = false;
+	}
+
+	if (!programmableRendererUsed) {
+		try {
+			ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
+			ofSetupOpenGL(ofPtr<ofAppBaseWindow>(new ofAppGLFWWindow), 800, 600, OF_WINDOW);
+
+			ofGetCurrentRenderer()->update(); //This function should be called "setup"
+			ofLogNotice("CX_EntryPoint") << "Sucessfully got an ofGLRenderer";
+		} catch (exception e) {
+			ofLogFatalError("CX_EntryPoint") << "Exception thrown while getting ofGLRenderer: " << e.what();
+		}
+	}
+	*/
 
 	ofPtr<ofAppBaseWindow> window( ofGetWindowPtr() );
 	window->initializeWindow();
-	
 
 	CX::Private::glfwContext = glfwGetCurrentContext();
 
-	ofSetOrientation( ofOrientation::OF_ORIENTATION_DEFAULT, true ); //I have no idea why this has to be done now, but not before.
+	ofSetOrientation( ofOrientation::OF_ORIENTATION_DEFAULT, true );
 
 	ofSeedRandom();
 	ofResetElapsedTimeCounter();

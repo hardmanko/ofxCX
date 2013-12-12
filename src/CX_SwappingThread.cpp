@@ -16,9 +16,8 @@ CX_ConstantlySwappingThread::CX_ConstantlySwappingThread (void) :
 
 void CX_ConstantlySwappingThread::threadedFunction (void) {
 	while (isThreadRunning()) {
-
+		//yield();
 		glfwSwapBuffers( CX::Private::glfwContext );
-		//glfwSwapBuffers(ofAppGLFWWindow::getWindowPointer());
 
 		uint64_t swapTime = CX::Instances::Clock.getTime();
 

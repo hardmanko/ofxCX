@@ -190,7 +190,7 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
 	}
 
 	//Time is in microseconds, so do samples/second * seconds * channels to get the (absolute) sample at which the new sound starts.
-	unsigned int insertionSample = (unsigned int)(this->getSampleRate() * ((double)timeOffset / 1000000)) * getChannelCount();
+	unsigned int insertionSample = _soundChannels * (unsigned int)(this->getSampleRate() * ((double)timeOffset / 1000000));
 
 	//Get the new data that will be merged.
 	vector<float> &newData = nso.getRawDataReference();
@@ -220,7 +220,7 @@ Set the length of the sound to the specified length in microseconds. If the new 
 the new data is zeroed (i.e. set to silence).
 */
 void CX_SoundObject::setLength (uint64_t lengthInMicroseconds) {
-	unsigned int endOfDurationSample = (unsigned int)(getSampleRate() * ((double)lengthInMicroseconds / 1000000)) * getChannelCount();
+	unsigned int endOfDurationSample = _soundChannels * (unsigned int)(getSampleRate() * ((double)lengthInMicroseconds / 1000000));
 
 	_soundData.resize( endOfDurationSample, 0 );
 }
@@ -286,7 +286,7 @@ so does the duration of silence.
 */
 void CX_SoundObject::addSilence (uint64_t durationUs, bool atBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count for the new silence.
-	unsigned int absoluteSampleCount = (getSampleRate() * ((double)durationUs / 1000000)) * getChannelCount();
+	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * ((double)durationUs / 1000000));
 
 	if (atBeginning) {
 		_soundData.insert( _soundData.begin(), absoluteSampleCount, 0 );
@@ -305,7 +305,7 @@ If false, the sound is deleted from the end, toward the beginning.
 */
 void CX_SoundObject::deleteAmount (uint64_t durationUs, bool fromBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count to delete.
-	unsigned int absoluteSampleCount = (getSampleRate() * ((double)durationUs / 1000000)) * getChannelCount();
+	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * ((double)durationUs / 1000000));
 
 	if (absoluteSampleCount >= _soundData.size()) {
 		_soundData.clear();
