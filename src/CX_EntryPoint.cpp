@@ -51,7 +51,7 @@ int main (void) {
 	glfwSetErrorCallback( &glfwErrorCallback );
 
 	
-
+	//It seems like all of this should happen in CX_Display::setup.
 	cout << "Enter \"p\" for programmable renderer, anything else for standard renderer." << endl;
 	string s;
 	cin >> s;
@@ -103,6 +103,7 @@ int main (void) {
 
 	ofSetOrientation( ofOrientation::OF_ORIENTATION_DEFAULT, true );
 
+	//Why use these? CX has RNG and Clock.
 	ofSeedRandom();
 	ofResetElapsedTimeCounter();
 

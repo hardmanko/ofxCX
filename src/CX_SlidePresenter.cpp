@@ -172,7 +172,7 @@ void CX_SlidePresenter::setDisplay (CX_Display *display) {
 	if (display != NULL) {
 		_display = display;
 	} else {
-		ofLogError("CX_SlidePresenter") << "Monitor is NULL.";
+		ofLogError("CX_SlidePresenter") << "setDisplay: display is NULL.";
 	}
 }
 
