@@ -31,7 +31,7 @@ void CX_Display::setup (void) {
 	_swapThread = new CX_ConstantlySwappingThread(); //This is a work-around for some stupidity in OF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea what too early means).
 
-	BLOCKING_estimateFramePeriod( 200 * 1000 ); //Estimate for 200 ms.
+	BLOCKING_estimateFramePeriod( 300 * 1000 ); //Estimate for 300 ms.
 }
 
 void CX_Display::update (void) {
@@ -68,7 +68,8 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 }
 
 uint64_t CX_Display::getFramePeriod (void) {
-	return _swapThread->getTypicalSwapPeriod();
+	return _framePeriod;
+	//return _swapThread->getTypicalSwapPeriod();
 }
 
 uint64_t CX_Display::getFrameNumber (void) {
@@ -159,6 +160,7 @@ This function does nothing if there is some kind of introduction to the experime
 will have time to learn what the period is.
 */
 void CX_Display::BLOCKING_estimateFramePeriod (uint64_t estimationInterval) {
+	/*
 	bool wasSwapping = isAutomaticallySwapping();
 	BLOCKING_setSwappingState(true);
 
@@ -166,9 +168,36 @@ void CX_Display::BLOCKING_estimateFramePeriod (uint64_t estimationInterval) {
 	while (CX::Instances::Clock.getTime() - startTime < estimationInterval)
 		;
 
+	_framePeriod = _swapThread->getTypicalSwapPeriod();
+
+	BLOCKING_setSwappingState(wasSwapping);
+	*/
+
+
+	bool wasSwapping = isAutomaticallySwapping();
+	BLOCKING_setSwappingState(false);
+
+	vector<uint64_t> swapTimes;
+
+	uint64_t startTime = CX::Instances::Clock.getTime();
+	while (CX::Instances::Clock.getTime() - startTime < estimationInterval) {
+		BLOCKING_swapFrontAndBackBuffers();
+		swapTimes.push_back( CX::Instances::Clock.getTime() );
+	}
+
+	if (swapTimes.size() > 1) {
+		uint64_t swapSum = 0;
+		for (unsigned int i = 1; i < swapTimes.size(); i++) {
+			swapSum += swapTimes[i] - swapTimes[i - 1];
+		}
+
+		_framePeriod = swapSum/(swapTimes.size() - 1);
+	}
+	
 	BLOCKING_setSwappingState(wasSwapping);
 }
 
+//Should this be changed to use _framePeriod?
 uint64_t CX_Display::estimateNextSwapTime (void) {
 	return _swapThread->estimateNextSwapTime();
 }

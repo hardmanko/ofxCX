@@ -26,10 +26,14 @@ namespace CX {
 
 	private:
 
-		uint64_t _lastSwapTime;
+		bool _lockMutex (void);
+		bool _unlockMutex (void);
+		bool _isLocked;
+		//uint64_t _lastSwapTime;
 
 		//uint64_t _framePeriod;
-		deque<uint64_t> _recentSwapPeriods;
+		//deque<uint64_t> _recentSwapPeriods;
+		deque<uint64_t> _recentSwapTimes;
 
 		uint64_t _frameCount;
 		uint64_t _frameCountOnLastCheck;

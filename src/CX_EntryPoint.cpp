@@ -27,6 +27,8 @@ void CX::Private::App::update (void) {
 
 	//Call the user update function
 	updateExperiment();
+
+	ofSleepMillis(0); //sleep(0) is similar to yield()
 }
 
 void CX::Private::App::exit (ofEventArgs &a) {
@@ -62,8 +64,12 @@ int main (void) {
 
 		ofGetCurrentRenderer()->update(); //This function should be called "setup"
 
-		ofDisableArbTex(); //Test to see if this helps FBOs in some cases.
+		ofDisableAlphaBlending();
+		ofDisableAntiAliasing();
+
+		//ofDisableArbTex(); //Test to see if this helps FBOs in some cases.
 	}
+
 
 	/*
 	bool programmableRendererUsed = true;

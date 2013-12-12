@@ -56,6 +56,8 @@ namespace CX {
 
 		CX_ConstantlySwappingThread *_swapThread;
 
+		uint64_t _framePeriod;
+
 	};
 
 }

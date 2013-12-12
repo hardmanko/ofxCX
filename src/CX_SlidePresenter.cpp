@@ -39,7 +39,7 @@ void CX_SlidePresenter::startSlidePresentation (void) {
 		for (int i = 0; i < _slides.size(); i++) {
 
 			double framesInDuration = (double)_slides.at(i).intendedSlideDuration / framePeriod;
-			framesInDuration = ceil(framesInDuration); //Round up. This should be changed later to round-to-closest.
+			framesInDuration = ceil(framesInDuration); //Round up. This should be changed later to round-to-nearest.
 
 			_slides.at(i).intendedFrameCount = (uint32_t)framesInDuration;
 
@@ -108,27 +108,15 @@ void CX_SlidePresenter::update (void) {
 
 			}
 
-			//Is there is a frame after the current one?
+			//Is there is a slide after the current one?
 			if ((_currentSlide + 1) < _slides.size()) {
 
-				//Is that frame ready to swap in?
+				//Is that slide ready to swap in?
 				if ( _slides.at(_currentSlide + 1).intendedOnsetFrameNumber <= (currentFrameNumber + 1)) {
 
 					_currentSlide++;
 					
-					//This code is duplicated below
-					if (_slides.at(_currentSlide).drawingFunction != NULL) {
-						_display->beginDrawingToBackBuffer();
-						_slides.at(_currentSlide).drawingFunction();
-						_display->endDrawingToBackBuffer();
-					} else {
-						_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
-					}
-					_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
-					glFlush();
-					_awaitingFenceSync = true;
-					_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
-					//End dupe
+					_renderNextFrame();
 				}
 			}
 		}
@@ -136,19 +124,7 @@ void CX_SlidePresenter::update (void) {
 		if (_display->hasSwappedSinceLastCheck()) {
 			_currentSlide = 0;
 
-			//This code is duplicated above
-			if (_slides.at(_currentSlide).drawingFunction != NULL) {
-				_display->beginDrawingToBackBuffer();
-				_slides.at(_currentSlide).drawingFunction();
-				_display->endDrawingToBackBuffer();
-			} else {
-				_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
-			}
-			_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
-			glFlush();
-			_awaitingFenceSync = true;
-			_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
-			//End dupe
+			_renderNextFrame();
 
 			_synchronizing = false;
 			_presentingSlides = true;
@@ -176,8 +152,20 @@ void CX_SlidePresenter::update (void) {
 
 		}
 	}
+}
 
-
+void CX_SlidePresenter::_renderNextFrame (void) {
+	if (_slides.at(_currentSlide).drawingFunction != NULL) {
+		_display->beginDrawingToBackBuffer();
+		_slides.at(_currentSlide).drawingFunction();
+		_display->endDrawingToBackBuffer();
+	} else {
+		_display->drawFboToBackBuffer( _slides.at(_currentSlide).framebuffer );
+	}
+	_fenceSyncObject = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
+	glFlush();
+	_awaitingFenceSync = true;
+	_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
 }
 
 void CX_SlidePresenter::setDisplay (CX_Display *display) {
@@ -186,10 +174,7 @@ void CX_SlidePresenter::setDisplay (CX_Display *display) {
 	} else {
 		ofLogError("CX_SlidePresenter") << "Monitor is NULL.";
 	}
-	
 }
-
-
 
 void CX_SlidePresenter::clearSlides (void) {
 	_slides.clear();
@@ -263,9 +248,9 @@ void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), uin
 
 	_slides.push_back( CX_Slide_t() );
 
-	_slides.back().slideName = slideName;
 	_slides.back().drawingFunction = drawingFunction;
 	_slides.back().intendedSlideDuration = slideDuration;
+	_slides.back().slideName = slideName;
 }
 
 vector<CX_Slide_t> CX_SlidePresenter::getSlides (void) {

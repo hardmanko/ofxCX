@@ -9,9 +9,9 @@ using namespace CX;
 
 CX_ConstantlySwappingThread::CX_ConstantlySwappingThread (void) :
 	_frameCount(0),
-	_frameCountOnLastCheck(0)
+	_frameCountOnLastCheck(0),
+	_isLocked(false)
 {
-	_lastSwapTime = CX::Instances::Clock.getTime();
 }
 
 void CX_ConstantlySwappingThread::threadedFunction (void) {
@@ -24,11 +24,10 @@ void CX_ConstantlySwappingThread::threadedFunction (void) {
 		if (lock()) {
 			++_frameCount;
 
-			_recentSwapPeriods.push_back( swapTime - _lastSwapTime );
-			while (_recentSwapPeriods.size() > 30) {
-				_recentSwapPeriods.pop_front();
+			_recentSwapTimes.push_back( swapTime );
+			while (_recentSwapTimes.size() > 30) {
+				_recentSwapTimes.pop_front();
 			}
-			_lastSwapTime = swapTime;
 
 			unlock();
 		}
@@ -37,69 +36,88 @@ void CX_ConstantlySwappingThread::threadedFunction (void) {
 
 bool CX_ConstantlySwappingThread::swappedSinceLastCheck (void) {
 	bool rval = false;
-	if (lock()) {
+	if (_lockMutex()) {
 		if (_frameCount != _frameCountOnLastCheck) {
 			_frameCountOnLastCheck = _frameCount;
 			rval = true;
 		}
-		unlock();
+		_unlockMutex();
 	}
 	return rval;
 }
 
 uint64_t CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
 	uint64_t typicalSwapPeriod = 0;
-	if (lock()) {
-		for (int i = 0; i < _recentSwapPeriods.size(); i++) {
-			typicalSwapPeriod += _recentSwapPeriods.at(i);
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() >= 2) {
+			uint64_t swapPeriodSum = 0;
+			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
+				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
+			}
+			typicalSwapPeriod = swapPeriodSum/(_recentSwapTimes.size() - 1);
 		}
-
-		typicalSwapPeriod /= _recentSwapPeriods.size();
-
-		unlock();
+		_unlockMutex();
 	}
 	return typicalSwapPeriod;
 }
 
 uint64_t CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
 	uint64_t nextSwapTime = 0;
-	if (lock()) {
-		uint64_t typicalSwapPeriod = 0;
-		for (int i = 0; i < _recentSwapPeriods.size(); i++) {
-			typicalSwapPeriod += _recentSwapPeriods.at(i);
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() >= 2) {
+			nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
 		}
-
-		typicalSwapPeriod /= _recentSwapPeriods.size();
-
-		nextSwapTime = _lastSwapTime + typicalSwapPeriod;
-		unlock();
+		_unlockMutex();
 	}
 	return nextSwapTime;
 }
 
 uint64_t CX_ConstantlySwappingThread::getLastSwapTime (void) {
 	uint64_t lastSwapTime = 0;
-	if (lock()) {
-		lastSwapTime = _lastSwapTime;
-		unlock();
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() > 0) {
+			lastSwapTime = _recentSwapTimes.back();
+		}
+		_unlockMutex();
 	}
 	return lastSwapTime;
 }
 
 uint64_t CX_ConstantlySwappingThread::getLastSwapPeriod (void) {
 	uint64_t lastSwapPeriod = 0;
-	if (lock()) {
-		lastSwapPeriod = _recentSwapPeriods.front();
-		unlock();
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() >= 2) {
+			lastSwapPeriod = _recentSwapTimes.at( _recentSwapTimes.size() - 1 ) - _recentSwapTimes.at( _recentSwapTimes.size() - 2 );
+		}
+		_unlockMutex();
 	}
 	return lastSwapPeriod;
 }
 
 uint64_t CX_ConstantlySwappingThread::getFrameNumber (void) {
 	uint64_t frameNumber = 0;
-	if (lock()) {
+	if (_lockMutex()) {
 		frameNumber = _frameCount;
-		unlock();
+		_unlockMutex();
 	}
 	return frameNumber;
+}
+
+
+bool CX_ConstantlySwappingThread::_lockMutex (void) {
+	if (_isLocked) {
+		return true;
+	}
+
+	if (lock()) {
+		_isLocked = true;
+		return true;
+	}
+	return false;
+}
+
+bool CX_ConstantlySwappingThread::_unlockMutex (void) {
+	_isLocked = false;
+	unlock();
+	return true;
 }

@@ -88,6 +88,8 @@ namespace CX {
 	
 		bool _lastFramebufferActive;
 
+		void _renderNextFrame (void);
+
 	};
 
 }
