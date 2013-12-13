@@ -41,6 +41,27 @@ void glfwErrorCallback (int code, const char *message) {
 	ofLogError("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
 }
 
+int CX::setupWindow (CX_WindowConfiguration_t config) {
+
+	glfwSetErrorCallback( &glfwErrorCallback );
+
+	ofPtr<ofAppGLFWWindow> window( new ofAppGLFWWindow );
+	window->setNumSamples(4);
+
+	ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
+	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), 800, 600, OF_WINDOW);
+
+	ofGetCurrentRenderer()->update();
+
+	window->initializeWindow();
+
+	CX::Private::glfwContext = glfwGetCurrentContext();
+
+	ofSetOrientation( ofOrientation::OF_ORIENTATION_DEFAULT, true );
+
+	return 0;
+}
+
 
 int main (void) {
 
@@ -48,35 +69,7 @@ int main (void) {
 	
 	ofSetWorkingDirectoryToDefault();
 
-	glfwSetErrorCallback( &glfwErrorCallback );
-
-	
-	//It seems like all of this should happen in CX_Display::setup.
-	//cout << "Enter \"p\" for programmable renderer, anything else for standard renderer." << endl;
-	//string s;
-	//cin >> s;
-	//if (s == "p") {
-	//	ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLProgrammableRenderer), true );
-	//	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(new ofAppGLFWWindow), 800, 600, OF_WINDOW);
-	//} else {
-
-	ofPtr<ofAppGLFWWindow> window( new ofAppGLFWWindow );
-	window->setNumSamples(4);
-
-		ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
-		ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), 800, 600, OF_WINDOW);
-
-		ofGetCurrentRenderer()->update(); //This function should be called "setup". This only needs to be called for
-
-		//ofDisableAlphaBlending(); //This would be more consistent with ofFbo, which does not do alpha blending properly.
-		//ofDisableArbTex(); //Test to see if this helps FBOs in some cases.
-	//}
-
-	window->initializeWindow();
-
-	CX::Private::glfwContext = glfwGetCurrentContext();
-
-	ofSetOrientation( ofOrientation::OF_ORIENTATION_DEFAULT, true );
+	CX::setupWindow( CX_WindowConfiguration_t() );
 
 	//Why use these? CX has RNG and Clock.
 	ofSeedRandom();

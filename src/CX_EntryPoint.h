@@ -21,6 +21,12 @@
 
 namespace CX {
 
+	struct CX_WindowConfiguration_t {
+
+	};
+
+	int setupWindow (CX_WindowConfiguration_t config);
+
 	namespace Private {
 		class App {
 		public:
