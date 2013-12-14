@@ -7,7 +7,9 @@
 
 using namespace CX;
 
-CX_Display::CX_Display (void)
+CX_Display::CX_Display (void) :
+	_framePeriod(0),
+	_swapThread(NULL)
 {
 }
 
@@ -19,13 +21,14 @@ CX_Display::~CX_Display (void) {
 
 
 void CX_Display::setup (void) {
-	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos are really verbose when allocated and it is all gibberish.
+	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos 
+		//are really verbose when allocated and it is a lot of gibberish.
 
-	setFullScreen(false); //Default to windowed mode (for development).
+	//setFullScreen(false); //Default to windowed mode (for development). This has no effect, because it is in windowed mode already.
 
 	_renderer = ofGetGLProgrammableRenderer();
 	if (!_renderer) {
-		ofLogWarning("CX_Display") << "Programmable renderer not avilable.";
+		ofLogWarning("CX_Display") << "Programmable renderer not available.";
 	}
 
 	_swapThread = new CX_ConstantlySwappingThread(); //This is a work-around for some stupidity in OF or Poco (can't tell which) where 
@@ -77,12 +80,16 @@ uint64_t CX_Display::getFrameNumber (void) {
 }
 
 void CX_Display::drawFboToBackBuffer (ofFbo &fbo) {
+	drawFboToBackBuffer(fbo, ofRectangle(0, 0, fbo.getWidth(), fbo.getHeight() )); //ofGetWidth(), ofGetHeight()?
+
+	/*
 	beginDrawingToBackBuffer();
 
 	ofSetColor( 255 );
 	fbo.draw(0, 0, ofGetWidth(), ofGetHeight()); //Maybe this should be the actual size of the FBO instead.
 
 	endDrawingToBackBuffer();
+	*/
 }
 
 void CX_Display::drawFboToBackBuffer (ofFbo &fbo, ofRectangle rect) {

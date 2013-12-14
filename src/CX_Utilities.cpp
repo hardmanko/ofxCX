@@ -42,6 +42,10 @@ void CX::drawFboToBackBuffer (ofFbo &fbo) {
 }
 */
 
+int CX::getSampleCount (void) { 
+	return 4; 
+};
+
 vector<int> CX::intVector (int rangeBottom, int rangeTop) {
 	vector<int> rval;
 

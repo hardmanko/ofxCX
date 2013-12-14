@@ -206,7 +206,7 @@ void CX_SlidePresenter::beginDrawingNextSlide (uint64_t slideDuration, string sl
 
 	_slides.back().slideName = slideName;
 	ofLogVerbose("CX_SlidePresenter") << "Allocating framebuffer...";
-	_slides.back().framebuffer.allocate( _display->getResolution().x, _display->getResolution().y );
+	_slides.back().framebuffer.allocate( _display->getResolution().x, _display->getResolution().y, GL_RGBA, CX::getSampleCount() );
 	ofLogVerbose("CX_SlidePresenter") << "Finished allocating.";
 	
 	_slides.back().intendedSlideDuration = slideDuration;
@@ -231,10 +231,6 @@ void CX_SlidePresenter::appendSlide (CX_Slide_t slide) {
 }
 
 void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), uint64_t slideDuration, string slideName) {
-	if (_lastFramebufferActive) {
-		ofLogVerbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
-		endDrawingCurrentSlide();
-	}
 
 	if (slideDuration == 0) {
 		ofLogWarning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration 0 ignored.";
@@ -244,6 +240,11 @@ void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), uin
 	if (drawingFunction == NULL) {
 		ofLogError("CX_SlidePresenter") << "NULL pointer to drawing function given.";
 		return;
+	}
+
+	if (_lastFramebufferActive) {
+		ofLogVerbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
+		endDrawingCurrentSlide();
 	}
 
 	_slides.push_back( CX_Slide_t() );

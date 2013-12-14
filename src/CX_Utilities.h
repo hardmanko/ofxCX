@@ -26,6 +26,8 @@ namespace CX {
 
 	//void pollEvents (void);
 
+	int getSampleCount (void);
+
 	vector<int> intVector (int rangeBottom, int rangeTop);
 	vector<int> intVectorByCount (vector<int> counts);
 	vector<int> intVectorByCountAndValue (vector<int> counts, vector<int> values);

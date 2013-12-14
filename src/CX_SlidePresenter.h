@@ -5,6 +5,7 @@
 
 #include "ofFbo.h"
 
+#include "CX_Utilities.h"
 #include "CX_Display.h"
 
 namespace CX {

@@ -26,6 +26,7 @@ namespace CX {
 	};
 
 	int setupWindow (CX_WindowConfiguration_t config);
+	
 
 	namespace Private {
 		class App {

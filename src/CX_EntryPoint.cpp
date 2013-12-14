@@ -46,7 +46,7 @@ int CX::setupWindow (CX_WindowConfiguration_t config) {
 	glfwSetErrorCallback( &glfwErrorCallback );
 
 	ofPtr<ofAppGLFWWindow> window( new ofAppGLFWWindow );
-	window->setNumSamples(4);
+	window->setNumSamples( CX::getSampleCount() );
 
 	ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), 800, 600, OF_WINDOW);
