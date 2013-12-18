@@ -26,6 +26,8 @@ namespace CX {
 
 	//void pollEvents (void);
 
+	//Add requireOFVersion(int versionMajor, versionMinor, etc) that complains to cout if the version is not found.
+
 	int getSampleCount (void);
 
 	vector<int> intVector (int rangeBottom, int rangeTop);

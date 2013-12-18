@@ -46,8 +46,8 @@ namespace CX {
 		ofPoint getCenterOfDisplay (void);
 		uint64_t getFrameNumber (void);
 
-		void BLOCKING_estimateFramePeriod (uint64_t estimationInterval);
-		uint64_t estimateNextSwapTime (void);
+		void BLOCKING_estimateFramePeriod (uint64_t estimationInterval); //Also estimate standard deviation. Return a struct with this info?
+		uint64_t estimateNextSwapTime (void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
 
 		void BLOCKING_waitForOpenGL (void);
 
