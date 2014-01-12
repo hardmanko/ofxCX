@@ -10,8 +10,7 @@
 
 namespace CX {
 
-	typedef std::mt19937_64::result_type CX_RandomInt_t; //This needs reconsideration. It would be preferable to not link
-		//The size of ints that I can make to the generator making the ints.
+	typedef int64_t CX_RandomInt_t;
 
 	class CX_RandomNumberGenerator {
 	public:
@@ -21,27 +20,23 @@ namespace CX {
 		void setSeed (uint64_t seed);
 		uint64_t getSeed (void) { return _seed; };
 	
-		CX_RandomInt_t getMaximumRandomInt (void);
-		CX_RandomInt_t getMinimumRandomInt (void);
+		CX_RandomInt_t getMinimumRandomInt(void);
+		CX_RandomInt_t getMaximumRandomInt(void);
 	
-		CX_RandomInt_t randomInt (void);
-		CX_RandomInt_t randomInt (CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper);
-		int randomSignedInt (int rangeLower, int rangeUpper);
+		CX_RandomInt_t randomInt(void);
+		CX_RandomInt_t randomInt(CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper);
+
+		double uniformDouble(double lowerBound_closed, double upperBound_open);
 
 		template <typename T> void shuffleVector (vector<T> *v);
 		template <typename T> vector<T> shuffleVector (vector<T> v);
 		template <typename T> vector<T> sample (unsigned int count, const vector<T> &source, bool withReplacement);
 		vector<int> sample (unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
-		//double uniformUnitInterval (void);
-		//double uniformDouble (double lowerBound_closed, double upperBound_open);
-
 	private:
 		uint64_t _seed;
 
 		std::mt19937_64 _mersenneTwister;
-
-		std::uniform_real_distribution<double> _unitInterval;
 	};
 
 	template <typename T>

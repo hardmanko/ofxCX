@@ -6,9 +6,6 @@ using namespace CX;
 
 CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
 
-	//Set the _unitInterval distribution to return results on [0,1).
-	_unitInterval = std::uniform_real_distribution<double>(0, 1); //This it broken.
-
 	std::random_device rd; //By the C++11 specification, std::random_device is supposed to be a non-deterministic 
 	//(e.g. hardware) RNG. However, from http://en.cppreference.com/w/cpp/numeric/random/random_device:
 	//"Note that std::random_device may be implemented in terms of a pseudo-random number engine if a 
@@ -28,91 +25,40 @@ void CX_RandomNumberGenerator::setSeed (uint64_t seed) {
 	_mersenneTwister.seed( (unsigned long)_seed );
 }
 
-CX_RandomInt_t CX_RandomNumberGenerator::randomInt (void) {
-	return _mersenneTwister();
+CX_RandomInt_t CX_RandomNumberGenerator::randomInt(void) {
+	return std::uniform_int_distribution<CX_RandomInt_t>(std::numeric_limits<CX_RandomInt_t>::min(), std::numeric_limits<CX_RandomInt_t>::max())(_mersenneTwister);
 }
-
-int CX_RandomNumberGenerator::randomSignedInt (int rangeLower, int rangeUpper) {
-	if (rangeUpper < rangeLower) {
-		std::swap(rangeLower, rangeUpper);
-		//return 0;
-	}
-
-	CX_RandomInt_t raw =  _mersenneTwister();
-
-	raw = raw % (rangeUpper - rangeLower + 1);
-
-	raw += rangeLower; //If rangeLower is negative, then raw is decreased (possibly into negative territory).
-
-	return (int)raw;
-}
-
-/*
-int64_t CX_RandomNumberGenerator::randomInt (int64_t rangeLower, int64_t rangeUpper) {
-	if (rangeUpper < rangeLower) {
-		return 0;
-	}
-
-	int64_t raw = randomInt();
-
-	raw = raw % (rangeUpper - rangeLower);
-
-	raw += rangeLower; //If rangeLower is negative, then raw is decreased (possibly into negative territory).
-
-	return raw;
-}
-*/
 
 /*! This function returns an integer from the range [rangeLower, rangeUpper]. The minimum and maximum values for the
 int returned from this function are given by getMinimumRandomInt() and getMaximumRandomInt().
 
 If rangeLower > rangeUpper, the lower and upper ranges are swapped. If rangeLower == rangeUpper, it returns rangeLower.
 */
-CX_RandomInt_t CX_RandomNumberGenerator::randomInt (CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper) {
-	if (rangeUpper < rangeLower) {
-		std::swap(rangeLower, rangeUpper);
-		//return 0;
+CX_RandomInt_t CX_RandomNumberGenerator::randomInt(CX_RandomInt_t min, CX_RandomInt_t max) {
+	if (min > max) {
+		//Emit an error/warning...
+		std::swap(min, max);
 	}
 
-	if (rangeLower == rangeUpper) {
-		return rangeLower;
-	}
-
-	CX_RandomInt_t raw = randomInt();
-
-	raw = raw % (rangeUpper - rangeLower + 1);
-
-	raw += rangeLower; //If rangeLower is negative, then raw is decreased (possibly into negative territory).
-
-	return raw;
-}
-
-CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt (void) {
-	return _mersenneTwister.max();
+	return std::uniform_int_distribution<CX_RandomInt_t>(min, max)(_mersenneTwister);
 }
 
 CX_RandomInt_t CX_RandomNumberGenerator::getMinimumRandomInt (void) {
-	return _mersenneTwister.min();
+	return std::numeric_limits<CX_RandomInt_t>::min();
+}
+
+CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
+	return std::numeric_limits<CX_RandomInt_t>::max();
+}
+
+//This function returns a double drawn from a uniform distribution with a range of [lowerBound_closed, upperBound_open).
+double CX_RandomNumberGenerator::uniformDouble (double lowerBound_closed, double upperBound_open) {
+	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
 }
 
 /*!
 Returns a vector of count integers from the range [lowerBound, upperBound] with or without replacement.
 */
-vector<int> CX_RandomNumberGenerator::sample (unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
+vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
 	return sample(count, CX::intVector(lowerBound, upperBound), withReplacement);
 }
-
-
-/*
-This function returns a double drawn from a uniform distribution with a range of [0,1). Not implemented properly.
-
-double CX_RandomNumberGenerator::uniformUnitInterval (void) {
-	return _unitInterval( _mersenneTwister );
-}
-
-This function returns a double drawn from a uniform distribution with a range of [lowerBound_closed, upperBound_open).
-
-double CX_RandomNumberGenerator::uniformDouble (double lowerBound_closed, double upperBound_open) {
-	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister); //Apparently this isn't implemented properly - it just returns ints.
-}
-*/

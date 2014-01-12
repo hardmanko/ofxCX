@@ -5,6 +5,10 @@
 #include <map>
 #include <algorithm>
 
+//#include "ofFileUtils.h"
+
+#undef ERROR
+
 using namespace std;
 
 namespace CX {
@@ -24,7 +28,7 @@ namespace CX {
 		CONSOLE,
 		FILE,
 		CONSOLE_AND_FILE
-	};
+	};	
 
 	struct LoggerTargetInfo {
 		LogTarget targetType;
@@ -94,13 +98,32 @@ namespace CX {
 
 	};
 
+	extern CX_Logger Log;
+
 }
 
-#include "stdint.h"
+/*	
+Log.verbose() << "TMI!";
 
-template <char series>
-class kvrxSimpleADC {
-public:
-	int16_t read(uint8_t channel);
-};
+Log.level(CX::LogLevel::ERROR, "Invisible");
+Log.warning("Invisible") << "You shouldn't see this";
+Log.error("Invisible") << "There should not be a warning from the Invisible module above this.";
+Log.fatalError("Invisible") << "You should see this message.";
 
+Log.notice("CX_RandomNumberGenerator") << "This is not a random number: " << 57;
+
+Log.warning("Dense") << "Too dense to sense!";
+
+Log.error() << "This is a general purpose error";
+
+Log.fatalError("CX_Logger") << "Too much input!";
+
+//This is disgusting and totally not supported
+stringstream* ss = &Log.warning("pointer");
+*ss << "ook ";
+*ss << 5;
+
+Log.levelForConsole(CX::LogLevel::ERROR);
+
+Log.flush();
+*/

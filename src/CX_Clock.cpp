@@ -70,3 +70,31 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 	Poco::LocalDateTime localTime;
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
+
+
+/*
+namespace CX {
+//Does not actually have microsecond precision on some systems.
+void sleepMicros(uint64_t micros) {
+	std::this_thread::sleep_for(std::chrono::microseconds(micros));
+}
+
+
+long long currentTime(void) {
+	//std::chrono::high_resolution_clock::time_point experimentStart = std::chrono::high_resolution_clock::now();
+	std::chrono::high_resolution_clock::time_point t = std::chrono::high_resolution_clock::now();
+	return std::chrono::duration_cast<std::chrono::microseconds>(t - experimentStart).count();
+}
+
+
+long long micros(void) {
+	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+
+double clockPeriod(void) {
+	return (double)std::chrono::high_resolution_clock::period().num / std::chrono::high_resolution_clock::period().den;
+}
+
+
+}
+*/

@@ -2,6 +2,8 @@
 
 using namespace CX;
 
+CX_Logger Log;
+
 CX_Logger::CX_Logger (void) :
 	timestamps(false)
 {

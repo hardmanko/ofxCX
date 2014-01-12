@@ -6,6 +6,7 @@
 #include "CX_Utilities.h"
 
 #include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Clock
+#include "CX_DeferredLogger.h" //Includes an instance called CX::Log
 //#include "CX_Events.h"
 
 //Make instances of these
