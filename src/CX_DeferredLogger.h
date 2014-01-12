@@ -1,3 +1,6 @@
+#ifndef _CX_DEFERRED_LOGGER_H_
+#define _CX_DEFERRED_LOGGER_H_
+
 #include <sstream>
 #include <iostream>
 #include <string>
@@ -7,7 +10,7 @@
 
 #include "ofFileUtils.h"
 
-#undef ERROR //This is annoying and likely problematic.
+//#undef ERROR //This is annoying and likely problematic.
 
 using namespace std;
 
@@ -19,7 +22,7 @@ namespace CX {
 		VERBOSE,
 		NOTICE,
 		WARNING,
-		ERROR,
+		LOG_ERROR,
 		FATAL_ERROR,
 		LOG_NONE
 	};
@@ -98,7 +101,10 @@ namespace CX {
 
 	};
 
-	extern CX_Logger Log;
+	namespace Instances {
+		extern CX_Logger Log;
+	}
+	
 
 }
 
@@ -127,3 +133,5 @@ Log.levelForConsole(CX::LogLevel::ERROR);
 
 Log.flush();
 */
+
+#endif //_CX_DEFERRED_LOGGER_H_

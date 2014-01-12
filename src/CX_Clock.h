@@ -1,36 +1,41 @@
 #ifndef _CX_CLOCK_H_
 #define _CX_CLOCK_H_
 
-#include "ofConstants.h"
+//#include "ofConstants.h"
 #include "ofLog.h"
 
-#include <stdint.h>
+//#include <stdint.h>
 #include <string>
+#include <chrono>
 
 #include "Poco/DateTimeFormatter.h"
 
+//#include "CX_DeferredLogger.h"
+
 namespace CX {
+
+	typedef long long CX_Micros_t;
 
 	class CX_Clock {
 	public:
 
 		CX_Clock (void);
 
-		uint64_t getTime (void);
-		uint64_t getSystemTime (void);
+		CX_Micros_t getTime(void);
+		CX_Micros_t getSystemTime(void);
 
-		uint64_t getExperimentStartTime (void) { return _experimentStartTime; };
+		CX_Micros_t getExperimentStartTime(void);
+		std::string getExperimentStartDateTimeString(std::string format = "%Y/%b/%e %h:%M:%S %a");
 
 		static std::string getDateTimeString (std::string format = "%Y/%b/%e %h:%M:%S %a");
 
 	private:
 		void _resetExperimentStartTime (void);
 
-#ifdef TARGET_WIN32
-		uint64_t _performanceCounterFrequency;
-#endif
+		std::chrono::high_resolution_clock::time_point _experimentStart;
 
-		uint64_t _experimentStartTime;
+		Poco::Timestamp _pocoExperimentStart;
+		
 	};
 
 	namespace Instances {

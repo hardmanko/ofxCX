@@ -2,7 +2,7 @@
 
 using namespace CX;
 
-CX_Logger CX::Log;
+CX_Logger CX::Instances::Log;
 
 CX_Logger::CX_Logger (void) :
 	timestamps(false)
@@ -24,7 +24,7 @@ stringstream& CX_Logger::_log (LogLevel level, string module) {
 		//_currentMessage.timestamp = timestamp; //Avoids timestamp formatting at call site.
 
 		//*_currentMessage.ss << timestampString;
-		//CX::getDateTimeString
+		//CX::Instances::Clock::getDateTimeString
 	}
 
 	return *(_messageQueue.back().message);
@@ -161,7 +161,7 @@ stringstream& CX_Logger::warning (string module) {
 }
 
 stringstream& CX_Logger::error (string module) {
-	return _log(LogLevel::ERROR, module);
+	return _log(LogLevel::LOG_ERROR, module);
 }
 
 stringstream& CX_Logger::fatalError (string module) {
@@ -173,7 +173,7 @@ string CX_Logger::_getLogLevelName (LogLevel level) {
 	case LogLevel::VERBOSE: return "verbose";
 	case LogLevel::NOTICE: return "notice";
 	case LogLevel::WARNING: return "warning";
-	case LogLevel::ERROR: return "error";
+	case LogLevel::LOG_ERROR: return "error";
 	case LogLevel::FATAL_ERROR: return "fatal";
 	};
 	return "";
