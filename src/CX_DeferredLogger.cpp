@@ -2,7 +2,7 @@
 
 using namespace CX;
 
-CX_Logger Log;
+CX_Logger CX::Log;
 
 CX_Logger::CX_Logger (void) :
 	timestamps(false)
@@ -32,11 +32,11 @@ stringstream& CX_Logger::_log (LogLevel level, string module) {
 
 void CX_Logger::flush (void) {
 
-	//open and close the file too?
-	//_outputFile.open(_logFileName, write...);
-	//if (logFileName != "") {
-	//	_outputFile.open( ofToDataPath(_logFileName), ofFile::Append, false );
-	//}
+	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+		if (_targetInfo[i].targetType == LogTarget::FILE) {
+			_targetInfo[i].file.open(_targetInfo[i].filename, ofFile::Append, false);
+		}
+	}
 
 	for (auto it = _messageQueue.begin(); it != _messageQueue.end(); it++) {
 
@@ -55,32 +55,25 @@ void CX_Logger::flush (void) {
 		formattedMessage += it->message->str();
 
 		if (it->level >= _moduleLogLevels[it->module]) {
-
 			for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 				if (it->level >= _targetInfo[i].level) {
 					if (_targetInfo[i].targetType == LogTarget::CONSOLE) {
 						cout << formattedMessage;
 					} else if (_targetInfo[i].targetType == LogTarget::FILE) {
-						//_targetInfo[i].file << formattedMessage;
+						_targetInfo[i].file << formattedMessage;
 					}
 				}
 			}
-			
-			/*
-			if (_logTarget == LogTarget::CONSOLE || _logTarget == LogTarget::CONSOLE_AND_FILE) {
-				cout << formattedMessage;
-			}
-
-			if (_logTarget == LogTarget::FILE || _logTarget == LogTarget::CONSOLE_AND_FILE) {
-				//_outputFile << formattedMessage;
-			}
-			*/
 		}
 
 		delete it->message; //Deallocate message pointer
 	}
 
-	//_outputFile.close();
+	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+		if (_targetInfo[i].targetType == LogTarget::FILE) {
+			_targetInfo[i].file.close();
+		}
+	}
 
 	_messageQueue.clear();
 }
@@ -139,7 +132,13 @@ void CX_Logger::levelForFile(LogLevel level, string filename) {
 		fileTarget.targetType = LogTarget::FILE;
 		fileTarget.level = level;
 		fileTarget.filename = filename;
-		//open the file?
+
+		if (!fileTarget.file.open(filename, ofFile::Reference, false)) {
+			//error...
+			//return false;
+		}
+		fileTarget.file.close();
+		
 		_targetInfo.push_back(fileTarget);
 	}
 }

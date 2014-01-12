@@ -5,9 +5,9 @@
 #include <map>
 #include <algorithm>
 
-//#include "ofFileUtils.h"
+#include "ofFileUtils.h"
 
-#undef ERROR
+#undef ERROR //This is annoying and likely problematic.
 
 using namespace std;
 
@@ -35,7 +35,7 @@ namespace CX {
 		LogLevel level;
 
 		string filename;
-		//ofFile file;
+		ofFile file;
 	};
 
 	struct LogMessage {
