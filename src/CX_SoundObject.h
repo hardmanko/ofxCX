@@ -11,8 +11,10 @@ a fairly large vector of sound samples.
 
 #include <algorithm>
 
-#include "ofLog.h"
 #include "ofFmodSoundPlayer.h"
+
+#include "CX_Clock.h"
+#include "CX_DeferredLogger.h"
 
 namespace CX {
 
@@ -20,8 +22,8 @@ namespace CX {
 	public:
 
 		bool loadFile (string fileName);
-		bool addSound (string fileName, uint64_t timeOffset); //I'm really not sure I want to have this.
-		bool addSound (CX_SoundObject so, uint64_t timeOffset);
+		bool addSound (string fileName, CX_Micros_t timeOffset); //I'm really not sure I want to have this.
+		bool addSound (CX_SoundObject so, CX_Micros_t timeOffset);
 
 		bool isReadyToPlay (void);
 		bool isLoadedSuccessfully (void) { return _successfullyLoaded; };
@@ -33,13 +35,13 @@ namespace CX {
 		float getPositivePeak (void);
 		float getNegativePeak (void);
 
-		void setLength (uint64_t lengthInMicroseconds);
-		uint64_t getLength (void);
+		void setLength (CX_Micros_t length);
+		CX_Micros_t getLength (void);
 
 		void stripLeadingSilence (float tolerance);
 
-		void addSilence (uint64_t durationUs, bool atBeginning);
-		void deleteAmount (uint64_t durationUs, bool fromBeginning);
+		void addSilence (CX_Micros_t duration, bool atBeginning);
+		void deleteAmount (CX_Micros_t duration, bool fromBeginning);
 
 		void resample (float newSampleRate);
 		float getSampleRate (void) { return _soundSampleRate; };
@@ -47,7 +49,6 @@ namespace CX {
 		bool setChannelCount (int channels);
 		int getChannelCount (void) { return _soundChannels; };
 		
-
 		uint64_t getTotalSampleCount (void) { return _soundData.size(); };
 		uint64_t getConcurrentSampleCount (void) { return _soundData.size()/_soundChannels; };
 

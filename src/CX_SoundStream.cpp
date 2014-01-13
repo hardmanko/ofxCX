@@ -1,6 +1,7 @@
 #include "CX_SoundStream.h"
 
 using namespace CX;
+using namespace CX::Instances;
 
 bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 	if (_rtAudio != NULL) {
@@ -11,7 +12,7 @@ bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 	try {
 		_rtAudio = new RtAudio( config.api );
 	} catch (RtError err) {
-		err.printMessage();
+		Log.error("CX_SoundStream") << err.getMessage();
 		return false;
 	}
 
@@ -59,10 +60,10 @@ bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 
 	//If not at max, the desired sample rate must not have been possible and there was a greater sample rate available, so pick that sample rate.
 	if (closestGreaterSampleRate != numeric_limits<unsigned int>::max()) {
-		ofLogWarning("CX_SoundStream") << "Desired sample rate (" << config.sampleRate << ") not available. " << closestGreaterSampleRate << " chosen instead.";
+		Log.warning("CX_SoundStream") << "Desired sample rate (" << config.sampleRate << ") not available. " << closestGreaterSampleRate << " chosen instead.";
 		config.sampleRate = closestGreaterSampleRate;
 	} else if (closestLesserSampleRate != 0) {
-		ofLogWarning("CX_SoundStream") << "Desired sample rate (" << config.sampleRate << ") not available. " << closestLesserSampleRate << " chosen instead.";
+		Log.warning("CX_SoundStream") << "Desired sample rate (" << config.sampleRate << ") not available. " << closestLesserSampleRate << " chosen instead.";
 		config.sampleRate = closestLesserSampleRate;
 	}
 
@@ -84,7 +85,7 @@ bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 		config.sampleRate = _rtAudio->getStreamSampleRate(); //Check that the desired sample rate was used.
 
 	} catch (RtError err) {
-		err.printMessage();
+		Log.error("CX_SoundStream") << err.getMessage();
 		return false;
 	}
 
@@ -115,8 +116,8 @@ bool CX_SoundStream::start (void) {
 
 	try {
 		_rtAudio->startStream();
-	} catch (RtError &error) {
-		error.printMessage();
+	} catch (RtError &err) {
+		Log.error("CX_SoundStream") << err.getMessage();
 		return false;
 	}
 	return true;
@@ -132,8 +133,8 @@ bool CX_SoundStream::stop (void) {
 		if (_rtAudio->isStreamRunning()) {
     		_rtAudio->stopStream();
 		}
-  	} catch (RtError &error) {
-   		error.printMessage();
+  	} catch (RtError &err) {
+   		Log.error("CX_SoundStream") << err.getMessage();
 		return false;
  	}
 	return true;
@@ -151,8 +152,8 @@ bool CX_SoundStream::close (void) {
 		if(_rtAudio->isStreamOpen()) {
     		_rtAudio->closeStream();
 		}
-  	} catch (RtError &error) {
-   		error.printMessage();
+  	} catch (RtError &err) {
+   		Log.error("CX_SoundStream") << err.getMessage();
 		rval = false;
  	}
 
@@ -169,15 +170,15 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 	return false;
 }
 
-uint64_t CX_SoundStream::getStreamLatency (void) {
+CX_Micros_t CX_SoundStream::getStreamLatency (void) {
 	long latencySamples = _rtAudio->getStreamLatency();
-	uint64_t latencyUs = ((uint64_t)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate();
+	CX_Micros_t latencyUs = (CX_Micros_t)(((CX_Micros_t)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
 	return latencyUs;
 }
 
 
-uint64_t CX_SoundStream::estimateNextSwapTime (void) {
-	uint64_t bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
+CX_Micros_t CX_SoundStream::estimateNextSwapTime (void) {
+	CX_Micros_t bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
 	return _lastSwapTime + bufferSwapInterval;
 }
 
@@ -186,12 +187,12 @@ int CX_SoundStream::rtAudioCallbackHandler (void *outputBuffer, void *inputBuffe
 	_lastSwapTime = CX::Instances::Clock.getTime();
 
 	if (status != 0) {
-		ofLogError("CX_SoundStream") << "Buffer underflow/overflow detected.";
+		Log.error("CX_SoundStream") << "Buffer underflow/overflow detected.";
 	}
 
 	//I don't think that I really need to check for this error. I will check for a while and if it never happens, I might remove the check.
 	if (_config.bufferSize != bufferSize) {
-		ofLogError("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is essentially broken.";	
+		Log.error("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is essentially broken.";	
 	}
 
 	if (_config.inputChannels > 0) {
@@ -317,7 +318,7 @@ vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
 	try {
 		tempRt = new RtAudio(api);
 	} catch (RtError err) {
-		ofLogError("CX_SoundStream") << "Exception while getting device list: " << err.getMessage();
+		Log.error("CX_SoundStream") << "Exception while getting device list: " << err.getMessage();
 		return devices;
 	}
 
@@ -326,7 +327,7 @@ vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
 		try {
 			devices.push_back( tempRt->getDeviceInfo(i) );
 		} catch (RtError err) {
-			ofLogError("CX_SoundStream") << "Exception while getting device " << i << ": " << err.getMessage();
+			Log.error("CX_SoundStream") << "Exception while getting device " << i << ": " << err.getMessage();
 			return devices;
 		}
 	}

@@ -7,6 +7,8 @@ This class is used for playing CX_SoundObjects.
 
 #include "CX_SoundObject.h"
 #include "CX_SoundStream.h"
+#include "CX_Clock.h"
+#include "CX_DeferredLogger.h"
 
 #include "ofEvents.h"
 
@@ -23,7 +25,7 @@ namespace CX  {
 		bool setup (CX_SoundObjectPlayerConfiguration_t config);
 
 		bool play (void);
-		bool startPlayingAt (uint64_t time);
+		bool startPlayingAt (CX_Micros_t experimentTime);
 		bool stop (void);
 
 		bool isPlaying (void) { return _playing; };
@@ -44,8 +46,8 @@ namespace CX  {
 		uint64_t _playbackStartConcurrentSample;
 		uint64_t _currentConcurrentSample;
 
-		uint64_t _startTime;
-		uint64_t _startTimeOffset;
+		CX_Micros_t _startTime;
+		CX_Micros_t _startTimeOffset;
 
 		void _exitHandler (ofEventArgs &a);
 	

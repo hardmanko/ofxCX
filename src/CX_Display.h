@@ -13,6 +13,7 @@
 #include "ofGlProgrammableRenderer.h"
 
 #include "CX_Clock.h"
+#include "CX_DeferredLogger.h"
 #include "CX_SwappingThread.h"
 
 namespace CX {
@@ -38,16 +39,16 @@ namespace CX {
 		void BLOCKING_setSwappingState (bool autoSwap);
 		bool isAutomaticallySwapping (void);
 		bool hasSwappedSinceLastCheck (void);
-		uint64_t getLastSwapTime (void);
+		CX_Micros_t getLastSwapTime (void);
 
-		uint64_t getFramePeriod (void);
+		CX_Micros_t getFramePeriod (void);
 		void setWindowResolution (int width, int height);
 		ofRectangle getResolution (void);
 		ofPoint getCenterOfDisplay (void);
 		uint64_t getFrameNumber (void);
 
-		void BLOCKING_estimateFramePeriod (uint64_t estimationInterval); //Also estimate standard deviation. Return a struct with this info?
-		uint64_t estimateNextSwapTime (void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
+		void BLOCKING_estimateFramePeriod (CX_Micros_t estimationInterval); //Also estimate standard deviation. Return a struct with this info?
+		CX_Micros_t estimateNextSwapTime (void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
 
 		void BLOCKING_waitForOpenGL (void);
 
@@ -56,7 +57,7 @@ namespace CX {
 
 		CX_ConstantlySwappingThread *_swapThread;
 
-		uint64_t _framePeriod;
+		CX_Micros_t _framePeriod;
 
 	};
 

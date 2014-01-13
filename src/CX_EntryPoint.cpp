@@ -28,7 +28,7 @@ void CX::Private::App::update (void) {
 	//Call the user update function
 	updateExperiment();
 
-	ofSleepMillis(0); //sleep(0) is similar to yield()
+	//ofSleepMillis(0); //sleep(0) is similar to yield()
 }
 
 void CX::Private::App::exit (ofEventArgs &a) {
@@ -38,7 +38,8 @@ void CX::Private::App::exit (ofEventArgs &a) {
 }
 
 void glfwErrorCallback (int code, const char *message) {
-	ofLogError("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
+	//ofLogError("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
+	Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
 }
 
 int CX::setupWindow (CX_WindowConfiguration_t config) {
@@ -51,7 +52,7 @@ int CX::setupWindow (CX_WindowConfiguration_t config) {
 	ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), 800, 600, OF_WINDOW);
 
-	ofGetCurrentRenderer()->update();
+	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer
 
 	window->initializeWindow();
 
@@ -64,7 +65,11 @@ int CX::setupWindow (CX_WindowConfiguration_t config) {
 
 
 int main (void) {
+	Log.levelForConsole(LogLevel::LOG_ALL);
+	Log.levelForFile(LogLevel::LOG_ALL);
+	Log.levelForFile(LogLevel::LOG_ALL, "Log for last run.txt");
 
+	ofLogToConsole();
 	ofSetLogLevel(OF_LOG_VERBOSE);
 	
 	ofSetWorkingDirectoryToDefault();
@@ -77,6 +82,7 @@ int main (void) {
 
 	CX::Private::App A;
 	A.setup();
+	Log.flush();
 	while(true){
 		A.update();
 	}

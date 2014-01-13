@@ -26,8 +26,8 @@ namespace CX {
 	struct CX_KeyEvent_t {
 		int key;
 
-		uint64_t eventTime;
-		uint64_t uncertainty;
+		CX_Micros_t eventTime;
+		CX_Micros_t uncertainty;
 
 		enum {
 			PRESSED,
@@ -50,7 +50,7 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
-		uint64_t _lastEventPollTime;
+		CX_Micros_t _lastEventPollTime;
 
 		queue<CX_KeyEvent_t> _keyEvents;
 		set<int> _heldKeys;

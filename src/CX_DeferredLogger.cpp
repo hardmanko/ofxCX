@@ -12,19 +12,20 @@ CX_Logger::CX_Logger (void) :
 
 CX_Logger::~CX_Logger (void) {
 	flush();
+	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+		_targetInfo[i].file->close();
+		delete _targetInfo[i].file;
+	}
 }
 
-//This function is called at the start of a new messsage. It also concludes the previous message (if any).
+//This function is called at the start of a new messsage.
 stringstream& CX_Logger::_log (LogLevel level, string module) {
 	
 	_messageQueue.push_back( LogMessage(level, module) );
 	_messageQueue.back().message = new stringstream; //Manually allocated: Must deallocate later. Cannot allocate in LogMessage ctor for some reason.
 
 	if (timestamps) {
-		//_currentMessage.timestamp = timestamp; //Avoids timestamp formatting at call site.
-
-		//*_currentMessage.ss << timestampString;
-		//CX::Instances::Clock::getDateTimeString
+		_messageQueue.back().timestamp = CX::Instances::Clock.getDateTimeString("%H:%M:%S");
 	}
 
 	return *(_messageQueue.back().message);
@@ -34,17 +35,25 @@ void CX_Logger::flush (void) {
 
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == LogTarget::FILE) {
-			_targetInfo[i].file.open(_targetInfo[i].filename, ofFile::Append, false);
+			bool opened = _targetInfo[i].file->open(_targetInfo[i].filename, ofFile::Append, false);
+			if (!opened) {
+				cerr << "File " << _targetInfo[i].filename << " not opened for logging." << endl;
+			}
 		}
 	}
 
 	for (auto it = _messageQueue.begin(); it != _messageQueue.end(); it++) {
-
-		//ofNotifyEvent(this->messageFlushEvent, LogEventData( it->message->str(), it->level, it->module ) );
+		LogEventData dat( it->message->str(), it->level, it->module );
+		ofNotifyEvent(this->messageFlushEvent, dat );
 
 		string logName = _getLogLevelName(it->level);
 		logName.append( max<int>((int)(7 - logName.size()), 0), ' ' ); //Pad out names to 7 chars
-		string formattedMessage = "[ " + logName + " ] ";
+		string formattedMessage;
+		if (timestamps) {
+			formattedMessage += it->timestamp + " ";
+		}
+
+		formattedMessage += "[ " + logName + " ] ";
 
 		if (it->module != "") {
 			formattedMessage += "<" + it->module + "> ";
@@ -60,7 +69,7 @@ void CX_Logger::flush (void) {
 					if (_targetInfo[i].targetType == LogTarget::CONSOLE) {
 						cout << formattedMessage;
 					} else if (_targetInfo[i].targetType == LogTarget::FILE) {
-						_targetInfo[i].file << formattedMessage;
+						*_targetInfo[i].file << formattedMessage;
 					}
 				}
 			}
@@ -71,28 +80,12 @@ void CX_Logger::flush (void) {
 
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == LogTarget::FILE) {
-			_targetInfo[i].file.close();
+			_targetInfo[i].file->close();
 		}
 	}
 
 	_messageQueue.clear();
 }
-
-/*
-void CX_Logger::to (LogTarget target, string filename) {
-	_logTarget = target;
-	if (target == LogTarget::FILE || target == LogTarget::CONSOLE_AND_FILE) {
-		//If no filename is given, generate a file name based on date/time.
-		//if (filename == "") {
-		//string filename = CX::Clock.getDateTimeString();
-		//	}
-		//Check that it is a valid file and give error if not.
-		//_outputFile.close();
-		//_outputFile.open( ofToDataPath(filename), ofFile::Reference, false );
-		_logFileName = filename;
-	}
-}
-*/
 
 void CX_Logger::levelForConsole(LogLevel level) {
 	bool consoleFound = false;
@@ -112,16 +105,15 @@ void CX_Logger::levelForConsole(LogLevel level) {
 }
 
 void CX_Logger::levelForFile(LogLevel level, string filename) {
-	//If an output target with the given filename is not found, create it with the given level.
-	//If it is found, set the level to the new level.
-	//If filename == "", use the default filename as the target. Use CX::Clock.getExperimentStartDateTime() to create the file name.
 	if (filename == "CX_DEFERRED_LOGGER_DEFAULT") {
-		//filename = CX::Clock.getExperimentStartDateTime();
+		filename = "Log file " + CX::Instances::Clock.getExperimentStartDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
 	}
+
+	filename = ofToDataPath(filename); //Testing
 	
 	bool fileFound = false;
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
-		if (_targetInfo[i].targetType == LogTarget::FILE) {
+		if ((_targetInfo[i].targetType == LogTarget::FILE) && (_targetInfo[i].filename == filename)) {
 			fileFound = true;
 			_targetInfo[i].level = level;
 		}
@@ -132,12 +124,19 @@ void CX_Logger::levelForFile(LogLevel level, string filename) {
 		fileTarget.targetType = LogTarget::FILE;
 		fileTarget.level = level;
 		fileTarget.filename = filename;
+		fileTarget.file = new ofFile(); //This is deallocated in the dtor
 
-		if (!fileTarget.file.open(filename, ofFile::Reference, false)) {
-			//error...
-			//return false;
+		fileTarget.file->open(filename, ofFile::Reference, false);
+		if (fileTarget.file->exists()) {
+			cerr << "Log file already exists with name: " << filename << ". It will be overwritten." << endl;
 		}
-		fileTarget.file.close();
+		
+		fileTarget.file->open(filename, ofFile::WriteOnly, false);
+		if (fileTarget.file->is_open()) {
+			cout << "File opened" << endl;
+		}
+		*fileTarget.file << "CX log file. Created " << CX::Instances::Clock.getDateTimeString() << endl;
+		fileTarget.file->close();
 		
 		_targetInfo.push_back(fileTarget);
 	}

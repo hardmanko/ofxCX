@@ -46,11 +46,11 @@ bool CX_ConstantlySwappingThread::swappedSinceLastCheck (void) {
 	return rval;
 }
 
-uint64_t CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
-	uint64_t typicalSwapPeriod = 0;
+CX_Micros_t CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
+	CX_Micros_t typicalSwapPeriod = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
-			uint64_t swapPeriodSum = 0;
+			CX_Micros_t swapPeriodSum = 0;
 			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
 				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
 			}
@@ -61,8 +61,8 @@ uint64_t CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
 	return typicalSwapPeriod;
 }
 
-uint64_t CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
-	uint64_t nextSwapTime = 0;
+CX_Micros_t CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
+	CX_Micros_t nextSwapTime = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
 			nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
@@ -72,8 +72,8 @@ uint64_t CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
 	return nextSwapTime;
 }
 
-uint64_t CX_ConstantlySwappingThread::getLastSwapTime (void) {
-	uint64_t lastSwapTime = 0;
+CX_Micros_t CX_ConstantlySwappingThread::getLastSwapTime (void) {
+	CX_Micros_t lastSwapTime = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() > 0) {
 			lastSwapTime = _recentSwapTimes.back();
@@ -83,8 +83,8 @@ uint64_t CX_ConstantlySwappingThread::getLastSwapTime (void) {
 	return lastSwapTime;
 }
 
-uint64_t CX_ConstantlySwappingThread::getLastSwapPeriod (void) {
-	uint64_t lastSwapPeriod = 0;
+CX_Micros_t CX_ConstantlySwappingThread::getLastSwapPeriod (void) {
+	CX_Micros_t lastSwapPeriod = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
 			lastSwapPeriod = _recentSwapTimes.at( _recentSwapTimes.size() - 1 ) - _recentSwapTimes.at( _recentSwapTimes.size() - 2 );

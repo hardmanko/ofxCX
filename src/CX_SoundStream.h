@@ -7,9 +7,9 @@
 #include "ofBaseSoundStream.h"
 #include "ofTypes.h"
 #include "ofEvents.h"
-#include "ofLog.h"
 
 #include "CX_Clock.h"
+#include "CX_DeferredLogger.h"
 
 #define CX_SOUND_STREAM_USE_DEFAULT_DEVICE -1
 
@@ -90,11 +90,11 @@ namespace CX {
 		ofEvent<CX_SSOutputCallback_t> outputCallbackEvent;
 		ofEvent<CX_SSInputCallback_t> inputCallbackEvent;
 
-		uint64_t getStreamLatency (void);
+		CX_Micros_t getStreamLatency (void);
 
 		bool hasSwappedSinceLastCheck (void);
-		uint64_t getLastSwapTime (void) { return _lastSwapTime; };
-		uint64_t estimateNextSwapTime (void);
+		CX_Micros_t getLastSwapTime (void) { return _lastSwapTime; };
+		CX_Micros_t estimateNextSwapTime (void);
 
 		static vector<RtAudio::Api> getCompiledApis (void);
 		static vector<string> convertApisToStrings (vector<RtAudio::Api> apis);
@@ -113,7 +113,7 @@ namespace CX {
 		RtAudio *_rtAudio;
 		CX_SoundStreamConfiguration_t _config;
 
-		uint64_t _lastSwapTime;
+		CX_Micros_t _lastSwapTime;
 		uint64_t _lastSampleNumber;
 		uint64_t _sampleNumberAtLastCheck;
 	};

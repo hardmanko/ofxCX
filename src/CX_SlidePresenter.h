@@ -5,6 +5,7 @@
 
 #include "ofFbo.h"
 
+#include "CX_DeferredLogger.h"
 #include "CX_Utilities.h"
 #include "CX_Display.h"
 
@@ -35,12 +36,12 @@ namespace CX {
 		uint32_t actualFrameCount;
 		uint32_t actualOnsetFrameNumber;
 
-		uint64_t intendedSlideDuration; //These durations (in microseconds) are good for about 600,000 years.
-		uint64_t actualSlideDuration;
-		uint64_t intendedSlideOnset; 
-		uint64_t actualSlideOnset;
+		CX_Micros_t intendedSlideDuration; //These durations (in microseconds) are good for about 600,000 years.
+		CX_Micros_t actualSlideDuration;
+		CX_Micros_t intendedSlideOnset; 
+		CX_Micros_t actualSlideOnset;
 
-		uint64_t copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
+		CX_Micros_t copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
 	
 	};
 
@@ -54,10 +55,10 @@ namespace CX {
 
 	
 		void appendSlide (CX_Slide_t slide); //This is kind of sucky because people have to manually allocate the FBOs
-		void appendSlideFunction (void (*drawingFunction) (void), uint64_t duration, string slideName = "");
+		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t duration, string slideName = "");
 
 		//Much easier way of doing things.
-		void beginDrawingNextSlide (uint64_t duration, string slideName = "");
+		void beginDrawingNextSlide (CX_Micros_t duration, string slideName = "");
 		void endDrawingCurrentSlide (void);
 
 		void clearSlides (void);
@@ -71,7 +72,7 @@ namespace CX {
 		string getActiveSlideName (void);
 
 		vector<CX_Slide_t> getSlides (void);
-		vector<uint64_t> getActualPresentationDurations (void);
+		vector<CX_Micros_t> getActualPresentationDurations (void);
 
 		int checkForPresentationErrors (void);
 

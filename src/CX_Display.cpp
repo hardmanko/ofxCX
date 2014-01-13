@@ -6,6 +6,7 @@
 #include "CX_Utilities.h" //glfwContext
 
 using namespace CX;
+using namespace CX::Instances;
 
 CX_Display::CX_Display (void) :
 	_framePeriod(0),
@@ -28,7 +29,7 @@ void CX_Display::setup (void) {
 
 	_renderer = ofGetGLProgrammableRenderer();
 	if (!_renderer) {
-		ofLogWarning("CX_Display") << "Programmable renderer not available.";
+		Log.warning("CX_Display") << "Programmable renderer not available.";
 	}
 
 	_swapThread = new CX_ConstantlySwappingThread(); //This is a work-around for some stupidity in OF or Poco (can't tell which) where 
@@ -62,7 +63,7 @@ bool CX_Display::isAutomaticallySwapping (void) {
 	return _swapThread->isThreadRunning();
 }
 
-uint64_t CX_Display::getLastSwapTime (void) {
+CX_Micros_t CX_Display::getLastSwapTime (void) {
 	return _swapThread->getLastSwapTime();
 }
 
@@ -70,7 +71,7 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 	return _swapThread->swappedSinceLastCheck();
 }
 
-uint64_t CX_Display::getFramePeriod (void) {
+CX_Micros_t CX_Display::getFramePeriod (void) {
 	return _framePeriod;
 	//return _swapThread->getTypicalSwapPeriod();
 }
@@ -166,7 +167,7 @@ This version of the function just does a spinloop while the swapping thread swap
 This function does nothing if there is some kind of introduction to the experiment where the swapping thread
 will have time to learn what the period is.
 */
-void CX_Display::BLOCKING_estimateFramePeriod (uint64_t estimationInterval) {
+void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros_t estimationInterval) {
 	/*
 	bool wasSwapping = isAutomaticallySwapping();
 	BLOCKING_setSwappingState(true);
@@ -184,16 +185,16 @@ void CX_Display::BLOCKING_estimateFramePeriod (uint64_t estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();
 	BLOCKING_setSwappingState(false);
 
-	vector<uint64_t> swapTimes;
+	vector<CX_Micros_t> swapTimes;
 
-	uint64_t startTime = CX::Instances::Clock.getTime();
+	CX_Micros_t startTime = CX::Instances::Clock.getTime();
 	while (CX::Instances::Clock.getTime() - startTime < estimationInterval) {
 		BLOCKING_swapFrontAndBackBuffers();
 		swapTimes.push_back( CX::Instances::Clock.getTime() );
 	}
 
 	if (swapTimes.size() > 1) {
-		uint64_t swapSum = 0;
+		CX_Micros_t swapSum = 0;
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			swapSum += swapTimes[i] - swapTimes[i - 1];
 		}
@@ -205,7 +206,7 @@ void CX_Display::BLOCKING_estimateFramePeriod (uint64_t estimationInterval) {
 }
 
 //Should this be changed to use _framePeriod?
-uint64_t CX_Display::estimateNextSwapTime (void) {
+CX_Micros_t CX_Display::estimateNextSwapTime (void) {
 	return _swapThread->estimateNextSwapTime();
 }
 

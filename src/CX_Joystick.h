@@ -19,8 +19,8 @@ namespace CX {
 		int axisIndex;
 		float axisPosition;
 
-		uint64_t eventTime;
-		uint64_t uncertainty;
+		CX_Micros_t eventTime;
+		CX_Micros_t uncertainty;
 
 		enum {
 			BUTTON_PRESS,
@@ -57,7 +57,7 @@ namespace CX {
 		vector<float> _axisPositions;
 		vector<unsigned char> _buttonStates;
 
-		uint64_t _lastEventPollTime;
+		CX_Micros_t _lastEventPollTime;
 	};
 
 }

@@ -25,16 +25,16 @@ namespace CX {
 		CX_Micros_t getSystemTime(void);
 
 		CX_Micros_t getExperimentStartTime(void);
-		std::string getExperimentStartDateTimeString(std::string format = "%Y/%b/%e %h:%M:%S %a");
+		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 
-		static std::string getDateTimeString (std::string format = "%Y/%b/%e %h:%M:%S %a");
+		static std::string getDateTimeString (std::string format = "%Y-%b-%e %h-%M-%S %a");
 
 	private:
 		void _resetExperimentStartTime (void);
 
 		std::chrono::high_resolution_clock::time_point _experimentStart;
 
-		Poco::Timestamp _pocoExperimentStart;
+		Poco::LocalDateTime _pocoExperimentStart;
 		
 	};
 

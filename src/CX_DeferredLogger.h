@@ -8,7 +8,11 @@
 #include <map>
 #include <algorithm>
 
+#include "ofUtils.h"
 #include "ofFileUtils.h"
+#include "ofEvents.h"
+
+#include "CX_Clock.h"
 
 //#undef ERROR //This is annoying and likely problematic.
 
@@ -38,7 +42,7 @@ namespace CX {
 		LogLevel level;
 
 		string filename;
-		ofFile file;
+		ofFile *file;
 	};
 
 	struct LogMessage {
@@ -51,6 +55,7 @@ namespace CX {
 		stringstream* message;
 		LogLevel level;
 		string module;
+		string timestamp;
 	};
 
 	struct LogEventData {
@@ -80,15 +85,11 @@ namespace CX {
 		void levelForConsole (LogLevel level);
 		void levelForFile(LogLevel level, string filename = "CX_DEFERRED_LOGGER_DEFAULT");
 
-		//void to (LogTarget target, string filename = "");
-		//void toConsole (bool yes);
-		//void toFile (bool yes, string filename = "", LogLevel level = LogLevel::LOG_ALL);
-
 		void flush (void); //BLOCKING
 
 		bool timestamps;
 
-		//ofEvent<LogEventData> messageFlushEvent;
+		ofEvent<LogEventData> messageFlushEvent;
 
 	private:
 

@@ -17,7 +17,8 @@ CX_Clock::CX_Clock (void) {
 }
 
 void CX_Clock::_resetExperimentStartTime(void) {
-	_pocoExperimentStart = Poco::Timestamp();
+	//_pocoExperimentStart = Poco::Timestamp();
+	_pocoExperimentStart = Poco::LocalDateTime();
 	_experimentStart = std::chrono::high_resolution_clock().now();
 }
 
@@ -55,8 +56,8 @@ std::string CX_Clock::getExperimentStartDateTimeString(std::string format) {
 
 /*!
 See http://pocoproject.org/docs/Poco.DateTimeFormatter.html#4684 for documentation of the format.
-E.g. "%Y/%m/%d %H:%M:%S" gives "year/month/day 24-hour-clock:minute:second" with some zero-padding for most things.
-The default "%Y/%b/%e %h:%M:%S %a" is "year-with-century/abbreviated-month-name/non-zero-padded-day 12-hour-clock:minute-zero-padded:second-zero-padded am/pm".
+E.g. "%Y/%m/%d %H:%M:%S" gives "year/month/day 24HourClock:minute:second" with some zero-padding for most things.
+The default "%Y-%b-%e %h-%M-%S %a" is "yearWithCentury-abbreviatedMonthName-nonZeroPaddedDay 12HourClock-minuteZeroPadded-secondZeroPadded am/pm".
 */
 std::string CX_Clock::getDateTimeString (std::string format) {
 	Poco::LocalDateTime localTime;

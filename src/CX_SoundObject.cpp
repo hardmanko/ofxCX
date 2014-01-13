@@ -1,6 +1,7 @@
 #include "CX_SoundObject.h"
 
 using namespace CX;
+using namespace CX::Instances;
 
 /*!
 Loads a sound file with the given file name into the CX_SoundObject. Any pre-existing data in the sound object is deleted.
@@ -17,7 +18,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 	ofFmodSoundPlayer fmPlayer;
 	bool loadSuccessful = fmPlayer.loadSound(fileName, false);
 	if (!loadSuccessful) {
-		ofLogError("CX_SoundObject") << "Error loading " << fileName;
+		Log.error("CX_SoundObject") << "Error loading " << fileName;
 		fmPlayer.unloadSound(); //Just in case.
 		_successfullyLoaded = false;
 		return _successfullyLoaded;
@@ -32,7 +33,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 
 	FMOD_RESULT formatResult = FMOD_Sound_GetFormat( fmSound, &soundType, &soundFormat, &channels, &bits );
 	if (formatResult != FMOD_OK) {
-		ofLogError("CX_SoundObject") << "Error getting sound format of " << fileName;
+		Log.error("CX_SoundObject") << "Error getting sound format of " << fileName;
 		fmPlayer.unloadSound();
 		_successfullyLoaded = false;
 		return _successfullyLoaded;
@@ -52,7 +53,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 
 	switch (soundFormat) {
 	case FMOD_SOUND_FORMAT_PCM8:
-		ofLogError("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (8-bit PCM). FMOD_SOUND_FORMAT_PCM8 not yet supported.";
+		Log.error("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (8-bit PCM). FMOD_SOUND_FORMAT_PCM8 not yet supported.";
 		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_PCM16:
@@ -70,7 +71,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 					_soundData[i] = ((float)(((int16_t*)ptr1)[i]))/32768;
 				}
 			} else {
-				ofLogError("CX_SoundOutput") << "Error locking sound data";
+				Log.error("CX_SoundOutput") << "Error locking sound data";
 				_successfullyLoaded = false;
 			}
 
@@ -79,12 +80,12 @@ bool CX_SoundObject::loadFile (string fileName) {
 		break;
 	case FMOD_SOUND_FORMAT_PCM24:
 		//This is annoying because the sign must be extended. Maybe should also be processed as 64-bit float.
-		ofLogError("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (24-bit PCM). FMOD_SOUND_FORMAT_PCM24 not yet supported.";
+		Log.error("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (24-bit PCM). FMOD_SOUND_FORMAT_PCM24 not yet supported.";
 		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_PCM32:
 		//This is annoying because it must be processed as 64-bit float before being converted back to 32-bit float.
-		ofLogError("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (32-bit PCM). FMOD_SOUND_FORMAT_PCM32 not yet supported.";
+		Log.error("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (32-bit PCM). FMOD_SOUND_FORMAT_PCM32 not yet supported.";
 		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_PCMFLOAT:
@@ -99,7 +100,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 				_soundData.resize( totalSamples );
 				memcpy(_soundData.data(), ptr1, totalSamples * sizeof(float));
 			} else {
-				ofLogError("CX_SoundOutput") << "Error locking sound data";
+				Log.error("CX_SoundOutput") << "Error locking sound data";
 				_successfullyLoaded = false;
 			}
 
@@ -107,7 +108,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 		}
 		break;
 	case FMOD_SOUND_FORMAT_NONE:
-		ofLogError("CX_SoundOutput") << "File " << fileName << " of unknown format.";
+		Log.error("CX_SoundOutput") << "File " << fileName << " of unknown format.";
 		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_GCADPCM:
@@ -115,7 +116,7 @@ bool CX_SoundObject::loadFile (string fileName) {
 	case FMOD_SOUND_FORMAT_VAG:
 	case FMOD_SOUND_FORMAT_XMA:
 	case FMOD_SOUND_FORMAT_MPEG:
-		ofLogError("CX_SoundOutput") << "File " << fileName << " is of unsupported file format (compressed/video game console). There as no plans to ever support these formats.";
+		Log.error("CX_SoundOutput") << "File " << fileName << " is of unsupported file format (compressed/video game console). There as no plans to ever support these formats.";
 		_successfullyLoaded = false;
 		break;
 	};
@@ -139,7 +140,7 @@ See those functions for more information.
 
 @return Returns true if the new sound was added sucessfully, false otherwise.
 */
-bool CX_SoundObject::addSound (string fileName, uint64_t timeOffset) {
+bool CX_SoundObject::addSound (string fileName, CX_Micros_t timeOffset) {
 	if (_soundData.size() == 0 || !this->_successfullyLoaded) {
 		bool loadSuccess = this->loadFile(fileName);
 		if (loadSuccess) {
@@ -168,7 +169,7 @@ The data from nso and this CX_SoundObject are merged by adding the amplitudes of
 
 @return True if nso was successfully added to this CX_SoundObject, false otherwise.
 */
-bool CX_SoundObject::addSound (CX_SoundObject nso, uint64_t timeOffset) {
+bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros_t timeOffset) {
 	if (!nso._successfullyLoaded) {
 		return false;
 	}
@@ -219,8 +220,8 @@ bool CX_SoundObject::isReadyToPlay (void) {
 Set the length of the sound to the specified length in microseconds. If the new length is longer than the old length,
 the new data is zeroed (i.e. set to silence).
 */
-void CX_SoundObject::setLength (uint64_t lengthInMicroseconds) {
-	unsigned int endOfDurationSample = _soundChannels * (unsigned int)(getSampleRate() * ((double)lengthInMicroseconds / 1000000));
+void CX_SoundObject::setLength (CX_Micros_t length) {
+	unsigned int endOfDurationSample = _soundChannels * (unsigned int)(getSampleRate() * ((double)length / 1000000));
 
 	_soundData.resize( endOfDurationSample, 0 );
 }
@@ -228,7 +229,7 @@ void CX_SoundObject::setLength (uint64_t lengthInMicroseconds) {
 /*!
 Gets the length of the current sound in microseconds.
 */
-uint64_t CX_SoundObject::getLength (void) {
+CX_Micros_t CX_SoundObject::getLength (void) {
 	return ((uint64_t)_soundData.size() * 1000000)/(getChannelCount() * (uint64_t)getSampleRate());
 }
 
@@ -284,9 +285,9 @@ Adds the specified amount of silence to the CX_SoundObject at either the beginni
 so does the duration of silence.
 @param atBeginning If true, silence is added at the beginning of the CX_SoundObject. If false, the silence is added at the end.
 */
-void CX_SoundObject::addSilence (uint64_t durationUs, bool atBeginning) {
+void CX_SoundObject::addSilence (CX_Micros_t duration, bool atBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count for the new silence.
-	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * ((double)durationUs / 1000000));
+	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * ((double)duration / 1000000));
 
 	if (atBeginning) {
 		_soundData.insert( _soundData.begin(), absoluteSampleCount, 0 );
@@ -303,9 +304,9 @@ so does the duration of removed sound.
 @param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer. 
 If false, the sound is deleted from the end, toward the beginning.
 */
-void CX_SoundObject::deleteAmount (uint64_t durationUs, bool fromBeginning) {
+void CX_SoundObject::deleteAmount (CX_Micros_t duration, bool fromBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count to delete.
-	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * ((double)durationUs / 1000000));
+	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * ((double)duration / 1000000));
 
 	if (absoluteSampleCount >= _soundData.size()) {
 		_soundData.clear();
@@ -414,8 +415,8 @@ bool CX_SoundObject::setChannelCount (int newChannelCount) {
 		//won't be used any more. Another is to average the removed channels and add that data back into the channels
 		//that will be staying.
 	}
-
-	ofLogError("CX_SoundObject") << "Sound cannot be set to the given number of channels. There is no known conversion from " <<
+	
+	Log.error("CX_SoundObject") << "Sound cannot be set to the given number of channels. There is no known conversion from " <<
 						_soundChannels << " channels to " << newChannelCount << 
 						" channels. You will have to do it manually. Use getRawDataReference() to access the sound data." << endl;
 

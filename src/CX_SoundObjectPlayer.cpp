@@ -1,6 +1,7 @@
 #include "CX_SoundObjectPlayer.h"
 
 using namespace CX;
+using namespace CX::Instances;
 
 CX_SoundObjectPlayer::CX_SoundObjectPlayer (void) :
 	_startTime(numeric_limits<uint64_t>::max())
@@ -42,12 +43,12 @@ bool CX_SoundObjectPlayer::play (void) {
 	return false;
 }
 
-bool CX_SoundObjectPlayer::startPlayingAt (uint64_t time) {
+bool CX_SoundObjectPlayer::startPlayingAt (CX_Micros_t experimentTime) {
 	//_startTime = time - (_sampleOffset * 1000000) / _soundStream.getConfiguration().sampleRate;
-	_startTime = time - _startTimeOffset; //_startTimeOffset is always negative.
+	_startTime = experimentTime - _startTimeOffset; //_startTimeOffset is always negative.
 
-	uint64_t lastSwap = _soundStream.getLastSwapTime();
-	uint64_t timeFromLastSwap = _startTime - lastSwap;
+	CX_Micros_t lastSwap = _soundStream.getLastSwapTime();
+	CX_Micros_t timeFromLastSwap = _startTime - lastSwap;
 	uint64_t samplesFromLastSwap = (timeFromLastSwap * _soundStream.getConfiguration().sampleRate)/1000000;
 	
 	uint64_t lastSampleNumber = _soundStream.getLastSampleNumber(); //This is the next sample that will be sent.
@@ -60,7 +61,7 @@ bool CX_SoundObjectPlayer::startPlayingAt (uint64_t time) {
 
 bool CX_SoundObjectPlayer::stop (void) {
 	_playing = false;
-	_startTime = std::numeric_limits<uint64_t>::max();
+	_startTime = std::numeric_limits<CX_Micros_t>::max();
 	return true;
 }
 
@@ -129,7 +130,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 
 	//I'm not entirely sure what this check is for. What exactly am I wanting to know about the status of the sound object?
 	if (!sound->isLoadedSuccessfully()) {
-		ofLogError("CX_SoundObjectPlayer") << "Sound is not loaded successfully. It will not be set as the active sound.";
+		Log.error("CX_SoundObjectPlayer") << "Sound is not loaded successfully. It will not be set as the active sound.";
 		return false;
 	}
 
@@ -138,14 +139,14 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 
 	if (streamConfig.outputChannels != sound->getChannelCount()) {
 		if (!sound->setChannelCount(streamConfig.outputChannels)) {
-			ofLogError("CX_SoundObjectPlayer") << "It was not possible to change the number of channels of the sound to the number used by the sound player.";
+			Log.error("CX_SoundObjectPlayer") << "It was not possible to change the number of channels of the sound to the number used by the sound player.";
 			return false;
 		}
-		ofLogWarning("CX_SoundObjectPlayer") << "Channel count changed: Sound fidelity may have been lost.";
+		Log.warning("CX_SoundObjectPlayer") << "Channel count changed: Sound fidelity may have been lost.";
 	}
 
 	if (streamConfig.sampleRate != sound->getSampleRate()) {
-		ofLogWarning("CX_SoundObjectPlayer") << "Sound resampled: Sound fidelity may have been lost.";
+		Log.warning("CX_SoundObjectPlayer") << "Sound resampled: Sound fidelity may have been lost.";
 		sound->resample( (float)streamConfig.sampleRate );
 	}
 

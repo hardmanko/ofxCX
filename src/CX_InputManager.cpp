@@ -35,7 +35,7 @@ bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex)
 bool CX_InputManager::pollEvents (void) {
 
 	glfwPollEvents();
-	uint64_t pollCompleteTime = CX::Instances::Clock.getTime();
+	CX_Micros_t pollCompleteTime = CX::Instances::Clock.getTime();
 
 	if (_usingKeyboard) {
 		Keyboard._lastEventPollTime = pollCompleteTime;
