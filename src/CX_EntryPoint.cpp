@@ -65,9 +65,9 @@ int CX::setupWindow (CX_WindowConfiguration_t config) {
 
 
 int main (void) {
-	Log.levelForConsole(LogLevel::LOG_ALL);
-	Log.levelForFile(LogLevel::LOG_ALL);
-	Log.levelForFile(LogLevel::LOG_ALL, "Log for last run.txt");
+	//Log.levelForConsole(LogLevel::LOG_ALL);
+	//Log.levelForFile(LogLevel::LOG_ALL);
+	//Log.levelForFile(LogLevel::LOG_ALL, "Log for last run.txt");
 
 	ofLogToConsole();
 	ofSetLogLevel(OF_LOG_VERBOSE);

@@ -73,6 +73,13 @@ void setupExperiment (void) {
 	player.play();
 	while (player.isPlaying())
 		;
+
+	cout << "Plying a fast duck (2x speed)" << endl;
+	duck.multiplySpeed(2);
+	//player.BLOCKING_setSound( &duck ); //This does not need to be called because the player already has a pointer to the duck sound.
+	player.play();
+	while (player.isPlaying())
+		;
 	
 	//Here a compound sound composed of a cow followed by a duck (after 6 seconds).
 	//If you want to present several auditory stimuli one after the other

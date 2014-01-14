@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <algorithm>
+#include <functional>
 
 #include "ofUtils.h"
 #include "ofFileUtils.h"
@@ -20,14 +21,21 @@ using namespace std;
 
 namespace CX {
 
-	//Consider manually numbering these
+	/*! \enum LogLevel
+	Log levels for log messages. Depending on the log level chosen, the name of the level will be printed before the message.
+	Depending on the settings set using level(), levelForConsole(), or levelForFile(), if the log level of a message is below
+	the level set for the module or logging target it will not be printed. For example, if LOG_ERROR is the level for the console
+	and LOG_NOTICE is the level for the module "test", then messages logged to the "test" module will be completely ignored if
+	at verbose level (because of the module setting) and will not be printed to the console if they are below the error level.
+	*/
+	//These rely on ordering; do not change it.
 	enum class LogLevel {
 		LOG_ALL,
-		VERBOSE,
-		NOTICE,
-		WARNING,
+		LOG_VERBOSE,
+		LOG_NOTICE,
+		LOG_WARNING,
 		LOG_ERROR,
-		FATAL_ERROR,
+		LOG_FATAL_ERROR,
 		LOG_NONE
 	};
 
@@ -37,6 +45,7 @@ namespace CX {
 		CONSOLE_AND_FILE
 	};	
 
+	//Used internally
 	struct LoggerTargetInfo {
 		LogTarget targetType;
 		LogLevel level;
@@ -45,8 +54,8 @@ namespace CX {
 		ofFile *file;
 	};
 
+	//Used internally
 	struct LogMessage {
-
 		LogMessage (LogLevel level_, string module_) :
 			level(level_),
 			module(module_)
@@ -58,8 +67,8 @@ namespace CX {
 		string timestamp;
 	};
 
-	struct LogEventData {
-		LogEventData (string message_, LogLevel level_, string module_) :
+	struct MessageFlushData {
+		MessageFlushData (string message_, LogLevel level_, string module_) :
 			message(message_),
 			level(level_),
 			module(module_)
@@ -87,9 +96,11 @@ namespace CX {
 
 		void flush (void); //BLOCKING
 
-		bool timestamps;
+		void timestamps (bool logTimestamps, string format = "%H:%M:%S.%i");
 
-		ofEvent<LogEventData> messageFlushEvent;
+		//ofEvent<LogEventData> messageFlushEvent;
+
+		void setMessageFlushCallback (std::function<void(MessageFlushData&)> f);
 
 	private:
 
@@ -99,6 +110,11 @@ namespace CX {
 
 		stringstream& _log (LogLevel level, string module);
 		string _getLogLevelName (LogLevel level);
+
+		std::function<void(MessageFlushData&)> _flushCallback;
+
+		bool _logTimestamps;
+		string _timestampFormat;
 
 	};
 
