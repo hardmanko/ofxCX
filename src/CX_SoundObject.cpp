@@ -502,6 +502,12 @@ void CX_SoundObject::resample (float newSampleRate) {
 
 }
 
+void CX_SoundObject::multiplySpeed (float speedMultiplier) {
+	float sampleRate = this->_soundSampleRate;
+	this->resample( this->getSampleRate() / speedMultiplier );
+	this->_soundSampleRate = sampleRate;
+}
+
 /*!
 Apply gain to the channel in terms of decibels.
 @param decibels Gain to apply. 0 does nothing. Positive values increase volume, negative values decrease volume. Negative infinity is essentially mute,

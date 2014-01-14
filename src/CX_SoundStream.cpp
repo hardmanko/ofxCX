@@ -67,8 +67,6 @@ bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 		config.sampleRate = closestLesserSampleRate;
 	}
 
-
-
 	try {
 		_rtAudio->openStream( 
 			((config.outputChannels > 0) ? &outputParameters : NULL), 

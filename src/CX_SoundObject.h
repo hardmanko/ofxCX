@@ -43,6 +43,8 @@ namespace CX {
 		void addSilence (CX_Micros_t duration, bool atBeginning);
 		void deleteAmount (CX_Micros_t duration, bool fromBeginning);
 
+		//setSpeed?
+		void multiplySpeed (float speedMultiplier);
 		void resample (float newSampleRate);
 		float getSampleRate (void) { return _soundSampleRate; };
 
