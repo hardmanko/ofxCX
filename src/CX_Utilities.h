@@ -6,47 +6,47 @@
 #include <vector>
 #include <algorithm>
 
-#ifdef TARGET_WIN32
-#include "Windows.h"
-#endif
+//#ifdef TARGET_WIN32
+//#include "Windows.h" //Must include Windows.h before glfw3.h?
+//#endif
 
+struct GLFWwindow; //Forward declaration
 
-
-struct GLFWwindow;
-
-using namespace std;
+//using namespace std;
 
 namespace CX {
 	namespace Private {
 		extern GLFWwindow *glfwContext;
 	}
+
+
 	//void drawFboToBackBuffer (ofFbo &fbo);
 
 	//void exit (void);
 
 	//void pollEvents (void);
 
-	//Add requireOFVersion(int versionMajor, versionMinor, etc) that complains to cout if the version is not found.
+	//Add requireOFVersion(int versionMajor, versionMinor, etc) that complains if the version is not found.
 
 	int getSampleCount (void);
 
-	vector<int> intVector (int rangeBottom, int rangeTop);
-	vector<int> intVectorByCount (vector<int> counts);
-	vector<int> intVectorByCountAndValue (vector<int> counts, vector<int> values);
+	std::vector<int> intVector (int rangeBottom, int rangeTop);
+	std::vector<int> intVectorByCount (std::vector<int> counts);
+	std::vector<int> intVectorByCountAndValue (std::vector<int> counts, std::vector<int> values);
 
-	template <typename T> vector<T> repeat (T value, unsigned int times);
-	template <typename T> vector<T> repeat (vector<T> values, unsigned int times, unsigned int each = 1);
+	template <typename T> std::vector<T> repeat (T value, unsigned int times);
+	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
 };
 
 
 template <typename T> 
-vector<T> CX::repeat (T value, unsigned int times) {
-	return vector<T>( times, value );
+std::vector<T> CX::repeat (T value, unsigned int times) {
+	return std::vector<T>( times, value );
 }
 
 template <typename T> 
-vector<T> CX::repeat (vector<T> values, unsigned int times, unsigned int each) {
-	vector<T> rval; //( values.size() * times * each );
+std::vector<T> CX::repeat (std::vector<T> values, unsigned int times, unsigned int each) {
+	std::vector<T> rval; //( values.size() * times * each );
 
 	for (int i = 0; i < times; i++) {
 		for (int val = 0; val < values.size(); val++) {

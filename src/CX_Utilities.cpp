@@ -6,6 +6,9 @@
 
 GLFWwindow *CX::Private::glfwContext;
 
+using namespace std;
+
+
 //#include "ofFbo.h"
 //#include "ofAppGLFWWindow.h"
 
@@ -46,8 +49,8 @@ int CX::getSampleCount (void) {
 	return 4; 
 };
 
-vector<int> CX::intVector (int rangeBottom, int rangeTop) {
-	vector<int> rval;
+std::vector<int> CX::intVector (int rangeBottom, int rangeTop) {
+	std::vector<int> rval;
 
 	while (rangeBottom <= rangeTop) {
 		rval.push_back(rangeBottom++);
@@ -56,8 +59,8 @@ vector<int> CX::intVector (int rangeBottom, int rangeTop) {
 	return rval;
 }
 
-vector<int> CX::intVectorByCount (vector<int> counts) {
-	vector<int> rval;
+std::vector<int> CX::intVectorByCount (std::vector<int> counts) {
+	std::vector<int> rval;
 
 	for (int i = 0; i < counts.size(); i++) {
 		for (int j = 0; j < counts[i]; j++) {
@@ -68,8 +71,8 @@ vector<int> CX::intVectorByCount (vector<int> counts) {
 	return rval;
 }
 
-vector<int> CX::intVectorByCountAndValue (vector<int> counts, vector<int> values) {
-	vector<int> rval;
+std::vector<int> CX::intVectorByCountAndValue (std::vector<int> counts, std::vector<int> values) {
+	std::vector<int> rval;
 
 	if (counts.size() != values.size()) {
 		return rval;
