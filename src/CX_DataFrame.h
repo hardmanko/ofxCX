@@ -73,6 +73,73 @@ T CX_DataFrame::getData (string column, unsigned int row) {
 }
 
 
+
+
+template <typename T>
+class CX_TypedDataFrameRow {
+public:
+
+	unsigned int rowNumber;
+
+	T& operator[] (string column) {
+		return get(column);
+	}
+
+	void set (string column, const T& value) {
+		_data[column] = value;
+	}
+
+	T& get (string column) {
+		return _data[column];
+	}
+
+	string print (string delim = "\t") {
+		stringstream output;
+
+		output << "Row";
+		for (map<string, T>::iterator it = _data.begin(); it != _data.end(); it++) {
+			output << delim << it->first;
+		}
+
+		output << endl << rowNumber;
+		for (map<string, T>::iterator it = _data.begin(); it != _data.end(); it++) {
+			output << delim << it->second;
+		}
+
+		return output.str();
+	}
+
+	vector<string> names (void) {
+		vector<string> n;
+		for (map<string,T>::iterator it = _data.begin(); it != _data.end(); it++) {
+			n.push_back( it->first );
+		}
+		return n;
+	}
+
+protected:
+	//unsigned int rowNumber;
+	map<string, T> _data;
+};
+
+
+
+
+class CX_StringDataFrameRow : public CX_TypedDataFrameRow<string> {
+public:
+	void set (string column, const string& value) {
+		_data[column] = value;
+	}
+	void set (string column, const char* value) {
+		_data[column] = string(value);
+	}
+	template <typename T> void set (string column, const T& value) {
+		_data[column] = ofToString<T>(value);
+	}
+};
+
+
+
 template <typename T>
 class CX_TypedDataFrame {
 public:
@@ -80,14 +147,47 @@ public:
 		_nrow(0)
 	{}
 
-	void set (string column, unsigned int row, T data) {
+	void set (string column, unsigned int row, const T& data) {
 		_boundsCheck(column, row);
 		_data[column][row] = data;
 	}
 
-	T get (string column, unsigned int row) {
+	T& get (string column, unsigned int row) {
 		_boundsCheck(column, row);
 		return _data[column][row];
+	}
+
+	void pushRow (CX_TypedDataFrameRow<T> &r) {
+		_pushRow(r);
+	}
+
+	void pushColumn (string columnName, vector<T> columnData) {
+		_data[columnName] = columnData;
+		_equalizeRowLengths();
+	}
+
+
+
+	CX_TypedDataFrameRow<T> getRow (unsigned int row) {
+
+		CX_TypedDataFrameRow<T> r;
+		r.rowNumber = row;
+
+		if (row >= _nrow) {
+			return r;
+		}
+
+		for (map<string, vector<T>>::iterator it = _data.begin(); it != _data.end(); it++) {
+			r[it->first] = it->second[row];
+		}
+		return r;
+	}
+
+	vector<T>& column (string column) {
+		if (_data[column].size() != _nrow) {
+			_data[column].resize(_nrow);
+		}
+		return _data[column];
 	}
 
 	string print (string delim = "\t") {
@@ -100,7 +200,7 @@ public:
 
 		for (unsigned int r = 0; r < _nrow; r++) {
 			output << endl << r;
-			for (map<string, vector<T>>::iterator it = _data.begin(); it != _data.end(); it++) {
+			for (map<string, vector<T> >::iterator it = _data.begin(); it != _data.end(); it++) {
 				output << delim << it->second[r];
 			}
 		}
@@ -110,15 +210,14 @@ public:
 
 	//Returns a column reference
 	vector<T>& operator[] (string s) {
-		if (_data[s].size() != _nrow) {
-			_data[s].resize(_nrow);
-		}
-		return _data[s];
+		return column(s);
 	}
 
 	vector<T>& operator[] (const char* c) {
-		return this->operator[](string(c));
+		return this->column(string(c));
 	}
+
+	//unsigned int nrow (void) { return _nrow; };
 
 protected:
 	void _boundsCheck (string column, unsigned int row) {
@@ -131,6 +230,33 @@ protected:
 		}
 	}
 
+	void _equalizeRowLengths (void) {
+		unsigned int maxSize = 0;
+		for (map<string, vector<T>>::iterator it = _data.begin(); it != _data.end(); it++) {
+			if (_data[it->first].size() > maxSize) {
+				maxSize = _data[it->first].size();
+			}
+		}
+
+		for (map<string, vector<T>>::iterator it = _data.begin(); it != _data.end(); it++) {
+			if (_data[it->first].size() != maxSize) {
+				_data[it->first].resize(maxSize);
+			}
+		}
+	}
+
+	void _pushRow (CX_TypedDataFrameRow<T> &r) {
+		unsigned int nextRow = _nrow;
+		_nrow++;
+
+		vector<string> names = r.names();
+		
+		for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
+			_data[*it].resize(_nrow);
+			_data[*it][nextRow] = r[*it];
+		}
+	}
+
 	map<string, vector<T>> _data;
 	unsigned int _nrow;
 
@@ -139,69 +265,21 @@ private:
 };
 
 
+
+
 class CX_StringDataFrame : public CX_TypedDataFrame<string> {
 public:
 	void set (string column, unsigned int row, string data);
 	void set (string column, unsigned int row, const char* data);
-	//void set (string column, unsigned int row, double data);
-	//void set (string column, unsigned int row, long long data);
 
 	template <typename T> void set (string column, unsigned int row, T data) {
 		set( column, row, ofToString(data) );
 	};
 
+	void pushRow (CX_StringDataFrameRow& r) {
+		//CX_TypedDataFrameRow<string> rs = dynamic_cast<CX_TypedDataFrameRow<string>&>(r);
+		this->_pushRow( r );
+	}
 };
 
 
-
-	class CX_BaseObject {
-	public:
-		~CX_BaseObject (void) {
-			delete _data;
-		}
-
-	protected:
-		void* _data;
-	};
-
-	class CX_Double : public CX_BaseObject {
-	public:
-
-		CX_Double (void) {
-			this->_data = new double;
-		}
-
-		operator double (void) {
-			return *(double*)(this->_data);
-		}
-
-		void operator= (double d) {
-			*(double*)this->_data = d;
-		}
-
-		double get (void) {
-			return *(double*)_data;
-		}
-
-	private:
-
-	};
-
-	class CX_String : public CX_BaseObject {
-	public:
-		CX_String (void) {
-			this->_data = new string;
-		}
-
-		operator string (void) {
-			return *(string*)(this->_data);
-		}
-
-		void operator= (string s) {
-			*(string*)this->_data = s;
-		}
-
-		string get (void) {
-			return *(string*)_data;
-		}
-	};

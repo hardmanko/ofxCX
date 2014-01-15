@@ -91,14 +91,6 @@ void CX_DataFrameCell::setDataType<const char*> (void) {
 
 
 
-/*
-template <>
-void CX_TypedDataFrame<string>::set (string column, unsigned int row, string data) {
-	set(column, row, data);
-}
-*/
-
-
 void CX_StringDataFrame::set (string column, unsigned int row, string data) {
 	_boundsCheck(column, row);
 
@@ -111,8 +103,59 @@ void CX_StringDataFrame::set (string column, unsigned int row, const char* data)
 
 
 
+/*
+
+class CX_BaseObject {
+public:
+	~CX_BaseObject (void) {
+		delete _data;
+	}
+
+protected:
+	void* _data;
+};
+
+class CX_Double : public CX_BaseObject {
+public:
+
+	CX_Double (void) {
+		this->_data = new double;
+	}
+
+	operator double (void) {
+		return *(double*)(this->_data);
+	}
+
+	void operator= (double d) {
+		*(double*)this->_data = d;
+	}
+
+	double get (void) {
+		return *(double*)_data;
+	}
+
+private:
+
+};
+
+class CX_String : public CX_BaseObject {
+public:
+	CX_String (void) {
+		this->_data = new string;
+	}
+
+	operator string (void) {
+		return *(string*)(this->_data);
+	}
+
+	void operator= (string s) {
+		*(string*)this->_data = s;
+	}
+
+	string get (void) {
+		return *(string*)_data;
+	}
+};
 
 
-
-
-
+*/
