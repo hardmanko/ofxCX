@@ -5,6 +5,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <string>
+#include <sstream>
 
 //#ifdef TARGET_WIN32
 //#include "Windows.h" //Must include Windows.h before glfw3.h?
@@ -36,6 +38,8 @@ namespace CX {
 
 	template <typename T> std::vector<T> repeat (T value, unsigned int times);
 	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
+
+	template <typename T> std::string vectorToString (std::vector<T> values, string delimiter = ",", int significantDigits = 8 );
 };
 
 
@@ -57,6 +61,19 @@ std::vector<T> CX::repeat (std::vector<T> values, unsigned int times, unsigned i
 	}
 
 	return rval;
+}
+
+template <typename T>
+std::string CX::vectorToString (std::vector<T> values, string delimiter, int significantDigits) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(significantDigits);
+	for (unsigned int i = 0; i < values.size(); i++) {
+		s << values[i];
+		if (i != values.size() - 1) {
+			s << delimiter;
+		}
+	}
+	return s.str();
 }
 
 #endif //_CX_UTILITIES_H_

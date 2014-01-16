@@ -52,8 +52,14 @@ int CX::getSampleCount (void) {
 std::vector<int> CX::intVector (int rangeBottom, int rangeTop) {
 	std::vector<int> rval;
 
-	while (rangeBottom <= rangeTop) {
-		rval.push_back(rangeBottom++);
+	if (rangeBottom > rangeTop) {
+		while (rangeBottom >= rangeTop) {
+			rval.push_back(rangeBottom--);
+		}
+	} else {
+		while (rangeBottom <= rangeTop) {
+			rval.push_back(rangeBottom++);
+		}
 	}
 
 	return rval;
