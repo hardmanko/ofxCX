@@ -12,6 +12,9 @@
 
 #include "ofUtils.h"
 
+#include "CX_Utilities.h"
+#include "CX_DeferredLogger.h"
+
 using namespace std;
 
 class CX_DataFrameCell {
@@ -49,7 +52,7 @@ public:
 	}
 
 	template <typename T>
-	operator T (void) {
+	operator T (void) const {
 		return ofFromString<T>(*_str);
 	}
 
@@ -59,7 +62,7 @@ public:
 	}
 
 	template <typename T>
-	operator vector<T> (void) {
+	operator vector<T> (void) const {
 		return _getVector<T>();
 	}
 
@@ -67,13 +70,18 @@ public:
 		return *_str;
 	}
 
+
 private:
 
+	friend class CX_DataFrame;
+	friend class CX_SafeDataFrame;
+	CX_DataFrameCell(string *s) : _selfAllocated(false), _str(s) {}
+	
 	template <typename T> void _setVector (vector<T> values) {
 		*_str = "\"" + CX::vectorToString(values, ",", 16) + "\"";
 	}
 
-	template <typename T> vector<T> _getVector (void) {
+	template <typename T> vector<T> _getVector (void) const {
 		string encodedVect = *_str;
 		
 		ofStringReplace(encodedVect, "\"", "");
@@ -84,9 +92,6 @@ private:
 		}
 		return values;
 	}
-
-	friend class CX_DataFrame;
-	CX_DataFrameCell(string *s) : _selfAllocated(false), _str(s) {}
 
 	void setPointer (string *str) {
 		if (_selfAllocated) {
@@ -107,6 +112,7 @@ static ostream& operator<< (ostream& os, const CX_DataFrameCell& cell) {
 }
 
 typedef map<string, CX_DataFrameCell> CX_DataFrameRow;
+typedef vector<CX_DataFrameCell> CX_DataFrameColumn;
 
 class CX_DataFrame {
 public:
@@ -120,7 +126,12 @@ public:
 		return CX_DataFrameCell(&_data[column][row]);
 	}
 
-	vector<CX_DataFrameCell> operator[] (string column) {
+	CX_DataFrameCell operator() (unsigned int row, string column) {
+		_resizeToFit(column, row);
+		return CX_DataFrameCell(&_data[column][row]);
+	}
+
+	CX_DataFrameColumn operator[] (string column) {
 		return _getColumn(column);
 	}
 
@@ -235,7 +246,7 @@ public:
 	}
 	*/
 
-private:
+protected:
 	map <string, vector<string>> _data;
 	unsigned int _rowCount;
 
@@ -291,4 +302,29 @@ private:
 		}
 		return r;
 	}
+};
+
+class CX_SafeDataFrame : private CX_DataFrame {
+public:
+
+	const CX_DataFrameCell operator() (string column, unsigned int row) {
+		try {
+			return CX_DataFrameCell(&_data.at(column).at(row));
+		} catch (...) {
+			//log error?
+			CX::Instances::Log.warning("CX_SafeDataFrame") << "Out of bounds access with operator() on indices (\"" << column << "\", " << row << ")";
+		}
+		return CX_DataFrameCell();
+	}
+
+	const CX_DataFrameCell operator() (unsigned int row, string column) {
+		return this->operator()(column, row);
+	}
+
+	using CX_DataFrame::appendRow;
+	using CX_DataFrame::print;
+	using CX_DataFrame::copyColumn;
+	using CX_DataFrame::columnNames;
+	using CX_DataFrame::rowCount;
+
 };
