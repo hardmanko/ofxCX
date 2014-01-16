@@ -49,20 +49,12 @@ int CX::getSampleCount (void) {
 	return 4; 
 };
 
-std::vector<int> CX::intVector (int rangeBottom, int rangeTop) {
-	std::vector<int> rval;
+std::vector<int> CX::intVector (int start, int end) {
+	return sequence<int>(start, end, start < end ? 1 : -1);
+}
 
-	if (rangeBottom > rangeTop) {
-		while (rangeBottom >= rangeTop) {
-			rval.push_back(rangeBottom--);
-		}
-	} else {
-		while (rangeBottom <= rangeTop) {
-			rval.push_back(rangeBottom++);
-		}
-	}
-
-	return rval;
+std::vector<unsigned int> CX::uintVector (unsigned int start, unsigned int end) {
+	return sequence<unsigned int>(start, end, start < end ? 1 : -1);
 }
 
 std::vector<int> CX::intVectorByCount (std::vector<int> counts) {
@@ -91,4 +83,11 @@ std::vector<int> CX::intVectorByCountAndValue (std::vector<int> counts, std::vec
 	}
 
 	return rval;
+}
+
+bool CX::checkOFVersion (int versionMajor, int versionMinor, int versionPatch) {
+	if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
+		return true;
+	}
+	return false;
 }

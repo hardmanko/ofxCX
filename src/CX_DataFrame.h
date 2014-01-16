@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <string>
 #include <sstream>
 
@@ -40,7 +41,11 @@ public:
 		if (_selfAllocated) {
 			delete _str;
 		}
-		_selfAllocated = false;
+	}
+
+	template <typename T>
+	void operator= (T val) {
+		*_str = ofToString<T>(val, 16);
 	}
 
 	template <typename T>
@@ -49,30 +54,26 @@ public:
 	}
 
 	template <typename T>
-	operator vector<T> (void) {
-		return getVector<T>();
+	void operator= (vector<T> val) {
+		_setVector(val);
 	}
 
+	template <typename T>
+	operator vector<T> (void) {
+		return _getVector<T>();
+	}
 
 	string toString (void) const {
 		return *_str;
 	}
 
-	template <typename T>
-	void operator= (T val) {
-		*_str = ofToString<T>(val);
-	}
+private:
 
-	template <typename T>
-	void operator= (vector<T> val) {
-		setVector(val);
-	}
-
-	template <typename T> void setVector (vector<T> values) {
+	template <typename T> void _setVector (vector<T> values) {
 		*_str = "\"" + CX::vectorToString(values, ",", 16) + "\"";
 	}
 
-	template <typename T> vector<T> getVector (void) {
+	template <typename T> vector<T> _getVector (void) {
 		string encodedVect = *_str;
 		
 		ofStringReplace(encodedVect, "\"", "");
@@ -84,7 +85,6 @@ public:
 		return values;
 	}
 
-private:
 	friend class CX_DataFrame;
 	CX_DataFrameCell(string *s) : _selfAllocated(false), _str(s) {}
 
@@ -150,22 +150,44 @@ public:
 	}
 
 	string print (string delimiter = "\t") {
+		return print(CX::uintVector(0, rowCount() - 1), delimiter);
+	}
+
+	string print (set<string> columns, vector<unsigned int> rows, string delimiter) {
 		stringstream output;
 		output << "Row";
+
 		for (map<string, vector<string>>::iterator it = _data.begin(); it != _data.end(); it++) {
-			output << delimiter << it->first;
+			if (columns.find(it->first) != columns.end()) {
+				output << delimiter << it->first;
+			}
 		}
 
-		for (unsigned int r = 0; r < _rowCount; r++) {
-			output << endl << r;
+		for (unsigned int i = 0; i < rows.size(); i++) {
+			output << endl << rows[i];
 			for (map<string, vector<string> >::iterator it = _data.begin(); it != _data.end(); it++) {
-				output << delimiter << it->second[r];
+				if (columns.find(it->first) != columns.end()) {
+					output << delimiter << it->second[rows[i]];
+				}
 			}
 		}
 		return output.str();
 	}
 
-	void printToFile (string filename);
+	string print (set<string> columns, string delimiter) {
+		return print(columns, CX::uintVector(0, rowCount() - 1), delimiter);
+	}
+
+	string print (vector<unsigned int> rows, string delimiter) {
+		set<string> columns;
+		vector<string> names = columnNames();
+		for (unsigned int i = 0; i < names.size(); i++) {
+			columns.insert( names[i] );
+		}
+		return print(columns, rows, delimiter);
+	}
+
+	//void printToFile (string filename);
 
 	vector<string> columnNames (void) {
 		vector<string> names;
