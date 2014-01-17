@@ -1,6 +1,8 @@
 #include "CX_Utilities.h"
 
 #include "ofMain.h"
+#include "ofConstants.h"
+//#include "ofFileUtils.h"
 
 #include "GLFW\glfw3.h"
 
@@ -87,6 +89,17 @@ std::vector<int> CX::intVectorByCountAndValue (std::vector<int> counts, std::vec
 
 bool CX::checkOFVersion (int versionMajor, int versionMinor, int versionPatch) {
 	if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
+		return true;
+	}
+	return false;
+}
+
+//Add various log data on failure: why failure?
+bool CX::writeToFile (std::string filename, string data, bool append) {
+	ofFile out( ofToDataPath(filename), (append ? ofFile::Append : ofFile::WriteOnly), false );
+	if (out.is_open()) {
+		out << data;
+		out.close();
 		return true;
 	}
 	return false;

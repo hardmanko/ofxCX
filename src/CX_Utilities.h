@@ -1,20 +1,19 @@
 #ifndef _CX_UTILITIES_H_
 #define _CX_UTILITIES_H_
 
-#include "ofConstants.h"
-
 #include <vector>
 #include <algorithm>
 #include <string>
 #include <sstream>
+#include <fstream>
+
+#include "ofUtils.h"
 
 //#ifdef TARGET_WIN32
 //#include "Windows.h" //Must include Windows.h before glfw3.h?
 //#endif
 
 struct GLFWwindow; //Forward declaration
-
-//using namespace std;
 
 namespace CX {
 	namespace Private {
@@ -42,11 +41,17 @@ namespace CX {
 	template <typename T> std::string vectorToString (std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
 	template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart = "{", std::string elementEnd = "}", int significantDigits = 8);
 
+	template <typename T> bool writeToFile (std::string filename, const T& data, bool append = true);
+	bool writeToFile (std::string filename, string data, bool append = true);
+
 	//void drawFboToBackBuffer (ofFbo &fbo);
 	//void exit (void);
 	//void pollEvents (void);
 };
 
+template <typename T> bool writeToFile (std::string filename, const T& data, bool append) {
+	return toFile(filename, ofToString<T>(data), append);
+}
 
 template <typename T> 
 std::vector<T> CX::repeat (T value, unsigned int times) {
