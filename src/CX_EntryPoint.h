@@ -19,6 +19,7 @@
 #include "CX_TrialController.h" 
 #include "CX_TrialController_Class.h"
 #include "CX_SoundObjectPlayer.h"
+#include "CX_DataFrame.h"
 
 namespace CX {
 

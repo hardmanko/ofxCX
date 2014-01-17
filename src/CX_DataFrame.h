@@ -6,10 +6,7 @@
 #include <set>
 #include <string>
 #include <sstream>
-
 #include <iostream>
-
-//#include "stdint.h"
 
 #include "ofUtils.h"
 
@@ -17,7 +14,6 @@
 #include "CX_DeferredLogger.h"
 
 #include "CX_DataFrameCell.h"
-
 
 namespace CX {
 
@@ -38,9 +34,7 @@ public:
 		//bool printRowNumbers;
 	} Configuration;
 
-	CX_DataFrame (void) :
-		_rowCount(0)
-	{}
+	CX_DataFrame (void);
 
 	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
 	CX_DataFrameCell operator() (rowIndex_t row, std::string column);

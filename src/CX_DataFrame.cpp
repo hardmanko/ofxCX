@@ -4,7 +4,9 @@ using namespace CX;
 
 CX_DataFrame::DataFrameConfiguration CX_DataFrame::Configuration = { ",", "\"", "\"", "\t"};
 
-
+CX_DataFrame::CX_DataFrame (void) :
+	_rowCount(0)
+{}
 
 CX_DataFrameCell CX_DataFrame::operator() (string column, rowIndex_t row) {
 	_resizeToFit(column, row);
@@ -85,13 +87,15 @@ bool CX_DataFrame::printToFile (string filename, const set<string>& columns, con
 }
 
 void CX_DataFrame::appendRow (CX_DataFrameRow row) {
-	//rowIndex_t nextRow = _rowCount;
-	//_rowCount++;
-	_resizeToFit(_rowCount);
+	//This implementation looks really weird, but don't change it: it deals with a number of edge cases.
+	_rowCount++;
 
 	for (map<string,CX_DataFrameCell>::iterator it = row.begin(); it != row.end(); it++) {
+		_data[it->first].resize(_rowCount);
 		_data[it->first].back() = it->second.toString();
 	}
+
+	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
 }
 
 vector<string> CX_DataFrame::columnNames (void) {
@@ -112,8 +116,9 @@ void CX_DataFrame::_resizeToFit (string column, rowIndex_t row) {
 	}
 }
 
+//This function fails if there are no columns in the data frame
 void CX_DataFrame::_resizeToFit (rowIndex_t row) {
-	if (row >= _rowCount) {
+	if ((row >= _rowCount) && (_data.size() != 0)) {
 		_data.begin()->second.resize(row + 1);
 		_equalizeRowLengths();
 		//CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit row " << row;
