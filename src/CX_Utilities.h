@@ -39,7 +39,8 @@ namespace CX {
 	template <typename T> std::vector<T> repeat (T value, unsigned int times);
 	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
 
-	template <typename T> std::string vectorToString (std::vector<T> values, string delimiter = ",", int significantDigits = 8 );
+	template <typename T> std::string vectorToString (std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
+	template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart = "{", std::string elementEnd = "}", int significantDigits = 8);
 
 	//void drawFboToBackBuffer (ofFbo &fbo);
 	//void exit (void);
@@ -79,6 +80,16 @@ std::string CX::vectorToString (std::vector<T> values, string delimiter, int sig
 	}
 	return s.str();
 }
+
+template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart, std::string elementEnd, int significantDigits) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(significantDigits);
+	for (unsigned int i = 0; i < values.size(); i++) {
+		s << elementStart << values[i] << elementEnd;
+	}
+	return s.str();
+}
+
 
 template <typename T> 
 std::vector<T> CX::sequence (T start, T end, T stepSize) {
