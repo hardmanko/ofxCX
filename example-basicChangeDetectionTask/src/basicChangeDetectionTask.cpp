@@ -113,22 +113,21 @@ There is an abstraction which reduces the pain associated with this design patte
 */
 void updateExperiment (void) {
 	if (trialPhase == "drawStimuli") {
-		//At this phase of the experiment, we want to draw all of our stimuli for the coming trial. POFL!
+		//At this phase of the experiment, we want to draw all of our stimuli for the coming trial.
 
-		//The SlidePresenter is a practically essential abstraction that is responsible for
-		//displaying visual stimuli for specified durations. 
-
-		//Start by clearing all slides (from the last trial).
-		SlidePresenter.clearSlides();
+		//The CX_SlidePresenter is an abstraction that is responsible for displaying visual stimuli for specified durations.
+		//One called SlidePresenter is instanstiated for you, but you can create more if you want.
+		SlidePresenter.clearSlides(); //Start by clearing all slides (from the last trial).
 
 		//To draw to a slide, call beginDrawingNextSlide() with the name of the slide and the duration
 		//that you want the contents of the slide to be presented for. The time unit used in CX is
-		//microseconds (10^-6 seconds; 10^-3 milliseconds), with no exceptions.
+		//microseconds (10^-6 seconds; 10^-3 milliseconds).
 		SlidePresenter.beginDrawingNextSlide(1000000, "fixation");
 		//After calling beginDrawingNextSlide(), all drawing commands will be directed to the current
 		//slide until beginDrawingNextSlide() is called again or endDrawingCurrentSlide() is called.
-		drawFixation();
+		drawFixation(); //See the definition of this function below for some examples of how to draw stuff.
 	
+		//Add some more slides.
 		SlidePresenter.beginDrawingNextSlide(250000, "blank");
 		drawBlank();
 
@@ -143,7 +142,7 @@ void updateExperiment (void) {
 		//on screen until something else is drawn (i.e. the slide presenter does not
 		//remove it from the screen after the duration is complete). If this is confusing
 		//to you, consider the question of what the slide presenter should replace the
-		//last frame with that will be generally (i.e. in all cases) correct.
+		//last frame with that will always be correct.
 		SlidePresenter.beginDrawingNextSlide(1, "test");
 		drawTestArray( trials.at( trialIndex ) );
 		SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
@@ -154,20 +153,23 @@ void updateExperiment (void) {
 
 		trialPhase = "presentStimuli";
 	}
+
 	if (trialPhase == "presentStimuli") {
 		//Check that the slide presenter is still at work (i.e. not yet on the last slide).
 		//As soon as the last slide is presented, isPresentingSlides() will return false.
 		if (!SlidePresenter.isPresentingSlides()) {
-			Input.Keyboard.clearEvents(); //Clear all keyboard responses made during the frame presentation.
+			Input.Keyboard.clearEvents(); //Clear all keyboard responses, if any, made during the frame presentation.
 			trialPhase = "getResponse";
 		}
 	}
+
 	if (trialPhase == "getResponse") {
 		while (Input.Keyboard.availableEvents() > 0) { //While there are available events, 
 
 			CX_KeyEvent_t keyEvent = Input.Keyboard.getNextEvent(); //get the next event for processing.
 
-			//Only examine key presses (as opposed to key releases or repeats). Everything would probably work just fine without this check.
+			//Only examine key presses (as opposed to key releases or repeats). Everything would probably work 
+			//just fine without this check for this experiment, but it is generally a good idea to filter your input.
 			if (keyEvent.eventType == CX_KeyEvent_t::PRESSED) {
 
 				//Ignore all responses that are not s or d.
@@ -193,6 +195,10 @@ void updateExperiment (void) {
 						trials.at(trialIndex).responseCorrect = false;
 						cout << "Incorrect" << endl;
 					}
+
+					//The end of a trial is a good time to flush() the logs, to see if any warnings/errors have happened during the trial.
+					//See example-logging in the ofxCX folder for an example of how the logging system works.
+					Log.flush();
 
 					//This trial is now complete, so move on to the next trial, checking to see if 
 					//you have completed all of the trials.
@@ -228,7 +234,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 		//This version of shuffleVector() returns a shuffled copy of the argument without changing the argument.
 		vector<int> colorIndices = RNG.shuffleVector( CX::intVector(0, objectColors.size() - 1) );
 		
-		//sample() gives you count integers from the range [lowerBound, upperBound] with or without replacement.
+		//sample() gives you count random integers from the range [lowerBound, upperBound] with or without replacement.
 		vector<int> locationIndices = RNG.sample( tr.arraySize, 0, objectLocations.size() - 1, false );
 
 		for (int i = 0; i < tr.arraySize; i++) {
@@ -243,7 +249,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 			tr.changedObjectIndex = RNG.randomInt(0, tr.arraySize - 1); 
 			tr.newColor = objectColors[colorIndices.at(tr.arraySize)];
 		} else {
-			tr.changedObjectIndex = -1;
+			tr.changedObjectIndex = -1; //Use -1 as a signal that there is not a valid index for the changed color (i.e. it is not a change trial).
 			tr.newColor = -1;
 		}
 		

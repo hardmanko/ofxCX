@@ -1,12 +1,15 @@
 #include "CX_EntryPoint.h"
 
 /*
-The idea behind the CX_DataFrame is that it is an easy way to
-1) Store data from an experiment, and
+The idea behind the CX_DataFrame is that it is a way to
+1) Easily store data from an experiment using a clear, concise syntax, and
 2) Easily output that data to a spreadsheet-style file that can be used by analysis software.
 
 This example covers the standard CX_DataFrame and what you can do with it. 
 It includes a snippet of R code for reading the output of this program into an R data frame.
+
+CX_DataFrame is NOT for
+1) Doing arithmetic. Data is stored as a string internally so you have the potential for precision issues, plus it would be really, really slow.
 
 It also introduces CX_SafeDataFrame, which is generally a better 
 option than CX_DataFrame because it prevents a lot of potential mistakes.
@@ -19,29 +22,32 @@ void setupExperiment (void) {
 	//are numbered. Due to some operator overloading, you
 	//can just use operator= to set the values. Most of the common types are supported: int, double, string, etc. 
 	//Even vectors are supported as long as the vector contains only basic types (std::string is NOT a basic type,
-	//as it is part of the stl, but should work as long as there are no commas in the strings).
-	df("dwellings", 1) = "house";
-	df("ints", 0) = 3;
-	df("ints", 1) = 42;
-	df("vect", 0) = CX::intVector(3,1);
-	df(0, "doubles") = 123.456; //You can do row first, if desired.
-	//Everything is dynamically resized when using operator().
+	//as it is part of the stl, but should work as long as there are no semicolons in the strings).
+	df("ints", 0) = 3; //The integer 3 is put into the first row of the column named "ints"
+	df("ints", 1) = 42; //Second row, same column...
+	df("dwellings", 1) = "house"; //You don't have to start with the first row, everything is dynamically resized.
+	df("vect", 0) = CX::intVector(3,1); //You can easily store vectors of data.
+	df(0, "doubles") = 123.456; //You can do (row, column), if desired.
+
+	//You can also use operator[] to access cells in the data frame. Using (row,column) is faster than using operator[].
+	df["doubles"][1] = 1.996;
+	df[1]["vect"] = CX::sequence(9, 5, -2);
 
 	//The contents of the data frame can be printed to a string, then used as you wish:
-	string dataFrame = df.print(";"); //The semicolon delimiter makes it easy to see which cells have not been initialized.
+	string dataFrame = df.print(";"); //The semicolon delimiter makes it easy to see which cells have not been initialized (a dwelling is missing).
 	cout << dataFrame << endl;
 
 	//Once stuff has been put into the data frame, you can extract it fairly easily:
 	double d = df("doubles", 0); //The type is implicitly converted during extraction.
-	int beast = df("ints", 0);
-	vector<int> intvector = df("vect", 0); //You can extract vectors without very much effort.
+	int i = df["ints"][0]; //operator[] can also be used to read out data.
+	vector<int> intvector = df("vect", 0); //You can extract vectors easily. You must specify what type the data should be converted to (in this case, <int>).
 	string house = df("dwellings", 1).toString(); //The common case that is tricky are strings, which require a special function call to be extracted.
 
 	//You can see that what comes out looks like what went in:
-	cout << endl << d << endl << beast << endl << house << endl << ofToString(intvector) << endl << endl;
+	cout << endl << d << endl << i << endl << house << endl << ofToString(intvector) << endl << endl;
 
 	//Although you can use operator() to set data, it is somewhat safer to fill out a row of data at at time
-	//(e.g. over the course of a trial) and append that row to the data frame.
+	//(e.g. over the course of a trial) and append that row to the data frame because you don't have to worry about getting the row index right.
 	CX_DataFrameRow cellRow;
 	cellRow["dwellings"] = "wigwam"; //CX_DataFrameRow is just a map<string, CX_DataFrameCell>, so access is done using operator[] and assignment.
 	cellRow["ints"] = -7;
@@ -59,36 +65,33 @@ void setupExperiment (void) {
 	cout << df.print( printCol, printRow, ";" ); 
 
 	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.rowCount() to get the
-	//the information needed. Rows in a CX_DataFrame always numbered from 0.
+	//the information needed. Rows in a CX_DataFrame are always numbered from 0.
 
 	vector<int> intVector = df.copyColumn<int>("ints"); //You can copy the data in a column out of the data frame, as long as you
 		//know what type the data is in. In this case, what was put in was all convertable to int, so we'll pick that type.
 
-	//operator[] is overloaded for the data frame. Using a string argument will return the column with that name.
-	//Using an unsigned int argument will return that row. 
+	//You can use operator[] to get either a row or column from the data frame. This row or column is not a copy
+	//of the row or column from the data frame, but is linked to the data frame it came from. This means that
+	//assigning to the row or column will affect the data in the original data frame.
 	CX_DataFrameRow row1 = df[1];
-	string s1 = row1["dwellings"].toString();
-
 	CX_DataFrameColumn dwellings = df["dwellings"];
-	string s2 = dwellings[1].toString();
 
-	string s3 = df["dwellings"][1].toString(); //operator[] can be chained because vectors and maps also use it.
-
-	cout << "s1, s2, and s3: " << s1 << ", " << s2 << ", and " << s3 << endl;
-
-	//When what is returned by operator[] is assigned to, the data frame itself gets updated. E.g.:
-	//However, if data is added to the data frame in a way the causes the data frame to be resized after 
-	//getting a row or column out of the data frame, this may fail spectacularly. E.g.:
-	//df.appendRow(row1); //Don't do this sort of thing here.
 	row1["ints"] = 666; 
 	dwellings[0] = "castle";
 	df["doubles"][2] = 3.14;
 
-	//Fill in the last few empty cells before printing it
-	df("doubles", 1) = 1.996;
-	df("vect", 1) = CX::sequence(9, 5, -2);
+	//The way that CX_DataFrameRows work allows you to create new columns in the data frame
+	//just by accessing that column in a row that has been pulled out of the data frame.
+	row1["new"] = "This is new";
 
+	//Print the final version of the data frame
 	cout << endl << df.print() << endl;
+
+	//This shows the equivalence of various orders of the use of operator[].
+	string s1 = row1["dwellings"].toString();
+	string s2 = dwellings[1].toString();
+	string s3 = df["dwellings"][1].toString();
+	cout << "s1, s2, and s3: " << s1 << ", " << s2 << ", and " << s3 << endl;
 
 	/*
 	//Data can easily be moved into an R data frame. First, output the data to a file.
@@ -119,7 +122,7 @@ void setupExperiment (void) {
 	CX_SafeDataFrame sdf;
 
 	CX_DataFrameRow row;
-	row["str"] = "help";
+	row["str"] = "nylon";
 	row["int"] = 4;
 	sdf.appendRow(row); //The only way to add data to a CX_SafeDataFrame is CX_SafeDataFrame::appendRow().
 
@@ -127,7 +130,7 @@ void setupExperiment (void) {
 
 	row.clear(); //Optional clearing to make sure that if one of the previously used columns was not assigned to, it would not stay around.
 
-	row["str"] = "me";
+	row["str"] = "steel";
 	row["int"] = 7;
 	sdf.appendRow(row);
 
