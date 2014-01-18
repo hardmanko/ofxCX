@@ -11,8 +11,8 @@ It includes a snippet of R code for reading the output of this program into an R
 CX_DataFrame is NOT for
 1) Doing arithmetic. Data is stored as a string internally so you have the potential for precision issues, plus it would be really, really slow.
 
-It also introduces CX_SafeDataFrame, which is generally a better 
-option than CX_DataFrame because it prevents a lot of potential mistakes.
+It also introduces CX_SafeDataFrame, which is potentially a better option than CX_DataFrame because it prevents 
+some potential mistakes by removing some of the more complicated parts of the interface.
 */
 
 void setupExperiment (void) {
@@ -116,31 +116,46 @@ void setupExperiment (void) {
 	/*
 	There is another kind of data frame for those who are not convinced that they are God's gift
 	to programming and recognize that they can make errors. The normal CX_DataFrame allows
-	you to screw up in a lot of ways. CX_SafeDataFrame is much safer to use, but has somewhat 
-	restricted functionality.
+	you to make a number of errors having to do with indexing (mispelled column name, invalid row index,
+	thinking that a CX_DataFrameRow is a copy and not linked to the data, etc.). 
+	CX_SafeDataFrame is much safer to use, but has somewhat restricted functionality.
 	*/
 	CX_SafeDataFrame sdf;
 
-	CX_DataFrameRow row;
+	CX_DataFrameRow row; //This is not linked to sdf. In order for data added to this row to get into sdf, you have to use appendRow().
 	row["str"] = "nylon";
 	row["int"] = 4;
-	sdf.appendRow(row); //The only way to add data to a CX_SafeDataFrame is CX_SafeDataFrame::appendRow().
+	sdf.appendRow(row); //One good way to add data to a CX_SafeDataFrame is CX_SafeDataFrame::appendRow().
 
-	//sdf("int", 1) = 7; //Unlike CX_DataFrame, you cannot store data like this. This is commented out because it is a compile-time error.
+	//If you want to make more space in the data frame, you have to do it manually.
+	sdf.setRowCount(2);
+	sdf("int", 1) = 7; //Now you can store information in the new row.
+	sdf("str", 1) = "steel";
 
-	row.clear(); //Optional clearing to make sure that if one of the previously used columns was not assigned to, it would not stay around.
+	//You can also add new columns, but again, you must do it manually.
+	sdf.addColumn("new");
+	sdf("new", 0) = "newdata1";
+	sdf("new", 1) = "newdata2";
 
-	row["str"] = "steel";
-	row["int"] = 7;
-	sdf.appendRow(row);
+	//The print function is still available. You can also print to files in the same way.
+	cout << endl << "CX_SafeDataFrame contents: " << endl << sdf.print() << endl; 
 
-	cout <<  endl << endl << sdf.print() << endl; //The print function is still available. You can also print to file in the same way.
-
-	string help = sdf("str", 0).toString(); //You can read out data normally.
+	//You can read out data just like with a standard CX_DataFrame.
+	string nylon = sdf("str", 0).toString(); 
 	int seven = sdf("int", 1);
 
-	string outOfBounds = sdf("str", 2).toString(); //operator() will return an empty string if out of bounds. It will not resize the data frame.
-	Log.flush(); //If you check the logs, there should be a warning about it as well.
+	//If you try to access any data that is out of bounds, you will get errors logged to Log.
+	//operator() will return an empty string if out of bounds. It will not automatically resize a CX_SafeDataFrame.
+	string outOfBounds = sdf("int", 2).toString();
+	sdf("undefined", 1) = "error";
+	Log.flush(); //If you check the logs, there should be an error about the out of bounds accesses.
+
+	//You can also use CX_SafeDataFrame::at(), which throws an exception on out of bounds access. at() does not log errors, you have to catch the exception
+	try {
+		sdf.at("undefined", 4) = 5;
+	} catch (std::exception& e) {
+		cout << endl << e.what() << endl;
+	}
 
 	vector<int> intColumn = sdf.copyColumn<int>("int"); //You can still copy out vectors of converted data.
 

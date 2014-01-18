@@ -10,7 +10,6 @@ CX_DataFrame::CX_DataFrame (void) :
 
 CX_DataFrameCell& CX_DataFrame::operator() (string column, rowIndex_t row) {
 	_resizeToFit(column, row);
-	//return CX_DataFrameCell(&_data[column][row]);
 	return _data[column][row];
 }
 
@@ -20,12 +19,27 @@ CX_DataFrameCell& CX_DataFrame::operator() (rowIndex_t row, string column) {
 
 CX_DataFrameColumn CX_DataFrame::operator[] (string column) {
 	return CX_DataFrameColumn(this, column);
-	//return _getColumn(column);
 }
 
 CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 	return CX_DataFrameRow(this, row);
-	//return _getRow(row);
+}
+
+string CX_DataFrame::print (string delimiter, bool printRowNumbers) {
+	return print(CX::uintVector(0, rowCount() - 1), delimiter, printRowNumbers);
+}
+
+string CX_DataFrame::print (const set<string>& columns, string delimiter, bool printRowNumbers) {
+	return print(columns, CX::uintVector(0, rowCount() - 1), delimiter, printRowNumbers);
+}
+
+string CX_DataFrame::print (const vector<rowIndex_t>& rows, string delimiter, bool printRowNumbers) {
+	set<string> columns;
+	vector<string> names = columnNames();
+	for (rowIndex_t i = 0; i < names.size(); i++) {
+		columns.insert( names[i] );
+	}
+	return print(columns, rows, delimiter, printRowNumbers);
 }
 
 string CX_DataFrame::print (const set<string>& columns, const vector<rowIndex_t>& rows, string delimiter, bool printRowNumbers) {
@@ -64,25 +78,16 @@ string CX_DataFrame::print (const set<string>& columns, const vector<rowIndex_t>
 	return output.str();
 }
 
-string CX_DataFrame::print (string delimiter) {
-	return print(CX::uintVector(0, rowCount() - 1), delimiter);
+bool CX_DataFrame::printToFile (string filename, string delimiter, bool printRowNumbers) {
+	return CX::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
 }
 
-string CX_DataFrame::print (const set<string>& columns, string delimiter) {
-	return print(columns, CX::uintVector(0, rowCount() - 1), delimiter);
+bool CX_DataFrame::printToFile (string filename, const set<string>& columns, string delimiter, bool printRowNumbers) {
+	return CX::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
-string CX_DataFrame::print (const vector<rowIndex_t>& rows, string delimiter) {
-	set<string> columns;
-	vector<string> names = columnNames();
-	for (rowIndex_t i = 0; i < names.size(); i++) {
-		columns.insert( names[i] );
-	}
-	return print(columns, rows, delimiter);
-}
-
-bool CX_DataFrame::printToFile (string filename) {
-	return CX::writeToFile(filename, this->print("\t"), false);
+bool CX_DataFrame::printToFile (string filename, const vector<rowIndex_t>& rows, string delimiter, bool printRowNumbers) {
+	return CX::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }
 
 bool CX_DataFrame::printToFile (string filename, const set<string>& columns, const vector<rowIndex_t>& rows, string delimiter, bool printRowNumbers) {
@@ -90,29 +95,16 @@ bool CX_DataFrame::printToFile (string filename, const set<string>& columns, con
 }
 
 void CX_DataFrame::appendRow (CX_DataFrameRow row) {
-
-	//This implementation looks really weird, but don't change it: it deals with a number of edge cases.
+	//This implementation looks weird, but don't change it: it deals with a number of edge cases.
 	_rowCount++;
 	vector<string> names = row.names();
 	for (unsigned int i = 0; i < names.size(); i++) {
 		_data[names[i]].resize(_rowCount);
-		string s = row[names[i]].toString();
-		_data[names[i]].back() = row[names[i]].toString();
+		_data[names[i]].back() = row[names[i]].toString(); //Copy the string data to the cell in the data frame.
 	}
 
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
 
-	/*
-	//This implementation looks really weird, but don't change it: it deals with a number of edge cases.
-	_rowCount++;
-
-	for (map<string,CX_DataFrameCell>::iterator it = row.begin(); it != row.end(); it++) {
-		_data[it->first].resize(_rowCount);
-		_data[it->first].back() = it->second.toString();
-	}
-
-	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
-	*/
 }
 
 vector<string> CX_DataFrame::columnNames (void) {
@@ -161,59 +153,119 @@ void CX_DataFrame::_equalizeRowLengths (void) {
 	_rowCount = maxSize;
 }
 
-/*
-vector<CX_DataFrameCell> CX_DataFrame::_getColumn (string column) {
-	_resizeToFit(column);
-	vector<CX_DataFrameCell> rval( rowCount() );
-	for (rowIndex_t i = 0; i < rowCount(); i++) {
-		rval[i] = CX_DataFrameCell( &_data[column][i] );
+
+////////////////////////
+// CX_DataFrameColumn //
+////////////////////////
+
+CX_DataFrameColumn::CX_DataFrameColumn (void) :
+	_df(nullptr),
+	_columnName("")
+{}
+
+CX_DataFrameColumn::CX_DataFrameColumn(CX_DataFrame *df, std::string column) : 
+	_df(df), 
+	_columnName(column) 
+{}
+
+CX_DataFrameCell& CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
+	if (_df) {
+		return _df->operator()(row, _columnName);
+	} else {
+		return _data[row];
 	}
-	return rval;
 }
 
-map<string, CX_DataFrameCell> CX_DataFrame::_getRow (unsigned int row) {
-	_resizeToFit(row);
-	map<string, CX_DataFrameCell> r;
-	for (map<string, vector<string>>::iterator it = _data.begin(); it != _data.end(); it++) {
-		r[it->first]._setPointer( &it->second[row] );
+CX_DataFrame::rowIndex_t CX_DataFrameColumn::size (void) {
+	if (_df) {
+		return _df->rowCount();
+	} else {
+		return _data.size();
 	}
-	return r;
-}
-*/
-
-
-/*
-void set (string column, unsigned int row, string value) {
-	_resizeToFit(column, row);
-	_data[column][row] = value;
 }
 
-void set (string column, unsigned int row, const char* value) {
-	this->set(column, row, string(value));
+
+/////////////////////
+// CX_DataFrameRow //
+/////////////////////
+
+CX_DataFrameRow::CX_DataFrameRow (void) :
+	_df(nullptr),
+	_rowNumber(-1)
+{}
+
+CX_DataFrameRow::CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::rowIndex_t rowNumber) : 
+	_df(df), 
+	_rowNumber(rowNumber) 
+{}
+
+CX_DataFrameCell& CX_DataFrameRow::operator[] (std::string column) {
+	if (_df) {
+		return _df->operator()(column, _rowNumber);
+	} else {
+		return _data[column];
+	}
 }
 
-template <typename T> void set(string column, unsigned int row, T value) {
-	this->set(column, row, ofToString(value, 16));
-}
-	
-
-string get (string column, unsigned int row) {
-	_resizeToFit(column, row);
-	return _data[column][row];
-}
-
-template <typename T> T get (string column, unsigned int row) {
-	//string s = this->get(column, row);
-	//return ofFromString<T>(s);
-	_resizeToFit(column, row);
-	return this->operator()(column, row).operator T();
+vector<std::string> CX_DataFrameRow::names (void) {
+	if (_df) {
+		return _df->columnNames();
+	} else {
+		std::vector<std::string> names;
+		for (map<std::string, CX_DataFrameCell>::iterator it = _data.begin(); it != _data.end(); it++) {
+			names.push_back( it->first );
+		}
+		return names;
+	}
 }
 
-template <typename T> void setVector (string column, unsigned int row, vector<T> values) {
-	this->operator()(column, row).setVector<T>(values);
+void CX_DataFrameRow::clear (void) {
+	if (_df) {
+		std::vector<std::string> names = _df->columnNames();
+		for (unsigned int i = 0; i < names.size(); i++) {
+			_df->operator()(names[i], _rowNumber) = "";
+		}
+	} else {
+		_data.clear();
+	}
 }
 
-template <typename T> vector<T> getVector (string column, unsigned int row) {
-	return this->operator()(column, row).getVector<T>();
+
+//////////////////////
+// CX_SafeDataFrame //
+//////////////////////
+
+CX_DataFrameCell CX_SafeDataFrame::operator() (std::string column, rowIndex_t row) {
+	try {
+		return _data.at(column).at(row);
+	} catch (...) {
+		CX::Instances::Log.error("CX_SafeDataFrame") << "Out of bounds access with operator() on indices (\"" << column << "\", " << row << ")";
+	}
+	return CX_DataFrameCell();
 }
-*/
+
+CX_DataFrameCell CX_SafeDataFrame::operator() (rowIndex_t row, std::string column) {
+	return this->operator()(column, row);
+}
+
+CX_DataFrameCell CX_SafeDataFrame::at (rowIndex_t row, std::string column) {
+	try {
+		return _data.at(column).at(row);
+	} catch (std::exception& e) {
+		std::stringstream s;
+		s << "CX_SafeDataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
+		throw std::exception(s.str().c_str());
+	}
+}
+
+CX_DataFrameCell CX_SafeDataFrame::at (std::string column, rowIndex_t row) {
+	return at(row, column);
+}
+
+void CX_SafeDataFrame::setRowCount (rowIndex_t rowCount) {
+	_resizeToFit(rowCount - 1);
+}
+
+void CX_SafeDataFrame::addColumn (std::string columnName) {
+	_data[columnName].resize( _rowCount );
+}
