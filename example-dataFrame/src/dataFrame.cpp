@@ -29,13 +29,13 @@ void setupExperiment (void) {
 	df("vect", 0) = CX::intVector(3,1); //You can easily store vectors of data.
 	df(0, "doubles") = 123.456; //You can do (row, column), if desired.
 
-	//You can also use operator[] to access cells in the data frame. Using (row,column) is faster than using operator[].
+	//You can also use operator[] to access cells in the data frame. However, using (row,column) is faster (computationally) than using operator[].
 	df["doubles"][1] = 1.996;
 	df[1]["vect"] = CX::sequence(9, 5, -2);
 
 	//The contents of the data frame can be printed to a string, then used as you wish:
 	string dataFrame = df.print(";"); //The semicolon delimiter makes it easy to see which cells have not been initialized (a dwelling is missing).
-	cout << dataFrame << endl;
+	cout << "The initial data in the data frame: " << endl << dataFrame << endl;
 
 	//Once stuff has been put into the data frame, you can extract it fairly easily:
 	double d = df("doubles", 0); //The type is implicitly converted during extraction.
@@ -44,7 +44,7 @@ void setupExperiment (void) {
 	string house = df("dwellings", 1).toString(); //The common case that is tricky are strings, which require a special function call to be extracted.
 
 	//You can see that what comes out looks like what went in:
-	cout << endl << d << endl << i << endl << house << endl << ofToString(intvector) << endl << endl;
+	cout << endl << "Some selected data: " << endl << d << endl << i << endl << house << endl << CX::vectorToString(intvector) << endl << endl;
 
 	//Although you can use operator() to set data, it is somewhat safer to fill out a row of data at at time
 	//(e.g. over the course of a trial) and append that row to the data frame because you don't have to worry about getting the row index right.
@@ -55,16 +55,16 @@ void setupExperiment (void) {
 	//Notice that the "doubles" column is missing. This is handled silently.
 	df.appendRow(cellRow);
 
-	cout << df.print("\t") << endl; //Print again, this time with a tab delimiter
+	cout << endl << "With a row appended: " << endl << df.print("\t") << endl; //Print again, this time with a tab delimiter
 
 	//There are more complex ways to print that involve specifying which columns and rows are desired.	
 	set<string> printCol;
 	printCol.insert("dwellings");
 	printCol.insert("vect");
 	vector<unsigned int> printRow = CX::uintVector(0, 1);
-	cout << df.print( printCol, printRow, ";" ); 
+	cout << endl << "Only selected rows and columns: " << df.print( printCol, printRow, ";" ); 
 
-	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.rowCount() to get the
+	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.getRowCount() to get the
 	//the information needed. Rows in a CX_DataFrame are always numbered from 0.
 
 	vector<int> intVector = df.copyColumn<int>("ints"); //You can copy the data in a column out of the data frame, as long as you
@@ -85,7 +85,7 @@ void setupExperiment (void) {
 	row1["new"] = "This is new";
 
 	//Print the final version of the data frame
-	cout << endl << df.print() << endl;
+	cout << endl << "Final version: " << df.print() << endl;
 
 	//This shows the equivalence of various orders of the use of operator[].
 	string s1 = row1["dwellings"].toString();
@@ -161,7 +161,7 @@ void setupExperiment (void) {
 
 	//sdf["str"] //Both operator[] overloads are gone.
 
-	sdf.rowCount(); //These are both still avalable.
+	sdf.getRowCount(); //These are both still avalable.
 	sdf.columnNames();
 }
 

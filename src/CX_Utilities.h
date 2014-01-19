@@ -39,7 +39,7 @@ namespace CX {
 	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
 
 	template <typename T> std::string vectorToString (std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
-	template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart = "{", std::string elementEnd = "}", int significantDigits = 8);
+	//template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart = "{", std::string elementEnd = "}", int significantDigits = 8);
 
 	template <typename T> bool writeToFile (std::string filename, const T& data, bool append = true);
 	bool writeToFile (std::string filename, string data, bool append = true);
@@ -86,6 +86,7 @@ std::string CX::vectorToString (std::vector<T> values, string delimiter, int sig
 	return s.str();
 }
 
+/*
 template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart, std::string elementEnd, int significantDigits) {
 	std::stringstream s;
 	s << std::fixed << std::setprecision(significantDigits);
@@ -94,6 +95,7 @@ template <typename T> std::string vectorToString (std::vector<T> value, std::str
 	}
 	return s.str();
 }
+*/
 
 
 template <typename T> 

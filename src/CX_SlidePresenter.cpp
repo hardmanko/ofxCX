@@ -149,6 +149,7 @@ void CX_SlidePresenter::update (void) {
 				Log.verbose("CX_SlidePresenter") << "Fence sync done for slide #" << _currentSlide;
 			} else {
 				Log.error("CX_SlidePresenter") << "Fence sync completed when active slide was not waiting for copy to back buffer.";
+				_awaitingFenceSync = false;
 			}
 
 		}

@@ -37,8 +37,8 @@ public:
 
 	CX_DataFrame (void);
 
-	CX_DataFrameCell& operator() (std::string column, rowIndex_t row);
-	CX_DataFrameCell& operator() (rowIndex_t row, std::string column);
+	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
+	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
 	CX_DataFrameColumn operator[] (std::string column);
 	CX_DataFrameRow operator[] (rowIndex_t row);
 
@@ -55,7 +55,7 @@ public:
 	bool printToFile (std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
 
 	std::vector<std::string> columnNames (void);
-	rowIndex_t rowCount (void) { return _rowCount; };
+	rowIndex_t getRowCount (void) { return _rowCount; };
 
 	template <typename T> std::vector<T> copyColumn (std::string column) {
 		_resizeToFit(column);
@@ -83,7 +83,7 @@ protected:
 class CX_DataFrameColumn {
 public:
 	CX_DataFrameColumn (void);
-	CX_DataFrameCell& operator[] (CX_DataFrame::rowIndex_t row);
+	CX_DataFrameCell operator[] (CX_DataFrame::rowIndex_t row);
 	CX_DataFrame::rowIndex_t size (void);
 
 private:
@@ -99,7 +99,7 @@ private:
 class CX_DataFrameRow {
 public:
 	CX_DataFrameRow (void);
-	CX_DataFrameCell& operator[] (std::string column);
+	CX_DataFrameCell operator[] (std::string column);
 	vector<std::string> names (void);
 	void clear (void);
 
@@ -112,7 +112,7 @@ private:
 	CX_DataFrame::rowIndex_t _rowNumber;
 };
 
-class CX_SafeDataFrame : private CX_DataFrame {
+class CX_SafeDataFrame : protected CX_DataFrame {
 public:
 
 	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
@@ -129,8 +129,10 @@ public:
 	using CX_DataFrame::printToFile;
 	using CX_DataFrame::copyColumn;
 	using CX_DataFrame::columnNames;
-	using CX_DataFrame::rowCount;
+	using CX_DataFrame::getRowCount;
+
 };
+
 
 }
 

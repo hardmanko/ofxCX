@@ -16,7 +16,7 @@ struct TrialData_t {
 	int changedObjectIndex;
 	ofColor newColor;
 
-	CX_KeyEvent_t response;
+	//CX_KeyEvent_t response;
 	int64_t responseTime;
 	bool responseCorrect;
 };
@@ -175,7 +175,7 @@ void updateExperiment (void) {
 				//Ignore all responses that are not s or d.
 				if (keyEvent.key == 's' || keyEvent.key == 'd') {
 				
-					trials.at( trialIndex ).response = keyEvent; //Store the raw response event.
+					//trials.at( trialIndex ).response = keyEvent; //Store the raw response event.
 
 					//Figure out the response time. CX does no automatic response time calculation. You have
 					//to find out when the stimulus that the participant is responding to was presented. In

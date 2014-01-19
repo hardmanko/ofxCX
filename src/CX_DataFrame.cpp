@@ -8,12 +8,12 @@ CX_DataFrame::CX_DataFrame (void) :
 	_rowCount(0)
 {}
 
-CX_DataFrameCell& CX_DataFrame::operator() (string column, rowIndex_t row) {
+CX_DataFrameCell CX_DataFrame::operator() (string column, rowIndex_t row) {
 	_resizeToFit(column, row);
 	return _data[column][row];
 }
 
-CX_DataFrameCell& CX_DataFrame::operator() (rowIndex_t row, string column) {
+CX_DataFrameCell CX_DataFrame::operator() (rowIndex_t row, string column) {
 	return this->operator()(column, row);
 }
 
@@ -26,11 +26,11 @@ CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 }
 
 string CX_DataFrame::print (string delimiter, bool printRowNumbers) {
-	return print(CX::uintVector(0, rowCount() - 1), delimiter, printRowNumbers);
+	return print(CX::uintVector(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
 string CX_DataFrame::print (const set<string>& columns, string delimiter, bool printRowNumbers) {
-	return print(columns, CX::uintVector(0, rowCount() - 1), delimiter, printRowNumbers);
+	return print(columns, CX::uintVector(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
 string CX_DataFrame::print (const vector<rowIndex_t>& rows, string delimiter, bool printRowNumbers) {
@@ -59,6 +59,11 @@ string CX_DataFrame::print (const set<string>& columns, const vector<rowIndex_t>
 	}
 
 	for (rowIndex_t i = 0; i < rows.size(); i++) {
+		//Skip invalid row numbers
+		if (rows[i] >= _rowCount) {
+			continue;
+		}
+
 		output << endl;
 		if (printRowNumbers) {
 			output << rows[i] << delimiter;
@@ -168,7 +173,7 @@ CX_DataFrameColumn::CX_DataFrameColumn(CX_DataFrame *df, std::string column) :
 	_columnName(column) 
 {}
 
-CX_DataFrameCell& CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
+CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
 	if (_df) {
 		return _df->operator()(row, _columnName);
 	} else {
@@ -178,7 +183,7 @@ CX_DataFrameCell& CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) 
 
 CX_DataFrame::rowIndex_t CX_DataFrameColumn::size (void) {
 	if (_df) {
-		return _df->rowCount();
+		return _df->getRowCount();
 	} else {
 		return _data.size();
 	}
@@ -199,7 +204,7 @@ CX_DataFrameRow::CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::rowIndex_t rowN
 	_rowNumber(rowNumber) 
 {}
 
-CX_DataFrameCell& CX_DataFrameRow::operator[] (std::string column) {
+CX_DataFrameCell CX_DataFrameRow::operator[] (std::string column) {
 	if (_df) {
 		return _df->operator()(column, _rowNumber);
 	} else {
@@ -267,5 +272,5 @@ void CX_SafeDataFrame::setRowCount (rowIndex_t rowCount) {
 }
 
 void CX_SafeDataFrame::addColumn (std::string columnName) {
-	_data[columnName].resize( _rowCount );
+	_data[columnName].resize(_rowCount);
 }
