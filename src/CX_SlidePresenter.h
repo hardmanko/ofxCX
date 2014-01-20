@@ -5,7 +5,7 @@
 
 #include "ofFbo.h"
 
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 #include "CX_Utilities.h"
 #include "CX_Display.h"
 

@@ -13,7 +13,7 @@
 #include "ofGlProgrammableRenderer.h"
 
 #include "CX_Clock.h"
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 #include "CX_SwappingThread.h"
 
 namespace CX {

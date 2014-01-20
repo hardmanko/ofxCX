@@ -9,7 +9,7 @@
 
 #include "ofUtils.h"
 
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 
 //#ifdef TARGET_WIN32
 //#include "Windows.h" //Must include Windows.h before glfw3.h?
@@ -31,25 +31,22 @@ namespace CX {
 	template <typename T> std::vector<T> sequenceSteps (T start, T stepSize, unsigned int steps);
 	template <typename T> std::vector<T> sequenceAlong (T start, T end, unsigned int steps);
 
-	std::vector<int> intVector (int start, int end);
-	std::vector<unsigned int> uintVector (unsigned int start, unsigned int end);
+	template <typename T> std::vector<T> intVector (T start, T end);
 
-	std::vector<int> intVectorByCount (std::vector<int> counts);
-	std::vector<int> intVectorByCountAndValue (std::vector<int> counts, std::vector<int> values);
+	//std::vector<int> intVector (int start, int end); //Superseded by templated intVector
+	//std::vector<unsigned int> uintVector (unsigned int start, unsigned int end);
+
+	//std::vector<int> intVectorByCount (std::vector<int> counts); //This is wierd. Do I ever use it?
+	//std::vector<int> intVectorByCountAndValue (std::vector<int> counts, std::vector<int> values); //Superseded by repeat(vector, vector)
 
 	template <typename T> std::vector<T> repeat (T value, unsigned int times);
 	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
-	template <typename T> std::vector<T> repeat (std::vector<T> values, vector<unsigned int> each, unsigned int times = 1);
+	template <typename T> std::vector<T> repeat (std::vector<T> values, std::vector<unsigned int> each, unsigned int times = 1);
 
 	template <typename T> std::string vectorToString (std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
-	//template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart = "{", std::string elementEnd = "}", int significantDigits = 8);
 
 	template <typename T> bool writeToFile (std::string filename, const T& data, bool append = true);
 	bool writeToFile (std::string filename, string data, bool append = true);
-
-	//void drawFboToBackBuffer (ofFbo &fbo);
-	//void exit (void);
-	//void pollEvents (void);
 };
 
 template <typename T> bool writeToFile (std::string filename, const T& data, bool append) {
@@ -157,6 +154,10 @@ template <typename T> std::vector<T> CX::sequenceSteps (T start, T stepSize, uns
 template <typename T> std::vector<T> CX::sequenceAlong (T start, T end, unsigned int outputLength) {
 	T stepSize = (end - start)/(outputLength - 1);
 	return CX::sequence<T>(start, end, stepSize);
+}
+
+template <typename T> std::vector<T> CX::intVector (T start, T end) {
+	return CX::sequence<T>(start, end, 1);
 }
 
 #endif //_CX_UTILITIES_H_

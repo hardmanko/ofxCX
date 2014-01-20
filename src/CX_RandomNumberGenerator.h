@@ -39,6 +39,10 @@ namespace CX {
 		std::mt19937_64 _mersenneTwister;
 	};
 
+	namespace Instances {
+		extern CX_RandomNumberGenerator RNG;
+	}
+
 	template <typename T>
 	void CX_RandomNumberGenerator::shuffleVector (vector<T> *v) {
 		std::shuffle( v->begin(), v->end(), _mersenneTwister );
@@ -60,7 +64,7 @@ namespace CX {
 		vector<T> samples;
 
 		if (withReplacement) {
-			for (unsigned int i = 0; i < count; i++) {
+			for (vector<T>::size_type i = 0; i < count; i++) {
 				samples.push_back( source.at( (vector<CX_RandomInt_t>::size_type)randomInt(0, source.size() - 1) ) );
 			}
 		} else {
@@ -70,7 +74,7 @@ namespace CX {
 				return samples;
 			}
 
-			vector<int> indices = shuffleVector( CX::intVector(0, source.size() - 1) );
+			vector<vector<T>::size_type> indices = shuffleVector( CX::intVector<vector<T>::size_type>(0, source.size() - 1) );
 
 			for (unsigned int i = 0; i < count; i++) {
 				samples.push_back( source[ indices[i] ] );

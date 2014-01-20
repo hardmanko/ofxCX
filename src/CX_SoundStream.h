@@ -9,7 +9,7 @@
 #include "ofEvents.h"
 
 #include "CX_Clock.h"
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 
 #define CX_SOUND_STREAM_USE_DEFAULT_DEVICE -1
 

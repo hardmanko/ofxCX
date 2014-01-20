@@ -21,8 +21,7 @@ is called.
 #define _CX_TRIAL_CONTROLLER_H_
 
 #include <vector>
-
-using namespace std;
+#include <functional>
 
 namespace CX {
 
@@ -32,7 +31,7 @@ namespace CX {
 
 		int update (void);
 	
-		void appendFunction (int (*userFunction) (void));
+		void appendFunction (std::function<int(void)> userFunction);
 		void reset (void);
 
 		bool setCurrentFunction (int currentFunction);
@@ -41,7 +40,8 @@ namespace CX {
 	private:
 		int _functionIndex;
 
-		vector < int (*)(void) > _userFunctions;
+		//vector < int (*)(void) > _userFunctions;
+		std::vector< std::function<int(void)> > _userFunctions;
 	};
 
 }

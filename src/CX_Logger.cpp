@@ -1,4 +1,4 @@
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 
 using namespace CX;
 

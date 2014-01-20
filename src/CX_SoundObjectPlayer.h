@@ -8,7 +8,7 @@ This class is used for playing CX_SoundObjects.
 #include "CX_SoundObject.h"
 #include "CX_SoundStream.h"
 #include "CX_Clock.h"
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 
 #include "ofEvents.h"
 

@@ -12,7 +12,8 @@
 #include "ofUtils.h"
 
 #include "CX_Utilities.h"
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
+#include "CX_RandomNumberGenerator.h"
 
 #include "CX_DataFrameCell.h"
 
@@ -56,6 +57,14 @@ public:
 
 	std::vector<std::string> columnNames (void);
 	rowIndex_t getRowCount (void) { return _rowCount; };
+
+
+
+	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
+	CX_DataFrame copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder);
+	void shuffleRows (void);
+	void shuffleRows (CX_RandomNumberGenerator &rng);
+
 
 	template <typename T> std::vector<T> copyColumn (std::string column) {
 		_resizeToFit(column);
@@ -130,6 +139,7 @@ public:
 	using CX_DataFrame::copyColumn;
 	using CX_DataFrame::columnNames;
 	using CX_DataFrame::getRowCount;
+	using CX_DataFrame::shuffleRows;
 
 };
 

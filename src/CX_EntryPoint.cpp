@@ -7,7 +7,6 @@ using namespace CX;
 CX_Display Instances::Display;
 CX_InputManager Instances::Input;
 CX_SlidePresenter Instances::SlidePresenter;
-CX_RandomNumberGenerator Instances::RNG;
 
 void CX::Private::App::setup (void) {
 	ofAddListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );

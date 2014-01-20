@@ -6,7 +6,7 @@
 #include "CX_Utilities.h"
 
 #include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Clock
-#include "CX_DeferredLogger.h" //Includes an instance called CX::Log
+#include "CX_Logger.h" //Includes an instance called CX::Log
 //#include "CX_Events.h"
 
 //Make instances of these
@@ -43,7 +43,6 @@ namespace CX {
 		extern CX_Display Display;
 		extern CX_SlidePresenter SlidePresenter;
 		extern CX_InputManager Input;
-		extern CX_RandomNumberGenerator RNG;
 	}
 
 }

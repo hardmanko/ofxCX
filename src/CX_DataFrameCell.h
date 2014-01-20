@@ -10,7 +10,7 @@
 #include "ofUtils.h"
 
 #include "CX_Utilities.h"
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 
 namespace CX {
 

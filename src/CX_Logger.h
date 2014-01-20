@@ -15,8 +15,6 @@
 
 #include "CX_Clock.h"
 
-//#undef ERROR //This is annoying and likely problematic.
-
 using namespace std;
 
 namespace CX {

@@ -14,7 +14,7 @@ a fairly large vector of sound samples.
 #include "ofFmodSoundPlayer.h"
 
 #include "CX_Clock.h"
-#include "CX_DeferredLogger.h"
+#include "CX_Logger.h"
 
 namespace CX {
 

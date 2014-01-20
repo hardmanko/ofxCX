@@ -7,7 +7,7 @@ CX_TrialController::CX_TrialController (void) :
 {
 }
 
-void CX_TrialController::appendFunction (int (*userFunction)(void)) {
+void CX_TrialController::appendFunction (std::function<int(void)> userFunction) {
 	_userFunctions.push_back(userFunction);
 }
 

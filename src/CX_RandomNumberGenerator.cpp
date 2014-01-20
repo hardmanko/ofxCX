@@ -4,6 +4,8 @@
 
 using namespace CX;
 
+CX_RandomNumberGenerator Instances::RNG;
+
 CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
 
 	std::random_device rd; //By the C++11 specification, std::random_device is supposed to be a non-deterministic 
