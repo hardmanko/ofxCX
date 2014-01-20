@@ -18,6 +18,8 @@ class CX_DataFrameCell {
 public:
 
 	CX_DataFrameCell (void);
+	template <typename T> CX_DataFrameCell (const T& value);
+	template <typename T> CX_DataFrameCell (const std::vector<T>& values);
 
 	template <typename T> CX_DataFrameCell& operator= (const T& value);
 	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values);
@@ -25,7 +27,9 @@ public:
 	template <typename T> operator T (void) const;
 	template <typename T> operator std::vector<T> (void) const;
 
+
 	std::string toString (void) const;
+	bool toBool (void) const;
 	int toInt (void) const;
 	double toDouble (void) const;
 	template <typename T> T to (void) const;
@@ -35,17 +39,47 @@ public:
 
 private:
 	std::shared_ptr<std::string> _str;
+
+	template <typename T>
+	std::string _toString (const T& value) {
+		return ofToString<T>(value, 16);
+	}
+
+	template <typename T>
+	std::string _vectorToString (std::vector<T> values, std::string delimiter, int significantDigits) {
+		std::stringstream s;
+		s << std::fixed << std::setprecision(significantDigits);
+		for (unsigned int i = 0; i < values.size(); i++) {
+			s << _toString(values[i]);
+			if (i != values.size() - 1) {
+				s << delimiter;
+			}
+		}
+		return s.str();
+	}
 };
+
+template <typename T> 
+CX_DataFrameCell::CX_DataFrameCell (const T& value) {
+	_str = std::shared_ptr<std::string>(new std::string);
+	*_str = _toString(value);
+}
+
+template <typename T> 
+CX_DataFrameCell::CX_DataFrameCell (const std::vector<T>& values) {
+	_str = std::shared_ptr<std::string>(new std::string);
+	storeVector<T>(values);
+}
 
 template <typename T>
 CX_DataFrameCell& CX_DataFrameCell::operator= (const T& value) {
-	*_str = ofToString<T>(value, 16);
+	*_str = _toString(value);
 	return *this;
 }
 
 template <typename T>
 CX_DataFrameCell& CX_DataFrameCell::operator= (const std::vector<T>& values) {
-	storeVector(values);
+	storeVector<T>(values);
 	return *this;
 }
 

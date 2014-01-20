@@ -94,7 +94,7 @@ bool CX::checkOFVersion (int versionMajor, int versionMinor, int versionPatch) {
 	return false;
 }
 
-//Add various log data on failure: why failure?
+//Add various log data on failure: why failed?
 bool CX::writeToFile (std::string filename, string data, bool append) {
 	ofFile out( ofToDataPath(filename), (append ? ofFile::Append : ofFile::WriteOnly), false );
 	if (out.is_open()) {

@@ -9,6 +9,8 @@
 
 #include "ofUtils.h"
 
+#include "CX_DeferredLogger.h"
+
 //#ifdef TARGET_WIN32
 //#include "Windows.h" //Must include Windows.h before glfw3.h?
 //#endif
@@ -37,6 +39,7 @@ namespace CX {
 
 	template <typename T> std::vector<T> repeat (T value, unsigned int times);
 	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
+	template <typename T> std::vector<T> repeat (std::vector<T> values, vector<unsigned int> each, unsigned int times = 1);
 
 	template <typename T> std::string vectorToString (std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
 	//template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart = "{", std::string elementEnd = "}", int significantDigits = 8);
@@ -66,6 +69,26 @@ std::vector<T> CX::repeat (std::vector<T> values, unsigned int times, unsigned i
 		for (int val = 0; val < values.size(); val++) {
 			for (int j = 0; j < each; j++) {
 				rval.push_back( values[val] );
+			}
+		}
+	}
+
+	return rval;
+}
+
+template <typename T> 
+std::vector<T> CX::repeat (std::vector<T> values, vector<unsigned int> each, unsigned int times) {
+	std::vector<T> rval;
+
+	if (values.size() != each.size()) {
+		Log.error("CX::Util::repeat") << "values.size() != each.size()";
+		return rval;
+	}
+
+	for (int i = 0; i < times; i++) {
+		for (int j = 0; j < values.size(); j++) {
+			for (int k = 0; k < each[j]; k++) {
+				rval.push_back( values[j] );
 			}
 		}
 	}

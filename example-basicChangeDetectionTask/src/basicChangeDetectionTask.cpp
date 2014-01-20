@@ -244,8 +244,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 		tr.changeTrial = changeTrial[trial];
 		if (tr.changeTrial) {
-			//randomInt() returns an unsigned int from the given range (inclusive).
-			//It is strictly unsigned; use randomSignedInt() for signed ints.
+			//randomInt() returns an unsigned int from the given range (including both endpoints).
 			tr.changedObjectIndex = RNG.randomInt(0, tr.arraySize - 1); 
 			tr.newColor = objectColors[colorIndices.at(tr.arraySize)];
 		} else {

@@ -2,7 +2,7 @@
 
 using namespace CX;
 
-std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
+std::ostream& CX::operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
 	os << cell.toString();
 	return os;
 }
@@ -13,6 +13,10 @@ CX_DataFrameCell::CX_DataFrameCell (void) {
 
 string CX_DataFrameCell::toString (void) const {
 	return *_str;
+}
+
+bool CX_DataFrameCell::toBool (void) const {
+	return this->to<bool>();
 }
 
 int CX_DataFrameCell::toInt (void) const {

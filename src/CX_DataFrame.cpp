@@ -26,10 +26,16 @@ CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 }
 
 string CX_DataFrame::print (string delimiter, bool printRowNumbers) {
+	if (getRowCount() == 0) {
+		return "No rows to print.";
+	}
 	return print(CX::uintVector(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
 string CX_DataFrame::print (const set<string>& columns, string delimiter, bool printRowNumbers) {
+	if (getRowCount() == 0) {
+		return "No rows to print.";
+	}
 	return print(columns, CX::uintVector(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
@@ -43,6 +49,10 @@ string CX_DataFrame::print (const vector<rowIndex_t>& rows, string delimiter, bo
 }
 
 string CX_DataFrame::print (const set<string>& columns, const vector<rowIndex_t>& rows, string delimiter, bool printRowNumbers) {
+	if (getRowCount() == 0) {
+		return "No rows to print.";
+	}
+
 	stringstream output;
 
 	if (printRowNumbers) {
