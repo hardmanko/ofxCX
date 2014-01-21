@@ -74,20 +74,20 @@ template <typename T>
 std::vector< std::vector<T> > CX::Algo::fullyCross (std::vector< std::vector<T> > factors) {
 
 	unsigned int crossedLevels = 1;
-	for (int factor = 0; factor < factors.size(); factor++) {
+	for (unsigned int factor = 0; factor < factors.size(); factor++) {
 		crossedLevels *= factors[factor].size();
 	}
 
 	std::vector< std::vector<T> > formatOne(factors.size());
-	int lback = 1;
+	unsigned int lback = 1;
 	for (unsigned int factor = 0; factor < factors.size(); factor++) {
 
-		int lcurrent = factors[factor].size();
-		int lforward = crossedLevels / (lback * lcurrent);
+		unsigned int lcurrent = factors[factor].size();
+		unsigned int lforward = crossedLevels / (lback * lcurrent);
 
-		for (int b = 0; b < lback; b++) {
-			for (int c = 0; c < lcurrent; c++) {
-				for (int f = 0; f < lforward; f++) {
+		for (unsigned int b = 0; b < lback; b++) {
+			for (unsigned int c = 0; c < lcurrent; c++) {
+				for (unsigned int f = 0; f < lforward; f++) {
 					formatOne[factor].push_back(factors[factor][c]);
 				}
 			}

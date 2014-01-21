@@ -2,8 +2,11 @@
 #define _CX_TRIAL_CONTROLLER_CLASS_H_
 
 #include <vector>
+#include <functional>
 
-using namespace std;
+#include "CX_Logger.h"
+
+//using namespace std;
 
 namespace CX {
 
@@ -25,8 +28,7 @@ namespace CX {
 
 		int _functionIndex;
 
-		vector < int (T::*)(void) > _userFunctions;
-
+		std::vector < int (T::*)(void) > _userFunctions;
 	};
 
 	template <class T>
@@ -61,7 +63,7 @@ namespace CX {
 	template <class T>
 	int CX_TrialController_Class<T>::update (void) {
 		if (!_instance) {
-			ofLogError("CX_TrialController_Class") << "Update called without a valid instance from which to call member functions!";
+			CX::Instances::Log.error("CX_TrialController_Class") << "Update called without a valid instance from which to call member functions!";
 			return std::numeric_limits<int>::min();
 		}
 

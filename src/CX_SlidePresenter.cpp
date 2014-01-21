@@ -78,7 +78,7 @@ void CX_SlidePresenter::update (void) {
 				//If on the first frame, some setup must be done for the rest of the frames. The first frame has just swapped in.
 				if (_currentSlide == 0) {
 
-					_slides.at(0).intendedSlideOnset = currentFrameOnset; //This is sort of weird, but also sort of true.
+					_slides.at(0).intendedSlideOnset = currentFrameOnset; //This is sort of weird, but true.
 					_slides.at(0).intendedOnsetFrameNumber = currentFrameNumber;
 					
 					for (int i = 0; i < _slides.size() - 1; i++) {
@@ -90,19 +90,26 @@ void CX_SlidePresenter::update (void) {
 
 				//If there was a previous frame, mark it as finished.
 				if (_currentSlide > 0) {
-					_slides.at(_currentSlide - 1).slideStatus = CX_Slide_t::FINISHED;
+					CX_Slide_t &lastSlide = _slides.at(_currentSlide - 1);
+					lastSlide.slideStatus = CX_Slide_t::FINISHED;
+
+					//Now that the slide is finished, figure out its duration.
+					lastSlide.actualSlideDuration = _slides.at(_currentSlide).actualSlideOnset - lastSlide.actualSlideOnset;
+					lastSlide.actualFrameCount = _slides.at(_currentSlide).actualOnsetFrameNumber - lastSlide.actualOnsetFrameNumber;
 				}
 
 				//If this is the last frame, then we are done presenting frames.
 				if (_currentSlide == (_slides.size() - 1)) {
 					_presentingSlides = false;
 
-					for (int i = 0; i < _slides.size() - 1; i++) {
+					/*
+					for (unsigned int i = 0; i < _slides.size() - 1; i++) {
 						_slides.at(i).actualSlideDuration = _slides.at(i + 1).actualSlideOnset - _slides.at(i).actualSlideOnset;
 						_slides.at(i).actualFrameCount = _slides.at(i + 1).actualOnsetFrameNumber - _slides.at(i).actualOnsetFrameNumber;
 					}
+					*/
 
-					//The duration of the final frame is undefined.
+					//The duration of the final frame is undefined. These could be 0.
 					_slides.back().actualSlideDuration = std::numeric_limits<CX_Micros_t>::max();
 					_slides.back().actualFrameCount = std::numeric_limits<uint32_t>::max();
 				}
@@ -114,9 +121,7 @@ void CX_SlidePresenter::update (void) {
 
 				//Is that slide ready to swap in?
 				if ( _slides.at(_currentSlide + 1).intendedOnsetFrameNumber <= (currentFrameNumber + 1)) {
-
 					_currentSlide++;
-					
 					_renderNextFrame();
 				}
 			}
@@ -132,7 +137,10 @@ void CX_SlidePresenter::update (void) {
 		}
 	}
 
+	_waitSyncCheck();
+}
 
+void CX_SlidePresenter::_waitSyncCheck (void) {
 	//By forcing the fence sync to complete before the slide is marked as ready to swap, you run into the potential
 	//for a late fence sync paired with an on time write to the back buffer to result in false positives for an error
 	//condition. Better a false positive than a miss, I guess.
@@ -232,7 +240,7 @@ void CX_SlidePresenter::appendSlide (CX_Slide_t slide) {
 	_slides.push_back( slide );
 }
 
-void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t slideDuration, string slideName) {
+void CX_SlidePresenter::appendSlideFunction (std::function<void(void)> drawingFunction, CX_Micros_t slideDuration, string slideName) {
 
 	if (slideDuration == 0) {
 		Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration 0 ignored.";
@@ -266,6 +274,14 @@ vector<CX_Micros_t> CX_SlidePresenter::getActualPresentationDurations (void) {
 		durations[i] = _slides[i].actualSlideDuration;
 	}
 	return durations;
+}
+
+vector<unsigned int> CX_SlidePresenter::getActualFrameCounts (void) {
+	vector<unsigned int> frameCount(_slides.size());
+	for (unsigned int i = 0; i < _slides.size(); i++) {
+		frameCount[i] = _slides[i].actualFrameCount;
+	}
+	return frameCount;
 }
 
 int CX_SlidePresenter::checkForPresentationErrors (void) {
