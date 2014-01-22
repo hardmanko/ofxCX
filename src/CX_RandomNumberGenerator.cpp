@@ -64,3 +64,12 @@ Returns a vector of count integers from the range [lowerBound, upperBound] with 
 vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
 	return sample(count, CX::intVector(lowerBound, upperBound), withReplacement);
 }
+
+std::vector<double> CX_RandomNumberGenerator::normalDeviates (unsigned int count, double mean, double standardDeviation) {
+	std::vector<double> samples(count);
+	std::normal_distribution<double> normDist(mean, standardDeviation);
+	for (unsigned int i = 0; i < count; i++) {
+		samples[i] = normDist(_mersenneTwister);
+	}
+	return samples;
+}

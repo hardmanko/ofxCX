@@ -8,6 +8,7 @@
 #include <fstream>
 
 #include "ofUtils.h"
+#include "ofTrueTypeFont.h"
 
 #include "CX_Logger.h"
 
@@ -27,17 +28,13 @@ namespace CX {
 
 	int getSampleCount (void);
 
+	template <typename T> std::vector<T> arrayToVector (T arr[], unsigned int arraySize);
+
 	template <typename T> std::vector<T> sequence (T start, T end, T stepSize);
 	template <typename T> std::vector<T> sequenceSteps (T start, T stepSize, unsigned int steps);
 	template <typename T> std::vector<T> sequenceAlong (T start, T end, unsigned int steps);
 
 	template <typename T> std::vector<T> intVector (T start, T end);
-
-	//std::vector<int> intVector (int start, int end); //Superseded by templated intVector
-	//std::vector<unsigned int> uintVector (unsigned int start, unsigned int end);
-
-	//std::vector<int> intVectorByCount (std::vector<int> counts); //This is wierd. Do I ever use it?
-	//std::vector<int> intVectorByCountAndValue (std::vector<int> counts, std::vector<int> values); //Superseded by repeat(vector, vector)
 
 	template <typename T> std::vector<T> repeat (T value, unsigned int times);
 	template <typename T> std::vector<T> repeat (std::vector<T> values, unsigned int times, unsigned int each = 1);
@@ -47,9 +44,12 @@ namespace CX {
 
 	template <typename T> bool writeToFile (std::string filename, const T& data, bool append = true);
 	bool writeToFile (std::string filename, string data, bool append = true);
+
+	void drawCenteredString (std::string s, ofTrueTypeFont &font, int x, int y);
+	void drawCenteredString (string s, ofTrueTypeFont &font, ofPoint location);
 };
 
-template <typename T> bool writeToFile (std::string filename, const T& data, bool append) {
+template <typename T> bool CX::writeToFile (std::string filename, const T& data, bool append) {
 	return toFile(filename, ofToString<T>(data), append);
 }
 
@@ -158,6 +158,14 @@ template <typename T> std::vector<T> CX::sequenceAlong (T start, T end, unsigned
 
 template <typename T> std::vector<T> CX::intVector (T start, T end) {
 	return CX::sequence<T>(start, end, 1);
+}
+
+template <typename T> std::vector<T> CX::arrayToVector (T arr[], unsigned int arraySize) {
+	std::vector<T> rval(arraySize);
+	for (std::vector<T>::size_type i = 0; i < arraySize; i++) {
+		rval[i] = arr[i];
+	}
+	return rval;
 }
 
 #endif //_CX_UTILITIES_H_

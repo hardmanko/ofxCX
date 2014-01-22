@@ -4,12 +4,12 @@
 #include "ofConstants.h"
 //#include "ofFileUtils.h"
 
+//These two go together
 #include "GLFW\glfw3.h"
-
 GLFWwindow *CX::Private::glfwContext;
 
 using namespace std;
-
+using namespace CX;
 
 //#include "ofFbo.h"
 //#include "ofAppGLFWWindow.h"
@@ -51,46 +51,6 @@ int CX::getSampleCount (void) {
 	return 4; 
 };
 
-/*
-std::vector<int> CX::intVector (int start, int end) {
-	return sequence<int>(start, end, start < end ? 1 : -1);
-}
-
-std::vector<unsigned int> CX::uintVector (unsigned int start, unsigned int end) {
-	return sequence<unsigned int>(start, end, start < end ? 1 : -1);
-}
-
-
-std::vector<int> CX::intVectorByCount (std::vector<int> counts) {
-	std::vector<int> rval;
-
-	for (int i = 0; i < counts.size(); i++) {
-		for (int j = 0; j < counts[i]; j++) {
-			rval.push_back(i);
-		}
-	}
-
-	return rval;
-}
-
-
-std::vector<int> CX::intVectorByCountAndValue (std::vector<int> counts, std::vector<int> values) {
-	std::vector<int> rval;
-
-	if (counts.size() != values.size()) {
-		return rval;
-	}
-
-	for (int i = 0; i < counts.size(); i++) {
-		for (int j = 0; j < counts[i]; j++) {
-			rval.push_back(values.at(i));
-		}
-	}
-
-	return rval;
-}
-*/
-
 bool CX::checkOFVersion (int versionMajor, int versionMinor, int versionPatch) {
 	if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
 		return true;
@@ -107,4 +67,15 @@ bool CX::writeToFile (std::string filename, string data, bool append) {
 		return true;
 	}
 	return false;
+}
+
+void CX::drawCenteredString (string s, ofTrueTypeFont &font, int x, int y) {
+	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
+	x -= bb.width/2;
+	y -= bb.height/2;
+	font.drawString(s, x, y);
+}
+
+void CX::drawCenteredString (string s, ofTrueTypeFont &font, ofPoint location) {
+	drawCenteredString(s, font, location.x, location.y);
 }

@@ -69,17 +69,19 @@ void CX_SlidePresenter::update (void) {
 			//Was the current frame just swapped in? If so, store information about the swap time.
 			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::SWAP_PENDING) {
 
-				CX_Micros_t currentFrameOnset = _display->getLastSwapTime();
+				CX_Micros_t currentSlideOnset = _display->getLastSwapTime();
+
+				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
 
 				_slides.at(_currentSlide).actualOnsetFrameNumber = currentFrameNumber;
-				_slides.at(_currentSlide).actualSlideOnset = currentFrameOnset;
-				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
+				_slides.at(_currentSlide).actualSlideOnset = currentSlideOnset;
+				
 
 				//If on the first frame, some setup must be done for the rest of the frames. The first frame has just swapped in.
 				if (_currentSlide == 0) {
 
-					_slides.at(0).intendedSlideOnset = currentFrameOnset; //This is sort of weird, but true.
 					_slides.at(0).intendedOnsetFrameNumber = currentFrameNumber;
+					_slides.at(0).intendedSlideOnset = currentSlideOnset; //This is sort of weird, but true.
 					
 					for (int i = 0; i < _slides.size() - 1; i++) {
 						_slides.at(i + 1).intendedSlideOnset = _slides.at(i).intendedSlideOnset + _slides.at(i).intendedSlideDuration;
@@ -122,7 +124,7 @@ void CX_SlidePresenter::update (void) {
 				//Is that slide ready to swap in?
 				if ( _slides.at(_currentSlide + 1).intendedOnsetFrameNumber <= (currentFrameNumber + 1)) {
 					_currentSlide++;
-					_renderNextFrame();
+					_renderCurrentSlide();
 				}
 			}
 		}
@@ -130,7 +132,7 @@ void CX_SlidePresenter::update (void) {
 		if (_display->hasSwappedSinceLastCheck()) {
 			_currentSlide = 0;
 
-			_renderNextFrame();
+			_renderCurrentSlide();
 
 			_synchronizing = false;
 			_presentingSlides = true;
@@ -145,7 +147,7 @@ void CX_SlidePresenter::_waitSyncCheck (void) {
 	//for a late fence sync paired with an on time write to the back buffer to result in false positives for an error
 	//condition. Better a false positive than a miss, I guess.
 	if (_awaitingFenceSync) {
-		GLenum result = glClientWaitSync(_fenceSyncObject, 0, 100); //GL_SYNC_FLUSH_COMMANDS_BIT can be second parameter. Wait for 100 ns for sync.
+		GLenum result = glClientWaitSync(_fenceSyncObject, 0, 10); //GL_SYNC_FLUSH_COMMANDS_BIT can be second parameter. Wait for 10 ns for sync.
 		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
 			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING) {
 				
@@ -164,7 +166,7 @@ void CX_SlidePresenter::_waitSyncCheck (void) {
 	}
 }
 
-void CX_SlidePresenter::_renderNextFrame (void) {
+void CX_SlidePresenter::_renderCurrentSlide (void) {
 	if (_slides.at(_currentSlide).drawingFunction != NULL) {
 		_display->beginDrawingToBackBuffer();
 		_slides.at(_currentSlide).drawingFunction();
@@ -240,7 +242,7 @@ void CX_SlidePresenter::appendSlide (CX_Slide_t slide) {
 	_slides.push_back( slide );
 }
 
-void CX_SlidePresenter::appendSlideFunction (std::function<void(void)> drawingFunction, CX_Micros_t slideDuration, string slideName) {
+void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t slideDuration, string slideName) {
 
 	if (slideDuration == 0) {
 		Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration 0 ignored.";
@@ -310,4 +312,12 @@ string CX_SlidePresenter::getActiveSlideName (void) {
 		return _slides.at(_currentSlide).slideName;
 	}
 	return "Active slide index out of range.";
+}
+
+CX_Slide_t& CX_SlidePresenter::getSlide (unsigned int slideIndex) {
+	if (slideIndex < _slides.size()) {
+		return _slides.at(slideIndex);
+	}
+	Log.error("CX_SlidePresenter") << "getSlide: slideIndex out of range";
+	_slides.back(); //Throws if size == 0
 }

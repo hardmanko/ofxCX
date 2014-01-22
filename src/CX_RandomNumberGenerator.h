@@ -3,6 +3,7 @@
 
 #include <random>
 #include <vector>
+#include <set>
 
 #include <stdint.h>
 
@@ -26,10 +27,16 @@ namespace CX {
 		CX_RandomInt_t randomInt(void);
 		CX_RandomInt_t randomInt(CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper);
 
+		template <typename T> T randomExclusive (const vector<T> &values, const T& exclude);
+		template <typename T> T randomExclusive (const vector<T> &values, const vector<T> &exclude);
+
 		double uniformDouble(double lowerBound_closed, double upperBound_open);
+		template <typename T> std::vector<T> binomialDeviates (unsigned int count, T trials, double probSuccess);
+		std::vector<double> normalDeviates (unsigned int count, double mean, double standardDeviation);
 
 		template <typename T> void shuffleVector (vector<T> *v);
 		template <typename T> vector<T> shuffleVector (vector<T> v);
+		template <typename T> T sample (vector<T> values);
 		template <typename T> vector<T> sample (unsigned int count, const vector<T> &source, bool withReplacement);
 		vector<int> sample (unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
@@ -83,6 +90,50 @@ namespace CX {
 
 		return samples;
 	}
+
+	template <typename T> T CX_RandomNumberGenerator::sample (vector<T> values) {
+		return values[ randomInt(0, values.size() - 1) ];
+	}
+
+	template <typename T> T CX_RandomNumberGenerator::randomExclusive (const vector<T> &values, const T &exclude) {
+		std::vector<T> excludes(1, exclude);
+		return randomExclusive(values, excludes);
+	}
+
+	template <typename T> T CX_RandomNumberGenerator::randomExclusive (const vector<T> &values, const vector<T> &exclude) {
+		std::set<T> s(exclude.begin(), exclude.end());
+
+		if (values.size() == exclude.size()) {
+			bool allExcluded = true;
+			for (std::vector<T>::size_type i = 0; i < values.size(); i++) {
+				if (s.find(values[i]) == s.end()) {
+					allExcluded = allExcluded && false;
+				}
+			}
+
+			if (allExcluded) {
+				Log.error("CX_RandomNumberGenerator") << "randomExclusive: All values are excluded.";
+				return T();
+			}
+		}
+
+		T attempt;
+		do {
+			attempt = sample(values);
+		} while (s.find(attempt) != s.end());
+		return attempt;
+	}
+
+	template <typename T> std::vector<T> CX_RandomNumberGenerator::binomialDeviates (unsigned int count, T trials, double probSuccess) {
+		std::vector<T> samples(count);
+		std::binomial_distribution<T> binDist(trials, probSuccess);
+		for (uint64_t i = 0; i < count; i++) {
+			samples[i] = binDist(_mersenneTwister);
+		}
+		return samples;
+	}
+
+
 
 }
 

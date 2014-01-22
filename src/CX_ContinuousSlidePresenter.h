@@ -1,14 +1,27 @@
+#ifndef _CX_CONTINUOUS_SLIDE_PRESENTER_H_
+#define _CX_CONTINUOUS_SLIDE_PRESENTER_H_
+
 #include "CX_SlidePresenter.h"
 
 
 namespace CX {
 
+	class CX_ContinuousSlidePresenter;
+
 	struct CX_CSPInfo_t {
 
-		unsigned int currentSlideIndex;
-		CX_Slide_t& lastSlide;
+		CX_CSPInfo_t (void) :
+			instance(nullptr),
+			currentSlideIndex(0),
+			userStatus(CX_CSPInfo_t::CONTINUE_PRESENTATION)
+		{}
 
-		CX_CSP_SlideInfo_t nextSlideInfo;
+		CX_ContinuousSlidePresenter *instance;
+		//CX_Slide_t *lastSlide;
+
+		unsigned int currentSlideIndex;
+		
+
 		enum {
 			CONTINUE_PRESENTATION,
 			STOP_NOW
@@ -17,10 +30,15 @@ namespace CX {
 		} userStatus;
 	};
 
-	struct CX_CSP_SlideInfo_t {
-		bool nextSlideRendered;
-		std::string name;
-		CX_Micros_t duration;
+	enum class CX_CSP_ErrorMode {
+		PROPAGATE_DELAYS,
+		FIX_TIMING_FROM_FIRST_SLIDE
+	};
+
+	enum class CX_SP_PresentationStatus {
+		STOPPED,
+		SYNCHRONIZING,
+		PRESENTING
 	};
 
 	class CX_ContinuousSlidePresenter : protected CX_SlidePresenter {
@@ -29,15 +47,31 @@ namespace CX {
 		void update (void);
 		void setUserFunction (std::function<void(CX_CSPInfo_t&)> userFunction);
 
+
+		using CX_SlidePresenter::beginDrawingNextSlide;
+		using CX_SlidePresenter::endDrawingCurrentSlide;
+
 		using CX_SlidePresenter::setDisplay;
 		using CX_SlidePresenter::startSlidePresentation;
 		using CX_SlidePresenter::isPresentingSlides;
 		using CX_SlidePresenter::getActualPresentationDurations;
 		using CX_SlidePresenter::getActualFrameCounts;
 
+		using CX_SlidePresenter::getActiveSlideIndex;
+		using CX_SlidePresenter::getSlide;
+
 	protected:
 		std::function<void(CX_CSPInfo_t&)> _userFunction;
+		//void (*) (CX_CSPInfo_t&) _userFunction;
+
+		void _deallocateCompletedSlides (void);
+
+		void _handleLastSlide (void);
+
+		CX_CSP_ErrorMode _errorMode;
 	};
 
 
 }
+
+#endif //_CX_CONTINUOUS_SLIDE_PRESENTER_H_

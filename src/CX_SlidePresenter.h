@@ -2,6 +2,7 @@
 #define _CX_SLIDE_PRESENTER_H_
 
 #include <stdint.h>
+#include <functional>
 
 #include "ofFbo.h"
 
@@ -21,7 +22,7 @@ namespace CX {
 		string slideName;
 
 		ofFbo framebuffer;
-		std::function<void(void)> drawingFunction;
+		void (*drawingFunction) (void);
 
 		enum {
 			NOT_STARTED,
@@ -55,7 +56,7 @@ namespace CX {
 
 	
 		void appendSlide (CX_Slide_t slide); //This is kind of sucky because people have to manually allocate the FBOs
-		void appendSlideFunction (std::function<void(void)> drawingFunction, CX_Micros_t duration, string slideName = "");
+		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t duration, string slideName = "");
 
 		//Much easier way of doing things.
 		void beginDrawingNextSlide (CX_Micros_t duration, string slideName = "");
@@ -68,8 +69,10 @@ namespace CX {
 
 		void startSlidePresentation (void);
 		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
+
 		int getActiveSlideIndex (void) { return _currentSlide; };
 		string getActiveSlideName (void);
+		CX_Slide_t& getSlide (unsigned int slideIndex);
 
 		vector<CX_Slide_t> getSlides (void);
 		vector<CX_Micros_t> getActualPresentationDurations (void);
@@ -91,7 +94,7 @@ namespace CX {
 	
 		bool _lastFramebufferActive;
 
-		void _renderNextFrame (void);
+		void _renderCurrentSlide (void);
 		void _waitSyncCheck (void);
 
 	};
