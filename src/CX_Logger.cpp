@@ -15,8 +15,10 @@ CX_Logger::CX_Logger (void) :
 CX_Logger::~CX_Logger (void) {
 	flush();
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
-		_targetInfo[i].file->close();
-		delete _targetInfo[i].file;
+		if (_targetInfo[i].targetType == LogTarget::FILE) {
+			_targetInfo[i].file->close();
+			delete _targetInfo[i].file;
+		}
 	}
 }
 
