@@ -123,7 +123,9 @@ void CX_Display::endDrawingToBackBuffer (void) {
 }
 
 void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
-	glfwSwapBuffers( CX::Private::glfwContext );
+	if (!isAutomaticallySwapping()) {
+		glfwSwapBuffers( CX::Private::glfwContext );
+	}
 }
 
 /*!

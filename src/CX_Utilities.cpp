@@ -72,10 +72,42 @@ bool CX::writeToFile (std::string filename, string data, bool append) {
 void CX::drawCenteredString (string s, ofTrueTypeFont &font, int x, int y) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width/2;
-	y -= bb.height/2;
+	y -= ( bb.y + bb.height/2 );
 	font.drawString(s, x, y);
 }
 
 void CX::drawCenteredString (string s, ofTrueTypeFont &font, ofPoint location) {
 	drawCenteredString(s, font, location.x, location.y);
+}
+
+
+
+
+double CX::round (double d, int roundingPower, CX::CX_RoundingConfiguration c) {
+	double loc = std::pow(10, roundingPower);
+	double modulo = abs(fmod(d, loc));
+
+	if (d >= 0) {
+		d -= modulo;
+	} else {
+		d -= (loc - modulo);
+	}
+
+	switch (c) {
+	case CX_RoundingConfiguration::ROUND_TO_NEAREST:
+		d += (modulo >= (.5 * loc)) ? (loc) : 0;
+		break;
+	case CX_RoundingConfiguration::ROUND_UP:
+		d += (modulo != 0) ? loc : 0;
+		break;
+	case CX_RoundingConfiguration::ROUND_DOWN:
+		break;
+	case CX_RoundingConfiguration::ROUND_TOWARD_ZERO:
+		if (d < 0) {
+			d += (modulo != 0) ? loc : 0;
+		}
+		break;
+	}
+
+	return d;
 }

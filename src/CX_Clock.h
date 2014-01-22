@@ -3,6 +3,7 @@
 
 //#include "ofConstants.h"
 #include "ofLog.h"
+#include "CX_Utilities.h"
 
 //#include <stdint.h>
 #include <string>
@@ -15,6 +16,23 @@
 namespace CX {
 
 	typedef long long CX_Micros_t;
+
+	struct CX_Millis {
+
+		CX_Millis (int i);
+		CX_Millis (double d) : millis(d)  {}
+		CX_Millis (CX_Micros_t t);
+
+		CX_Millis& operator= (int i);
+		CX_Millis& operator= (double d);
+		CX_Millis& operator= (CX_Micros_t t);
+
+		operator CX_Micros_t (void);
+		operator double (void);
+	private:
+		double millis;
+	};
+	
 
 	class CX_Clock {
 	public:

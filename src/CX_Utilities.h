@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 #include "ofUtils.h"
 #include "ofTrueTypeFont.h"
@@ -47,6 +48,15 @@ namespace CX {
 
 	void drawCenteredString (std::string s, ofTrueTypeFont &font, int x, int y);
 	void drawCenteredString (string s, ofTrueTypeFont &font, ofPoint location);
+
+	enum class CX_RoundingConfiguration {
+		ROUND_TO_NEAREST,
+		ROUND_UP,
+		ROUND_DOWN,
+		ROUND_TOWARD_ZERO
+	};
+
+	double round (double d, int roundingPower, CX_RoundingConfiguration c);
 };
 
 template <typename T> bool CX::writeToFile (std::string filename, const T& data, bool append) {

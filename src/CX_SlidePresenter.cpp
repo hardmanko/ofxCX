@@ -319,5 +319,5 @@ CX_Slide_t& CX_SlidePresenter::getSlide (unsigned int slideIndex) {
 		return _slides.at(slideIndex);
 	}
 	Log.error("CX_SlidePresenter") << "getSlide: slideIndex out of range";
-	_slides.back(); //Throws if size == 0
+	return _slides.back(); //Throws if size == 0
 }

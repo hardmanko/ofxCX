@@ -91,3 +91,42 @@ double clockPeriod(void) {
 
 }
 */
+
+CX_Millis::CX_Millis (int i) {
+	CX_Micros_t fracPart = i % 1000;
+	millis = (double)(i / 1000) + (double)fracPart / 1000;
+}
+
+CX_Millis::CX_Millis (CX_Micros_t t) {
+	CX_Micros_t fracPart = t % 1000;
+	millis = (double)(t / 1000) + (double)fracPart / 1000;
+}
+
+CX_Millis& CX_Millis::operator= (int i) {
+	return this->operator=((CX_Micros_t)i);
+}
+
+CX_Millis& CX_Millis::operator= (double d) {
+	millis = d;
+	return *this;
+}
+
+CX_Millis& CX_Millis::operator= (CX_Micros_t t) {
+	CX_Micros_t fracPart = t % 1000;
+	millis = (double)(t / 1000) + ((double)fracPart / 1000);
+	return *this;
+}
+
+CX_Millis::operator CX_Micros_t (void) {
+	double temp = millis;
+	CX_Micros_t intPart = (CX_Micros_t)floor(temp); //Get integer part
+	temp -= intPart;
+	temp = round(temp, -3, CX_RoundingConfiguration::ROUND_TO_NEAREST);
+			
+	CX_Micros_t fracPart = temp * 1000;
+	return (intPart * 1000) + fracPart;
+}
+
+CX_Millis::operator double (void) {
+	return millis;
+}
