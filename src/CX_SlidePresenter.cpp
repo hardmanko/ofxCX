@@ -12,49 +12,11 @@ CX_SlidePresenter::CX_SlidePresenter (void) :
 {
 }
 
-void CX_SlidePresenter::startSlidePresentation (void) {
-	if (_display == NULL) {
-		Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid monitor attached. Use setMonitor() to attach a monitor to the SlidePresenter";
-		return;
-	}
-
-	if (_slides.size() <= 0) {
-		Log.warning("CX_SlidePresenter") << "Cannot start slide presentation without any slides to present.";
-		return;
-	}
-
-	if (!_display->isAutomaticallySwapping()) {
-		_display->BLOCKING_setSwappingState(true); //This class requires that the monitor be swapping constantly while presenting slides.
-		Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
-	}
-
-	if (_slides.size() > 0) {
-
-		if (_lastFramebufferActive) {
-			Log.warning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
-			endDrawingCurrentSlide();
-		}
-
-		CX_Micros_t framePeriod = _display->getFramePeriod();
-
-		for (int i = 0; i < _slides.size(); i++) {
-
-			double framesInDuration = (double)_slides.at(i).intendedSlideDuration / framePeriod;
-			framesInDuration = ceil(framesInDuration); //Round up. This should be changed later to round-to-nearest.
-
-			_slides.at(i).intendedFrameCount = (uint32_t)framesInDuration;
-
-			_slides.at(i).slideStatus = CX_Slide_t::NOT_STARTED;
-		}
-
-		_synchronizing = true;
-		_presentingSlides = false;
-
-		//Wait for any ongoing operations to complete before starting frame presentation.
-		_display->BLOCKING_waitForOpenGL();
-
-		_display->hasSwappedSinceLastCheck(); //Throw away any very recent swaps.
-
+void CX_SlidePresenter::setup(CX_Display *display) {
+	if (display != NULL) {
+		_display = display;
+	} else {
+		Log.error("CX_SlidePresenter") << "setDisplay: display is NULL.";
 	}
 }
 
@@ -180,14 +142,6 @@ void CX_SlidePresenter::_renderCurrentSlide (void) {
 	_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
 }
 
-void CX_SlidePresenter::setDisplay (CX_Display *display) {
-	if (display != NULL) {
-		_display = display;
-	} else {
-		Log.error("CX_SlidePresenter") << "setDisplay: display is NULL.";
-	}
-}
-
 void CX_SlidePresenter::clearSlides (void) {
 	_slides.clear();
 	_currentSlide = 0;
@@ -195,7 +149,51 @@ void CX_SlidePresenter::clearSlides (void) {
 	_synchronizing = false;
 }
 
+void CX_SlidePresenter::startSlidePresentation(void) {
+	if (_display == NULL) {
+		Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid monitor attached. Use setMonitor() to attach a monitor to the SlidePresenter";
+		return;
+	}
 
+	if (_slides.size() <= 0) {
+		Log.warning("CX_SlidePresenter") << "Cannot start slide presentation without any slides to present.";
+		return;
+	}
+
+	if (!_display->isAutomaticallySwapping()) {
+		_display->BLOCKING_setSwappingState(true); //This class requires that the monitor be swapping constantly while presenting slides.
+		Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
+	}
+
+	if (_slides.size() > 0) {
+
+		if (_lastFramebufferActive) {
+			Log.warning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
+			endDrawingCurrentSlide();
+		}
+
+		CX_Micros_t framePeriod = _display->getFramePeriod();
+
+		for (int i = 0; i < _slides.size(); i++) {
+
+			double framesInDuration = (double)_slides.at(i).intendedSlideDuration / framePeriod;
+			framesInDuration = ceil(framesInDuration); //Round up. This should be changed later to round-to-nearest.
+
+			_slides.at(i).intendedFrameCount = (uint32_t)framesInDuration;
+
+			_slides.at(i).slideStatus = CX_Slide_t::NOT_STARTED;
+		}
+
+		_synchronizing = true;
+		_presentingSlides = false;
+
+		//Wait for any ongoing operations to complete before starting frame presentation.
+		_display->BLOCKING_waitForOpenGL();
+
+		_display->hasSwappedSinceLastCheck(); //Throw away any very recent swaps.
+
+	}
+}
 
 void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros_t slideDuration, string slideName) {
 

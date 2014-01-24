@@ -2,6 +2,17 @@
 
 #include "CX_ContinuousSlidePresenter.h"
 
+/*
+This example shows how to implement an N-Back task using a CX_ContinuousSlidePresenter (CSP).
+The CSP is a lot like a CX_SlidePresenter, except that it is designed to ask the user for more
+slide to present every time it gets to the end of the slides that it has. It also deallocates the
+video memory from the framebuffers of slides as soon as they are presented. The idea with the CSP
+is that it can be used to present a long series of stimuli that all must be synchronized without
+using up too many memory resources at once.
+
+In order to use a CSP, the user must provide a function
+*/
+
 CX_ContinuousSlidePresenter csp;
 
 CX_DataFrame df;
@@ -28,7 +39,6 @@ void generateTrials (int numberOfTrials);
 
 void setupExperiment (void) {
 
-
 	Input.setup(true, false);
 
 	letterFont.loadFont(OF_TTF_SANS, 20);
@@ -36,7 +46,7 @@ void setupExperiment (void) {
 
 	generateTrials(10);
 
-	csp.setDisplay(&Display); //This should definitely be called "setup"
+	csp.setup(&Display);
 
 	//Set a function that you want to be called every time the slide presenter has started to present the last
 	//slide you put in. In your function, you can add more slides to the slide presenter. Every time it reaches 
@@ -53,80 +63,39 @@ void setupExperiment (void) {
 		s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets" << endl;
 		s << "Starting in " << i;
 
-		drawCenteredString(s.str(), letterFont, Display.getCenterOfDisplay() );
+		Draw::centeredString(Display.getCenterOfDisplay(), s.str(), letterFont);
 	}
 
-	//Now load the first nBack + 1 stimuli into the slide presenter. The participant does not need to respond to these stimuli, until the nBack + 1th stimulus.
+	//Now load the first nBack + 1 stimuli into the slide presenter.
 	for (unsigned int i = 0; i <= nBack; i++) {
 		csp.beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
 		drawStimulusForTrial(i, (i == nBack));
 		csp.endDrawingCurrentSlide();
 
 		csp.beginDrawingNextSlide(interStimulusInterval, "blank");
-		ofBackground(backgroundColor); //blank
+		ofBackground(backgroundColor);
 		csp.endDrawingCurrentSlide();
 	}
 	trialNumber = nBack; //This will be the stimulus number that was just presented the first time the user function is called.
 
+	//Once everything is set up, start presenting the slides.
 	csp.startSlidePresentation();
 }
 
 void updateExperiment (void) {
-	csp.update();
-}
-
-
-void generateTrials (int numberOfTrials) {
-
-	trialCount = numberOfTrials;
-
-	string letterArray [8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
-	vector<string> letters = arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
-		//to use an initializer list for vectors as well. Until then, arrayToVector is useful.
-
-	//Draw trialCount deviates from a binomial distribution with 1 trial and 40% probability of a success (i.e. trialCount slightly unfair coin flips).
-	vector<int> targetTrial = RNG.binomialDeviates(trialCount, 1, .4);
-
-	//For the first N trials, pick letters randomly
-	for (int i = 0; i < nBack; i++) {
-		df(i, "letter") = RNG.sample(letters);
-	}
-
-	//From N on, pick based on trial type
-	for (int i = nBack; i < trialCount; i++) {
-		if (targetTrial[i] == 1) {
-			df(i, "trialType") = "target";
-			df(i, "letter") = df(i - nBack, "letter").toString();
-		} else {
-			df(i, "trialType") = "nonTarget";
-			df(i, "letter") = RNG.randomExclusive(letters, df(i - nBack, "letter").toString());
-		}
-	}
-
-	cout << df.print() << endl;
-	cout << endl;
+	csp.update(); //Make sure that you call the update function of the csp, otherwise it does nothing.
 }
 
 
 
-void drawStimulusForTrial (unsigned int trial, bool showInstructions) {
-	string letter = df(trial, "letter").toString();
 
-	ofBackground(backgroundColor);
-	ofSetColor( textColor );
-	CX::drawCenteredString( letter, letterFont, Display.getCenterOfDisplay() );
 
-	if (showInstructions) {
-		stringstream s;
-		s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
-		instructionFont.drawString( s.str(), 30, Display.getResolution().y - 30 );
-	}
-}
+
+
 
 
 
 void lastSlideFunction (CX_CSPInfo_t& info) {
-	Log.flush();
 
 	//At this point in time, the last slide has just been put on screen. The last slide is a blank, which means that the slide before it
 	//was a stimulus that should have been responded to. We'll check for keyboard events.
@@ -172,7 +141,7 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 
 		Display.beginDrawingToBackBuffer();
 		ofBackground(backgroundColor);
-		CX::drawCenteredString( "Experiment complete!", letterFont, Display.getCenterOfDisplay() );
+		Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!", letterFont);
 
 		Display.endDrawingToBackBuffer();
 		Display.BLOCKING_swapFrontAndBackBuffers();
@@ -183,6 +152,54 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 		info.userStatus = CX::CX_CSPInfo_t::CONTINUE_PRESENTATION;
 	}
 
+	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. You could simply wait until
+		//the experiment is finished to flush.
+
 }
 
+void generateTrials(int numberOfTrials) {
 
+	trialCount = numberOfTrials;
+
+	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
+	vector<string> letters = arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
+		//to use an initializer list for vectors as well as arrays. Until then, arrayToVector is useful.
+
+	//Draw trialCount deviates from a binomial distribution with 1 trial and 40% probability of a success (i.e. trialCount slightly unfair coin flips).
+	//For a real N-Back task, you would probably use a more complicated way of determining the trial sequence.
+	vector<int> targetTrial = RNG.binomialDeviates(trialCount, 1, .4);
+
+	//For the first N trials, pick letters randomly
+	for (int i = 0; i < nBack; i++) {
+		df(i, "letter") = RNG.sample(letters);
+	}
+
+	//From N on, pick based on trial type
+	for (int i = nBack; i < trialCount; i++) {
+		if (targetTrial[i] == 1) {
+			df(i, "trialType") = "target";
+			df(i, "letter") = df(i - nBack, "letter").toString();
+		} else {
+			df(i, "trialType") = "nonTarget";
+			df(i, "letter") = RNG.randomExclusive(letters, df(i - nBack, "letter").toString());
+		}
+	}
+
+	//Print out the current state of the data frame to make sure that everything looks normal.
+	cout << df.print() << endl;
+	cout << endl;
+}
+
+void drawStimulusForTrial(unsigned int trial, bool showInstructions) {
+	string letter = df(trial, "letter").toString();
+
+	ofBackground(backgroundColor);
+	ofSetColor(textColor);
+	Draw::centeredString(Display.getCenterOfDisplay(), letter, letterFont);
+
+	if (showInstructions) {
+		stringstream s;
+		s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
+		instructionFont.drawString(s.str(), 30, Display.getResolution().y - 30);
+	}
+}

@@ -51,7 +51,7 @@ namespace CX {
 		using CX_SlidePresenter::beginDrawingNextSlide;
 		using CX_SlidePresenter::endDrawingCurrentSlide;
 
-		using CX_SlidePresenter::setDisplay;
+		using CX_SlidePresenter::setup;
 		using CX_SlidePresenter::startSlidePresentation;
 		using CX_SlidePresenter::isPresentingSlides;
 		using CX_SlidePresenter::getActualPresentationDurations;

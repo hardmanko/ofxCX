@@ -21,6 +21,8 @@
 #include "CX_SoundObjectPlayer.h"
 #include "CX_DataFrame.h"
 
+#include "CX_DrawingPrimitives.h"
+
 namespace CX {
 
 	struct CX_WindowConfiguration_t {

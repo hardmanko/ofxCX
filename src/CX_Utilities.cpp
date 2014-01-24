@@ -69,20 +69,8 @@ bool CX::writeToFile (std::string filename, string data, bool append) {
 	return false;
 }
 
-void CX::drawCenteredString (string s, ofTrueTypeFont &font, int x, int y) {
-	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
-	x -= bb.width/2;
-	y -= ( bb.y + bb.height/2 );
-	font.drawString(s, x, y);
-}
 
-void CX::drawCenteredString (string s, ofTrueTypeFont &font, ofPoint location) {
-	drawCenteredString(s, font, location.x, location.y);
-}
-
-
-
-
+//When cfenv becomes availble, use that instead.
 double CX::round (double d, int roundingPower, CX::CX_RoundingConfiguration c) {
 	double loc = std::pow(10, roundingPower);
 	double modulo = abs(fmod(d, loc));

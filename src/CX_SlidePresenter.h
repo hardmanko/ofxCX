@@ -51,8 +51,9 @@ namespace CX {
 
 		CX_SlidePresenter (void);
 
+		void setup (CX_Display *display);
 		void update (void);
-		void setDisplay (CX_Display *display); //Maybe this should be called "setup"?
+		
 
 	
 		void appendSlide (CX_Slide_t slide); //This is kind of sucky because people have to manually allocate the FBOs

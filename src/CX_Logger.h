@@ -37,33 +37,9 @@ namespace CX {
 		LOG_NONE
 	};
 
-	enum class LogTarget {
-		CONSOLE,
-		FILE,
-		CONSOLE_AND_FILE
-	};	
-
-	//Used internally
-	struct LoggerTargetInfo {
-		LogTarget targetType;
-		LogLevel level;
-
-		string filename;
-		ofFile *file;
-	};
-
-	//Used internally
-	struct LogMessage {
-		LogMessage (LogLevel level_, string module_) :
-			level(level_),
-			module(module_)
-		{}
-
-		stringstream* message;
-		LogLevel level;
-		string module;
-		string timestamp;
-	};
+	//Forward declarations
+	struct LogMessage;
+	struct LoggerTargetInfo;
 
 	struct MessageFlushData {
 		MessageFlushData (string message_, LogLevel level_, string module_) :
@@ -91,6 +67,7 @@ namespace CX {
 		void level (LogLevel level, string module = "");
 		void levelForConsole (LogLevel level);
 		void levelForFile(LogLevel level, string filename = "CX_DEFERRED_LOGGER_DEFAULT");
+		void levelForAllModules(LogLevel level);
 
 		void flush (void); //BLOCKING
 
@@ -114,6 +91,7 @@ namespace CX {
 		bool _logTimestamps;
 		string _timestampFormat;
 
+		LogLevel _defaultLogLevel;
 	};
 
 	namespace Instances {

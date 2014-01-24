@@ -46,9 +46,6 @@ namespace CX {
 	template <typename T> bool writeToFile (std::string filename, const T& data, bool append = true);
 	bool writeToFile (std::string filename, string data, bool append = true);
 
-	void drawCenteredString (std::string s, ofTrueTypeFont &font, int x, int y);
-	void drawCenteredString (string s, ofTrueTypeFont &font, ofPoint location);
-
 	enum class CX_RoundingConfiguration {
 		ROUND_TO_NEAREST,
 		ROUND_UP,

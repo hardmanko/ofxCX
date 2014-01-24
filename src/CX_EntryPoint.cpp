@@ -12,7 +12,7 @@ void CX::Private::App::setup (void) {
 	ofAddListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );
 
 	Instances::Display.setup();
-	Instances::SlidePresenter.setDisplay( &Instances::Display );
+	Instances::SlidePresenter.setup( &Instances::Display );
 
 	//Call the user setup function
 	setupExperiment();
@@ -37,7 +37,6 @@ void CX::Private::App::exit (ofEventArgs &a) {
 }
 
 void glfwErrorCallback (int code, const char *message) {
-	//ofLogError("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
 	Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
 }
 
@@ -69,7 +68,8 @@ int main (void) {
 	//Log.levelForFile(LogLevel::LOG_ALL, "Log for last run.txt");
 
 	ofLogToConsole();
-	ofSetLogLevel(OF_LOG_VERBOSE);
+	ofSetLogLevel(OF_LOG_NOTICE);
+	Log.levelForAllModules(LogLevel::LOG_NOTICE);
 	
 	ofSetWorkingDirectoryToDefault();
 
@@ -81,7 +81,7 @@ int main (void) {
 
 	CX::Private::App A;
 	A.setup();
-	Log.flush();
+	Log.flush(); //Flush logs after the user setup function, so they can see if any errors happened during their setup.
 	while(true){
 		A.update();
 	}

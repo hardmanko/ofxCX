@@ -4,10 +4,43 @@ using namespace CX;
 
 CX_Logger CX::Instances::Log;
 
+enum class LogTarget {
+	CONSOLE,
+	FILE,
+	CONSOLE_AND_FILE
+};
+
+struct CX::LoggerTargetInfo {
+	LoggerTargetInfo (void) :
+		file(nullptr)
+	{}
+
+	LogTarget targetType;
+	LogLevel level;
+
+	string filename;
+	ofFile *file;
+};
+
+
+struct CX::LogMessage {
+	LogMessage (LogLevel level_, string module_) :
+		level(level_),
+		module(module_)
+	{}
+
+	stringstream* message;
+	LogLevel level;
+	string module;
+	string timestamp;
+};
+
+
 CX_Logger::CX_Logger (void) :
 	_logTimestamps(false),
 	_flushCallback(nullptr),
-	_timestampFormat("%H:%M:%S")
+	_timestampFormat("%H:%M:%S"),
+	_defaultLogLevel(LogLevel::LOG_NOTICE)
 {
 	levelForConsole(LogLevel::LOG_ALL);
 }
@@ -24,6 +57,10 @@ CX_Logger::~CX_Logger (void) {
 
 //This function is called at the start of a new messsage.
 stringstream& CX_Logger::_log (LogLevel level, string module) {
+
+	if (_moduleLogLevels.find(module) == _moduleLogLevels.end()) {
+		_moduleLogLevels[module] = _defaultLogLevel;
+	}
 	
 	_messageQueue.push_back( LogMessage(level, module) );
 	_messageQueue.back().message = new stringstream; //Manually allocated: Must deallocate later.
@@ -161,6 +198,13 @@ void CX_Logger::levelForFile(LogLevel level, string filename) {
 */
 void CX_Logger::level (LogLevel level, string module) {
 	_moduleLogLevels[module] = level;
+}
+
+void CX_Logger::levelForAllModules(LogLevel level) {
+	_defaultLogLevel = level;
+	for (map<string, LogLevel>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
+		_moduleLogLevels[it->first] = level;
+	}
 }
 
 void CX_Logger::setMessageFlushCallback (std::function<void(MessageFlushData&)> f) {
