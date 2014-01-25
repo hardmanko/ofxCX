@@ -12,6 +12,42 @@
 
 namespace CX {
 
+	enum class CX_SP_ErrorMode {
+		PROPAGATE_DELAYS,
+		FIX_TIMING_FROM_FIRST_SLIDE
+	};
+
+
+	struct CX_UserFunctionInfo_t {
+		CX_UserFunctionInfo_t(void) :
+			instance(nullptr),
+			currentSlideIndex(0),
+			userStatus(CX_UserFunctionInfo_t::CONTINUE_PRESENTATION)
+		{}
+
+		CX_SlidePresenter *instance;
+		unsigned int currentSlideIndex;
+
+		enum {
+			CONTINUE_PRESENTATION,
+			STOP_NOW
+		} userStatus;
+	};
+
+	struct CX_SP_Configuration {
+		CX_SP_Configuration(void) :
+			display(nullptr),
+			userFunction(nullptr),
+			errorMode(CX_SP_ErrorMode::PROPAGATE_DELAYS),
+			deallocateCompletedSlides(true)
+		{}
+
+		CX_Display *display;
+		std::function<void(CX_UserFunctionInfo_t&)> userFunction;
+		CX_SP_ErrorMode errorMode;
+		bool deallocateCompletedSlides;
+	};
+
 	struct CX_Slide_t {
 
 		CX_Slide_t () :
@@ -51,31 +87,31 @@ namespace CX {
 
 		CX_SlidePresenter (void);
 
-		void setup (CX_Display *display);
-		void update (void);
+		bool setup (CX_Display *display);
+		bool setup (const CX_SP_Configuration &config);
+		virtual void update (void);
 		
-
-	
-		void appendSlide (CX_Slide_t slide); //This is kind of sucky because people have to manually allocate the FBOs
+		void appendSlide (CX_Slide_t slide);
 		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t duration, string slideName = "");
-
-		//Much easier way of doing things.
 		void beginDrawingNextSlide (CX_Micros_t duration, string slideName = "");
 		void endDrawingCurrentSlide (void);
 
+		void startSlidePresentation(void);
+
 		void clearSlides (void);
 
-		void setThreadingMode (bool singleThreaded); //Flesh this out.
+		//void setThreadingMode (bool singleThreaded); //Flesh this out. Maybe have it be a setup() parameter
 	
 
-		void startSlidePresentation (void);
+
 		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
 
-		int getActiveSlideIndex (void) { return _currentSlide; };
+		unsigned int getActiveSlideIndex (void) { return _currentSlide; };
+		unsigned int getSlideCount(void) { return _slides.size(); };
 		string getActiveSlideName (void);
 		CX_Slide_t& getSlide (unsigned int slideIndex);
 
-		vector<CX_Slide_t> getSlides (void);
+		vector<CX_Slide_t> getSlides (void); //Return reference??
 		vector<CX_Micros_t> getActualPresentationDurations (void);
 		vector<unsigned int> getActualFrameCounts (void);
 
@@ -84,10 +120,11 @@ namespace CX {
 	protected:
 
 		CX_Display *_display;
+		std::function<void(CX_UserFunctionInfo_t&)> _userFunction;
 
 		bool _presentingSlides;
 		bool _synchronizing;
-		int _currentSlide;
+		unsigned int _currentSlide;
 		vector<CX_Slide_t> _slides;
 
 		bool _awaitingFenceSync;
@@ -97,6 +134,15 @@ namespace CX {
 
 		void _renderCurrentSlide (void);
 		void _waitSyncCheck (void);
+
+		void _handleLastSlide(void);
+		void _finishPreviousSlide(void);
+		void _prepareNextSlide(void);
+
+		unsigned int _calculateFrameCount(CX_Micros_t duration);
+
+		CX_SP_ErrorMode _errorMode;
+		bool _deallocateFramebuffersForCompletedSlides;
 
 	};
 

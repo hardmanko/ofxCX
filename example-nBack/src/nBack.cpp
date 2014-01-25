@@ -88,13 +88,6 @@ void updateExperiment (void) {
 
 
 
-
-
-
-
-
-
-
 void lastSlideFunction (CX_CSPInfo_t& info) {
 
 	//At this point in time, the last slide has just been put on screen. The last slide is a blank, which means that the slide before it
@@ -118,6 +111,7 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 				df(trialNumber, "responseLatency") = kev.eventTime - stimulusOnset;
 
 				validResponseMade = true;
+				Input.Keyboard.clearEvents(); //Ignore any other responses after the first valid response.
 			}
 		}
 	}
@@ -127,14 +121,6 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 		df(trialNumber, "responseLatency") = 0;
 	}
 
-	//Draw the next letter and the following blank.
-	info.instance->beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
-	drawStimulusForTrial(trialNumber, true);
-
-	info.instance->beginDrawingNextSlide(interStimulusInterval, "blank");
-	ofBackground(backgroundColor);
-	info.instance->endDrawingCurrentSlide();
-
 	if (++trialNumber == trialCount) {
 		info.userStatus = CX::CX_CSPInfo_t::STOP_NOW;
 		df.printToFile("N-Back output.txt");
@@ -142,7 +128,6 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 		Display.beginDrawingToBackBuffer();
 		ofBackground(backgroundColor);
 		Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!", letterFont);
-
 		Display.endDrawingToBackBuffer();
 		Display.BLOCKING_swapFrontAndBackBuffers();
 
@@ -151,6 +136,14 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 	} else {
 		info.userStatus = CX::CX_CSPInfo_t::CONTINUE_PRESENTATION;
 	}
+
+	//Draw the next letter and the following blank.
+	info.instance->beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
+	drawStimulusForTrial(trialNumber, true);
+
+	info.instance->beginDrawingNextSlide(interStimulusInterval, "blank");
+	ofBackground(backgroundColor);
+	info.instance->endDrawingCurrentSlide();
 
 	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. You could simply wait until
 		//the experiment is finished to flush.

@@ -15,6 +15,8 @@
 #include "CX_RandomNumberGenerator.h"
 #include "CX_InputManager.h"
 
+#include "CX_ContinuousSlidePresenter.h"
+
 //Do not instantiate these, just include the header.
 #include "CX_TrialController.h" 
 #include "CX_TrialController_Class.h"
@@ -43,7 +45,7 @@ namespace CX {
 
 	namespace Instances {
 		extern CX_Display Display;
-		extern CX_SlidePresenter SlidePresenter;
+		extern CX_ContinuousSlidePresenter SlidePresenter;
 		extern CX_InputManager Input;
 	}
 

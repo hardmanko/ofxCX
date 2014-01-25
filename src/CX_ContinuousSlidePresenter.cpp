@@ -2,7 +2,11 @@
 
 using namespace CX;
 
-void CX_ContinuousSlidePresenter::setUserFunction (std::function<void(CX_CSPInfo_t&)> userFunction) {
+CX_ContinuousSlidePresenter::CX_ContinuousSlidePresenter(void) :
+	_userFunction(nullptr)
+{}
+
+void CX_ContinuousSlidePresenter::setUserFunction(std::function<void(CX_UserFunctionInfo_t&)> userFunction) {
 	_userFunction = userFunction;
 }
 
@@ -18,10 +22,9 @@ void CX_ContinuousSlidePresenter::update (void) {
 			//Was the current frame just swapped in? If so, store information about the swap time.
 			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::SWAP_PENDING) {
 
-				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
-
 				CX_Micros_t currentSlideOnset = _display->getLastSwapTime();
 
+				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
 				_slides.at(_currentSlide).actualOnsetFrameNumber = currentFrameNumber;
 				_slides.at(_currentSlide).actualSlideOnset = currentSlideOnset;
 
@@ -30,57 +33,32 @@ void CX_ContinuousSlidePresenter::update (void) {
 					_slides.at(0).intendedSlideOnset = currentSlideOnset; //This is sort of weird, but true.
 				}
 
-				//If there was a previous slide.
 				if (_currentSlide > 0) {
-					CX_Slide_t &previousSlide = _slides.at(_currentSlide - 1);
-					previousSlide.slideStatus = CX_Slide_t::FINISHED;
-
-					//"Deallocate" the framebuffer
-					previousSlide.framebuffer.allocate(0, 0);
-
-					//Now that the slide is finished, figure out its duration.
-					previousSlide.actualSlideDuration = _slides.at(_currentSlide).actualSlideOnset - previousSlide.actualSlideOnset;
-					previousSlide.actualFrameCount = _slides.at(_currentSlide).actualOnsetFrameNumber - previousSlide.actualOnsetFrameNumber;
+					_finishPreviousSlide();
 				}
 
-				//If this is the final slide, then we call the user function.
 				if (_currentSlide == (_slides.size() - 1)) {
 					_handleLastSlide();
 				}
 
 				//If there is a slide after the current one. This MUST come after _handleLastSlide(), because if new slides are added, this has to happen for them.
 				if ((_currentSlide + 1) < _slides.size()) {
-					CX_Slide_t &currentSlide = _slides.at(_currentSlide);
-					CX_Slide_t &nextSlide = _slides.at(_currentSlide + 1);
-
-					if (_errorMode == CX_CSP_ErrorMode::PROPAGATE_DELAYS) {
-						nextSlide.intendedSlideOnset = currentSlide.actualSlideOnset + currentSlide.intendedSlideDuration;
-						nextSlide.intendedOnsetFrameNumber = currentSlide.actualOnsetFrameNumber + currentSlide.intendedFrameCount;
-					} else if (_errorMode == CX_CSP_ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE) {
-						nextSlide.intendedSlideOnset = currentSlide.intendedSlideOnset + currentSlide.intendedSlideDuration;
-						nextSlide.intendedOnsetFrameNumber = currentSlide.intendedOnsetFrameNumber + currentSlide.intendedFrameCount;
-					}
+					_prepareNextSlide();
 				}
-
 			}
 
 			//Is there is a slide after the current one?
 			if ((_currentSlide + 1) < _slides.size()) {
-
-				//Is that slide ready to swap in?
 				if ( _slides.at(_currentSlide + 1).intendedOnsetFrameNumber <= (currentFrameNumber + 1)) {
 					_currentSlide++; //This must happen before the next slide is rendered.
 					_renderCurrentSlide();
-					
 				}
 			}
 		}
 	} else if (_synchronizing) {
 		if (_display->hasSwappedSinceLastCheck()) {
-
 			_currentSlide = 0;
 			_renderCurrentSlide();
-
 			_synchronizing = false;
 			_presentingSlides = true;
 		}
@@ -89,33 +67,39 @@ void CX_ContinuousSlidePresenter::update (void) {
 	_waitSyncCheck();
 }
 
+void CX_ContinuousSlidePresenter::_finishPreviousSlide (void) {
+	CX_Slide_t &previousSlide = _slides.at(_currentSlide - 1);
+	previousSlide.slideStatus = CX_Slide_t::FINISHED;
+
+	if (_deallocateFramebuffersForCompletedSlides) {
+		previousSlide.framebuffer.allocate(0, 0); //"Deallocate" the framebuffer
+	}
+
+	//Now that the slide is finished, figure out its duration.
+	previousSlide.actualSlideDuration = _slides.at(_currentSlide).actualSlideOnset - previousSlide.actualSlideOnset;
+	previousSlide.actualFrameCount = _slides.at(_currentSlide).actualOnsetFrameNumber - previousSlide.actualOnsetFrameNumber;
+}
+
 void CX_ContinuousSlidePresenter::_handleLastSlide (void) {
-	CX_CSPInfo_t info;
+	CX_UserFunctionInfo_t info;
 	info.currentSlideIndex = _currentSlide;
 	info.instance = this;
-	info.userStatus = CX_CSPInfo_t::CONTINUE_PRESENTATION;
+	info.userStatus = CX_UserFunctionInfo_t::CONTINUE_PRESENTATION;
 	//info.lastSlide = &_slides.at(_currentSlide - 1);
 
 	unsigned int previousSlideCount = _slides.size();
-					
-	_userFunction(info);
-
-	//unsigned int newSlides = _slides.size() - previousSlideCount;
-
-	//_deallocateCompletedSlides(); //Or you could just deallocate the last one (not right here).
-
-	//Start from the first new slide and go to the last new slide
-	for (unsigned int i = previousSlideCount; i < _slides.size(); i++) {
-		double framesInDuration = (double)_slides.at(i).intendedSlideDuration / _display->getFramePeriod();
-		_slides.at(i).intendedFrameCount = (uint32_t)ceil(framesInDuration); //Round up. This should be changed later to round-to-nearest.
-		_slides.at(i).slideStatus = CX_Slide_t::NOT_STARTED;
-
-		//_slides.at(i).intendedSlideOnset = _slides.at(i - 1).intendedSlideOnset + _slides.at(i - 1).intendedSlideDuration;
-		//_slides.at(i).intendedOnsetFrameNumber = _slides.at(i - 1).intendedOnsetFrameNumber + _slides.at(i - 1).intendedFrameCount;
+	
+	if (_userFunction != nullptr) {
+		_userFunction(info);
 	}
 
-	switch (info.userStatus) {
-	case CX_CSPInfo_t::STOP_NOW:
+	//Start from the first new slide and go to the last new slide. This is really not neccessary.
+	for (unsigned int i = previousSlideCount; i < _slides.size(); i++) {
+		_slides.at(i).slideStatus = CX_Slide_t::NOT_STARTED;
+	}
+
+	//If the user requests a stop or if there is no user function, stop presenting.
+	if ((info.userStatus == CX_UserFunctionInfo_t::STOP_NOW) || (_userFunction == nullptr)) {
 		_presentingSlides = false;
 
 		//The duration of the current slide is set to undefined (user may keep it on screen indefinitely).
@@ -128,22 +112,28 @@ void CX_ContinuousSlidePresenter::_handleLastSlide (void) {
 			_slides.at(i).actualFrameCount = 0;
 		}
 
-		//Deallocate all slides?
-		for (unsigned int i = 0; i < _slides.size(); i++) {
+		//Deallocate all slides from here on
+		for (unsigned int i = _currentSlide; i < _slides.size(); i++) {
 			_slides.at(i).framebuffer.allocate(0, 0);
 		}
+	}
 
-		break;
+}
 
-	//case CX_CSPInfo_t::STOP_AFTER_NEXT_SLIDE_ONSET:
-	//
-	//	break;
-	case CX_CSPInfo_t::CONTINUE_PRESENTATION:
-		break;
+void CX_ContinuousSlidePresenter::_prepareNextSlide (void) {
+	CX_Slide_t &currentSlide = _slides.at(_currentSlide);
+	CX_Slide_t &nextSlide = _slides.at(_currentSlide + 1);
+
+	if (_errorMode == CX_SP_ErrorMode::PROPAGATE_DELAYS) {
+		nextSlide.intendedSlideOnset = currentSlide.actualSlideOnset + currentSlide.intendedSlideDuration;
+		nextSlide.intendedOnsetFrameNumber = currentSlide.actualOnsetFrameNumber + currentSlide.intendedFrameCount;
+	} else if (_errorMode == CX_SP_ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE) {
+		nextSlide.intendedSlideOnset = currentSlide.intendedSlideOnset + currentSlide.intendedSlideDuration;
+		nextSlide.intendedOnsetFrameNumber = currentSlide.intendedOnsetFrameNumber + currentSlide.intendedFrameCount;
 	}
 }
 
-
+/*
 void CX_ContinuousSlidePresenter::_deallocateCompletedSlides (void) {
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 		if (_slides.at(i).slideStatus == CX_Slide_t::FINISHED) {
@@ -151,3 +141,4 @@ void CX_ContinuousSlidePresenter::_deallocateCompletedSlides (void) {
 		}
 	}
 }
+*/

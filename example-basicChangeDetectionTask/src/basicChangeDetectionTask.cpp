@@ -219,10 +219,10 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 	vector<TrialData_t> _trials;
 
-	vector<int> changeCounts;
+	vector<unsigned int> changeCounts;
 	changeCounts.push_back( trialCount/2 + (trialCount % 2) );
 	changeCounts.push_back( trialCount/2 );
-	vector<int> changeTrial = CX::intVectorByCount( changeCounts );
+	vector<int> changeTrial = CX::repeat( CX::intVector(0,1), changeCounts );
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
@@ -232,7 +232,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 		//RNG is an instance of CX_RandomNumberGenerator that is instantiated for you. It is useful for a variety of randomization stuff.
 		//This version of shuffleVector() returns a shuffled copy of the argument without changing the argument.
-		vector<int> colorIndices = RNG.shuffleVector( CX::intVector(0, objectColors.size() - 1) );
+		vector<int> colorIndices = RNG.shuffleVector( CX::intVector<int>(0, objectColors.size() - 1) );
 		
 		//sample() gives you count random integers from the range [lowerBound, upperBound] with or without replacement.
 		vector<int> locationIndices = RNG.sample( tr.arraySize, 0, objectLocations.size() - 1, false );
