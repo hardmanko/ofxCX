@@ -58,8 +58,6 @@ public:
 	std::vector<std::string> columnNames (void);
 	rowIndex_t getRowCount (void) { return _rowCount; };
 
-
-
 	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
 	CX_DataFrame copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder);
 	void shuffleRows (void);

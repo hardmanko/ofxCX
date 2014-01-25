@@ -12,11 +12,12 @@
 
 namespace CX {
 
+	class CX_SlidePresenter;
+
 	enum class CX_SP_ErrorMode {
 		PROPAGATE_DELAYS,
 		FIX_TIMING_FROM_FIRST_SLIDE
 	};
-
 
 	struct CX_UserFunctionInfo_t {
 		CX_UserFunctionInfo_t(void) :

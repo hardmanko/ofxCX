@@ -57,7 +57,7 @@ namespace CX {
 };
 
 template <typename T> bool CX::writeToFile (std::string filename, const T& data, bool append) {
-	return toFile(filename, ofToString<T>(data), append);
+	return writeToFile(filename, ofToString<T>(data), append);
 }
 
 template <typename T> 

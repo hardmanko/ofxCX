@@ -227,19 +227,18 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 		nextSlide.intendedSlideOnset = currentSlide.actualSlideOnset + currentSlide.intendedSlideDuration;
 		nextSlide.intendedOnsetFrameNumber = currentSlide.actualOnsetFrameNumber + currentSlide.intendedFrameCount;
 	} else if (_errorMode == CX_SP_ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE) {
-		//You might want to change this so that if a slide has been "skipped" due to a delay, _currentSlide skips over it too.
+		
 		nextSlide.intendedSlideOnset = currentSlide.intendedSlideOnset + currentSlide.intendedSlideDuration;
 		nextSlide.intendedOnsetFrameNumber = currentSlide.intendedOnsetFrameNumber + currentSlide.intendedFrameCount;
 
+		//If a slide has been skipped due to a delay, _currentSlide skips over it too.
 		uint64_t endFrameNumber = nextSlide.intendedOnsetFrameNumber + nextSlide.intendedSlideDuration;
 		if (endFrameNumber <= _display->getFrameNumber()) {
 			//Go on to next slide
+			_currentSlide++;
+			_prepareNextSlide(); //Keep skipping slides
+			return;
 		}
-
-		do {
-
-
-		} while (endFrameNumber <= _display->getFrameNumber());
 
 	}
 }

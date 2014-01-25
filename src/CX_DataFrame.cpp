@@ -290,9 +290,10 @@ void CX_SafeDataFrame::addColumn (std::string columnName) {
 
 /*! Re-orders the rows in the data frame.
 \param newOrder Vector of row indices. newOrder.size() must equal this->getRowCount(). newOrder must not contain any out-of-range indices 
-	(i.e. they must be < getRowCount()). Both of these error conditions are checked for in the function call. */
+	(i.e. they must be < getRowCount()). Both of these error conditions are checked for in the function call and errors are logged. 
+\return true if all of the conditions of newOrder are met, false otherwise.
+*/
 bool CX_DataFrame::reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder) {
-	//Consider allowing new order to be bigger than _rowCount. This would be more like an R data frame.
 	if (newOrder.size() != _rowCount) {
 		CX::Instances::Log.error("CX_DataFrame") << "reorderRows failed: The number of indices in newOrder did not equal the number of rows in the data frame.";
 		return false;
@@ -320,7 +321,7 @@ bool CX_DataFrame::reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder
 \param rowOrder A vector of CX_DataFrame::rowIndex_t containing the rows from this data frame to be copied out. 
 The indices in rowOrder may be in any order: They don't need to be ascending. Additionally, the same row to be
 copied may be specified multiple times.
-\return A CX_DataFrame containing those rows specified in rowOrder.
+\return A CX_DataFrame containing the rows specified in rowOrder.
 */
 CX_DataFrame CX_DataFrame::copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder) {
 	unsigned int outOfRangeCount = 0;

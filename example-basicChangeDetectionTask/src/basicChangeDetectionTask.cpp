@@ -23,6 +23,7 @@ struct TrialData_t {
 
 //Function declarations (could be in a header file, if preferred).
 vector<TrialData_t> generateTrials (int trialCount);
+void outputData (void);
 
 void drawFixation (void);
 void drawBlank (void);
@@ -30,11 +31,8 @@ void drawSampleArray (const TrialData_t &tr);
 void drawTestArray (const TrialData_t &tr);
 
 //Global variables (at least from the perspective of the experiment)
-int objectSize = 60;
+int circleRadius = 60;
 ofColor backgroundColor(50);
-
-vector<ofColor> objectColors;
-vector<ofPoint> objectLocations;
 
 int trialIndex = 0;
 vector<TrialData_t> trials;
@@ -44,33 +42,11 @@ string trialPhase = "drawStimuli";
 
 void setupExperiment (void) {
 
-	//Set up a vector of colors that will be sampled to make the objects.
-	objectColors.push_back( ofColor(255,0,0) );
-	objectColors.push_back( ofColor(0,255,0) );
-	objectColors.push_back( ofColor(0,0,255) );
-	objectColors.push_back( ofColor(255,255,0) );
-	objectColors.push_back( ofColor(255,0,255) );
-	objectColors.push_back( ofColor(0,255,255) );
+	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how it does that)
 
-	//Make a 3x3 grid of object locations around the center of the screen.
-	ofPoint screenCenter( Display.getResolution().x/2, Display.getResolution().y/2 );
-	for (int i = 0; i < 9; i++) {
-		int col = i % 3;
-		int row = i / 3;
+	Input.setup(true, false); //Use the keyboard for this experiment, but not the mouse.
 
-		ofPoint p;
-		p.x = screenCenter.x - 100 + (row * 100);
-		p.y = screenCenter.y - 100 + (col * 100);
-
-		objectLocations.push_back( p );
-	}
-
-	//Generate 8 trials
-	trials = generateTrials(8);
-
-	Input.setup(true, false); //Use the keyboard for this experiment, not the mouse.
-
-	cout << "Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
+	cout << "Insturctions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 }
 
 /*
@@ -205,6 +181,7 @@ void updateExperiment (void) {
 					if (++trialIndex >= trials.size()) {
 						cout << "Experiment complete: exiting..." << endl;
 						ofSleepMillis(3000);
+						outputData();
 						ofExit();
 					}
 					trialPhase = "drawStimuli";
@@ -214,42 +191,63 @@ void updateExperiment (void) {
 	}
 }
 
-
 vector<TrialData_t> generateTrials (int trialCount) {
+
+	vector<ofColor> objectColors;
+	vector<ofPoint> objectLocations;
+
+	//Set up a vector of colors that will be sampled to make the objects.
+	objectColors.push_back(ofColor(255, 0, 0));
+	objectColors.push_back(ofColor(0, 255, 0));
+	objectColors.push_back(ofColor(0, 0, 255));
+	objectColors.push_back(ofColor(255, 255, 0));
+	objectColors.push_back(ofColor(255, 0, 255));
+	objectColors.push_back(ofColor(0, 255, 255));
+
+	//Make a 3x3 grid of object locations around the center of the screen.
+	ofPoint screenCenter(Display.getResolution().x / 2, Display.getResolution().y / 2);
+	for (int i = 0; i < 9; i++) {
+		int col = i % 3;
+		int row = i / 3;
+
+		ofPoint p;
+		p.x = screenCenter.x - 100 + (row * 100);
+		p.y = screenCenter.y - 100 + (col * 100);
+
+		objectLocations.push_back(p);
+	}
+
 
 	vector<TrialData_t> _trials;
 
-	vector<unsigned int> changeCounts;
-	changeCounts.push_back( trialCount/2 + (trialCount % 2) );
-	changeCounts.push_back( trialCount/2 );
-	vector<int> changeTrial = CX::repeat( CX::intVector(0,1), changeCounts );
+	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
+
+	vector<int> changeTrial = CX::repeat(intVector<int>(0, 1), trialCount / 2);
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
 		TrialData_t tr;
-
 		tr.arraySize = 4;
 
 		//RNG is an instance of CX_RandomNumberGenerator that is instantiated for you. It is useful for a variety of randomization stuff.
 		//This version of shuffleVector() returns a shuffled copy of the argument without changing the argument.
 		vector<int> colorIndices = RNG.shuffleVector( CX::intVector<int>(0, objectColors.size() - 1) );
 		
-		//sample() gives you count random integers from the range [lowerBound, upperBound] with or without replacement.
-		vector<int> locationIndices = RNG.sample( tr.arraySize, 0, objectLocations.size() - 1, false );
-
 		for (int i = 0; i < tr.arraySize; i++) {
 			tr.colors.push_back( objectColors[colorIndices[i]] );
-			tr.locations.push_back( objectLocations[locationIndices[i]] );
 		}
+
+		//This randomly picks tr.arraySize locations from objectLocations without replacement.
+		tr.locations = RNG.sample(tr.arraySize, objectLocations, false);
 
 		tr.changeTrial = changeTrial[trial];
 		if (tr.changeTrial) {
 			//randomInt() returns an unsigned int from the given range (including both endpoints).
 			tr.changedObjectIndex = RNG.randomInt(0, tr.arraySize - 1); 
-			tr.newColor = objectColors[colorIndices.at(tr.arraySize)];
+			tr.newColor = objectColors[colorIndices.at(tr.arraySize)]; //The color at colorIndices.at(tr.arraySize) is past the end
+				//of the colors sampled for the stimuli, so it can be used for the changed stimulus
 		} else {
-			tr.changedObjectIndex = -1; //Use -1 as a signal that there is not a valid index for the changed color (i.e. it is not a change trial).
-			tr.newColor = -1;
+			//You don't have to set the newColor or the changedObjectIndex for a no-change trial because there is no change and they won't be used.
 		}
 		
 		_trials.push_back( tr );
@@ -259,6 +257,57 @@ vector<TrialData_t> generateTrials (int trialCount) {
 	RNG.shuffleVector( &_trials );
 
 	return _trials;
+}
+
+/*
+This function is here to show how sucky outputting data is when you have a user-defined struct to store data
+becuase of the lack of reflection in c++. The main problems are:
+
+1) Making errors because the column names must line up with the data, but are output at different places, so
+it is really easy to make an error in the naming of columns (swapping names).
+2) Leaving out a piece of data just because it was forgotten. This is easy to do if you have 20+ columns of data,
+some of which are not very important to the main thrust of the experiment, but might be useful for secondary analyses.
+Even for an experiment as simple as this example, making sure that nothing was missing took a little time.
+3) It is a waste of time to manually write data outputting functions, because it is a trivial problem yet must be done carefully.
+You have to make sure that you always include the delimiter between items, that line endings are in the right place, etc. This
+is all a waste of time.
+
+There is an example called advancedChangeDetectionTask than shows how using a CX_DataFrame allows you to totally
+bypass all of these problems and output all of the data stored in the data frame with one trivial function call 
+(e.g. myDataFrame.printToFile("filename.txt")).
+*/
+void outputData(void) {
+	string t = "\t";
+	stringstream out;
+
+	//Set up the headers
+	out << "arraySize" << t << "changedObjectIndex" << t << "changeTrial" << t << "responseCorrect" << t << 
+		"respTime" << t << "newColor";
+	out << t << "colors" << t << "locations" << endl;
+
+	for (vector<TrialData_t>::iterator it = trials.begin(); it != trials.end(); it++) {
+		out << it->arraySize << t << it->changedObjectIndex << t << it->changeTrial << t << it->responseCorrect << t << 
+			it->responseTime << t << it->newColor;
+
+		//Enclose the vectors in quotes so that they are not split on a delimiter when reading into a spreadsheet.
+		out << "\"";
+		for (int i = 0; i < it->colors.size(); i++) {
+			out << it->colors[i];
+			if (i < it->colors.size() - 1) {
+				out << ";";
+			}
+		}
+		out << "\"";
+
+		//CX::vectorToString() does the above ^^^ but doesn't automatically add quotes. vectorToString makes manually outputting data
+		//better, but still loses out to the convenience of a data frame.
+		out << t << "\"" << CX::vectorToString(it->locations, ";") << "\"";
+		out << endl;
+	}
+
+	CX::writeToFile("CD data.txt", out.str(), false); //This file can be found in the data directory of the project.
+		//i.e. %openFrameworks directory%/apps/myApps/%your app name%/bin/data. You can also specify an absolute path
+		//and the file should end up there as long the location does not require write permissions.
 }
 
 /*
@@ -287,7 +336,7 @@ void drawSampleArray (const TrialData_t &tr) {
 
 	for (int i = 0; i < tr.colors.size(); i++) {
 		ofSetColor( tr.colors.at(i) );
-		ofCircle( tr.locations.at(i), objectSize/2 );
+		ofCircle( tr.locations.at(i), circleRadius/2 );
 	}
 }
 
@@ -303,6 +352,6 @@ void drawTestArray (const TrialData_t &tr) {
 
 	for (int i = 0; i < testColors.size(); i++) {
 		ofSetColor( testColors.at(i) );
-		ofCircle( tr.locations.at(i), objectSize/2 );
+		ofCircle( tr.locations.at(i), circleRadius/2 );
 	}
 }
