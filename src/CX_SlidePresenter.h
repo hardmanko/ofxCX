@@ -22,17 +22,19 @@ namespace CX {
 	struct CX_UserFunctionInfo_t {
 		CX_UserFunctionInfo_t(void) :
 			instance(nullptr),
-			currentSlideIndex(0),
-			userStatus(CX_UserFunctionInfo_t::CONTINUE_PRESENTATION)
+			currentSlideIndex(0)
+			//userStatus(CX_UserFunctionInfo_t::CONTINUE_PRESENTATION)
 		{}
 
 		CX_SlidePresenter *instance;
 		unsigned int currentSlideIndex;
 
+		/*
 		enum {
 			CONTINUE_PRESENTATION,
 			STOP_NOW
 		} userStatus;
+		*/
 	};
 
 	struct CX_SP_Configuration {
@@ -47,6 +49,13 @@ namespace CX {
 		std::function<void(CX_UserFunctionInfo_t&)> userFunction;
 		CX_SP_ErrorMode errorMode;
 		bool deallocateCompletedSlides;
+	};
+
+	struct CX_SlideTimingInfo_t {
+		uint32_t startFrame;
+		uint32_t frameCount;
+		CX_Micros_t startTime;
+		CX_Micros_t duration;
 	};
 
 	struct CX_Slide_t {
@@ -69,15 +78,18 @@ namespace CX {
 			FINISHED
 		} slideStatus;
 
-		uint32_t intendedFrameCount;
-		uint32_t intendedOnsetFrameNumber;
-		uint32_t actualFrameCount;
-		uint32_t actualOnsetFrameNumber;
+		CX_SlideTimingInfo_t intended;
+		CX_SlideTimingInfo_t actual;
 
-		CX_Micros_t intendedSlideDuration; //These durations (in microseconds) are good for about 600,000 years.
-		CX_Micros_t actualSlideDuration;
-		CX_Micros_t intendedSlideOnset; 
-		CX_Micros_t actualSlideOnset;
+		//uint32_t intendedFrameCount;
+		//uint32_t intendedOnsetFrameNumber;
+		//uint32_t actualFrameCount;
+		//uint32_t actualOnsetFrameNumber;
+
+		//CX_Micros_t intendedSlideDuration;
+		//CX_Micros_t actualSlideDuration;
+		//CX_Micros_t intendedSlideOnset; 
+		//CX_Micros_t actualSlideOnset;
 
 		CX_Micros_t copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
 	
@@ -98,6 +110,7 @@ namespace CX {
 		void endDrawingCurrentSlide (void);
 
 		void startSlidePresentation(void);
+		void stopPresentation(void);
 
 		void clearSlides (void);
 

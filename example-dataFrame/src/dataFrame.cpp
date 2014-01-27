@@ -8,8 +8,8 @@ The idea behind the CX_DataFrame is that it is a way to
 This example covers the standard CX_DataFrame and what you can do with it. 
 It includes a snippet of R code for reading the output of this program into an R data frame.
 
-CX_DataFrame is NOT for
-1) Doing arithmetic. Data is stored as a string internally so you have the potential for precision issues, plus it would be really, really slow.
+CX_DataFrame is NOT for Doing arithmetic. Data is stored as a string internally so you have the 
+potential for precision issues, plus it would be really, really slow.
 
 It also introduces CX_SafeDataFrame, which is potentially a better option than CX_DataFrame because it prevents 
 some potential mistakes by removing some of the parts of the interface for which it is difficult to develop a good
@@ -126,17 +126,17 @@ void setupExperiment (void) {
 
 	cout << endl << copyDf.print() << endl;
 
-
-
-
-
+	//You can also copy columns out into a new data frame. Unlike rows, you cannot copy the same column multiple times.
+	vector<string> columns;
+	columns.push_back("dwellings");
+	columns.push_back("ints");
+	CX_DataFrame cols = df.copyColumns(columns);
 
 	/*
-	There is another kind of data frame for those who are not convinced that they are God's gift
-	to programming and recognize that they can make errors. The normal CX_DataFrame allows
-	you to make a number of errors having to do with indexing (mispelled column name, invalid row index,
-	thinking that a CX_DataFrameRow is a copy and not linked to the data, etc.). 
-	CX_SafeDataFrame is much safer to use, but has somewhat restricted functionality.
+	There is another kind of data frame for those who believe themselves to be error prone (i.e. self-aware
+	people). The normal CX_DataFrame allows	you to make a number of errors having to do with indexing 
+	(mispelled column name, invalid row index, thinking that a CX_DataFrameRow is a copy and not linked 
+	to the data, etc.). CX_SafeDataFrame is much safer to use, but has somewhat restricted functionality.
 	*/
 	CX_SafeDataFrame sdf;
 

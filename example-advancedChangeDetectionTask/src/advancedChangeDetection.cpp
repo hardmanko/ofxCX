@@ -117,7 +117,7 @@ int getResponse (void) {
 
 			if (keyEvent.key == 's' || keyEvent.key == 'd') {
 
-				uint64_t testArrayOnset = SlidePresenter.getSlides().back().actualSlideOnset;
+				uint64_t testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 				trialDf(trialIndex, "responseTime") = keyEvent.eventTime - testArrayOnset;
 
 				bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();

@@ -1,6 +1,6 @@
 #include "CX_EntryPoint.h"
 
-#include "CX_ContinuousSlidePresenter.h"
+//#include "CX_ContinuousSlidePresenter.h"
 
 /*
 This example shows how to implement an N-Back task using a CX_ContinuousSlidePresenter (CSP).
@@ -13,7 +13,6 @@ using up too many memory resources at once.
 In order to use a CSP, the user must provide a function
 */
 
-CX_ContinuousSlidePresenter csp;
 
 CX_DataFrame df;
 CX_DataFrame::rowIndex_t trialNumber = 0;
@@ -33,7 +32,7 @@ char nonTargetKey = 'j';
 CX_Millis stimulusPresentationDuration = 1000.0;
 CX_Millis interStimulusInterval = 1000.0;
 
-void lastSlideFunction (CX_CSPInfo_t& info);
+void lastSlideFunction (CX_UserFunctionInfo_t& info);
 void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
 
@@ -46,16 +45,23 @@ void setupExperiment (void) {
 
 	generateTrials(10);
 
-	csp.setup(&Display);
+	//Configure the SlidePresenter:
+	CX_SP_Configuration config;
+	config.display = &Display; //Set the SlidePresenter to use Display for the display.
 
-	//Set a function that you want to be called every time the slide presenter has started to present the last
-	//slide you put in. In your function, you can add more slides to the slide presenter. Every time it reaches 
+	//Set a function that you want to be called every time the SlidePresenter has started to present the last
+	//slide you put in. In your function, you can add more slides to the SlidePresenter. Every time it reaches 
 	//the last slide, it will called lastSlideFunction again.
-	csp.setUserFunction(&lastSlideFunction);
+	config.userFunction = &lastSlideFunction;
 
-	//Start loading slides into the slide presenter. Load up a little countdown screen.
+	config.deallocateCompletedSlides = true; //We know that for this experiment we will never want to present the
+		//same slide twice, so we set the SlidePresenter to deallocate the memory used for slides that have already been presented.
+
+	SlidePresenter.setup(config);
+
+	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
 	for (int i = 3; i > 0; i--) {
-		csp.beginDrawingNextSlide(1000000, "fixation");
+		SlidePresenter.beginDrawingNextSlide(1000000, "fixation");
 		ofBackground(backgroundColor);
 		ofSetColor(textColor);
 		stringstream s;
@@ -68,35 +74,36 @@ void setupExperiment (void) {
 
 	//Now load the first nBack + 1 stimuli into the slide presenter.
 	for (unsigned int i = 0; i <= nBack; i++) {
-		csp.beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
-		drawStimulusForTrial(i, (i == nBack));
-		csp.endDrawingCurrentSlide();
+		SlidePresenter.beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
+		drawStimulusForTrial(i, (i == nBack)); //The i == nBack thing is just to draw the on screen instructions only for
+			//trials on which the participant should respond (no on the first nBack trials, but on the nBack-th trial they should).
+		SlidePresenter.endDrawingCurrentSlide();
 
-		csp.beginDrawingNextSlide(interStimulusInterval, "blank");
+		SlidePresenter.beginDrawingNextSlide(interStimulusInterval, "blank");
 		ofBackground(backgroundColor);
-		csp.endDrawingCurrentSlide();
+		SlidePresenter.endDrawingCurrentSlide();
 	}
 	trialNumber = nBack; //This will be the stimulus number that was just presented the first time the user function is called.
 
 	//Once everything is set up, start presenting the slides.
-	csp.startSlidePresentation();
+	SlidePresenter.startSlidePresentation();
 }
 
 void updateExperiment (void) {
-	csp.update(); //Make sure that you call the update function of the csp, otherwise it does nothing.
+	SlidePresenter.update(); //Make sure that you call the update function of the SlidePresenter, otherwise it does nothing.
 }
 
 
 
-void lastSlideFunction (CX_CSPInfo_t& info) {
+void lastSlideFunction(CX_UserFunctionInfo_t& info) {
 
 	//At this point in time, the last slide has just been put on screen. The last slide is a blank, which means that the slide before it
 	//was a stimulus that should have been responded to. We'll check for keyboard events.
 	bool validResponseMade = false;
 	if (Input.Keyboard.availableEvents() > 0) {
 		//We don't want any responses made before the stimulus was presented, so let's find out when it was presented.
-		CX_Slide_t &lastStimulusSlide = csp.getSlide( info.currentSlideIndex - 1 );
-		CX_Micros_t stimulusOnset = lastStimulusSlide.actualSlideOnset;
+		CX_Slide_t &lastStimulusSlide = SlidePresenter.getSlide( info.currentSlideIndex - 1 );
+		CX_Micros_t stimulusOnset = lastStimulusSlide.actual.startTime;
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_KeyEvent_t kev = Input.Keyboard.getNextEvent();
@@ -122,7 +129,10 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 	}
 
 	if (++trialNumber == trialCount) {
-		info.userStatus = CX::CX_CSPInfo_t::STOP_NOW;
+		info.instance->stopPresentation(); //Because we're about to exit the program, this has no effect,
+			//but you can explicitly stop presentation using this function. You can also stop presentation
+			//by simply not adding any slides to the SlidePresenter.
+
 		df.printToFile("N-Back output.txt");
 
 		Display.beginDrawingToBackBuffer();
@@ -133,8 +143,6 @@ void lastSlideFunction (CX_CSPInfo_t& info) {
 
 		ofSleepMillis(3000);
 		ofExit();
-	} else {
-		info.userStatus = CX::CX_CSPInfo_t::CONTINUE_PRESENTATION;
 	}
 
 	//Draw the next letter and the following blank.

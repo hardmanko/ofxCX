@@ -158,7 +158,7 @@ void updateExperiment (void) {
 					//this case, that is easy to do because the SlidePresenter tracks that information for us.
 					//The last slide (given by getSlides().back()) has the slide presentation time stored in
 					//the actualSlideOnset member.
-					uint64_t testArrayOnset = SlidePresenter.getSlides().back().actualSlideOnset;
+					uint64_t testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 					//One you have the onset time of the test array, you can subtract that from the time
 					//of the response, giving the "response time" (better known as response latency).
 					trials.at( trialIndex ).responseTime = keyEvent.eventTime - testArrayOnset;
