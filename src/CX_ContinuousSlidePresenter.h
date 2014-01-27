@@ -3,14 +3,9 @@
 
 #include "CX_SlidePresenter.h"
 
-
 namespace CX {
 
 	class CX_ContinuousSlidePresenter;
-
-
-
-
 
 	/*
 	enum class CX_SP_PresentationStatus {
