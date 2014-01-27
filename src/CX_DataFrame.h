@@ -67,6 +67,7 @@ public:
 
 	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
 	CX_DataFrame copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder);
+	CX_DataFrame copyColumns (vector<std::string> columns);
 	void shuffleRows (void);
 	void shuffleRows (CX_RandomNumberGenerator &rng);
 
@@ -142,6 +143,7 @@ public:
 	using CX_DataFrame::print;
 	using CX_DataFrame::printToFile;
 	using CX_DataFrame::copyColumn;
+	using CX_DataFrame::copyRows;
 	using CX_DataFrame::columnNames;
 	using CX_DataFrame::getRowCount;
 	using CX_DataFrame::shuffleRows;

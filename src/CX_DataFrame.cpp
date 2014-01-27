@@ -232,6 +232,34 @@ CX_DataFrame CX_DataFrame::copyRows(vector<CX_DataFrame::rowIndex_t> rowOrder) {
 	return copyDf;
 }
 
+/*!
+Copies the specified columns into a new data frame.
+\param columns A vector of column names to copy out. If a requested column is not found, a warning will be logged, 
+but the function will otherwise complete successfully.
+\return A CX_DataFrame containing the specified columns.
+*/
+CX_DataFrame CX_DataFrame::copyColumns(vector<std::string> columns) {
+	std::set<std::string> columnSet;
+
+	for (unsigned int i = 0; i < columns.size(); i++) {
+		if (_data.find(columns[i]) != _data.end()) {
+			columnSet.insert(columns[i]);
+		} else {
+			Instances::Log.warning("CX_DataFrame") << "copyColumns: Requested column not found in data frame: " << columns[i];
+		}
+	}
+
+	CX_DataFrame copyDf;
+	for (std::set<string>::iterator it = columnSet.begin(); it != columnSet.end(); it++) {
+		vector<string> s = this->copyColumn<string>(*it);
+		for (rowIndex_t i = 0; i < this->getRowCount(); i++) {
+			copyDf(*it, i) = s[i];
+		}
+	}
+
+	return copyDf;
+}
+
 
 /*! Randomly re-orders the rows of the data frame. */
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
