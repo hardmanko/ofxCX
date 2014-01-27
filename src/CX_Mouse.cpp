@@ -51,6 +51,19 @@ void CX_Mouse::_mouseDraggedEventHandler (ofMouseEventArgs &a) {
 	_mouseEventHandler(a);
 }
 
+void CX_Mouse::_mouseWheelScrollHandler(CX_MouseScrollEventArgs_t &a) {
+	CX_MouseEvent_t ev;
+	ev.eventType = CX_MouseEvent_t::SCROLLED;
+
+	ev.eventTime = CX::Instances::Clock.getTime();
+	ev.uncertainty = ev.eventTime - _lastEventPollTime;
+
+	ev.button = -1;
+	ev.x = (int)a.x;
+	ev.y = (int)a.y;
+
+	_mouseEvents.push(ev);
+}
 
 void CX_Mouse::_mouseEventHandler (ofMouseEventArgs &a) {
 	CX_MouseEvent_t ev;
@@ -100,11 +113,15 @@ void CX_Mouse::_listenForEvents (bool listen) {
 		ofAddListener( ofEvents().mouseReleased, this, &CX_Mouse::_mouseButtonReleasedEventHandler );
 		ofAddListener( ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler );
 		ofAddListener( ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler );
+
+		ofAddListener( CX::Events.scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler );
 	} else {
 		ofRemoveListener( ofEvents().mousePressed, this, &CX_Mouse::_mouseButtonPressedEventHandler );
 		ofRemoveListener( ofEvents().mouseReleased, this, &CX_Mouse::_mouseButtonReleasedEventHandler );
 		ofRemoveListener( ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler );
 		ofRemoveListener( ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler );
+
+		ofRemoveListener(CX::Events.scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler);
 	}
 	_listeningForEvents = listen;
 }

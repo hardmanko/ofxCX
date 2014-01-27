@@ -11,6 +11,12 @@ CX_InputManager::CX_InputManager (void) :
 {
 }
 
+/*!
+Setup the input manager to use the requested devices. You may call this function multiple times if you want to
+change the configuration over the course of the experiment. Every time this function is called, all input device
+events are cleared.
+\return False if the requested joystick could not be set up correctly.
+*/
 bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex) {
 	Keyboard.clearEvents();
 	_usingKeyboard = useKeyboard;
@@ -31,7 +37,12 @@ bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex)
 	return success;
 }
 
-
+/*!
+It is not typically neccessary for the user to call this function directly, although there is not harm in doing so.
+This function polls for new events on all of the configured input devices (see setup()). After a call to this function,
+new events for the input devices can be found by checking the availableEvents() function for each device.
+\return True if there are any new events, false otherwise.
+*/
 bool CX_InputManager::pollEvents (void) {
 
 	glfwPollEvents();

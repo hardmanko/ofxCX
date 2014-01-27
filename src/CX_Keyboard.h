@@ -10,6 +10,7 @@
 
 namespace CX {
 
+	/*
 	struct CX_KeyboardModifiers_t {
 		CX_KeyboardModifiers_t (void) :
 			shift(0),
@@ -22,6 +23,7 @@ namespace CX {
 		int alt;
 		int meta;
 	};
+	*/
 
 	struct CX_KeyEvent_t {
 		int key;
@@ -52,8 +54,8 @@ namespace CX {
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
 		CX_Micros_t _lastEventPollTime;
 
-		queue<CX_KeyEvent_t> _keyEvents;
-		set<int> _heldKeys;
+		std::queue<CX_KeyEvent_t> _keyEvents;
+		std::set<int> _heldKeys;
 
 		void _keyPressHandler (ofKeyEventArgs &a);
 		void _keyReleaseHandler (ofKeyEventArgs &a);

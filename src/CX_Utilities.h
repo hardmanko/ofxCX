@@ -61,11 +61,23 @@ template <typename T> bool CX::writeToFile (std::string filename, const T& data,
 	return writeToFile(filename, ofToString<T>(data), append);
 }
 
+/*!
+Repeats value "times" times.
+\return A vector containing the repeated values.
+*/
 template <typename T> 
 std::vector<T> CX::repeat (T value, unsigned int times) {
 	return std::vector<T>( times, value );
 }
 
+/*!
+Repeats the elements of values. Each element of values is repeated "each" times and then the process of repeating the elements is
+repeated "times" times.
+\param values Vector of values to be repeated.
+\param times The number of times the process should be performed.
+\param each Number of times each element of values should be repeated.
+\return A vector of the repeated values.
+*/
 template <typename T> 
 std::vector<T> CX::repeat (std::vector<T> values, unsigned int times, unsigned int each) {
 	std::vector<T> rval;
@@ -81,6 +93,15 @@ std::vector<T> CX::repeat (std::vector<T> values, unsigned int times, unsigned i
 	return rval;
 }
 
+/*!
+Repeats the elements of values. Each element of values is repeated "each" times and then the process of repeating the elements is
+repeated "times" times.
+\param values Vector of values to be repeated.
+\param each Number of times each element of values should be repeated. Must be the same length as values. If not, an error
+is logged and an empty vector is returned.
+\param times The number of times the process should be performed.
+\return A vector of the repeated values.
+*/
 template <typename T> 
 std::vector<T> CX::repeat (std::vector<T> values, vector<unsigned int> each, unsigned int times) {
 	std::vector<T> rval;
@@ -125,13 +146,22 @@ template <typename T> std::string vectorToString (std::vector<T> value, std::str
 }
 */
 
+/*!
+Creates a sequence of numbers from start to end by steps of size stepSize. start may be geater than end, but only if
+stepSize is less than 0. If start is less than end, stepSize must be greater than 0.
 
+Example call: sequence<double>(1, 3.3, 2) results in {1, 3}
+
+\param start The start of the sequence. You are guaranteed to get this value in the sequence.
+\param end The number past which the sequence should end. You are not guaranteed to get this value.
+\param stepSize A nonzero number.
+*/
 template <typename T> 
 std::vector<T> CX::sequence (T start, T end, T stepSize) {
 	std::vector<T> rval;
 
 	if (start < end) {
-		if (stepSize < 0) {
+		if (stepSize =< 0) {
 			return rval;
 		}
 		do {
@@ -142,7 +172,7 @@ std::vector<T> CX::sequence (T start, T end, T stepSize) {
 	}
 
 	if (start >= end) {
-		if (stepSize > 0) {
+		if (stepSize >= 0) {
 			return rval;
 		}
 		do {
@@ -164,12 +194,13 @@ template <typename T> std::vector<T> CX::sequenceAlong (T start, T end, unsigned
 	return CX::sequence<T>(start, end, stepSize);
 }
 
+/*!
+Creates a vector of integers going from start to end. start may be greater than end, in which case
+the returned values will be in descending order. This is similar to using CX::sequence, but the step
+size is fixed to 1 and it works properly when trying to create a descending sequence of unsigned integers.
+\return A vector of the values int the sequence.
+*/
 template <typename T> std::vector<T> CX::intVector (T start, T end) {
-	//if (start > end) {
-	//	std::swap(start, end);
-	//}
-	//return CX::sequence<T>(start, end, 1);
-
 	std::vector<T> rval;
 	int dir = (start > end) ? -1 : 1;
 	rval.push_back(start);

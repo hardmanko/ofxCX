@@ -11,35 +11,39 @@ CX_Keyboard::~CX_Keyboard (void) {
 	_listenForEvents(false);
 }
 
-void CX_Keyboard::_listenForEvents (bool listen) {
-	if (_listeningForEvents == listen) {
-		return;
-	}
-
-	if (listen) {
-		ofAddListener( ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler );
-		ofAddListener( ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler );
-	} else {
-		ofRemoveListener( ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler );
-		ofRemoveListener( ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler );
-	}
-	_listeningForEvents = listen;
-}
-
+/*! Get the number of new events available for this input device. */
 int CX_Keyboard::availableEvents (void) {
 	return _keyEvents.size();
 }
 
+/*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
+from the input device. */
 CX_KeyEvent_t CX_Keyboard::getNextEvent (void) {
 	CX_KeyEvent_t front = _keyEvents.front();
 	_keyEvents.pop();
 	return front;
 }
 
+/*! Clear (delete) all events from this input device. */
 void CX_Keyboard::clearEvents (void) {
 	while (!_keyEvents.empty()) {
 		_keyEvents.pop();
 	}
+}
+
+void CX_Keyboard::_listenForEvents(bool listen) {
+	if (_listeningForEvents == listen) {
+		return;
+	}
+
+	if (listen) {
+		ofAddListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
+		ofAddListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
+	} else {
+		ofRemoveListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
+		ofRemoveListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
+	}
+	_listeningForEvents = listen;
 }
 
 void CX_Keyboard::_keyPressHandler (ofKeyEventArgs &a) {

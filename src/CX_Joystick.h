@@ -1,13 +1,11 @@
 #ifndef _CX_JOYSTICK_H_
 #define _CX_JOYSTICK_H_
 
-#include "CX_Clock.h"
-
 #include <queue>
 #include <string>
 #include <vector>
 
-using namespace std;
+#include "CX_Clock.h"
 
 namespace CX {
 
@@ -36,7 +34,7 @@ namespace CX {
 		~CX_Joystick (void);
 
 		bool setup (int joystickIndex);
-		string getJoystickName (void);
+		std::string getJoystickName (void);
 
 		//Preferred interface. This interface collects response time data.
 		bool pollEvents (void);
@@ -45,17 +43,17 @@ namespace CX {
 		void clearEvents (void);
 
 		//Direct access functions. The preferred interface is pollEvents() and getNextEvent().
-		vector<float> getAxisPositions (void);
-		vector<unsigned char> getButtonStates (void);
+		std::vector<float> getAxisPositions (void);
+		std::vector<unsigned char> getButtonStates (void);
 
 	private:
 		int _joystickIndex;
-		string _joystickName;
+		std::string _joystickName;
 
-		queue<CX_JoystickEvent_t> _joystickEvents;
+		std::queue<CX_JoystickEvent_t> _joystickEvents;
 
-		vector<float> _axisPositions;
-		vector<unsigned char> _buttonStates;
+		std::vector<float> _axisPositions;
+		std::vector<unsigned char> _buttonStates;
 
 		CX_Micros_t _lastEventPollTime;
 	};

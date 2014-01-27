@@ -24,6 +24,8 @@ void CX::Private::App::update (void) {
 	
 	Instances::Input.pollEvents();
 
+	CX::Events.setup();
+
 	//Call the user update function
 	updateExperiment();
 
