@@ -137,10 +137,11 @@ void CX_SlidePresenter::update(void) {
 				}
 
 				if (_currentSlide == (_slides.size() - 1)) {
-					_handleLastSlide();
+					_handleFinalSlide();
 				}
 
-				//If there is a slide after the current one. This MUST come after _handleLastSlide(), because if new slides are added, this has to happen for them.
+				//If there is a slide after the current one, prepare it. This MUST come after _handleFinalSlide(), 
+				//because if new slides are added, this has to happen for them.
 				if ((_currentSlide + 1) < _slides.size()) {
 					_prepareNextSlide();
 				}
@@ -179,12 +180,11 @@ void CX_SlidePresenter::_finishPreviousSlide(void) {
 	previousSlide.actualFrameCount = _slides.at(_currentSlide).actualOnsetFrameNumber - previousSlide.actualOnsetFrameNumber;
 }
 
-void CX_SlidePresenter::_handleLastSlide(void) {
+void CX_SlidePresenter::_handleFinalSlide(void) {
 	CX_UserFunctionInfo_t info;
 	info.currentSlideIndex = _currentSlide;
 	info.instance = this;
 	info.userStatus = CX_UserFunctionInfo_t::CONTINUE_PRESENTATION;
-	//info.lastSlide = &_slides.at(_currentSlide - 1);
 
 	unsigned int previousSlideCount = _slides.size();
 
@@ -231,13 +231,29 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 		nextSlide.intendedSlideOnset = currentSlide.intendedSlideOnset + currentSlide.intendedSlideDuration;
 		nextSlide.intendedOnsetFrameNumber = currentSlide.intendedOnsetFrameNumber + currentSlide.intendedFrameCount;
 
-		//If a slide has been skipped due to a delay, _currentSlide skips over it too.
-		uint64_t endFrameNumber = nextSlide.intendedOnsetFrameNumber + nextSlide.intendedSlideDuration;
+		uint64_t endFrameNumber = nextSlide.intendedOnsetFrameNumber + nextSlide.intendedFrameCount;
+
 		if (endFrameNumber <= _display->getFrameNumber()) {
-			//Go on to next slide
-			_currentSlide++;
-			_prepareNextSlide(); //Keep skipping slides
-			return;
+			
+			if ((_currentSlide + 2) < _slides.size()) {
+				//If the next slide is not the last slide, it may be skipped
+
+				_currentSlide++;
+
+				_finishPreviousSlide();
+				nextSlide.actualSlideDuration = 0;
+				nextSlide.actualFrameCount = 0;
+
+				Log.error("CX_SlidePresenter") << "Slide skipped at index " << _currentSlide;
+
+				_prepareNextSlide(); //Keep skipping slides
+
+				//return;
+
+			} else {
+				//The next slide is the last slide and may not be skipped
+				Log.error("CX_SlidePresenter") << "The next slide is the last slide and may not be skipped: " << _currentSlide;
+			}
 		}
 
 	}

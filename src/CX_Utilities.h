@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <iomanip>
 #include <cmath>
 
 #include "ofUtils.h"
@@ -27,7 +28,7 @@ namespace CX {
 
 	bool checkOFVersion (int versionMajor, int versionMinor, int versionPatch);
 
-	int getSampleCount (void);
+	int getSampleCount (void); //Make private?
 
 	template <typename T> std::vector<T> arrayToVector (T arr[], unsigned int arraySize);
 
@@ -164,7 +165,19 @@ template <typename T> std::vector<T> CX::sequenceAlong (T start, T end, unsigned
 }
 
 template <typename T> std::vector<T> CX::intVector (T start, T end) {
-	return CX::sequence<T>(start, end, 1);
+	//if (start > end) {
+	//	std::swap(start, end);
+	//}
+	//return CX::sequence<T>(start, end, 1);
+
+	std::vector<T> rval;
+	int dir = (start > end) ? -1 : 1;
+	rval.push_back(start);
+	while (start != end) {
+		start += dir;
+		rval.push_back(start);
+	}
+	return rval;
 }
 
 template <typename T> std::vector<T> CX::arrayToVector (T arr[], unsigned int arraySize) {

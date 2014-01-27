@@ -136,7 +136,7 @@ namespace CX {
 		void _renderCurrentSlide (void);
 		void _waitSyncCheck (void);
 
-		void _handleLastSlide(void);
+		void _handleFinalSlide(void);
 		void _finishPreviousSlide(void);
 		void _prepareNextSlide(void);
 

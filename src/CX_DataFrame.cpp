@@ -168,6 +168,83 @@ void CX_DataFrame::_equalizeRowLengths (void) {
 	_rowCount = maxSize;
 }
 
+/*! Re-orders the rows in the data frame.
+\param newOrder Vector of row indices. newOrder.size() must equal this->getRowCount(). newOrder must not contain any out-of-range indices
+(i.e. they must be < getRowCount()). Both of these error conditions are checked for in the function call and errors are logged.
+\return true if all of the conditions of newOrder are met, false otherwise.
+*/
+bool CX_DataFrame::reorderRows(const vector<CX_DataFrame::rowIndex_t>& newOrder) {
+	if (newOrder.size() != _rowCount) {
+		CX::Instances::Log.error("CX_DataFrame") << "reorderRows failed: The number of indices in newOrder did not equal the number of rows in the data frame.";
+		return false;
+	}
+
+	for (unsigned int i = 0; i < newOrder.size(); i++) {
+		if (newOrder[i] >= _rowCount) {
+			CX::Instances::Log.error("CX_DataFrame") << "reorderRows failed: newOrder contained out-of-range indices.";
+			return false;
+		}
+	}
+
+	vector<string> names = this->columnNames();
+
+	for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
+		vector<string> columnStrings = this->copyColumn<string>(*it);
+		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
+			_data.at(*it).at(i) = columnStrings.at(newOrder[i]);
+		}
+	}
+	return true;
+}
+
+/*! Creates CX_DataFrame containing a copy of the rows specified in rowOrder. The new data frame is not linked to the existing data frame.
+\param rowOrder A vector of CX_DataFrame::rowIndex_t containing the rows from this data frame to be copied out.
+The indices in rowOrder may be in any order: They don't need to be ascending. Additionally, the same row to be
+copied may be specified multiple times.
+\return A CX_DataFrame containing the rows specified in rowOrder.
+*/
+CX_DataFrame CX_DataFrame::copyRows(vector<CX_DataFrame::rowIndex_t> rowOrder) {
+	unsigned int outOfRangeCount = 0;
+	for (unsigned int i = 0; i < rowOrder.size(); i++) {
+		if (rowOrder[i] >= _rowCount) {
+			rowOrder.erase(rowOrder.begin() + i);
+			i--;
+			outOfRangeCount++;
+		}
+	}
+	if (outOfRangeCount) {
+		CX::Instances::Log.warning("CX_DataFrame") << "copyRows: rowOrder contained " << outOfRangeCount << " out-of-range indices. They will be ignored.";
+	}
+
+	CX_DataFrame copyDf;
+
+	vector<string> columnNames = this->columnNames();
+	for (vector<string>::iterator it = columnNames.begin(); it != columnNames.end(); it++) {
+		//copyDf._data[*it].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
+		//next columns, they will be resized to the proper size when they are created.
+
+		vector<string> columnStrings = this->copyColumn<string>(*it);
+		for (rowIndex_t i = 0; i < rowOrder.size(); i++) {
+			copyDf(*it, i) = columnStrings[rowOrder[i]];
+		}
+	}
+
+	return copyDf;
+}
+
+
+/*! Randomly re-orders the rows of the data frame. */
+void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
+	vector<CX_DataFrame::rowIndex_t> newOrder = CX::sequence<CX_DataFrame::rowIndex_t>(0, _rowCount - 1, 1);
+	rng.shuffleVector(&newOrder);
+	reorderRows(newOrder);
+}
+
+void CX_DataFrame::shuffleRows(void) {
+	shuffleRows(CX::Instances::RNG);
+}
+
+
 
 ////////////////////////
 // CX_DataFrameColumn //
@@ -288,81 +365,6 @@ void CX_SafeDataFrame::addColumn (std::string columnName) {
 
 
 
-/*! Re-orders the rows in the data frame.
-\param newOrder Vector of row indices. newOrder.size() must equal this->getRowCount(). newOrder must not contain any out-of-range indices 
-	(i.e. they must be < getRowCount()). Both of these error conditions are checked for in the function call and errors are logged. 
-\return true if all of the conditions of newOrder are met, false otherwise.
-*/
-bool CX_DataFrame::reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder) {
-	if (newOrder.size() != _rowCount) {
-		CX::Instances::Log.error("CX_DataFrame") << "reorderRows failed: The number of indices in newOrder did not equal the number of rows in the data frame.";
-		return false;
-	}
-
-	for (unsigned int i = 0; i < newOrder.size(); i++) {
-		if (newOrder[i] >= _rowCount) {
-			CX::Instances::Log.error("CX_DataFrame") << "reorderRows failed: newOrder contained out-of-range indices.";
-			return false;
-		}
-	}
-	
-	vector<string> names = this->columnNames();
-	
-	for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
-		vector<string> columnStrings = this->copyColumn<string>(*it);
-		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
-			_data.at(*it).at(i) = columnStrings.at(newOrder[i]);
-		}
-	}
-	return true;
-}
-
-/*! Creates CX_DataFrame containing a copy of the rows specified in rowOrder. The new data frame is not linked to the existing data frame.
-\param rowOrder A vector of CX_DataFrame::rowIndex_t containing the rows from this data frame to be copied out. 
-The indices in rowOrder may be in any order: They don't need to be ascending. Additionally, the same row to be
-copied may be specified multiple times.
-\return A CX_DataFrame containing the rows specified in rowOrder.
-*/
-CX_DataFrame CX_DataFrame::copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder) {
-	unsigned int outOfRangeCount = 0;
-	for (unsigned int i = 0; i < rowOrder.size(); i++) {
-		if (rowOrder[i] >= _rowCount) {
-			rowOrder.erase( rowOrder.begin() + i );
-			i--;
-			outOfRangeCount++;
-		}
-	}
-	if (outOfRangeCount) {
-		CX::Instances::Log.warning("CX_DataFrame") << "copyRows: rowOrder contained " << outOfRangeCount << " out-of-range indices. They will be ignored.";
-	}
-
-	CX_DataFrame copyDf;
-	
-	vector<string> columnNames = this->columnNames();
-	for (vector<string>::iterator it = columnNames.begin(); it != columnNames.end(); it++) {
-		//copyDf._data[*it].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
-		//next columns, they will be resized to the proper size when they are created.
-		
-		vector<string> columnStrings = this->copyColumn<string>(*it);
-		for (rowIndex_t i = 0; i < rowOrder.size(); i++) {
-			copyDf(*it, i) = columnStrings[rowOrder[i]];
-		}
-	}
-
-	return copyDf;
-}
-
-
-/*! Randomly re-orders the rows of the data frame. */
-void CX_DataFrame::shuffleRows (CX_RandomNumberGenerator &rng) {
-	vector<CX_DataFrame::rowIndex_t> newOrder = CX::sequence<CX_DataFrame::rowIndex_t>(0, _rowCount - 1, 1);
-	rng.shuffleVector(&newOrder);
-	reorderRows(newOrder);
-}
-
-void CX_DataFrame::shuffleRows (void) {
-	shuffleRows(CX::Instances::RNG);
-}
 
 
 

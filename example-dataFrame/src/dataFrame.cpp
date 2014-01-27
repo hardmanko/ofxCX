@@ -12,8 +12,15 @@ CX_DataFrame is NOT for
 1) Doing arithmetic. Data is stored as a string internally so you have the potential for precision issues, plus it would be really, really slow.
 
 It also introduces CX_SafeDataFrame, which is potentially a better option than CX_DataFrame because it prevents 
-some potential mistakes by removing some of the more complicated parts of the interface.
+some potential mistakes by removing some of the parts of the interface for which it is difficult to develop a good
+mental model.
 */
+
+
+//See the contents of this header file (included with the dataFrame example) for an example of how you can use your
+//own types (classes, structs) with CX_DataFrame in a way that will allow you to easily insert and extract data from
+//the data frame.
+//#include "myType.h"
 
 void setupExperiment (void) {
 	CX_DataFrame df;
@@ -26,7 +33,7 @@ void setupExperiment (void) {
 	df("ints", 0) = 3; //The integer 3 is put into the first row of the column named "ints"
 	df("ints", 1) = 42; //Second row, same column...
 	df("dwellings", 1) = "house"; //You don't have to start with the first row, everything is dynamically resized.
-	df("vect", 0) = CX::intVector(3,1); //You can easily store vectors of data.
+	df("vect", 0) = CX::sequence(3, 1, -1); //You can easily store vectors of data.
 	df(0, "doubles") = 123.456; //You can do (row, column), if desired.
 
 	//You can also use operator[] to access cells in the data frame. However, using (row,column) is faster (computationally) than using operator[].
@@ -51,7 +58,7 @@ void setupExperiment (void) {
 	CX_DataFrameRow cellRow;
 	cellRow["dwellings"] = "wigwam"; //CX_DataFrameRow is just a map<string, CX_DataFrameCell>, so access is done using operator[] and assignment.
 	cellRow["ints"] = -7;
-	cellRow["vect"] = CX::intVector(1, -1);
+	cellRow["vect"] = CX::intVector(-1, 1);
 	//Notice that the "doubles" column is missing. This is handled silently.
 	df.appendRow(cellRow);
 
@@ -61,7 +68,7 @@ void setupExperiment (void) {
 	set<string> printCol;
 	printCol.insert("dwellings");
 	printCol.insert("vect");
-	vector<unsigned int> printRow = CX::uintVector(0, 1);
+	vector<unsigned int> printRow = CX::intVector<unsigned int>(0, 1);
 	cout << endl << "Only selected rows and columns: " << df.print( printCol, printRow, ";" ); 
 
 	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.getRowCount() to get the
@@ -110,6 +117,17 @@ void setupExperiment (void) {
 
 	numericVector(df$vect[1]) #Example use
 	*/
+
+	//You can copy rows from a data frame into a new data frame. You can specify which rows
+	//to copy. You can even copy the same row multiple times.
+	vector<CX_DataFrame::rowIndex_t> copyOrder = CX::intVector<CX_DataFrame::rowIndex_t>(2, 0);
+	copyOrder.push_back(0); //Copy the first row twice.
+	CX_DataFrame copyDf = df.copyRows(copyOrder);
+
+	cout << endl << copyDf.print() << endl;
+
+
+
 
 
 

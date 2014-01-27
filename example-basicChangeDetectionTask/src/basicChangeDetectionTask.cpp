@@ -31,17 +31,16 @@ void drawSampleArray (const TrialData_t &tr);
 void drawTestArray (const TrialData_t &tr);
 
 //Global variables (at least from the perspective of the experiment)
-int circleRadius = 60;
-ofColor backgroundColor(50);
-
-int trialIndex = 0;
 vector<TrialData_t> trials;
+int trialIndex = 0;
+
+int circleRadius = 30;
+ofColor backgroundColor(50);
 
 string trialPhase = "drawStimuli";
 
 
 void setupExperiment (void) {
-
 	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how it does that)
 
 	Input.setup(true, false); //Use the keyboard for this experiment, but not the mouse.
@@ -86,6 +85,7 @@ void updateExperiment (void) {
 }
 
 There is an abstraction which reduces the pain associated with this design pattern, called CX_TrialController.
+It's application to this exact problem can be found in the advancedChangeDetection example.
 */
 void updateExperiment (void) {
 	if (trialPhase == "drawStimuli") {
@@ -176,12 +176,11 @@ void updateExperiment (void) {
 					//See example-logging in the ofxCX folder for an example of how the logging system works.
 					Log.flush();
 
-					//This trial is now complete, so move on to the next trial, checking to see if 
-					//you have completed all of the trials.
+					//This trial is now complete, so move on to the next trial, checking to see if you have completed all of the trials.
 					if (++trialIndex >= trials.size()) {
+						outputData();
 						cout << "Experiment complete: exiting..." << endl;
 						ofSleepMillis(3000);
-						outputData();
 						ofExit();
 					}
 					trialPhase = "drawStimuli";
@@ -197,12 +196,12 @@ vector<TrialData_t> generateTrials (int trialCount) {
 	vector<ofPoint> objectLocations;
 
 	//Set up a vector of colors that will be sampled to make the objects.
-	objectColors.push_back(ofColor(255, 0, 0));
-	objectColors.push_back(ofColor(0, 255, 0));
-	objectColors.push_back(ofColor(0, 0, 255));
-	objectColors.push_back(ofColor(255, 255, 0));
-	objectColors.push_back(ofColor(255, 0, 255));
-	objectColors.push_back(ofColor(0, 255, 255));
+	objectColors.push_back(ofColor::red);
+	objectColors.push_back(ofColor::orange);
+	objectColors.push_back(ofColor::yellow);
+	objectColors.push_back(ofColor::green);
+	objectColors.push_back(ofColor::blue);
+	objectColors.push_back(ofColor::purple);
 
 	//Make a 3x3 grid of object locations around the center of the screen.
 	ofPoint screenCenter(Display.getResolution().x / 2, Display.getResolution().y / 2);
@@ -316,7 +315,7 @@ This section gives some examples of such functions, although there
 are many more, including 3D drawing stuff.
 */
 void drawFixation (void) {
-	ofBackground( ofColor( 50 ) );
+	ofBackground(backgroundColor);
 
 	ofSetColor( ofColor( 255 ) );
 	ofSetLineWidth( 3 );
@@ -336,7 +335,7 @@ void drawSampleArray (const TrialData_t &tr) {
 
 	for (int i = 0; i < tr.colors.size(); i++) {
 		ofSetColor( tr.colors.at(i) );
-		ofCircle( tr.locations.at(i), circleRadius/2 );
+		ofCircle( tr.locations.at(i), circleRadius );
 	}
 }
 
@@ -352,6 +351,6 @@ void drawTestArray (const TrialData_t &tr) {
 
 	for (int i = 0; i < testColors.size(); i++) {
 		ofSetColor( testColors.at(i) );
-		ofCircle( tr.locations.at(i), circleRadius/2 );
+		ofCircle( tr.locations.at(i), circleRadius );
 	}
 }

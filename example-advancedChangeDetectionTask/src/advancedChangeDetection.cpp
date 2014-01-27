@@ -1,11 +1,22 @@
 #include "CX_EntryPoint.h"
 
 /*
-This example shows how to do a simple change-detection experiment using CX.
-The stimuli are colored circles which are presented in a 3X3 matrix.
+This example is a more advanced version of the change detection task presented in
+the basicChangeDetectionTask example. It is not "advanced" because it is more complex,
+but because it uses more features of CX. It actually ends up being more simple
+because of how it uses features of CX.
+
+Items that are commented are new, although not all new stuff will neccessarily be 
+commented. The two main features that are demonstrated are CX_SafeDataFrame and
+CX_TrialController.
 */
 
-//Functions that are given to a CX_TrialController must take void and return int.
+/*
+One of the main additions to this example is the CX_TrialController. As you will
+see, the trial controller manages which stage of the trial you are in, which means
+that you don't have to track the trial stage with a variable.
+Functions that are given to a CX_TrialController must take void and return int.
+*/
 CX_TrialController trialController;
 int drawStimuli (void);
 int presentStimuli (void);
@@ -18,29 +29,46 @@ void drawBlank (void);
 void drawSampleArray (void);
 void drawTestArray (void);
 
-//Varaibles
-CX_SafeDataFrame trialDf;
 
+CX_SafeDataFrame trialDf;
+int trialIndex = 0;
 
 int circleRadius = 30;
 ofColor backgroundColor(50);
-int trialIndex = 0;
-
 
 void setupExperiment (void) {
-
 	generateTrials(8);
 
 	Input.setup(true, false);
 
+	CX_SP_Configuration config;
+	config.errorMode = CX_SP_ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE;
+	config.display = &Display;
+
+	SlidePresenter.setup(config);
+
 	cout << "Insturctions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 
+	//Add the functions to the trial controller in the order in which you want them to be called.
 	trialController.appendFunction( &drawStimuli );
 	trialController.appendFunction( &presentStimuli );
 	trialController.appendFunction( &getResponse );
+	trialController.start();
 }
 
-//This function is now trivial, with all of the processing offloaded into sub-functions.
+/*
+In updateExperiment in the basicChangeDetection example, there were three stages of each
+trial that were gone through in order. The trialController helps with progressing through
+the stages. In setupExperiment, three functions, each of which handles one stage of the
+trial, were put into the trialController. In updateExperiment, the update function of the
+trialController is called, which simply calls the function for the current stage of the
+trial. When the current function determines that its stage of the trial is complete, it
+indicates that to the trial controller by returning 1, and then the trialController moves
+on to the next stage of the trial, calling the next function on the next call to update().
+
+This makes updateExperiment trivial, with all of the processing offloaded into 
+sub-functions.
+*/
 void updateExperiment (void) {
 	trialController.update();
 }
@@ -66,8 +94,12 @@ int drawStimuli (void) {
 
 	SlidePresenter.startSlidePresentation();
 	return 1; //If you want the trial controller to move on to the next function in its list, return 1 from the current function.
+		//We only want to draw everything once per trial, so this function only ever returns 1.
 }
 
+//In this function, we want to check repeatedly if the SlidePresenter is presenting slides.
+//If its done, then we want to move on to the next stage of the trial, which is getting 
+//the response.
 int presentStimuli (void) {
 	if (!SlidePresenter.isPresentingSlides()) {
 		Input.Keyboard.clearEvents();
@@ -98,13 +130,14 @@ int getResponse (void) {
 					Log.notice("myExperiment") << "Incorrect";
 				}
 
-				//The end of a trial is a good time to flush() the logs, to see if any warnings/errors have happened during the trial.
-				//See example-logging in the ofxCX folder for an example of how the logging system works.
+				vector<unsigned int> frames = SlidePresenter.getActualFrameCounts();
+				cout << CX::vectorToString(frames) << endl;
+
 				Log.flush();
 
 				if (++trialIndex >= trialDf.getRowCount()) {
+					trialDf.printToFile("CD data.txt");
 					cout << "Experiment complete: exiting..." << endl;
-					trialDf.printToFile("data output.txt");
 					ofSleepMillis(3000);
 					ofExit();
 				}
@@ -116,13 +149,7 @@ int getResponse (void) {
 	return 0;
 }
 
-//#include "CX_ContinuousSlidePresenter.h"
-
 void generateTrials (int trialCount) {
-
-	//CX_ContinuousSlidePresenter csp;
-	//csp.setDisplay(&Display);
-
 
 	vector<ofColor> objectColors;
 	vector<ofPoint> objectLocations;
@@ -198,7 +225,7 @@ void generateTrials (int trialCount) {
 }
 
 void drawFixation (void) {
-	ofBackground( ofColor( 50 ) );
+	ofBackground(backgroundColor);
 
 	ofSetColor( ofColor( 255 ) );
 	ofSetLineWidth( 3 );
