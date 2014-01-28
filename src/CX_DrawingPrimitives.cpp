@@ -2,7 +2,15 @@
 
 using namespace CX::Draw;
 
-ofPath CX::Draw::squircleToPath(ofPoint center, double radius, double rotation, double amount) {
+/*!
+This function draws an approximation of a squircle (http://en.wikipedia.org/wiki/Squircle) using Bezier curves.
+\param radius The radius of the largest circle that can be enclosed in the squircle.
+\param rotation Rotation of the squircle around its center.
+\param amount The squicliness of the squircle. The default (0.9) seems like a pretty good amount for a good 
+approximation of a squircle, but different amounts can give different sorts of shapes.
+\return An ofPath containing the squircle.
+*/
+ofPath CX::Draw::squircleToPath(double radius, double rotation, double amount) {
 	ofPath sq;
 
 	ofPoint start, p1, p2, end;
@@ -24,6 +32,11 @@ ofPath CX::Draw::squircleToPath(ofPoint center, double radius, double rotation, 
 	sq.rotate(rotation, ofVec3f(0, 0, 1));
 
 	return sq;
+}
+
+void squircle(ofPoint center, double radius, double rotation, double amount) {
+	ofPath sq = CX::Draw::squircleToPath(radius, rotation, amount);
+	sq.draw(center.x, center.y);
 }
 
 //The star will be centered on 0,0 in the ofPath.
@@ -72,6 +85,57 @@ void CX::Draw::centeredString(int x, int y, string s, ofTrueTypeFont &font) {
 	font.drawString(s, x, y);
 }
 
-void CX::Draw::centeredString(ofPoint location, string s, ofTrueTypeFont &font) {
-	Draw::centeredString(location.x, location.y, s, font);
+void CX::Draw::centeredString(ofPoint center, string s, ofTrueTypeFont &font) {
+	Draw::centeredString(center.x, center.y, s, font);
+}
+
+
+ofTexture CX::Draw::gaborToTexture (const CX_GaborProperties_t& properties) {
+	//double theta = -properties.angle; //Degrees
+	//double perp = (PI*(theta + 90) / 180);
+
+	double theta = -properties.angle * PI / 180;
+
+	double r = properties.radius;
+	int diameter = 2 * ceil(r);
+
+	double m = tan(theta);
+
+	ofPixels pix;
+	pix.allocate(diameter, diameter, ofImageType::OF_IMAGE_COLOR_ALPHA);
+	pix.set(3, 0); //Set the alpha channel to 0 (transparent)
+
+	//i indexes y values, j indexes x values
+	for (int i = 0; i < pix.getHeight(); i++) {
+		for (int j = 0; j < pix.getWidth(); j++) {
+
+			ofPoint p(j - (diameter / 2), i - (diameter / 2)); //Center so that x and y are relative to the origin.
+
+			if (p.distance(ofPoint(0,0)) <= r) {
+				double xa = p.y / m; //It should be (p.y - b) / m, but b is 0 because we go through the origin
+
+				double hyp = abs(xa - p.x);
+				double distFromA = hyp * sin(theta);
+
+				if (m == 0) { //Special case for flat lines.
+					distFromA = p.y;
+				}
+
+				double intensity = (1.0 + cos((distFromA / properties.period) * 2 * PI)) / 2.0; //Scale to be between 0 and 1
+
+				pix.setColor(j, i, ofColor(properties.color.r, properties.color.g, properties.color.b, ofClamp(255 * intensity, 0, 255)));
+			}
+		}
+	}
+
+	ofTexture tex;
+	tex.allocate(pix);
+	tex.loadData(pix);
+	return tex;
+}
+
+void CX::Draw::gabor (int x, int y, const CX_GaborProperties_t& properties) {
+	ofTexture tex = gaborToTexture(properties);
+	ofSetColor(255);
+	tex.draw(x - tex.getWidth()/2, y - tex.getHeight()/2);
 }
