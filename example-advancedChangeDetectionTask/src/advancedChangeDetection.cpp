@@ -130,8 +130,7 @@ int getResponse (void) {
 					Log.notice("myExperiment") << "Incorrect";
 				}
 
-				vector<unsigned int> frames = SlidePresenter.getActualFrameCounts();
-				cout << CX::vectorToString(frames) << endl;
+				trialDf(trialIndex, "presentationErrors") = SlidePresenter.checkForPresentationErrors();
 
 				Log.flush();
 
@@ -221,6 +220,7 @@ void generateTrials (int trialCount) {
 	//but we still need to add two more columns for response data:
 	trialDf.addColumn("responseCorrect");
 	trialDf.addColumn("responseTime");
+	trialDf.addColumn("presentationErrors");
 
 }
 
