@@ -1,4 +1,4 @@
-#include "CX_DrawingPrimitives.h"
+#include "CX_Draw.h"
 
 using namespace CX::Draw;
 
@@ -134,7 +134,7 @@ ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
 
 			if (properties.apertureType == CX_GaborProperties_t::AP_CIRCLE) {
 				if (p.distance(ofPoint(0, 0)) >(properties.width / 2)) { //Determine radius from the width
-					continue;
+					continue; //Do not draw anything in this pixel (already transparent)
 				}
 			} else if (properties.apertureType == CX_GaborProperties_t::AP_RECTANGLE) {
 				//Do nothing, allow pattern to be drawn in entire texture.
@@ -161,17 +161,14 @@ ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
 				} else {
 					intensity = 0;
 				}
-
 				break;
 			case CX_GaborProperties_t::TRIANGLE_WAVE:
 				double modulo = abs(fmod(distFromA, properties.period));
-
 				if (modulo >= properties.period / 2) {
 					intensity = modulo / properties.period;
 				} else {
 					intensity = 1 - modulo / properties.period;
 				}
-
 				break;
 			}
 

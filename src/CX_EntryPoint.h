@@ -7,7 +7,7 @@
 
 #include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Clock
 #include "CX_Logger.h" //Includes an instance called CX::Log
-//#include "CX_Events.h"
+//#include "CX_Events.h" //I kind of don't want the user to be aware of this
 
 //Make instances of these
 #include "CX_Display.h"
@@ -15,15 +15,13 @@
 #include "CX_RandomNumberGenerator.h"
 #include "CX_InputManager.h"
 
-//#include "CX_ContinuousSlidePresenter.h"
-
 //Do not instantiate these, just include the header.
 #include "CX_TrialController.h" 
 #include "CX_TrialController_Class.h"
 #include "CX_SoundObjectPlayer.h"
 #include "CX_DataFrame.h"
 
-#include "CX_DrawingPrimitives.h"
+#include "CX_Draw.h"
 
 namespace CX {
 

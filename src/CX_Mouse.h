@@ -6,6 +6,7 @@
 
 #include "CX_Clock.h"
 #include "CX_Events.h"
+#include "CX_Utilities.h"
 
 #include "ofEvents.h"
 
@@ -48,6 +49,8 @@ namespace CX {
 		void clearEvents (void);
 
 		void showCursor (bool show);
+		void setCursorPosition (ofPoint pos);
+		ofPoint getCursorPosition (void);
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime

@@ -1,6 +1,9 @@
 #include "CX_Mouse.h"
 
+
+
 #include "ofAppRunner.h" //ofShowCursor()/ofHideCursor()
+#include "GLFW\glfw3.h"
 
 using namespace CX;
 
@@ -63,6 +66,17 @@ void CX_Mouse::_mouseWheelScrollHandler(CX_MouseScrollEventArgs_t &a) {
 	ev.y = (int)a.y;
 
 	_mouseEvents.push(ev);
+}
+
+
+
+void CX_Mouse::setCursorPosition(ofPoint pos) {
+	glfwSetCursorPos(CX::Private::glfwContext, pos.x, pos.y);
+}
+
+
+ofPoint CX_Mouse::getCursorPosition(void) {
+	return ofPoint(ofGetMouseX(), ofGetMouseY());
 }
 
 void CX_Mouse::_mouseEventHandler (ofMouseEventArgs &a) {
