@@ -111,20 +111,26 @@ void CX::Draw::centeredString(ofPoint center, string s, ofTrueTypeFont &font) {
 	Draw::centeredString(center.x, center.y, s, font);
 }
 
-ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
-	double theta = -properties.angle * PI / 180;
 
-	double radius = properties.width / 2;
-
+ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
+	double theta = properties.angle * PI / 180;
+	double radius = properties.width / 2; //Use width for radius. Consider using the one not set to 0 (whatever default value is)
 	double slope = tan(theta);
 
 	ofPixels pix;
-	if (properties.apertureType == CX_GaborProperties_t::AP_CIRCLE) {
-		pix.allocate(properties.width, properties.width, ofImageType::OF_IMAGE_COLOR_ALPHA);
+	if (properties.apertureType == CX_PatternProperties_t::AP_CIRCLE) {
+		pix.allocate(properties.width, properties.width, ofImageType::OF_IMAGE_GRAYSCALE);
 	} else {
-		pix.allocate(properties.width, properties.height, ofImageType::OF_IMAGE_COLOR_ALPHA);
+		pix.allocate(properties.width, properties.height, ofImageType::OF_IMAGE_GRAYSCALE);
 	}
-	pix.set(3, 0); //Set the alpha channel to 0 (transparent)
+	pix.set(0, properties.minValue); //Set the single channel to 0. Already done in allocate
+
+	//Get point on line tangent to "radius" of rectangle and the interecept of the line passing through that point
+	double tanRadius = sqrt(pow(pix.getWidth(), 2) + pow(pix.getHeight(), 2));
+	//Make the tanRadius be the next greatest multiple of the period
+	tanRadius = (ceil(tanRadius / properties.period) * properties.period) + (properties.period * fmod(properties.phase, 360.0) / 360.0);
+	ofPoint tangentPoint(tanRadius * sin(PI - theta), tanRadius * cos(PI - theta));
+	double b = tangentPoint.y - (slope * tangentPoint.x);
 
 	//i indexes y values, j indexes x values
 	for (int i = 0; i < pix.getHeight(); i++) {
@@ -132,37 +138,38 @@ ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
 
 			ofPoint p(j - (pix.getWidth() / 2), i - (pix.getHeight() / 2)); //Center so that x and y are relative to the origin.
 
-			if (properties.apertureType == CX_GaborProperties_t::AP_CIRCLE) {
-				if (p.distance(ofPoint(0, 0)) >(properties.width / 2)) { //Determine radius from the width
+			if (properties.apertureType == CX_PatternProperties_t::AP_CIRCLE) {
+				if (p.distance(ofPoint(0, 0)) > radius) { //Determine radius from the width
 					continue; //Do not draw anything in this pixel (already transparent)
 				}
-			} else if (properties.apertureType == CX_GaborProperties_t::AP_RECTANGLE) {
+			} else if (properties.apertureType == CX_PatternProperties_t::AP_RECTANGLE) {
 				//Do nothing, allow pattern to be drawn in entire texture.
 			}
 
-			double xa = p.y / slope; //It should be ((p.y - b) / slope), but b is 0 because we go through the origin
-
-			double hyp = abs(xa - p.x);
-			double distFromA = hyp * sin(theta);
-
+			double distFromA;
 			if (slope == 0) { //Special case for flat lines.
-				distFromA = p.y;
+				distFromA = p.y + (properties.period * fmod(properties.phase, 360.0) / 360.0);
+			} else {
+				double xa = (p.y - b) / slope;
+
+				double hyp = abs(xa - p.x);
+				distFromA = hyp * sin(theta);
 			}
 
 			double intensity = 0;
 
 			switch (properties.maskType) {
-			case CX_GaborProperties_t::COSINE_WAVE:
-				intensity = (1.0 + cos((distFromA / properties.period) * 2 * PI)) / 2.0; //Scale to be between 0 and 1
+			case CX_PatternProperties_t::SINE_WAVE:
+				intensity = (1.0 + sin((distFromA / properties.period) * 2 * PI)) / 2.0; //Scale to be between 0 and 1
 				break;
-			case CX_GaborProperties_t::SQUARE_WAVE:
+			case CX_PatternProperties_t::SQUARE_WAVE:
 				if (cos((distFromA / properties.period) * 2 * PI) > 0) {
 					intensity = 1;
 				} else {
 					intensity = 0;
 				}
 				break;
-			case CX_GaborProperties_t::TRIANGLE_WAVE:
+			case CX_PatternProperties_t::TRIANGLE_WAVE:
 				double modulo = abs(fmod(distFromA, properties.period));
 				if (modulo >= properties.period / 2) {
 					intensity = modulo / properties.period;
@@ -172,12 +179,27 @@ ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
 				break;
 			}
 
+			if (properties.fallOffPower != std::numeric_limits<double>::min()) {
+				intensity *= (1 - pow(p.distance(ofPoint(0, 0)) / radius, properties.fallOffPower));
+			}
+
 			intensity = ofClamp(intensity, 0, 1);
 
-			pix.setColor(j, i, ofColor(properties.color.r, properties.color.g, properties.color.b, properties.color.a * intensity));
+			pix.setColor(j, i, ofColor((properties.maxValue - properties.minValue) * intensity + properties.minValue));
 
 		}
 	}
+
+	return pix;
+}
+
+ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
+	ofPixels pattern = greyscalePattern(properties.pattern);
+	
+	ofPixels pix;
+	pix.allocate(pattern.getWidth(), pattern.getHeight(), ofImageType::OF_IMAGE_COLOR_ALPHA);
+	pix.setColor(properties.color);
+	pix.setChannel(3, pattern); //Set alpha channel equal to pattern
 
 	return pix;
 }
@@ -193,5 +215,5 @@ ofTexture CX::Draw::gaborToTexture (const CX_GaborProperties_t& properties) {
 void CX::Draw::gabor (int x, int y, const CX_GaborProperties_t& properties) {
 	ofTexture tex = gaborToTexture(properties);
 	ofSetColor(255);
-	tex.draw(x - tex.getWidth()/2, y - tex.getHeight()/2);
+	tex.draw(x - tex.getWidth()/2, y - tex.getHeight()/2); //Draws centered
 }
