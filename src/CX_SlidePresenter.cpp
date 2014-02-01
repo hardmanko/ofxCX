@@ -46,7 +46,7 @@ void CX_SlidePresenter::update (void) {
 			//Was the current frame just swapped in? If so, store information about the swap time.
 			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::SWAP_PENDING) {
 
-				CX_Micros_t currentSlideOnset = _display->getLastSwapTime();
+				CX_Micros currentSlideOnset = _display->getLastSwapTime();
 
 				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
 				_slides.at(_currentSlide).actual.startFrame = currentFrameNumber;
@@ -80,7 +80,7 @@ void CX_SlidePresenter::update (void) {
 					_presentingSlides = false;
 
 					//The duration of the final frame is undefined. These could be 0.
-					_slides.back().actual.duration = std::numeric_limits<CX_Micros_t>::max();
+					_slides.back().actual.duration = std::numeric_limits<CX_Micros>::max();
 					_slides.back().actual.frameCount = std::numeric_limits<uint32_t>::max();
 				}
 
@@ -121,7 +121,7 @@ void CX_SlidePresenter::update(void) {
 			//Was the current frame just swapped in? If so, store information about the swap time.
 			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::SWAP_PENDING) {
 
-				CX_Micros_t currentSlideOnset = _display->getLastSwapTime();
+				CX_Micros currentSlideOnset = _display->getLastSwapTime();
 
 				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
 				_slides.at(_currentSlide).actual.startFrame = currentFrameNumber;
@@ -206,7 +206,7 @@ void CX_SlidePresenter::_handleFinalSlide(void) {
 		_presentingSlides = false;
 
 		//The duration of the current slide is set to undefined (user may keep it on screen indefinitely).
-		_slides.at(_currentSlide).actual.duration = std::numeric_limits<CX_Micros_t>::max();
+		_slides.at(_currentSlide).actual.duration = std::numeric_limits<CX_Micros>::max();
 		_slides.at(_currentSlide).actual.frameCount = std::numeric_limits<uint32_t>::max();
 
 		//The durations of following slides (if any) are set to 0 (never presented).
@@ -333,7 +333,7 @@ void CX_SlidePresenter::startSlidePresentation(void) {
 			endDrawingCurrentSlide();
 		}
 
-		CX_Micros_t framePeriod = _display->getFramePeriod();
+		CX_Micros framePeriod = _display->getFramePeriod();
 
 		for (int i = 0; i < _slides.size(); i++) {
 			//This doesn't need to be done here any more, it's done as slides are added
@@ -360,13 +360,13 @@ void CX_SlidePresenter::stopPresentation (void) {
 	//_currentSlide = 0; //It's useful to know what slide you were on when you stopped
 }
 
-unsigned int CX_SlidePresenter::_calculateFrameCount (CX_Micros_t duration) {
+unsigned int CX_SlidePresenter::_calculateFrameCount (CX_Micros duration) {
 	double framesInDuration = (double)duration / _display->getFramePeriod();
 	framesInDuration = CX::round(framesInDuration, 0, CX::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 	return (uint32_t)framesInDuration;
 }
 
-void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros_t slideDuration, string slideName) {
+void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros slideDuration, string slideName) {
 
 	if (_lastFramebufferActive) {
 		Log.verbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
@@ -413,7 +413,7 @@ void CX_SlidePresenter::appendSlide (CX_Slide_t slide) {
 	_slides.back().intended.frameCount = _calculateFrameCount(slide.intended.duration);
 }
 
-void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t slideDuration, string slideName) {
+void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), CX_Micros slideDuration, string slideName) {
 
 	if (slideDuration == 0) {
 		Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration 0 ignored.";
@@ -442,8 +442,8 @@ vector<CX_Slide_t> CX_SlidePresenter::getSlides (void) {
 	return _slides;
 }
 
-vector<CX_Micros_t> CX_SlidePresenter::getActualPresentationDurations (void) {
-	vector<CX_Micros_t> durations(_slides.size());
+vector<CX_Micros> CX_SlidePresenter::getActualPresentationDurations (void) {
+	vector<CX_Micros> durations(_slides.size());
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 		durations[i] = _slides[i].actual.duration;
 	}

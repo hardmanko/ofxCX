@@ -28,8 +28,8 @@ namespace CX {
 	struct CX_KeyEvent_t {
 		int key;
 
-		CX_Micros_t eventTime;
-		CX_Micros_t uncertainty;
+		CX_Micros eventTime;
+		CX_Micros uncertainty;
 
 		enum {
 			PRESSED,
@@ -52,7 +52,7 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
-		CX_Micros_t _lastEventPollTime;
+		CX_Micros _lastEventPollTime;
 
 		std::queue<CX_KeyEvent_t> _keyEvents;
 		std::set<int> _heldKeys;

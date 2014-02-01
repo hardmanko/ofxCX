@@ -15,19 +15,19 @@
 
 namespace CX {
 
-	typedef long long CX_Micros_t;
+	typedef long long CX_Micros;
 
 	struct CX_Millis {
 
 		CX_Millis (int i);
 		CX_Millis (double d) : millis(d)  {}
-		CX_Millis (CX_Micros_t t);
+		CX_Millis (CX_Micros t);
 
 		CX_Millis& operator= (int i);
 		CX_Millis& operator= (double d);
-		CX_Millis& operator= (CX_Micros_t t);
+		CX_Millis& operator= (CX_Micros t);
 
-		operator CX_Micros_t (void);
+		operator CX_Micros (void);
 		operator double (void);
 	private:
 		double millis;
@@ -39,10 +39,10 @@ namespace CX {
 
 		CX_Clock (void);
 
-		CX_Micros_t getTime(void);
-		CX_Micros_t getSystemTime(void);
+		CX_Micros getTime(void);
+		CX_Micros getSystemTime(void);
 
-		CX_Micros_t getExperimentStartTime(void);
+		CX_Micros getExperimentStartTime(void);
 		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 
 		static std::string getDateTimeString (std::string format = "%Y-%b-%e %h-%M-%S %a");

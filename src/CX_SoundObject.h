@@ -22,8 +22,8 @@ namespace CX {
 	public:
 
 		bool loadFile (string fileName);
-		bool addSound (string fileName, CX_Micros_t timeOffset); //I'm really not sure I want to have this.
-		bool addSound (CX_SoundObject so, CX_Micros_t timeOffset);
+		bool addSound (string fileName, CX_Micros timeOffset); //I'm really not sure I want to have this.
+		bool addSound (CX_SoundObject so, CX_Micros timeOffset);
 
 		bool isReadyToPlay (void);
 		bool isLoadedSuccessfully (void) { return _successfullyLoaded; };
@@ -35,13 +35,13 @@ namespace CX {
 		float getPositivePeak (void);
 		float getNegativePeak (void);
 
-		void setLength (CX_Micros_t length);
-		CX_Micros_t getLength (void);
+		void setLength (CX_Micros length);
+		CX_Micros getLength (void);
 
 		void stripLeadingSilence (float tolerance);
 
-		void addSilence (CX_Micros_t duration, bool atBeginning);
-		void deleteAmount (CX_Micros_t duration, bool fromBeginning);
+		void addSilence (CX_Micros duration, bool atBeginning);
+		void deleteAmount (CX_Micros duration, bool fromBeginning);
 
 		//setSpeed?
 		void multiplySpeed (float speedMultiplier);

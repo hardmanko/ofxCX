@@ -24,8 +24,8 @@ namespace CX {
 		int x;
 		int y;
 
-		CX_Micros_t eventTime;
-		CX_Micros_t uncertainty;
+		CX_Micros eventTime;
+		CX_Micros uncertainty;
 
 		enum {
 			MOVED,
@@ -54,7 +54,7 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
-		CX_Micros_t _lastEventPollTime;
+		CX_Micros _lastEventPollTime;
 
 		std::set<int> _heldMouseButtons;
 		std::queue<CX_MouseEvent_t> _mouseEvents;

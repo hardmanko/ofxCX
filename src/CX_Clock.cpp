@@ -23,7 +23,7 @@ void CX_Clock::_resetExperimentStartTime(void) {
 }
 
 
-CX_Micros_t CX_Clock::getExperimentStartTime(void) {
+CX_Micros CX_Clock::getExperimentStartTime(void) {
 	return std::chrono::duration_cast<std::chrono::microseconds>(_experimentStart.time_since_epoch()).count();
 }
 
@@ -33,7 +33,7 @@ The start of the experiment is defined by default as when the CX_Clock instance 
 (instantiated in this file) is constructed (typically the beginning of program execution). The 
 experiment start time can be reset at any time by calling resetExperimentStartTime().
 */
-CX_Micros_t CX_Clock::getTime(void) {
+CX_Micros CX_Clock::getTime(void) {
 	std::chrono::high_resolution_clock::time_point t = std::chrono::high_resolution_clock::now();
 	return std::chrono::duration_cast<std::chrono::microseconds>(t - _experimentStart).count();
 }
@@ -43,7 +43,7 @@ This function returns the current system time in microseconds.
 
 This cannot be converted to time/day in any meaningful way. Use getDateTimeString() for that.
 */
-CX_Micros_t CX_Clock::getSystemTime(void) {
+CX_Micros CX_Clock::getSystemTime(void) {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
 
@@ -93,17 +93,17 @@ double clockPeriod(void) {
 */
 
 CX_Millis::CX_Millis (int i) {
-	CX_Micros_t fracPart = i % 1000;
+	CX_Micros fracPart = i % 1000;
 	millis = (double)(i / 1000) + (double)fracPart / 1000;
 }
 
-CX_Millis::CX_Millis (CX_Micros_t t) {
-	CX_Micros_t fracPart = t % 1000;
+CX_Millis::CX_Millis (CX_Micros t) {
+	CX_Micros fracPart = t % 1000;
 	millis = (double)(t / 1000) + (double)fracPart / 1000;
 }
 
 CX_Millis& CX_Millis::operator= (int i) {
-	return this->operator=((CX_Micros_t)i);
+	return this->operator=((CX_Micros)i);
 }
 
 CX_Millis& CX_Millis::operator= (double d) {
@@ -111,19 +111,19 @@ CX_Millis& CX_Millis::operator= (double d) {
 	return *this;
 }
 
-CX_Millis& CX_Millis::operator= (CX_Micros_t t) {
-	CX_Micros_t fracPart = t % 1000;
+CX_Millis& CX_Millis::operator= (CX_Micros t) {
+	CX_Micros fracPart = t % 1000;
 	millis = (double)(t / 1000) + ((double)fracPart / 1000);
 	return *this;
 }
 
-CX_Millis::operator CX_Micros_t (void) {
+CX_Millis::operator CX_Micros (void) {
 	double temp = millis;
-	CX_Micros_t intPart = (CX_Micros_t)floor(temp); //Get integer part
+	CX_Micros intPart = (CX_Micros)floor(temp); //Get integer part
 	temp -= intPart;
 	temp = round(temp, -3, CX_RoundingConfiguration::ROUND_TO_NEAREST);
 			
-	CX_Micros_t fracPart = temp * 1000;
+	CX_Micros fracPart = temp * 1000;
 	return (intPart * 1000) + fracPart;
 }
 

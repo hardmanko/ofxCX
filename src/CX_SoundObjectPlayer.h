@@ -25,7 +25,7 @@ namespace CX  {
 		bool setup (CX_SoundObjectPlayerConfiguration_t config);
 
 		bool play (void);
-		bool startPlayingAt (CX_Micros_t experimentTime);
+		bool startPlayingAt (CX_Micros experimentTime);
 		bool stop (void);
 
 		bool isPlaying (void) { return _playing; };
@@ -46,8 +46,8 @@ namespace CX  {
 		uint64_t _playbackStartConcurrentSample;
 		uint64_t _currentConcurrentSample;
 
-		CX_Micros_t _startTime;
-		CX_Micros_t _startTimeOffset;
+		CX_Micros _startTime;
+		CX_Micros _startTimeOffset;
 
 		void _exitHandler (ofEventArgs &a);
 	

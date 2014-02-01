@@ -19,23 +19,25 @@ endDrawingToBackBuffer() to draw whatever the next frame of the animation
 is into the back buffer.
 
 That's it!
-
-This example also uses the mouse a little to control the animation.
 */
 
-double angle = 0;
-double direction = 1;
 int mouseX = 0;
 
+double circleRadius = 30;
+
+double angles[3] = { 0, 0, 0 };
+double angleMultiplier[3] = { 1, 2, 3 };
+int directions[3] = { 1, 1, 1 };
+double distancesFromCenter[3] = { 75, 150, 225 };
+double distanceMultiplier = 1;
+
 void drawNextFrameOfAnimation (void);
+ofPoint calculateCircleCenter(double angleDeg, double distanceFromCenter);
 
 void setupExperiment (void) {
 	//Use mouse, but not keyboard.
 	Input.setup(false, true);
 
-	cout << "Move the mouse to the left or right to change speed. Click to change direction." << endl;
-
-	//Display.setFullScreen(false);
 	//The window needs to be about this size in order to fit the circles.
 	Display.setWindowResolution(600, 600);
 
@@ -46,7 +48,6 @@ void setupExperiment (void) {
 void updateExperiment (void) {
 	//See the main comment at the top of this file.
 	if (Display.hasSwappedSinceLastCheck()) {
-
 		Display.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.
 
 		drawNextFrameOfAnimation();
@@ -60,35 +61,46 @@ void updateExperiment (void) {
 		if (mev.eventType == CX_MouseEvent_t::MOVED) {
 			mouseX = mev.x;
 		}
+
 		if (mev.eventType == CX_MouseEvent_t::PRESSED) {
-			direction *= -1;
+			for (int i = 0; i < 3; i++) {
+				ofPoint circleCenter = calculateCircleCenter(angles[i], distancesFromCenter[i]);
+				if (circleCenter.distance(ofPoint(mev.x, mev.y)) <= circleRadius) {
+					directions[i] *= -1;
+				}
+			}
+		}
+
+		if (mev.eventType == CX_MouseEvent_t::SCROLLED) {
+			distanceMultiplier += mev.y * .02;
+			if (distanceMultiplier > 1.5) {
+				distanceMultiplier = 1.5;
+			}
+			if (distanceMultiplier < -1.5) {
+				distanceMultiplier = -1.5;
+			}
 		}
 	}
 }
 
 void drawNextFrameOfAnimation (void) {
-	angle += .05 * (mouseX/600.0) * direction;
-	if (angle > 2 * PI) {
-		angle = 0;
-	}
-
-	int x1 = Display.getCenterOfDisplay().x + cos(angle) * 225;
-	int y1 = Display.getCenterOfDisplay().y + sin(angle) * 225;
-
-	int x2 = Display.getCenterOfDisplay().x + cos(angle * 2) * 150;
-	int y2 = Display.getCenterOfDisplay().y + sin(angle * 2) * 150;
-
-	int x3 = Display.getCenterOfDisplay().x + cos(angle * 3) * 75;
-	int y3 = Display.getCenterOfDisplay().y + sin(angle * 3) * 75;
+	ofColor colors[3] = { ofColor::red, ofColor::green, ofColor::blue };
 
 	ofBackground(0);
 
-	ofSetColor(255, 0, 0);
-	ofCircle(x1, y1, 30);
+	ofSetColor(255);
+	ofDrawBitmapString("Move the mouse to the left or right to change speed.\n"
+					   "Click on a circle to change its direction.\n"
+					   "Use the mouse wheel to change the orbit size.", ofPoint(30, 30));
 
-	ofSetColor(0, 255, 0);
-	ofCircle(x2, y2, 30);
+	for (int i = 0; i < 3; i++) {
+		angles[i] += 0.005 * mouseX * directions[i] * angleMultiplier[i];
+		ofSetColor(colors[i]);
+		ofCircle(calculateCircleCenter(angles[i], distancesFromCenter[i]), circleRadius);
+	}
+}
 
-	ofSetColor(0, 0, 255);
-	ofCircle(x3, y3, 30);
+ofPoint calculateCircleCenter(double angleDeg, double distanceFromCenter) {
+	return ofPoint(Display.getCenterOfDisplay().x + cos(angleDeg * PI / 180) * distanceFromCenter * distanceMultiplier,
+				   Display.getCenterOfDisplay().y + sin(angleDeg * PI / 180) * distanceFromCenter * distanceMultiplier);
 }

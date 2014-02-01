@@ -90,11 +90,11 @@ namespace CX {
 		ofEvent<CX_SSOutputCallback_t> outputCallbackEvent;
 		ofEvent<CX_SSInputCallback_t> inputCallbackEvent;
 
-		CX_Micros_t getStreamLatency (void);
+		CX_Micros getStreamLatency (void);
 
 		bool hasSwappedSinceLastCheck (void);
-		CX_Micros_t getLastSwapTime (void) { return _lastSwapTime; };
-		CX_Micros_t estimateNextSwapTime (void);
+		CX_Micros getLastSwapTime (void) { return _lastSwapTime; };
+		CX_Micros estimateNextSwapTime (void);
 
 		static vector<RtAudio::Api> getCompiledApis (void);
 		static vector<string> convertApisToStrings (vector<RtAudio::Api> apis);
@@ -113,7 +113,7 @@ namespace CX {
 		RtAudio *_rtAudio;
 		CX_SoundStreamConfiguration_t _config;
 
-		CX_Micros_t _lastSwapTime;
+		CX_Micros _lastSwapTime;
 		uint64_t _lastSampleNumber;
 		uint64_t _sampleNumberAtLastCheck;
 	};

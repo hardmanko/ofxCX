@@ -43,12 +43,12 @@ bool CX_SoundObjectPlayer::play (void) {
 	return false;
 }
 
-bool CX_SoundObjectPlayer::startPlayingAt (CX_Micros_t experimentTime) {
+bool CX_SoundObjectPlayer::startPlayingAt (CX_Micros experimentTime) {
 	//_startTime = time - (_sampleOffset * 1000000) / _soundStream.getConfiguration().sampleRate;
 	_startTime = experimentTime - _startTimeOffset; //_startTimeOffset is always negative.
 
-	CX_Micros_t lastSwap = _soundStream.getLastSwapTime();
-	CX_Micros_t timeFromLastSwap = _startTime - lastSwap;
+	CX_Micros lastSwap = _soundStream.getLastSwapTime();
+	CX_Micros timeFromLastSwap = _startTime - lastSwap;
 	uint64_t samplesFromLastSwap = (timeFromLastSwap * _soundStream.getConfiguration().sampleRate)/1000000;
 	
 	uint64_t lastSampleNumber = _soundStream.getLastSampleNumber(); //This is the next sample that will be sent.
@@ -61,7 +61,7 @@ bool CX_SoundObjectPlayer::startPlayingAt (CX_Micros_t experimentTime) {
 
 bool CX_SoundObjectPlayer::stop (void) {
 	_playing = false;
-	_startTime = std::numeric_limits<CX_Micros_t>::max();
+	_startTime = std::numeric_limits<CX_Micros>::max();
 	return true;
 }
 

@@ -46,7 +46,7 @@ new events for the input devices can be found by checking the availableEvents() 
 bool CX_InputManager::pollEvents (void) {
 
 	glfwPollEvents();
-	CX_Micros_t pollCompleteTime = CX::Instances::Clock.getTime();
+	CX_Micros pollCompleteTime = CX::Instances::Clock.getTime();
 
 	if (_usingKeyboard) {
 		Keyboard._lastEventPollTime = pollCompleteTime;

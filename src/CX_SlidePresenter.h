@@ -54,8 +54,8 @@ namespace CX {
 	struct CX_SlideTimingInfo_t {
 		uint32_t startFrame;
 		uint32_t frameCount;
-		CX_Micros_t startTime;
-		CX_Micros_t duration;
+		CX_Micros startTime;
+		CX_Micros duration;
 	};
 
 	struct CX_Slide_t {
@@ -86,12 +86,12 @@ namespace CX {
 		//uint32_t actualFrameCount;
 		//uint32_t actualOnsetFrameNumber;
 
-		//CX_Micros_t intendedSlideDuration;
-		//CX_Micros_t actualSlideDuration;
-		//CX_Micros_t intendedSlideOnset; 
-		//CX_Micros_t actualSlideOnset;
+		//CX_Micros intendedSlideDuration;
+		//CX_Micros actualSlideDuration;
+		//CX_Micros intendedSlideOnset; 
+		//CX_Micros actualSlideOnset;
 
-		CX_Micros_t copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
+		CX_Micros copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
 	
 	};
 
@@ -105,8 +105,8 @@ namespace CX {
 		virtual void update (void);
 		
 		void appendSlide (CX_Slide_t slide);
-		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros_t duration, string slideName = "");
-		void beginDrawingNextSlide (CX_Micros_t duration, string slideName = "");
+		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros duration, string slideName = "");
+		void beginDrawingNextSlide (CX_Micros duration, string slideName = "");
 		void endDrawingCurrentSlide (void);
 
 		void startSlidePresentation(void);
@@ -126,7 +126,7 @@ namespace CX {
 		CX_Slide_t& getSlide (unsigned int slideIndex);
 
 		vector<CX_Slide_t> getSlides (void); //Return reference??
-		vector<CX_Micros_t> getActualPresentationDurations (void);
+		vector<CX_Micros> getActualPresentationDurations (void);
 		vector<unsigned int> getActualFrameCounts (void);
 
 		int checkForPresentationErrors (void);
@@ -153,7 +153,7 @@ namespace CX {
 		void _finishPreviousSlide(void);
 		void _prepareNextSlide(void);
 
-		unsigned int _calculateFrameCount(CX_Micros_t duration);
+		unsigned int _calculateFrameCount(CX_Micros duration);
 
 		CX_SP_ErrorMode _errorMode;
 		bool _deallocateFramebuffersForCompletedSlides;

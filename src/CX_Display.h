@@ -39,16 +39,16 @@ namespace CX {
 		void BLOCKING_setSwappingState (bool autoSwap);
 		bool isAutomaticallySwapping (void);
 		bool hasSwappedSinceLastCheck (void);
-		CX_Micros_t getLastSwapTime (void);
+		CX_Micros getLastSwapTime (void);
 
-		CX_Micros_t getFramePeriod (void);
+		CX_Micros getFramePeriod (void);
 		void setWindowResolution (int width, int height);
 		ofRectangle getResolution (void);
 		ofPoint getCenterOfDisplay (void);
 		uint64_t getFrameNumber (void);
 
-		void BLOCKING_estimateFramePeriod (CX_Micros_t estimationInterval); //Also estimate standard deviation. Return a struct with this info?
-		CX_Micros_t estimateNextSwapTime (void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
+		void BLOCKING_estimateFramePeriod (CX_Micros estimationInterval); //Also estimate standard deviation. Return a struct with this info?
+		CX_Micros estimateNextSwapTime (void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
 
 		void BLOCKING_waitForOpenGL (void);
 
@@ -57,7 +57,7 @@ namespace CX {
 
 		CX_ConstantlySwappingThread *_swapThread;
 
-		CX_Micros_t _framePeriod;
+		CX_Micros _framePeriod;
 
 	};
 

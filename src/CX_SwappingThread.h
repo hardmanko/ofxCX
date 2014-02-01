@@ -18,10 +18,10 @@ namespace CX {
 
 		bool swappedSinceLastCheck (void);
 
-		CX_Micros_t getTypicalSwapPeriod (void);
-		CX_Micros_t getLastSwapTime (void);
-		CX_Micros_t getLastSwapPeriod (void);
-		CX_Micros_t estimateNextSwapTime (void);
+		CX_Micros getTypicalSwapPeriod (void);
+		CX_Micros getLastSwapTime (void);
+		CX_Micros getLastSwapPeriod (void);
+		CX_Micros estimateNextSwapTime (void);
 		uint64_t getFrameNumber (void);
 
 	private:
@@ -33,7 +33,7 @@ namespace CX {
 
 		//uint64_t _framePeriod;
 		//deque<uint64_t> _recentSwapPeriods;
-		deque<CX_Micros_t> _recentSwapTimes;
+		deque<CX_Micros> _recentSwapTimes;
 
 		uint64_t _frameCount;
 		uint64_t _frameCountOnLastCheck;

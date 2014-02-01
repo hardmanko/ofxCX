@@ -19,7 +19,7 @@ void CX_ConstantlySwappingThread::threadedFunction (void) {
 		//yield();
 		glfwSwapBuffers( CX::Private::glfwContext );
 
-		uint64_t swapTime = CX::Instances::Clock.getTime();
+		CX_Micros swapTime = CX::Instances::Clock.getTime();
 
 		if (lock()) {
 			++_frameCount;
@@ -46,11 +46,11 @@ bool CX_ConstantlySwappingThread::swappedSinceLastCheck (void) {
 	return rval;
 }
 
-CX_Micros_t CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
-	CX_Micros_t typicalSwapPeriod = 0;
+CX_Micros CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
+	CX_Micros typicalSwapPeriod = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
-			CX_Micros_t swapPeriodSum = 0;
+			CX_Micros swapPeriodSum = 0;
 			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
 				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
 			}
@@ -61,8 +61,8 @@ CX_Micros_t CX_ConstantlySwappingThread::getTypicalSwapPeriod (void) {
 	return typicalSwapPeriod;
 }
 
-CX_Micros_t CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
-	CX_Micros_t nextSwapTime = 0;
+CX_Micros CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
+	CX_Micros nextSwapTime = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
 			nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
@@ -72,8 +72,8 @@ CX_Micros_t CX_ConstantlySwappingThread::estimateNextSwapTime (void) {
 	return nextSwapTime;
 }
 
-CX_Micros_t CX_ConstantlySwappingThread::getLastSwapTime (void) {
-	CX_Micros_t lastSwapTime = 0;
+CX_Micros CX_ConstantlySwappingThread::getLastSwapTime (void) {
+	CX_Micros lastSwapTime = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() > 0) {
 			lastSwapTime = _recentSwapTimes.back();
@@ -83,8 +83,8 @@ CX_Micros_t CX_ConstantlySwappingThread::getLastSwapTime (void) {
 	return lastSwapTime;
 }
 
-CX_Micros_t CX_ConstantlySwappingThread::getLastSwapPeriod (void) {
-	CX_Micros_t lastSwapPeriod = 0;
+CX_Micros CX_ConstantlySwappingThread::getLastSwapPeriod (void) {
+	CX_Micros lastSwapPeriod = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
 			lastSwapPeriod = _recentSwapTimes.at( _recentSwapTimes.size() - 1 ) - _recentSwapTimes.at( _recentSwapTimes.size() - 2 );

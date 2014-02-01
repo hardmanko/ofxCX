@@ -29,8 +29,6 @@ namespace CX {
 		void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
 		void centeredString(ofPoint center, string s, ofTrueTypeFont &font);
 
-
-
 		struct CX_PatternProperties_t {
 			CX_PatternProperties_t(void) :
 			minValue(0),

@@ -63,7 +63,7 @@ bool CX_Display::isAutomaticallySwapping (void) {
 	return _swapThread->isThreadRunning();
 }
 
-CX_Micros_t CX_Display::getLastSwapTime (void) {
+CX_Micros CX_Display::getLastSwapTime (void) {
 	return _swapThread->getLastSwapTime();
 }
 
@@ -71,7 +71,7 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 	return _swapThread->swappedSinceLastCheck();
 }
 
-CX_Micros_t CX_Display::getFramePeriod (void) {
+CX_Micros CX_Display::getFramePeriod (void) {
 	return _framePeriod;
 	//return _swapThread->getTypicalSwapPeriod();
 }
@@ -169,7 +169,7 @@ This version of the function just does a spinloop while the swapping thread swap
 This function does nothing if there is some kind of introduction to the experiment where the swapping thread
 will have time to learn what the period is.
 */
-void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros_t estimationInterval) {
+void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
 	/*
 	bool wasSwapping = isAutomaticallySwapping();
 	BLOCKING_setSwappingState(true);
@@ -187,16 +187,16 @@ void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros_t estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();
 	BLOCKING_setSwappingState(false);
 
-	vector<CX_Micros_t> swapTimes;
+	vector<CX_Micros> swapTimes;
 
-	CX_Micros_t startTime = CX::Instances::Clock.getTime();
+	CX_Micros startTime = CX::Instances::Clock.getTime();
 	while (CX::Instances::Clock.getTime() - startTime < estimationInterval) {
 		BLOCKING_swapFrontAndBackBuffers();
 		swapTimes.push_back( CX::Instances::Clock.getTime() );
 	}
 
 	if (swapTimes.size() > 1) {
-		CX_Micros_t swapSum = 0;
+		CX_Micros swapSum = 0;
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			swapSum += swapTimes[i] - swapTimes[i - 1];
 		}
@@ -208,7 +208,7 @@ void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros_t estimationInterval) {
 }
 
 //Should this be changed to use _framePeriod?
-CX_Micros_t CX_Display::estimateNextSwapTime (void) {
+CX_Micros CX_Display::estimateNextSwapTime (void) {
 	return _swapThread->estimateNextSwapTime();
 }
 

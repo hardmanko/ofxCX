@@ -168,15 +168,15 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 	return false;
 }
 
-CX_Micros_t CX_SoundStream::getStreamLatency (void) {
+CX_Micros CX_SoundStream::getStreamLatency (void) {
 	long latencySamples = _rtAudio->getStreamLatency();
-	CX_Micros_t latencyUs = (CX_Micros_t)(((CX_Micros_t)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
+	CX_Micros latencyUs = (CX_Micros)(((CX_Micros)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
 	return latencyUs;
 }
 
 
-CX_Micros_t CX_SoundStream::estimateNextSwapTime (void) {
-	CX_Micros_t bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
+CX_Micros CX_SoundStream::estimateNextSwapTime (void) {
+	CX_Micros bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
 	return _lastSwapTime + bufferSwapInterval;
 }
 
