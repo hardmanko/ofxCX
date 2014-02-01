@@ -21,10 +21,9 @@ is into the back buffer.
 That's it!
 */
 
+//These variables have to do with the contents of the animation
 int mouseX = 0;
-
 double circleRadius = 30;
-
 double angles[3] = { 0, 0, 0 };
 double angleMultiplier[3] = { 1, 2, 3 };
 int directions[3] = { 1, 1, 1 };
@@ -72,7 +71,7 @@ void updateExperiment (void) {
 		}
 
 		if (mev.eventType == CX_MouseEvent_t::SCROLLED) {
-			distanceMultiplier += mev.y * .02;
+			distanceMultiplier += mev.y * .02; //The y component of the scroll wheel is the typical scroll wheel on most mice
 			if (distanceMultiplier > 1.5) {
 				distanceMultiplier = 1.5;
 			}

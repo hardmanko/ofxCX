@@ -147,3 +147,35 @@ void CX_Mouse::showCursor (bool show) {
 		ofHideCursor();
 	}
 }
+
+
+std::ostream& CX::operator<< (std::ostream& os, const CX_MouseEvent_t& ev) {
+	string dlm = ", ";
+	os << ev.button << dlm << ev.x << dlm << ev.y << dlm << ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
+	return os;
+}
+
+std::istream& CX::operator>> (std::istream& is, CX_MouseEvent_t& ev) {
+	is >> ev.button;
+	is.ignore(2);
+	is >> ev.x;
+	is.ignore(2);
+	is >> ev.y;
+	is.ignore(2);
+	is >> ev.eventTime;
+	is.ignore(2);
+	is >> ev.uncertainty;
+	is.ignore(2);
+
+	int eventType;
+	is >> eventType;
+	switch (eventType) {
+	case CX_MouseEvent_t::MOVED: ev.eventType = CX_MouseEvent_t::MOVED; break;
+	case CX_MouseEvent_t::DRAGGED: ev.eventType = CX_MouseEvent_t::DRAGGED; break;
+	case CX_MouseEvent_t::PRESSED: ev.eventType = CX_MouseEvent_t::PRESSED; break;
+	case CX_MouseEvent_t::RELEASED: ev.eventType = CX_MouseEvent_t::RELEASED; break;
+	case CX_MouseEvent_t::SCROLLED: ev.eventType = CX_MouseEvent_t::SCROLLED; break;
+	}
+
+	return is;
+}

@@ -101,3 +101,27 @@ void CX_Keyboard::_keyEventHandler (ofKeyEventArgs &a) {
 
 }
 
+
+std::ostream& CX::operator<< (std::ostream& os, const CX_KeyEvent_t& ev) {
+	string dlm = ", ";
+	os << ev.key << dlm << ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
+	return os;
+}
+
+std::istream& CX::operator>> (std::istream& is, CX_KeyEvent_t& ev) {
+	is >> ev.key;
+	is.ignore(2);
+	is >> ev.eventTime;
+	is.ignore(2);
+	is >> ev.uncertainty;
+	is.ignore(2);
+
+	int eventType;
+	is >> eventType;
+	switch (eventType) {
+	case CX_KeyEvent_t::PRESSED: ev.eventType = CX_KeyEvent_t::PRESSED; break;
+	case CX_KeyEvent_t::RELEASED: ev.eventType = CX_KeyEvent_t::RELEASED; break;
+	case CX_KeyEvent_t::REPEAT: ev.eventType = CX_KeyEvent_t::REPEAT; break;
+	}
+	return is;
+}

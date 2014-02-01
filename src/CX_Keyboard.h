@@ -40,6 +40,9 @@ namespace CX {
 		//Held modifiers?
 	};
 
+	std::ostream& operator<< (std::ostream& os, const CX_KeyEvent_t& ev);
+	std::istream& operator>> (std::istream& is, CX_KeyEvent_t& ev);
+
 	class CX_Keyboard {
 	public:
 	

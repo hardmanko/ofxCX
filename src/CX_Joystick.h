@@ -14,7 +14,7 @@ namespace CX {
 		int buttonIndex;
 		unsigned char buttonState;
 
-		int axisIndex;
+		int axisIndex; //You should reconsider this. Maybe instead give all of the axes when any of them change.
 		float axisPosition;
 
 		CX_Micros eventTime;
@@ -27,6 +27,9 @@ namespace CX {
 		} eventType;
 
 	};
+
+	std::ostream& operator<< (std::ostream& os, const CX_JoystickEvent_t& ev);
+	std::istream& operator>> (std::istream& is, CX_JoystickEvent_t& ev);
 
 	class CX_Joystick {
 	public:

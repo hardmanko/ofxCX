@@ -24,6 +24,13 @@ namespace CX {
 		int x;
 		int y;
 
+		//ofPoint cursor;
+
+		//struct {
+		//	double x;
+		//	double y;
+		//} scroll;
+
 		CX_Micros eventTime;
 		CX_Micros uncertainty;
 
@@ -32,11 +39,12 @@ namespace CX {
 			PRESSED,
 			RELEASED,
 			DRAGGED, //I'm not sure if this is something that this library should implement for itself or just use OF's version.
-			SCROLLED //i.e. the scroll wheel, although it may be just treated as another button. oF will have to have the proper 
-				//event added in order for this to work. GLFW has a specific callback for scroll that isn't implemented by OF.
+			SCROLLED
 		} eventType;
 	};
 
+	std::ostream& operator<< (std::ostream& os, const CX_MouseEvent_t& ev);
+	std::istream& operator>> (std::istream& is, CX_MouseEvent_t& ev);
 
 
 	class CX_Mouse {
@@ -70,9 +78,7 @@ namespace CX {
 		bool _listeningForEvents;
 		void _listenForEvents (bool listen);
 
-
 	};
-
 }
 
 #endif //_CX_MOUSE_H_

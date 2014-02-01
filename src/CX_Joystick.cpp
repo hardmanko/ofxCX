@@ -172,3 +172,35 @@ vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	}
 	return but;
 }
+
+std::ostream& CX::operator<< (std::ostream& os, const CX_JoystickEvent_t& ev) {
+	string dlm = ", ";
+	os << ev.buttonIndex << dlm << ev.buttonState << dlm << ev.axisIndex << dlm << ev.axisPosition << dlm <<
+		ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
+	return os;
+}
+
+std::istream& CX::operator>> (std::istream& is, CX_JoystickEvent_t& ev) {
+	is >> ev.buttonIndex;
+	is.ignore(2);
+	is >> ev.buttonState;
+	is.ignore(2);
+	is >> ev.axisIndex;
+	is.ignore(2);
+	is >> ev.axisPosition;
+	is.ignore(2);
+	is >> ev.eventTime;
+	is.ignore(2);
+	is >> ev.uncertainty;
+	is.ignore(2);
+
+	int eventType;
+	is >> eventType;
+	switch (eventType) {
+	case CX_JoystickEvent_t::BUTTON_PRESS: ev.eventType = CX_JoystickEvent_t::BUTTON_PRESS; break;
+	case CX_JoystickEvent_t::BUTTON_RELEASE: ev.eventType = CX_JoystickEvent_t::BUTTON_RELEASE; break;
+	case CX_JoystickEvent_t::AXIS_POSITION_CHANGE: ev.eventType = CX_JoystickEvent_t::AXIS_POSITION_CHANGE; break;
+	}
+
+	return is;
+}
