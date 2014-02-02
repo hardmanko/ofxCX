@@ -1,8 +1,10 @@
 #include "CX_Logger.h"
 
+using namespace std;
 using namespace CX;
 
 CX_Logger CX::Instances::Log;
+//CX_LoggerChannel CX::Private::ofLoggerChannel;
 
 enum class LogTarget {
 	CONSOLE,
@@ -43,9 +45,15 @@ CX_Logger::CX_Logger (void) :
 	_defaultLogLevel(LogLevel::LOG_NOTICE)
 {
 	levelForConsole(LogLevel::LOG_ALL);
+	
+	ofAddListener(_ofLoggerChannel.messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
+
+	levelForAllModules(LogLevel::LOG_ERROR);
 }
 
 CX_Logger::~CX_Logger (void) {
+	ofRemoveListener(_ofLoggerChannel.messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
+
 	flush();
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == LogTarget::FILE) {
@@ -53,6 +61,21 @@ CX_Logger::~CX_Logger (void) {
 			delete _targetInfo[i].file;
 		}
 	}
+}
+
+void CX_Logger::_loggerChannelEventHandler(CX::CX_ofLogMessageEventData_t& md) {
+	LogLevel convertedLevel;
+	
+	switch (md.level) {
+	case ofLogLevel::OF_LOG_VERBOSE: convertedLevel = LogLevel::LOG_VERBOSE; break;
+	case ofLogLevel::OF_LOG_NOTICE: convertedLevel = LogLevel::LOG_NOTICE; break;
+	case ofLogLevel::OF_LOG_WARNING: convertedLevel = LogLevel::LOG_WARNING; break;
+	case ofLogLevel::OF_LOG_ERROR: convertedLevel = LogLevel::LOG_ERROR; break;
+	case ofLogLevel::OF_LOG_FATAL_ERROR: convertedLevel = LogLevel::LOG_FATAL_ERROR; break;
+	//case ofLogLevel::OF_LOG_SILENT: convertedLevel = LogLevel::LOG_NOTICE; break;
+	}
+	
+	this->_log(convertedLevel, md.module) << md.message;
 }
 
 //This function is called at the start of a new messsage.
@@ -252,6 +275,3 @@ string CX_Logger::_getLogLevelName (LogLevel level) {
 	};
 	return "";
 }
-
-
-

@@ -14,6 +14,9 @@ void CX::Private::App::setup (void) {
 	Instances::Display.setup();
 	Instances::SlidePresenter.setup( &Instances::Display );
 
+	Log.captureOFLogMessages();
+	Log.levelForAllModules(LogLevel::LOG_NOTICE);
+
 	//Call the user setup function
 	setupExperiment();
 }
@@ -69,9 +72,9 @@ int main (void) {
 	//Log.levelForFile(LogLevel::LOG_ALL);
 	//Log.levelForFile(LogLevel::LOG_ALL, "Log for last run.txt");
 
-	ofLogToConsole();
-	ofSetLogLevel(OF_LOG_NOTICE);
-	Log.levelForAllModules(LogLevel::LOG_NOTICE);
+	//ofLogToConsole();
+	//ofSetLogLevel(OF_LOG_NOTICE);
+
 	
 	ofSetWorkingDirectoryToDefault();
 

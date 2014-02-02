@@ -103,7 +103,7 @@ void lastSlideFunction(CX_UserFunctionInfo_t& info) {
 	if (Input.Keyboard.availableEvents() > 0) {
 		//We don't want any responses made before the stimulus was presented, so let's find out when it was presented.
 		CX_Slide_t &lastStimulusSlide = SlidePresenter.getSlide( info.currentSlideIndex - 1 );
-		CX_Micros_t stimulusOnset = lastStimulusSlide.actual.startTime;
+		CX_Micros stimulusOnset = lastStimulusSlide.actual.startTime;
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_KeyEvent_t kev = Input.Keyboard.getNextEvent();
