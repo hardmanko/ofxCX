@@ -34,81 +34,6 @@ bool CX_SlidePresenter::setup(const CX_SP_Configuration &config) {
 	return true;
 }
 
-/*
-void CX_SlidePresenter::update (void) {
-
-	if (_presentingSlides) {
-
-		if (_display->hasSwappedSinceLastCheck()) {
-
-			uint64_t currentFrameNumber = _display->getFrameNumber();
-
-			//Was the current frame just swapped in? If so, store information about the swap time.
-			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::SWAP_PENDING) {
-
-				CX_Micros currentSlideOnset = _display->getLastSwapTime();
-
-				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
-				_slides.at(_currentSlide).actual.startFrame = currentFrameNumber;
-				_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
-				
-
-				//If on the first frame, some setup must be done for the rest of the frames. The first frame has just swapped in.
-				if (_currentSlide == 0) {
-
-					_slides.at(0).intended.startFrame = currentFrameNumber;
-					_slides.at(0).intended.startTime = currentSlideOnset; //This is sort of weird, but true.
-					
-					for (int i = 0; i < _slides.size() - 1; i++) {
-						_slides.at(i + 1).intended.startTime = _slides.at(i).intended.startTime + _slides.at(i).intended.duration;
-						_slides.at(i + 1).intended.startFrame = _slides.at(i).intended.startFrame + _slides.at(i).intended.frameCount;
-					}
-				}
-
-				//If there was a previous slide, mark it as finished.
-				if (_currentSlide > 0) {
-					CX_Slide_t &lastSlide = _slides.at(_currentSlide - 1);
-					lastSlide.slideStatus = CX_Slide_t::FINISHED;
-
-					//Now that the slide is finished, figure out its duration.
-					lastSlide.actual.duration = _slides.at(_currentSlide).actual.startTime - lastSlide.actual.startTime;
-					lastSlide.actual.frameCount = _slides.at(_currentSlide).actual.startFrame - lastSlide.actual.startFrame;
-				}
-
-				//If this is the last slide, then we are done presenting slides.
-				if (_currentSlide == (_slides.size() - 1)) {
-					_presentingSlides = false;
-
-					//The duration of the final frame is undefined. These could be 0.
-					_slides.back().actual.duration = std::numeric_limits<CX_Micros>::max();
-					_slides.back().actual.frameCount = std::numeric_limits<uint32_t>::max();
-				}
-
-			}
-
-			//Is there is a slide after the current one?
-			if ((_currentSlide + 1) < _slides.size()) {
-
-				//Is that slide ready to swap in?
-				if ( _slides.at(_currentSlide + 1).intended.startFrame <= (currentFrameNumber + 1)) {
-					_currentSlide++;
-					_renderCurrentSlide();
-				}
-			}
-		}
-	} else if (_synchronizing) {
-		if (_display->hasSwappedSinceLastCheck()) {
-			_currentSlide = 0;
-			_renderCurrentSlide();
-			_synchronizing = false;
-			_presentingSlides = true;
-		}
-	}
-
-	_waitSyncCheck();
-}
-*/
-
 
 void CX_SlidePresenter::update(void) {
 
@@ -360,12 +285,6 @@ void CX_SlidePresenter::stopPresentation (void) {
 	//_currentSlide = 0; //It's useful to know what slide you were on when you stopped
 }
 
-unsigned int CX_SlidePresenter::_calculateFrameCount (CX_Micros duration) {
-	double framesInDuration = (double)duration / _display->getFramePeriod();
-	framesInDuration = CX::round(framesInDuration, 0, CX::CX_RoundingConfiguration::ROUND_TO_NEAREST);
-	return (uint32_t)framesInDuration;
-}
-
 void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros slideDuration, string slideName) {
 
 	if (_lastFramebufferActive) {
@@ -492,4 +411,10 @@ CX_Slide_t& CX_SlidePresenter::getSlide (unsigned int slideIndex) {
 	}
 	Log.error("CX_SlidePresenter") << "getSlide: slideIndex out of range";
 	return _slides.back(); //Throws if size == 0
+}
+
+unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Micros duration) {
+	double framesInDuration = (double)duration / _display->getFramePeriod();
+	framesInDuration = CX::round(framesInDuration, 0, CX::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+	return (uint32_t)framesInDuration;
 }

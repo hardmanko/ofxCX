@@ -27,7 +27,7 @@ namespace CX {
 				  ofColor lineColor, ofColor fillColor, float lineWidth = 1, float rotationDeg = 0);
 
 		void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
-		void centeredString(ofPoint center, string s, ofTrueTypeFont &font);
+		void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font);
 
 		struct CX_PatternProperties_t {
 			CX_PatternProperties_t(void) :

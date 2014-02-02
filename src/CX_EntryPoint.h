@@ -1,6 +1,28 @@
 #ifndef _CX_NON_APP_ENTRY_POINT_H_
 #define _CX_NON_APP_ENTRY_POINT_H_
 
+
+/*! \namespace CX::Private
+This namespace contains symbols that may be visible in user code but which should not be used by user code.
+*/
+
+/*! \namespace CX
+This namespace contains all of the symbols related to CX.
+*/
+
+/*! \namespace CX::Draw
+This namespace contains a variety of CX drawing functions.
+*/
+
+/*! \namespace CX::Instances
+This namespace contains instances of some classes that are fundamental to the functioning of CX. 
+CX::Instances::Clock is used throughout CX for timing purposes.
+CX::Instances::Log is used throughout CX for message logging.
+CX::Instances::RNG is an instance of a CX_RandomNumberGenerator.
+CX::Instances::Input manages the three primary input devices (Mouse, Keyboard, and Joystick).
+CX::Instances::Display is the primary display used for presenting visual stimuli.
+*/
+
 #include "ofMain.h"
 
 #include "CX_Utilities.h"

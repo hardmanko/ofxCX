@@ -15,6 +15,7 @@ Release*/
 *.app/
 *.pyc
 .svn/
+docs/
 
 # IDE-specific ignore patterns (e.g. user-specific files)
 

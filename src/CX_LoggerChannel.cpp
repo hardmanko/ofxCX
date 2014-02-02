@@ -3,7 +3,7 @@
 using namespace CX;
 using namespace std;
 
-void CX_LoggerChannel::log(ofLogLevel level, const string & module, const string & message) {
+void CX_LoggerChannel::log(ofLogLevel level, const std::string & module, const std::string & message) {
 	CX_ofLogMessageEventData_t md;
 	md.level = level;
 	md.module = module;
@@ -11,14 +11,14 @@ void CX_LoggerChannel::log(ofLogLevel level, const string & module, const string
 	ofNotifyEvent(this->messageLoggedEvent, md);
 }
 
-void CX_LoggerChannel::log(ofLogLevel level, const string & module, const char* format, ...) {
+void CX_LoggerChannel::log(ofLogLevel level, const std::string & module, const char* format, ...) {
 	va_list args;
 	va_start(args, format);
 	this->log(level, module, format, args);
 	va_end(args);
 }
 
-void CX_LoggerChannel::log(ofLogLevel level, const string & module, const char* format, va_list args) {
+void CX_LoggerChannel::log(ofLogLevel level, const std::string & module, const char* format, va_list args) {
 	bool failed = true;
 	int bufferSize = 256;
 	do {
@@ -28,7 +28,7 @@ void CX_LoggerChannel::log(ofLogLevel level, const string & module, const char* 
 		if (success > 0 && success < bufferSize) {
 			failed = false;
 
-			this->log(level, module, string(buffer));
+			this->log(level, module, std::string(buffer));
 
 		} else {
 			bufferSize *= 4;

@@ -22,7 +22,7 @@ void CX_Clock::_resetExperimentStartTime(void) {
 	_experimentStart = std::chrono::high_resolution_clock().now();
 }
 
-
+/*! Get the start time of the experiment in system time. The returned value can be compared with the result of getSystemTime(). */
 CX_Micros CX_Clock::getExperimentStartTime(void) {
 	return std::chrono::duration_cast<std::chrono::microseconds>(_experimentStart.time_since_epoch()).count();
 }

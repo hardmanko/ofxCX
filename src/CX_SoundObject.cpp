@@ -8,9 +8,9 @@ Loads a sound file with the given file name into the CX_SoundObject. Any pre-exi
 Some sound file types are supported. Others are not. In the limited testing, mp3 and wav files seem to work well.
 If the file cannot be loaded, descriptive error messages will be logged.
 
-@param fileName Name of the sound file to load.
+\param fileName Name of the sound file to load.
 
-@return True if the sound given in the fileName was loaded succesffuly, false otherwise.
+\return True if the sound given in the fileName was loaded succesffuly, false otherwise.
 */
 bool CX_SoundObject::loadFile (string fileName) {
 	_successfullyLoaded = true;
@@ -135,10 +135,10 @@ bool CX_SoundObject::loadFile (string fileName) {
 Uses loadFile(string) and addSound(CX_SoundObject, uint64_t) to add the given file to the current CX_SoundObject at the given time offset (in microseconds).
 See those functions for more information.
 
-@param fileName Name of the sound file to load.
-@param timeOffset Time at which to add the new sound.
+\param fileName Name of the sound file to load.
+\param timeOffset Time at which to add the new sound.
 
-@return Returns true if the new sound was added sucessfully, false otherwise.
+\return Returns true if the new sound was added sucessfully, false otherwise.
 */
 bool CX_SoundObject::addSound (string fileName, CX_Micros timeOffset) {
 	if (_soundData.size() == 0 || !this->_successfullyLoaded) {
@@ -164,13 +164,14 @@ If the number of channels of nso does not equal the number of channels of this, 
 nso equal to the number of channels of this CX_SoundObject.
 The data from nso and this CX_SoundObject are merged by adding the amplitudes of the sounds. The result of the addition is clamped between -1 and 1.
 
-@param so A sound object. Must be ready().
-@param timeOffset Time at which to add the new sound data in microseconds. Dependent on sample rate.
+\param nso A sound object. Must be successfully loaded.
+\param timeOffset Time at which to add the new sound data in microseconds. Dependent on sample rate.
 
-@return True if nso was successfully added to this CX_SoundObject, false otherwise.
+\return True if nso was successfully added to this CX_SoundObject, false otherwise.
 */
 bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros timeOffset) {
 	if (!nso._successfullyLoaded) {
+		Log.error("CX_SoundObject") << "addSound: Added sound object not successfully loaded. It will not be added.";
 		return false;
 	}
 
@@ -186,6 +187,7 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros timeOffset) {
 
 	if (nso.getChannelCount() != this->getChannelCount()) {
 		if (!nso.setChannelCount( this->getChannelCount() )) {
+			Log.error("CX_SoundObject") << "addSound: Failed to match the number of channels of added sound to existing sound. The new sound will not be added.";
 			return false;
 		}
 	}
@@ -261,7 +263,7 @@ the beginning of a sound, even if perceived as silent relative to the rest of th
 Therefore, a tolerance of 0 is unlikely to prove useful. Using getPositivePeak() and/or getNegativePeak() can
 help to give a reference amplitude of which some small fraction is perceived as "silent".
 
-@param tolerance All sound data up to and including the first instance of a sample with an amplitude
+\param tolerance All sound data up to and including the first instance of a sample with an amplitude
 with an absolute value greater than tolerance is removed from the sound.
 */
 void CX_SoundObject::stripLeadingSilence (float tolerance) {
@@ -281,9 +283,9 @@ void CX_SoundObject::stripLeadingSilence (float tolerance) {
 /*!
 Adds the specified amount of silence to the CX_SoundObject at either the beginning or end.
 
-@param durationUs Duration of added silence in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
+\param duration Duration of added silence in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
 so does the duration of silence.
-@param atBeginning If true, silence is added at the beginning of the CX_SoundObject. If false, the silence is added at the end.
+\param atBeginning If true, silence is added at the beginning of the CX_SoundObject. If false, the silence is added at the end.
 */
 void CX_SoundObject::addSilence (CX_Micros duration, bool atBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count for the new silence.
@@ -299,9 +301,9 @@ void CX_SoundObject::addSilence (CX_Micros duration, bool atBeginning) {
 /*!
 Deletes the specified amount of sound from the CX_SoundObject from either the beginning or end.
 
-@param durationUs Duration of removed sound in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
+\param duration Duration of removed sound in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
 so does the duration of removed sound.
-@param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer. 
+\param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer. 
 If false, the sound is deleted from the end, toward the beginning.
 */
 void CX_SoundObject::deleteAmount (CX_Micros duration, bool fromBeginning) {
@@ -328,9 +330,9 @@ If M == 1, the new channel is set equal to the arithmetic average of the N old c
 If (N != 1 && M != 1 && M > N), the first N channels are preserved unchanged and the M - N new channels are set to the arithmetic average of the N old channels. 
 Any other combination of M and N is an error condition.
 
-@param newChannelCount The number of channels the CX_SoundObject will have after the conversion.
+\param newChannelCount The number of channels the CX_SoundObject will have after the conversion.
 
-@return True if the conversion was successful, false if the attempted conversion is unsupported.
+\return True if the conversion was successful, false if the attempted conversion is unsupported.
 */
 bool CX_SoundObject::setChannelCount (int newChannelCount) {
 
@@ -429,7 +431,7 @@ way to resample audio data; some audio fidelity is lost, more so than with other
 very fast compared to higher-quality methods both in terms of run time and programming time. It has acceptable results, 
 at least when the new sample rate is similar to the old sample rate.
 
-@param newSampleRate The requested sample rate.
+\param newSampleRate The requested sample rate.
 */
 void CX_SoundObject::resample (float newSampleRate) {
 
@@ -510,9 +512,9 @@ void CX_SoundObject::multiplySpeed (float speedMultiplier) {
 
 /*!
 Apply gain to the channel in terms of decibels.
-@param decibels Gain to apply. 0 does nothing. Positive values increase volume, negative values decrease volume. Negative infinity is essentially mute,
+\param decibels Gain to apply. 0 does nothing. Positive values increase volume, negative values decrease volume. Negative infinity is essentially mute,
 although see multiplyAmplitudeBy() for a more obvious way to do that same operation.
-@param channel The channel that the gain should be applied to. If channel is less than 0, the gain is applied to all channels.
+\param channel The channel that the gain should be applied to. If channel is less than 0, the gain is applied to all channels.
 */
 bool CX_SoundObject::applyGain (float decibels, int channel) {
 	float amplitudeMultiplier = sqrt( pow(10.0f, decibels/10.0f) );
@@ -521,8 +523,8 @@ bool CX_SoundObject::applyGain (float decibels, int channel) {
 
 /*!
 Apply gain to the sound. The original value is simply multiplied by the amount and then clamped to be within [-1, 1].
-@param amount The gain that should be applied. A value of 0 mutes the channel. 1 does nothing. 2 doubles the amplitude. -1 inverts the waveform.
-@param channel The channel that the given multiplier should be applied to. If channel is less than 0, the amplitude multiplier is applied to all channels.
+\param amount The gain that should be applied. A value of 0 mutes the channel. 1 does nothing. 2 doubles the amplitude. -1 inverts the waveform.
+\param channel The channel that the given multiplier should be applied to. If channel is less than 0, the amplitude multiplier is applied to all channels.
 */
 bool CX_SoundObject::multiplyAmplitudeBy (float amount, int channel) {
 

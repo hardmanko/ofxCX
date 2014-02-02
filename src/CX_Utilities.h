@@ -25,7 +25,6 @@ namespace CX {
 		extern GLFWwindow *glfwContext;
 	}
 
-
 	bool checkOFVersion (int versionMajor, int versionMinor, int versionPatch);
 
 	int getSampleCount (void); //Make private?
@@ -103,7 +102,7 @@ is logged and an empty vector is returned.
 \return A vector of the repeated values.
 */
 template <typename T> 
-std::vector<T> CX::repeat (std::vector<T> values, vector<unsigned int> each, unsigned int times) {
+std::vector<T> CX::repeat (std::vector<T> values, std::vector<unsigned int> each, unsigned int times) {
 	std::vector<T> rval;
 
 	if (values.size() != each.size()) {
@@ -123,7 +122,7 @@ std::vector<T> CX::repeat (std::vector<T> values, vector<unsigned int> each, uns
 }
 
 template <typename T>
-std::string CX::vectorToString (std::vector<T> values, string delimiter, int significantDigits) {
+std::string CX::vectorToString (std::vector<T> values, std::string delimiter, int significantDigits) {
 	std::stringstream s;
 	s << std::fixed << std::setprecision(significantDigits);
 	for (unsigned int i = 0; i < values.size(); i++) {

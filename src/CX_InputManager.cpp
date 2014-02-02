@@ -38,7 +38,7 @@ bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex)
 }
 
 /*!
-It is not typically neccessary for the user to call this function directly, although there is not harm in doing so.
+It is not typically neccessary for the user to call this function directly, although there is no harm in doing so.
 This function polls for new events on all of the configured input devices (see setup()). After a call to this function,
 new events for the input devices can be found by checking the availableEvents() function for each device.
 \return True if there are any new events, false otherwise.

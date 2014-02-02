@@ -71,15 +71,7 @@ public:
 	void shuffleRows (void);
 	void shuffleRows (CX_RandomNumberGenerator &rng);
 
-
-	template <typename T> std::vector<T> copyColumn (std::string column) {
-		_resizeToFit(column);
-		vector<T> rval;
-		for (unsigned int i = 0; i < _data[column].size(); i++) {
-			rval.push_back( ofFromString<T>( _data[column][i] ) );
-		}
-		return rval;
-	}
+	template <typename T> std::vector<T> copyColumn(std::string column);
 
 protected:
 	friend class CX_DataFrameRow;
@@ -94,6 +86,19 @@ protected:
 
 	void _equalizeRowLengths (void);
 };
+
+/*! Makes a copy of the data contained in the named column, converting it to the specified type
+(such a conversion must be possible).
+\param column The name of the column to copy data from.
+\return A vector containing the copied data. */
+template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column) {
+	_resizeToFit(column);
+	vector<T> rval;
+	for (unsigned int i = 0; i < _data[column].size(); i++) {
+		rval.push_back(ofFromString<T>(_data[column][i]));
+	}
+	return rval;
+}
 
 class CX_DataFrameColumn {
 public:

@@ -28,30 +28,30 @@ void setupExperiment (void) {
 	Log.notice("myModule") << "So this message should not appear anywhere.";
 
 	Log.setMessageFlushCallback(loggerFlushCallback); //You can also set up a function that is called every time a message is flushed.
-		//The body of loggerFlushCallback is commented out above.
+		//The body of loggerFlushCallback is commented out above, so you won't see a result from this unless it is uncommented.
 
-	
-	//By default all messages logged using the oF logging system are routed into Log, from which they can be flushed.
+	//By default all messages logged using the oF logging system (everything internal to oF is logged that way) are 
+	//routed into Log, from which they can be flushed.
 	ofLogWarning("using ofLogWarning") << "You have been warned about oF logging!";
-	ofLogError("using ofLogError", "The number is %d", 50);
+	ofLogError("using ofLogError", "%d plus %f is %f", 50, 0.5, 50 + 0.5); //You can also use the c-style formatting.
 	//If you want oF messages to be logged normally, you can call ofLogToConsole() or ofLogToFile(), although this is not recommended
 	//becuase there is no way to control when messages are flushed when using the standard oF logging.
+	//See the documentation http://openframeworks.cc/documentation/utils/ofLog.html for more information about oF logging
 
 	Log.flush(); //Flush the stored messages to the various logging targets (console and files). This is a BLOCKING operation.
 
-
-	//You can also change the logging level of openFrameworks logging messages (which do not get routed to Log).
-	//See the documentation: http://openframeworks.cc/documentation/utils/ofLog.html
-	//ofSetLogLevel(ofLogLevel::OF_LOG_SILENT); //Log nothing
-	//ofLogToFile("ofLogMessages.txt", false); //Change oF logging to log to a file
-	//ofLogToConsole(); //Log oF messages to the console
-
+	Log.levelForConsole(LogLevel::LOG_ALL); //Log everything to the console
 
 	//You can also set the log level for all modules. This allows you to set the log level for all modules, 
 	//then selectively set a different log level for other modules if, e.g. you are trying to debug a specific 
 	//module and want to only see output from it. In that case, you could do:
-	//Log.levelForAllModules(LogLevel::LOG_NONE);
-	//Log.level(LogLevel::LOG_ALL, "myTargetModule");
+	Log.levelForAllModules(LogLevel::LOG_NONE);
+	Log.level(LogLevel::LOG_ALL, "myTargetModule");
+
+	Log.notice("myTargetModule") << "Special message";
+	Log.fatalError("anythingElse") << "Meltdown imminent!!!";
+
+	Log.flush();
 }
 
 bool doingTimeSensitiveStuff = true;

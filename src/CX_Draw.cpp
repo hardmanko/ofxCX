@@ -100,14 +100,14 @@ void CX::Draw::star(ofPoint center, int numberOfPoints, float innerRadius, float
 	star.draw(center.x, center.y);
 }
 
-void CX::Draw::centeredString(int x, int y, string s, ofTrueTypeFont &font) {
+void CX::Draw::centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
 	y -= (bb.y + bb.height / 2);
 	font.drawString(s, x, y);
 }
 
-void CX::Draw::centeredString(ofPoint center, string s, ofTrueTypeFont &font) {
+void CX::Draw::centeredString(ofPoint center, std::string s, ofTrueTypeFont &font) {
 	Draw::centeredString(center.x, center.y, s, font);
 }
 

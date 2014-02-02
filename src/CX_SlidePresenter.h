@@ -51,11 +51,12 @@ namespace CX {
 		bool deallocateCompletedSlides;
 	};
 
+	/*! Contains information about the presentation timing of the slide. */
 	struct CX_SlideTimingInfo_t {
-		uint32_t startFrame;
-		uint32_t frameCount;
-		CX_Micros startTime;
-		CX_Micros duration;
+		uint32_t startFrame; /*!< The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
+		uint32_t frameCount; /*!< The number of frames the slide was/should be presented for. */
+		CX_Micros startTime; /*!< The time at which the slide was/should have been started. Can be compared with values from Clock.getTime(). */
+		CX_Micros duration; /*!< Time amount of time the slide was/should have been presented for. */
 	};
 
 	struct CX_Slide_t {
@@ -80,16 +81,6 @@ namespace CX {
 
 		CX_SlideTimingInfo_t intended;
 		CX_SlideTimingInfo_t actual;
-
-		//uint32_t intendedFrameCount;
-		//uint32_t intendedOnsetFrameNumber;
-		//uint32_t actualFrameCount;
-		//uint32_t actualOnsetFrameNumber;
-
-		//CX_Micros intendedSlideDuration;
-		//CX_Micros actualSlideDuration;
-		//CX_Micros intendedSlideOnset; 
-		//CX_Micros actualSlideOnset;
 
 		CX_Micros copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
 	
