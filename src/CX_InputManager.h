@@ -14,6 +14,10 @@
 
 namespace CX {
 
+	/*! This class is responsible for managing three basic input devices: a keyboard, mouse, and joystick. 
+	You access each of these devices with the corresponding member class: Keyboard, Mouse, and Joystick. 
+	See \ref CX::CX_Keyboard, \ref CX::CX_Mouse, and \ref CX::CX_Joystick for more information about each
+	specific device. */
 	class CX_InputManager {
 	public:
 

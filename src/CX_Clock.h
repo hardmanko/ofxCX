@@ -1,17 +1,14 @@
 #ifndef _CX_CLOCK_H_
 #define _CX_CLOCK_H_
 
-//#include "ofConstants.h"
-#include "ofLog.h"
-#include "CX_Utilities.h"
-
-//#include <stdint.h>
 #include <string>
 #include <chrono>
 
 #include "Poco/DateTimeFormatter.h"
 
-//#include "CX_DeferredLogger.h"
+#include "CX_Utilities.h"
+#include "CX_Logger.h"
+
 
 namespace CX {
 
@@ -46,6 +43,8 @@ namespace CX {
 		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 
 		static std::string getDateTimeString (std::string format = "%Y-%b-%e %h-%M-%S %a");
+
+		double getTickPeriod(void);
 
 	private:
 		void _resetExperimentStartTime (void);

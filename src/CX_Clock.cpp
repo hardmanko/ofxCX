@@ -1,23 +1,18 @@
 #include "CX_Clock.h"
 
-/*
-#ifdef TARGET_WIN32
-#include "Windows.h"
-#else
-#include "ofUtils.h" //For ofGetSystemTimeMicros()
-#endif
-*/
-
 using namespace CX;
 
 CX_Clock Instances::Clock; //Single instance of this class.
 
 CX_Clock::CX_Clock (void) {
+	if (this->getTickPeriod() > 1e-6) {
+		Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock is worse than "
+			"microsecond precision. Actual tick period of the system clock is " << this->getTickPeriod();
+	}
 	_resetExperimentStartTime();
 }
 
 void CX_Clock::_resetExperimentStartTime(void) {
-	//_pocoExperimentStart = Poco::Timestamp();
 	_pocoExperimentStart = Poco::LocalDateTime();
 	_experimentStart = std::chrono::high_resolution_clock().now();
 }
@@ -27,12 +22,9 @@ CX_Micros CX_Clock::getExperimentStartTime(void) {
 	return std::chrono::duration_cast<std::chrono::microseconds>(_experimentStart.time_since_epoch()).count();
 }
 
-/*!
-This function returns the current time relative to the start of the experiment in microseconds.
+/*! This function returns the current time relative to the start of the experiment in microseconds.
 The start of the experiment is defined by default as when the CX_Clock instance named Clock
-(instantiated in this file) is constructed (typically the beginning of program execution). The 
-experiment start time can be reset at any time by calling resetExperimentStartTime().
-*/
+(instantiated in this file) is constructed (typically the beginning of program execution). */
 CX_Micros CX_Clock::getTime(void) {
 	std::chrono::high_resolution_clock::time_point t = std::chrono::high_resolution_clock::now();
 	return std::chrono::duration_cast<std::chrono::microseconds>(t - _experimentStart).count();
@@ -42,20 +34,21 @@ CX_Micros CX_Clock::getTime(void) {
 This function returns the current system time in microseconds.
 
 This cannot be converted to time/day in any meaningful way. Use getDateTimeString() for that.
+This value can only be compared to the result of other calls to this function and to getExperimentStartTime().
 */
 CX_Micros CX_Clock::getSystemTime(void) {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
 
-/*! Get a string representing the date/time of the start of the experiment.
+/*! Get a string representing the date/time of the start of the experiment encoded according to some format.
 \param format See getDateTimeString() for the definition of the format. */
 std::string CX_Clock::getExperimentStartDateTimeString(std::string format) {
 	return Poco::DateTimeFormatter::format(_pocoExperimentStart, format);
 }
 
 
-/*!
-See http://pocoproject.org/docs/Poco.DateTimeFormatter.html#4684 for documentation of the format.
+/*! This function returns a string containing the local time encoded according to some format.
+\param format See http://pocoproject.org/docs/Poco.DateTimeFormatter.html#4684 for documentation of the format.
 E.g. "%Y/%m/%d %H:%M:%S" gives "year/month/day 24HourClock:minute:second" with some zero-padding for most things.
 The default "%Y-%b-%e %h-%M-%S %a" is "yearWithCentury-abbreviatedMonthName-nonZeroPaddedDay 12HourClock-minuteZeroPadded-secondZeroPadded am/pm".
 */
@@ -64,31 +57,22 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
 
+/*! Get the period of the underlying system clock used by CX_Clock. If the returned value 
+is 1e-6 or less, the clock has microsecond precision or better. Otherwise, it has degraded 
+precision. */
+double CX_Clock::getTickPeriod(void) {
+	return (double)std::chrono::high_resolution_clock::period().num / std::chrono::high_resolution_clock::period().den;
+}
 
 /*
-namespace CX {
 //Does not actually have microsecond precision on some systems.
 void sleepMicros(uint64_t micros) {
 	std::this_thread::sleep_for(std::chrono::microseconds(micros));
 }
 
 
-long long currentTime(void) {
-	//std::chrono::high_resolution_clock::time_point experimentStart = std::chrono::high_resolution_clock::now();
-	std::chrono::high_resolution_clock::time_point t = std::chrono::high_resolution_clock::now();
-	return std::chrono::duration_cast<std::chrono::microseconds>(t - experimentStart).count();
-}
-
-
-long long micros(void) {
-	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-}
-
 double clockPeriod(void) {
 	return (double)std::chrono::high_resolution_clock::period().num / std::chrono::high_resolution_clock::period().den;
-}
-
-
 }
 */
 

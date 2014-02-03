@@ -16,25 +16,18 @@ namespace CX {
 
 	enum class CX_SP_ErrorMode {
 		PROPAGATE_DELAYS,
-		FIX_TIMING_FROM_FIRST_SLIDE
+		FIX_TIMING_FROM_FIRST_SLIDE //Does not work.
 	};
 
 	struct CX_UserFunctionInfo_t {
 		CX_UserFunctionInfo_t(void) :
 			instance(nullptr),
 			currentSlideIndex(0)
-			//userStatus(CX_UserFunctionInfo_t::CONTINUE_PRESENTATION)
 		{}
 
-		CX_SlidePresenter *instance;
-		unsigned int currentSlideIndex;
+		CX_SlidePresenter *instance; //!< A pointer to the CX_SlidePresenter that called the user function.
+		unsigned int currentSlideIndex; //!< Redundant: May be gotten using instance->getActiveSlideIndex().
 
-		/*
-		enum {
-			CONTINUE_PRESENTATION,
-			STOP_NOW
-		} userStatus;
-		*/
 	};
 
 	struct CX_SP_Configuration {
@@ -49,6 +42,9 @@ namespace CX {
 		std::function<void(CX_UserFunctionInfo_t&)> userFunction;
 		CX_SP_ErrorMode errorMode;
 		bool deallocateCompletedSlides;
+
+		//bool singleThreadedMode;
+		//CX_Micros preSwapCPUHoggingDuration;
 	};
 
 	/*! Contains information about the presentation timing of the slide. */
@@ -59,6 +55,7 @@ namespace CX {
 		CX_Micros duration; /*!< Time amount of time the slide was/should have been presented for. */
 	};
 
+	/*! This struct contains information related to slide presentation using CX_SlidePresenter. */
 	struct CX_Slide_t {
 
 		CX_Slide_t () :
@@ -66,11 +63,14 @@ namespace CX {
 			slideStatus(NOT_STARTED)
 		{}
 
-		string slideName;
+		string slideName; //!< The name of the slide. Set by the user during slide creation.
 
-		ofFbo framebuffer;
-		void (*drawingFunction) (void);
+		ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
+						   If drawingFunction points to a user function, framebuffer will not be drawn. */
+		void (*drawingFunction) (void); /*!< \brief Pointer to a user function that will be called to draw the slide. 
+										If this points to a user function, it overrides framebuffer. */
 
+		/*! Status of the current slide vis a vis presentation. */
 		enum {
 			NOT_STARTED,
 			COPY_TO_BACK_BUFFER_PENDING,
@@ -79,10 +79,13 @@ namespace CX {
 			FINISHED
 		} slideStatus;
 
-		CX_SlideTimingInfo_t intended;
-		CX_SlideTimingInfo_t actual;
+		CX_SlideTimingInfo_t intended; //!< The intended timing parameters (i.e. what should have happened if there were no presentation errors).
+		CX_SlideTimingInfo_t actual; //!< The actual timing parameters.
 
-		CX_Micros copyToBackBufferCompleteTime; //This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late).
+		CX_Micros copyToBackBufferCompleteTime; /*!< \brief The time at which the drawing operations for this slide finished.
+												This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late). 
+												If this is greater than actual.startTime, the slide may not have been fully drawn at the time the
+												front and back buffers swapped. */
 	
 	};
 
@@ -103,12 +106,7 @@ namespace CX {
 		void startSlidePresentation(void);
 		void stopPresentation(void);
 
-		void clearSlides (void);
-
-		//void setThreadingMode (bool singleThreaded); //Flesh this out. Maybe have it be a setup() parameter
-	
-
-
+		void clearSlides (void);	
 		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
 
 		unsigned int getActiveSlideIndex (void) { return _currentSlide; };
@@ -120,7 +118,7 @@ namespace CX {
 		vector<CX_Micros> getActualPresentationDurations (void);
 		vector<unsigned int> getActualFrameCounts (void);
 
-		int checkForPresentationErrors (void);
+		int checkForPresentationErrors (void); //Maybe return a struct with specifics about the errors?
 
 	protected:
 

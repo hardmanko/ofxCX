@@ -59,6 +59,8 @@ namespace CX {
 
 		CX_Micros _framePeriod;
 
+		uint64_t _manualBufferSwaps;
+
 	};
 
 }

@@ -1,5 +1,5 @@
 /*! 
-\class CX_TrialController
+\class CX::CX_TrialController
 This class is used to help with the fact that most psychology experiments
 are by nature more or less linear, but that CX requires non-blocking updating
 of the experiment.
