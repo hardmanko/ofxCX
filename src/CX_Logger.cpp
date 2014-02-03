@@ -12,27 +12,27 @@ enum class LogTarget {
 	CONSOLE_AND_FILE
 };
 
-struct CX::LoggerTargetInfo {
-	LoggerTargetInfo (void) :
+struct CX::CX_LoggerTargetInfo {
+	CX_LoggerTargetInfo (void) :
 		file(nullptr)
 	{}
 
 	LogTarget targetType;
-	LogLevel level;
+	CX_LogLevel level;
 
 	string filename;
 	ofFile *file;
 };
 
 
-struct CX::LogMessage {
-	LogMessage (LogLevel level_, string module_) :
+struct CX::CX_LogMessage {
+	CX_LogMessage (CX_LogLevel level_, string module_) :
 		level(level_),
 		module(module_)
 	{}
 
 	stringstream* message;
-	LogLevel level;
+	CX_LogLevel level;
 	string module;
 	string timestamp;
 };
@@ -42,13 +42,13 @@ CX_Logger::CX_Logger (void) :
 	_logTimestamps(false),
 	_flushCallback(nullptr),
 	_timestampFormat("%H:%M:%S"),
-	_defaultLogLevel(LogLevel::LOG_NOTICE)
+	_defaultLogLevel(CX_LogLevel::LOG_NOTICE)
 {
-	levelForConsole(LogLevel::LOG_ALL);
+	levelForConsole(CX_LogLevel::LOG_ALL);
 	
 	ofAddListener(_ofLoggerChannel.messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
 
-	levelForAllModules(LogLevel::LOG_ERROR);
+	levelForAllModules(CX_LogLevel::LOG_ERROR);
 }
 
 CX_Logger::~CX_Logger (void) {
@@ -76,7 +76,7 @@ void CX_Logger::flush (void) {
 	}
 
 	for (auto it = _messageQueue.begin(); it != _messageQueue.end(); it++) {
-		MessageFlushData dat( it->message->str(), it->level, it->module );
+		CX_MessageFlushData dat( it->message->str(), it->level, it->module );
 		//ofNotifyEvent(this->messageFlushEvent, dat );
 		if (_flushCallback) {
 			_flushCallback( dat );
@@ -124,7 +124,7 @@ void CX_Logger::flush (void) {
 }
 
 /*! Set the log level for messages to be printed to the console. */
-void CX_Logger::levelForConsole(LogLevel level) {
+void CX_Logger::levelForConsole(CX_LogLevel level) {
 	bool consoleFound = false;
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == LogTarget::CONSOLE) {
@@ -134,7 +134,7 @@ void CX_Logger::levelForConsole(LogLevel level) {
 	}
 
 	if (!consoleFound) {
-		LoggerTargetInfo consoleTarget;
+		CX_LoggerTargetInfo consoleTarget;
 		consoleTarget.targetType = LogTarget::CONSOLE;
 		consoleTarget.level = level;
 		_targetInfo.push_back(consoleTarget);
@@ -143,10 +143,10 @@ void CX_Logger::levelForConsole(LogLevel level) {
 
 /*! Sets the log level for the file with given file name. If the file does not exist, it will be created. 
 If the file does exist, it will be overwritten with a warning logged to cerr. 
-\param level See the LogLevel enum for valid values.
+\param level See the CX_LogLevel enum for valid values.
 \param filename Optional. If no file name is given, a file with name generated from a date/time from the start time of the experiment will be used.
 */
-void CX_Logger::levelForFile(LogLevel level, std::string filename) {
+void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 	if (filename == "CX_DEFERRED_LOGGER_DEFAULT") {
 		filename = "Log file " + CX::Instances::Clock.getExperimentStartDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
 	}
@@ -162,7 +162,7 @@ void CX_Logger::levelForFile(LogLevel level, std::string filename) {
 	}
 
 	if (!fileFound) {
-		LoggerTargetInfo fileTarget;
+		CX_LoggerTargetInfo fileTarget;
 		fileTarget.targetType = LogTarget::FILE;
 		fileTarget.level = level;
 		fileTarget.filename = filename;
@@ -185,10 +185,10 @@ void CX_Logger::levelForFile(LogLevel level, std::string filename) {
 }
 
 /*! Sets the log level for the given module.
-\param level See the LogLevel enum for valid values.
+\param level See the CX_LogLevel enum for valid values.
 \param module A string representing one of the modules from which log messages are generated.
 */
-void CX_Logger::level(LogLevel level, std::string module) {
+void CX_Logger::level(CX_LogLevel level, std::string module) {
 	_moduleLogLevels[module] = level;
 }
 
@@ -196,9 +196,9 @@ void CX_Logger::level(LogLevel level, std::string module) {
 Set the log level for all modules. This works both retroactively and proactively: All currently known modules
 are given the log level and the default log level for new modules as set to the level.
 */
-void CX_Logger::levelForAllModules(LogLevel level) {
+void CX_Logger::levelForAllModules(CX_LogLevel level) {
 	_defaultLogLevel = level;
-	for (map<string, LogLevel>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
+	for (map<string, CX_LogLevel>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
 		_moduleLogLevels[it->first] = level;
 	}
 }
@@ -207,9 +207,9 @@ void CX_Logger::levelForAllModules(LogLevel level) {
 Sets the user function that will be called on each message flush event. For every message that has been
 logged, the user function will be called. No filtering is performed: All messages regardless of the module
 log level will be sent to the user function.
-\param f A pointer to a user function that takes a reference to a MessageFlushData struct and returns nothing.
+\param f A pointer to a user function that takes a reference to a CX_MessageFlushData struct and returns nothing.
 */
-void CX_Logger::setMessageFlushCallback (std::function<void(MessageFlushData&)> f) {
+void CX_Logger::setMessageFlushCallback (std::function<void(CX_MessageFlushData&)> f) {
 	_flushCallback = f;
 }
 
@@ -224,75 +224,78 @@ void CX_Logger::timestamps (bool logTimestamps, std::string format) {
 }
 
 /*! This is the basic logging function for this class. Example use:
-Log.log(LogLevel::LOG_WARNING, "myModule") << "My message number " << 20;
+Log.log(CX_LogLevel::LOG_WARNING, "myModule") << "My message number " << 20;
 \param level Log level for this message.
 \param module Name of the module that this log message is related to.
 \return A reference to a std::stringstream that the log message data should be streamed into.
 */
-std::stringstream& CX_Logger::log(LogLevel level, std::string module) {
+std::stringstream& CX_Logger::log(CX_LogLevel level, std::string module) {
 	return _log(level, module);
 }
 
-/*! This function is equivalent to a call to log(LogLevel::LOG_VERBOSE, module). */
+/*! This function is equivalent to a call to log(CX_LogLevel::LOG_VERBOSE, module). */
 std::stringstream& CX_Logger::verbose(std::string module) {
-	return _log(LogLevel::LOG_VERBOSE, module);
+	return _log(CX_LogLevel::LOG_VERBOSE, module);
 }
 
-/*! This function is equivalent to a call to log(LogLevel::LOG_NOTICE, module). */
+/*! This function is equivalent to a call to log(CX_LogLevel::LOG_NOTICE, module). */
 std::stringstream& CX_Logger::notice(std::string module) {
-	return _log(LogLevel::LOG_NOTICE, module);
+	return _log(CX_LogLevel::LOG_NOTICE, module);
 }
 
-/*! This function is equivalent to a call to log(LogLevel::LOG_WARNING, module). */
+/*! This function is equivalent to a call to log(CX_LogLevel::LOG_WARNING, module). */
 std::stringstream& CX_Logger::warning(std::string module) {
-	return _log(LogLevel::LOG_WARNING, module);
+	return _log(CX_LogLevel::LOG_WARNING, module);
 }
 
-/*! This function is equivalent to a call to log(LogLevel::LOG_ERROR, module). */
+/*! This function is equivalent to a call to log(CX_LogLevel::LOG_ERROR, module). */
 std::stringstream& CX_Logger::error(std::string module) {
-	return _log(LogLevel::LOG_ERROR, module);
+	return _log(CX_LogLevel::LOG_ERROR, module);
 }
 
-/*! This function is equivalent to a call to log(LogLevel::LOG_FATAL_ERROR, module). */
+/*! This function is equivalent to a call to log(CX_LogLevel::LOG_FATAL_ERROR, module). */
 std::stringstream& CX_Logger::fatalError(std::string module) {
-	return _log(LogLevel::LOG_FATAL_ERROR, module);
+	return _log(CX_LogLevel::LOG_FATAL_ERROR, module);
 }
 
+/*! Set this instance of CX_Logger to be the target of any messages created by oF logging functions. */
+void CX_Logger::captureOFLogMessages(void) {
+	ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(dynamic_cast<ofBaseLoggerChannel*>(&this->_ofLoggerChannel)));
+}
 
-
-string CX_Logger::_getLogLevelName (LogLevel level) {
+string CX_Logger::_getLogLevelName (CX_LogLevel level) {
 	switch (level) {
-	case LogLevel::LOG_VERBOSE: return "verbose";
-	case LogLevel::LOG_NOTICE: return "notice";
-	case LogLevel::LOG_WARNING: return "warning";
-	case LogLevel::LOG_ERROR: return "error";
-	case LogLevel::LOG_FATAL_ERROR: return "fatal";
+	case CX_LogLevel::LOG_VERBOSE: return "verbose";
+	case CX_LogLevel::LOG_NOTICE: return "notice";
+	case CX_LogLevel::LOG_WARNING: return "warning";
+	case CX_LogLevel::LOG_ERROR: return "error";
+	case CX_LogLevel::LOG_FATAL_ERROR: return "fatal";
 	};
 	return "";
 }
 
 void CX_Logger::_loggerChannelEventHandler(CX::CX_ofLogMessageEventData_t& md) {
-	LogLevel convertedLevel;
+	CX_LogLevel convertedLevel;
 
 	switch (md.level) {
-	case ofLogLevel::OF_LOG_VERBOSE: convertedLevel = LogLevel::LOG_VERBOSE; break;
-	case ofLogLevel::OF_LOG_NOTICE: convertedLevel = LogLevel::LOG_NOTICE; break;
-	case ofLogLevel::OF_LOG_WARNING: convertedLevel = LogLevel::LOG_WARNING; break;
-	case ofLogLevel::OF_LOG_ERROR: convertedLevel = LogLevel::LOG_ERROR; break;
-	case ofLogLevel::OF_LOG_FATAL_ERROR: convertedLevel = LogLevel::LOG_FATAL_ERROR; break;
-		//case ofLogLevel::OF_LOG_SILENT: convertedLevel = LogLevel::LOG_NOTICE; break;
+	case ofLogLevel::OF_LOG_VERBOSE: convertedLevel = CX_LogLevel::LOG_VERBOSE; break;
+	case ofLogLevel::OF_LOG_NOTICE: convertedLevel = CX_LogLevel::LOG_NOTICE; break;
+	case ofLogLevel::OF_LOG_WARNING: convertedLevel = CX_LogLevel::LOG_WARNING; break;
+	case ofLogLevel::OF_LOG_ERROR: convertedLevel = CX_LogLevel::LOG_ERROR; break;
+	case ofLogLevel::OF_LOG_FATAL_ERROR: convertedLevel = CX_LogLevel::LOG_FATAL_ERROR; break;
+		//case ofLogLevel::OF_LOG_SILENT: convertedLevel = CX_LogLevel::LOG_NOTICE; break;
 	}
 
 	this->_log(convertedLevel, md.module) << md.message;
 }
 
-stringstream& CX_Logger::_log(LogLevel level, string module) {
+stringstream& CX_Logger::_log(CX_LogLevel level, string module) {
 
 	if (_moduleLogLevels.find(module) == _moduleLogLevels.end()) {
 		_moduleLogLevels[module] = _defaultLogLevel;
 	}
 
-	_messageQueue.push_back(LogMessage(level, module));
+	_messageQueue.push_back(CX_LogMessage(level, module));
 	_messageQueue.back().message = new stringstream; //Manually allocated: Must deallocate later.
 
 	if (_logTimestamps) {

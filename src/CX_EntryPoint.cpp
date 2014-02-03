@@ -2,58 +2,83 @@
 
 #include "ofAppGLFWWindow.h"
 
-using namespace CX;
+//using namespace CX;
 
-CX_Display Instances::Display;
-CX_InputManager Instances::Input;
-CX_SlidePresenter Instances::SlidePresenter;
+CX::CX_Display CX::Instances::Display;
+CX::CX_InputManager CX::Instances::Input;
+CX::CX_SlidePresenter CX::Instances::SlidePresenter;
+
+namespace CX {
+	namespace Private {
+
+		struct CX_WindowConfiguration_t {
+			CX_WindowConfiguration_t(void) :
+			width(800),
+			height(600),
+			mode(ofWindowMode::OF_WINDOW)
+			{}
+
+			int width;
+			int height;
+
+			ofWindowMode mode;
+		};
+
+		class App {
+		public:
+			void setup(void);
+			void setupWindow(CX_WindowConfiguration_t config);
+
+			void update(void);
+			void exit(ofEventArgs &a);
+		};
+
+		void glfwErrorCallback(int code, const char* message) {
+			CX::Instances::Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
+		}
+	}
+}
+
 
 void CX::Private::App::setup (void) {
+
+	ofSetWorkingDirectoryToDefault();
+
+	setupWindow(CX::Private::CX_WindowConfiguration_t());
+
+	//Why use these? CX has RNG and Clock.
+	ofSeedRandom();
+	ofResetElapsedTimeCounter();
+
 	ofAddListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );
 
 	Instances::Display.setup();
 	Instances::SlidePresenter.setup( &Instances::Display );
 
-	Log.captureOFLogMessages();
-	Log.levelForAllModules(LogLevel::LOG_NOTICE);
+	CX::Instances::Log.captureOFLogMessages();
+	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
 
-	//Call the user setup function
-	setupExperiment();
-}
-
-void CX::Private::App::update (void) {
-	Instances::Display.update();
-	Instances::SlidePresenter.update();
-	
-	Instances::Input.pollEvents();
+	//Log.levelForConsole(CX_LogLevel::LOG_ALL);
+	//Log.levelForFile(CX_LogLevel::LOG_ALL);
+	//Log.levelForFile(CX_LogLevel::LOG_ALL, "Log for last run.txt");
 
 	CX::Events.setup();
 
-	//Call the user update function
-	updateExperiment();
+	//Call the user setup function
+	setupExperiment();
 
-	//ofSleepMillis(0); //sleep(0) is similar to yield()
+	CX::Instances::Log.flush(); //Flush logs after the user setup function, so they can see if any errors happened during their setup.
 }
 
-void CX::Private::App::exit (ofEventArgs &a) {
-	Instances::Display.exit();
+void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 
-	ofRemoveListener( ofEvents().exit, this, &Private::App::exit, OF_EVENT_ORDER_APP );
-}
+	glfwSetErrorCallback(&glfwErrorCallback);
 
-void glfwErrorCallback (int code, const char *message) {
-	Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
-}
+	ofPtr<ofAppGLFWWindow> window(new ofAppGLFWWindow);
+	window->setNumSamples(CX::getSampleCount());
 
-int CX::setupWindow (CX_WindowConfiguration_t config) {
-
-	glfwSetErrorCallback( &glfwErrorCallback );
-
-	ofPtr<ofAppGLFWWindow> window( new ofAppGLFWWindow );
-	window->setNumSamples( CX::getSampleCount() );
-
-	ofSetCurrentRenderer( (ofPtr<ofBaseRenderer>)(new ofGLRenderer), true );
-	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), 800, 600, OF_WINDOW);
+	ofSetCurrentRenderer((ofPtr<ofBaseRenderer>)(new ofGLRenderer), true);
+	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), config.width, config.height, config.mode);
 
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer
 
@@ -61,33 +86,32 @@ int CX::setupWindow (CX_WindowConfiguration_t config) {
 
 	CX::Private::glfwContext = glfwGetCurrentContext();
 
-	ofSetOrientation( ofOrientation::OF_ORIENTATION_DEFAULT, true );
+	ofSetOrientation(ofOrientation::OF_ORIENTATION_DEFAULT, true);
+}
 
-	return 0;
+void CX::Private::App::update (void) {
+	CX::Instances::Display.update();
+	CX::Instances::SlidePresenter.update();
+	
+	CX::Instances::Input.pollEvents();
+
+	updateExperiment(); //Call the user update function
+
+	//ofSleepMillis(0); //sleep(0) is similar to yield()
+}
+
+void CX::Private::App::exit (ofEventArgs &a) {
+	CX::Instances::Display.exit();
+
+	ofRemoveListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );
 }
 
 
-int main (void) {
-	//Log.levelForConsole(LogLevel::LOG_ALL);
-	//Log.levelForFile(LogLevel::LOG_ALL);
-	//Log.levelForFile(LogLevel::LOG_ALL, "Log for last run.txt");
-
-	//ofLogToConsole();
-	//ofSetLogLevel(OF_LOG_NOTICE);
-
-	
-	ofSetWorkingDirectoryToDefault();
-
-	CX::setupWindow( CX_WindowConfiguration_t() );
-
-	//Why use these? CX has RNG and Clock.
-	ofSeedRandom();
-	ofResetElapsedTimeCounter();
-
+int main (void) {	
 	CX::Private::App A;
 	A.setup();
-	Log.flush(); //Flush logs after the user setup function, so they can see if any errors happened during their setup.
-	while(true){
+	while (true) {
 		A.update();
 	}
+	return 0;
 }

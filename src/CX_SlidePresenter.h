@@ -83,7 +83,7 @@ namespace CX {
 		CX_SlideTimingInfo_t actual; //!< The actual timing parameters.
 
 		CX_Micros copyToBackBufferCompleteTime; /*!< \brief The time at which the drawing operations for this slide finished.
-												This is pretty useful to determine if there was an error on the trial (i.e. framebuffer copied late). 
+												This is pretty useful to determine if there was an error on the trial (e.g. framebuffer was copied late). 
 												If this is greater than actual.startTime, the slide may not have been fully drawn at the time the
 												front and back buffers swapped. */
 	

@@ -20,7 +20,7 @@
 
 namespace CX {
 
-	/*! \enum LogLevel
+	/*! \enum CX_LogLevel
 	Log levels for log messages. Depending on the log level chosen, the name of the level will be printed before the message.
 	Depending on the settings set using level(), levelForConsole(), or levelForFile(), if the log level of a message is below
 	the level set for the module or logging target it will not be printed. For example, if LOG_ERROR is the level for the console
@@ -28,7 +28,7 @@ namespace CX {
 	at verbose level (because of the module setting) and will not be printed to the console if they are below the error level.
 	*/
 	//These rely on ordering; do not change it.
-	enum class LogLevel {
+	enum class CX_LogLevel {
 		LOG_ALL, //This is functionally identical to LOG_VERBOSE, but it is more obvious what it does
 		LOG_VERBOSE,
 		LOG_NOTICE,
@@ -39,63 +39,62 @@ namespace CX {
 	};
 
 	//Forward declarations of internally used structs
-	struct LogMessage;
-	struct LoggerTargetInfo;
+	struct CX_LogMessage;
+	struct CX_LoggerTargetInfo;
 
-	struct MessageFlushData {
-		MessageFlushData (string message_, LogLevel level_, string module_) :
+	struct CX_MessageFlushData {
+		CX_MessageFlushData (string message_, CX_LogLevel level_, string module_) :
 			message(message_),
 			level(level_),
 			module(module_)
 		{}
 		string message;
-		LogLevel level;
+		CX_LogLevel level;
 		string module;
 	};
-
+	/*! This class is used for logging messages throughout the CX backend code. It can also be used
+	in user code to log messages. Rather than instantiating your own copy of CX_Logger, it is probably
+	better to use the preinstantiated CX::Instances::Log. */
 	class CX_Logger {
 	public:
 
 		CX_Logger (void);
 		~CX_Logger (void);
 
-		std::stringstream& log(LogLevel level, std::string module = "");
+		std::stringstream& log(CX_LogLevel level, std::string module = "");
 		std::stringstream& verbose(std::string module = "");
 		std::stringstream& notice(std::string module = "");
 		std::stringstream& warning(std::string module = "");
 		std::stringstream& error(std::string module = "");
 		std::stringstream& fatalError(std::string module = "");
 
-		void level(LogLevel level, std::string module = "");
-		void levelForConsole (LogLevel level);
-		void levelForFile(LogLevel level, std::string filename = "CX_DEFERRED_LOGGER_DEFAULT");
-		void levelForAllModules(LogLevel level);
+		void level(CX_LogLevel level, std::string module = "");
+		void levelForConsole (CX_LogLevel level);
+		void levelForFile(CX_LogLevel level, std::string filename = "CX_DEFERRED_LOGGER_DEFAULT");
+		void levelForAllModules(CX_LogLevel level);
 
 		void flush (void); //BLOCKING
 
 		void timestamps(bool logTimestamps, std::string format = "%H:%M:%S.%i");
 
-		void setMessageFlushCallback (std::function<void(MessageFlushData&)> f);
+		void setMessageFlushCallback (std::function<void(CX_MessageFlushData&)> f);
 
-		/*! Set this CX_Logger to be the target of any messages created by oF logging functions. */
-		void captureOFLogMessages(void) {
-			ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(dynamic_cast<ofBaseLoggerChannel*>(&this->_ofLoggerChannel)));
-		}
+		void captureOFLogMessages(void);
 
 	private:
-		std::vector<LoggerTargetInfo> _targetInfo;
-		std::map<std::string, LogLevel> _moduleLogLevels;
-		std::vector<LogMessage> _messageQueue;
+		std::vector<CX_LoggerTargetInfo> _targetInfo;
+		std::map<std::string, CX_LogLevel> _moduleLogLevels;
+		std::vector<CX_LogMessage> _messageQueue;
 
-		std::stringstream& _log(LogLevel level, std::string module);
-		std::string _getLogLevelName(LogLevel level);
+		std::stringstream& _log(CX_LogLevel level, std::string module);
+		std::string _getLogLevelName(CX_LogLevel level);
 
-		std::function<void(MessageFlushData&)> _flushCallback;
+		std::function<void(CX_MessageFlushData&)> _flushCallback;
 
 		bool _logTimestamps;
 		std::string _timestampFormat;
 
-		LogLevel _defaultLogLevel;
+		CX_LogLevel _defaultLogLevel;
 
 		CX_LoggerChannel _ofLoggerChannel;
 		void _loggerChannelEventHandler(CX_ofLogMessageEventData_t& md);
