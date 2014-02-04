@@ -54,9 +54,9 @@ CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
 }
 
 //This function returns a double drawn from a uniform distribution with a range of [lowerBound_closed, upperBound_open).
-double CX_RandomNumberGenerator::uniformDouble (double lowerBound_closed, double upperBound_open) {
-	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
-}
+//double CX_RandomNumberGenerator::uniformDouble (double lowerBound_closed, double upperBound_open) {
+//	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
+//}
 
 /*!
 Returns a vector of count integers from the range [lowerBound, upperBound] with or without replacement.
@@ -65,6 +65,25 @@ vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound,
 	return sample(count, CX::intVector(lowerBound, upperBound), withReplacement);
 }
 
+/*! Samples count deviates from a uniform distribution with the given lower bound and upper bound.
+\param count The number of deviates to generate.
+\param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
+\param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.
+\return A vector of the deviates. */
+std::vector<double> CX_RandomNumberGenerator::uniformDeviates (unsigned int count, double lowerBound_closed, double upperBound_open) {
+	std::vector<double> samples(count);
+	std::uniform_real_distribution<double> unifDist(lowerBound_closed, upperBound_open);
+	for (unsigned int i = 0; i < count; i++) {
+		samples[i] = unifDist(_mersenneTwister);
+	}
+	return samples;
+}
+
+/*! Samples count deviates from a normal distribution with the given mean and standard deviation.
+\param count The number of deviates to generate.
+\param mean The mean of the distribution.
+\param standardDeviation The standard deviation of the distribution.
+\return A vector of the deviates. */
 std::vector<double> CX_RandomNumberGenerator::normalDeviates (unsigned int count, double mean, double standardDeviation) {
 	std::vector<double> samples(count);
 	std::normal_distribution<double> normDist(mean, standardDeviation);

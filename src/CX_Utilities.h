@@ -160,7 +160,7 @@ std::vector<T> CX::sequence (T start, T end, T stepSize) {
 	std::vector<T> rval;
 
 	if (start < end) {
-		if (stepSize =< 0) {
+		if (stepSize <= 0) {
 			return rval;
 		}
 		do {

@@ -30,7 +30,8 @@ namespace CX {
 		template <typename T> T randomExclusive (const vector<T> &values, const T& exclude);
 		template <typename T> T randomExclusive (const vector<T> &values, const vector<T> &exclude);
 
-		double uniformDouble(double lowerBound_closed, double upperBound_open);
+		//double uniformDouble(double lowerBound_closed, double upperBound_open);
+		std::vector<double> uniformDeviates (unsigned int count, double lowerBound_closed, double upperBound_open);
 		template <typename T> std::vector<T> binomialDeviates (unsigned int count, T trials, double probSuccess);
 		std::vector<double> normalDeviates (unsigned int count, double mean, double standardDeviation);
 
@@ -50,25 +51,38 @@ namespace CX {
 		extern CX_RandomNumberGenerator RNG;
 	}
 
+	/*! Randomizes the order of the given vector.
+	\param v A pointer to the vector to be shuffled. */
 	template <typename T>
 	void CX_RandomNumberGenerator::shuffleVector (vector<T> *v) {
 		std::shuffle( v->begin(), v->end(), _mersenneTwister );
 	}
 
+	/*! Makes a copy of the given vector, randomizes the order of its elements, and returns the shuffled copy.
+	\param v The vector to be operated on. 
+	\return A shuffled copy of v. */
 	template <typename T>
 	vector<T> CX_RandomNumberGenerator::shuffleVector (vector<T> v) {
 		std::shuffle( v.begin(), v.end(), _mersenneTwister );
 		return v;
 	}
 
-	/*!
-	Returns a vector of count values drawn from source, with or without replacement. The returned values
-	are in a random order.
-	If (count > source.size() && withReplacement == false), an empty vector is returned.
+	/*!	Returns a vector of count values drawn randomly from source, with or without replacement. The returned values are in a random order.
+	\param count The number of samples to draw.
+	\param source A vector to be sampled from.
+	\param withReplacement Sample with or without replacement.
+	\return A vector of the sampled values.
+	\note If (count > source.size() && withReplacement == false), an empty vector is returned.
 	*/
 	template <typename T>
 	vector<T> CX_RandomNumberGenerator::sample (unsigned int count, const vector<T> &source, bool withReplacement) {
+
 		vector<T> samples;
+
+		if (source.size() == 0) {
+			Instances::Log.error("CX_RandomNumberGenerator") << "sample: Empty vector given to sample from.";
+			return samples;
+		}
 
 		if (withReplacement) {
 			for (vector<T>::size_type i = 0; i < count; i++) {
@@ -76,13 +90,11 @@ namespace CX {
 			}
 		} else {
 			//Without replacement. Make a vector of indices into the source vector, shuffle them, and select count of them from the vector.
-
 			if (count > source.size()) {
+				//Log a warning?
 				return samples;
 			}
-
 			vector<vector<T>::size_type> indices = shuffleVector( CX::intVector<vector<T>::size_type>(0, source.size() - 1) );
-
 			for (unsigned int i = 0; i < count; i++) {
 				samples.push_back( source[ indices[i] ] );
 			}
@@ -91,7 +103,15 @@ namespace CX {
 		return samples;
 	}
 
+	/*! Returns a single value sampled randomly from values.
+	\return The sampled value.
+	\note If values.size() == 0, an error will be logged and T() will be returned.
+	*/
 	template <typename T> T CX_RandomNumberGenerator::sample (vector<T> values) {
+		if (values.size() == 0) {
+			Instances::Log.error("CX_RandomNumberGenerator") << "sample: Empty vector given to sample from.";
+			return T();
+		}
 		return values[ randomInt(0, values.size() - 1) ];
 	}
 
@@ -124,6 +144,11 @@ namespace CX {
 		return attempt;
 	}
 
+	/*!	Samples count deviates from a binomial distribution with the given number of trials and probability of success on each trial.
+	\param count The number of deviates to generate.
+	\param trials The number of trials. Must be a non-negative integer.
+	\param probSuccess The probability of a success on a given trial, where a success is the value 1.
+	\return A vector of the deviates. */
 	template <typename T> std::vector<T> CX_RandomNumberGenerator::binomialDeviates (unsigned int count, T trials, double probSuccess) {
 		std::vector<T> samples(count);
 		std::binomial_distribution<T> binDist(trials, probSuccess);

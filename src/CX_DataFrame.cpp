@@ -62,7 +62,7 @@ Each row of the data frame will be ended with a new line (whatever std::endl eva
 delimiter is not recommended because semicolons are used as element delimiters in the string-encoded vectors
 stored in the data frame and commas are used for element delimiters within each element of the string-encoded
 vectors.
-\param printRowNumbers If true, a column will be printed with the header "row" with the contents of the column
+\param printRowNumbers If true, a column will be printed with the header "rowNumber" with the contents of the column
 being the selected row indices. If false, no row numbers will be printed.
 \return A string containing the printed version of the data frame.
 */
@@ -83,7 +83,7 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 	stringstream output;
 
 	if (printRowNumbers) {
-		output << "row" << delimiter;
+		output << "rowNumber" << delimiter;
 	}
 
 	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
@@ -144,6 +144,121 @@ bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>
 	return CX::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
 }
 
+/*! Deletes the contents of the data frame. Resizes the data frame to have no rows or columns. */
+void CX_DataFrame::clear (void) {
+	_data.clear();
+	_rowCount = 0;
+}
+
+/*! Reads data from the given file into the data frame. This function assumes that there will be a row of column names as the first row of the file.
+It does not treat consecutive delimiters as a single delimiter.
+\param filename The name of the file to read data from. If it is a relative path, the file will be read relative to the data directory.
+\param cellDelimiter A string containing the delimiter between cells of the data frame.
+\param vectorEncloser A string containing the characters that surround cell that contain a vector of data. By default,
+vectors are enclosed in double quotes. This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
+if it finds a delimiter within the quotes, it should not split there, but wait until out of the quotes.
+\return False if an error occurred, true otherwise.
+
+\note The contents of the data frame will be deleted before attempting to read in the file.
+\note If the data is read in from a file written with a row numbers column, that column will be read into the data frame. You can remove it using
+deleteColumn("rowNumber").
+*/
+bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter, std::string vectorEncloser) {
+
+	filename = ofToDataPath(filename);
+	ofBuffer file = ofBufferFromFile(filename, false);
+
+	if (!ofFile::doesFileExist(filename)) {
+		Instances::Log.error("CX_DataFrame") << "Attempt to read from file " << filename << " failed: File not found.";
+		return false;
+	}
+
+	this->clear();
+	
+	vector<string> headers = ofSplitString(file.getFirstLine(), cellDelimiter, false, false);
+	rowIndex_t rowNumber = 0;
+
+	do {
+		string line = file.getNextLine();
+
+		vector<string> parts;
+		unsigned int cellStart = 0;
+
+		for (unsigned int i = 0; i < line.size(); i++) {
+
+			if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
+				i += vectorEncloser.size();
+				int vectorStart = i;
+				for (; i < line.size(); i++) {
+					if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
+						break;
+					}
+				}
+			}
+
+			if (line.substr(i, cellDelimiter.size()) == cellDelimiter) {
+				parts.push_back( line.substr(cellStart, i - cellStart) );
+				i += cellDelimiter.size() - 1;
+				cellStart = i + 1;
+			} 
+				
+			if (i == (line.size() - 1)) {
+				parts.push_back( line.substr(cellStart, i + 1 - cellStart) );
+			}
+		}
+
+		if (parts.size() != headers.size()) {
+			this->clear();
+			Instances::Log.error("CX_DataFrame") << "Error while loading file " << filename << 
+				": Row column count (" << parts.size() << ") does not match header column count (" << headers.size() << "). On row " << rowNumber;
+			return false;
+		} else {
+			for (unsigned int i = 0; i < headers.size(); i++) {
+				this->operator()(headers[i], rowNumber) = parts[i];
+			}
+			rowNumber++;
+		}
+
+	} while (!file.isLastLine());
+
+	Instances::Log.notice("CX_DataFrame") << "File " << filename << " loaded successfully.";
+	return true;
+}
+
+/*! Deletes the given column of the data frame.
+\param columnName The name of the column to delete. If the column is not in the data frame, a warning will be logged.
+\return True if the column was found and deleted, false if it was not found.
+*/
+bool CX_DataFrame::deleteColumn (std::string columnName) {
+	map<string, vector<CX_DataFrameCell>>::iterator it = _data.find(columnName);
+	if (it != _data.end()) {
+		_data.erase(it);
+		return true;
+	}
+	Instances::Log.warning("CX_DataFrame") << "Failed to delete column: " << columnName << " not found in the data frame.";
+	return false;
+}
+
+/*! Deletes the given row of the data frame. 
+\param row The row to delete (0 indexed). If row is greater than or equal to the number of rows in the data frame, a warning will be logged.
+\return True if the row was in bounds and was deleted, false if the row was out of bounds.
+*/
+bool CX_DataFrame::deleteRow (rowIndex_t row) {
+	if (row < _rowCount) {
+		for (map<string, vector<CX_DataFrameCell>>::iterator col = _data.begin(); col != _data.end(); col++) {
+			col->second.erase(col->second.begin() + row);
+		}
+		_rowCount--;
+		return true;
+	}
+	Instances::Log.warning("CX_DataFrame") << "Failed to delete row: Index " << row << " was out of bounds. Number of rows " << this->getRowCount();
+	return false;
+}
+
+/*! Appends the row to the end of the data frame.
+\param row The row to add.
+\note If the row has columns that do not exist in the data frame, those columns will be added to the data frame.
+*/
 void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	//This implementation looks weird, but don't change it: it deals with a number of edge cases.
 	_rowCount++;
@@ -154,10 +269,10 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	}
 
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
-
 }
 
-/*! Returns a vector containing the names of the columns in the data frame. */
+/*! Returns a vector containing the names of the columns in the data frame.
+\return Vector of strings with the column names. */
 std::vector<std::string> CX_DataFrame::columnNames(void) {
 	vector<string> names;
 	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
@@ -258,8 +373,8 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 	return copyDf;
 }
 
-
-/*! Randomly re-orders the rows of the data frame. */
+/*! Randomly re-orders the rows of the data frame.
+\param rng Reference to a CX_RandomNumberGenerator to be used for the shuffling. */
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
 	vector<CX_DataFrame::rowIndex_t> newOrder = CX::intVector<CX_DataFrame::rowIndex_t>(0, _rowCount - 1);
 	rng.shuffleVector(&newOrder);
@@ -271,6 +386,26 @@ void CX_DataFrame::shuffleRows(void) {
 	shuffleRows(CX::Instances::RNG);
 }
 
+/*! Sets the number of rows in the data frame.
+\param rowCount The new number of rows in the data frame.
+\note If the row count is less than the number of rows already in the data frame, it will delete those rows with a warning.
+*/
+void CX_DataFrame::setRowCount(rowIndex_t rowCount) {
+	if (rowCount < _rowCount) {
+		Instances::Log.warning("CX_DataFrame") << "setRowCount: New row count less than current number of rows in the data frame. Extra rows deleted.";
+	}
+	_resizeToFit(rowCount - 1);
+}
+
+/*! Adds a column to the data frame.
+\param columnName The name of the column to add. If a column with that name already exists in the data frame, a warning will be logged. */
+void CX_DataFrame::addColumn(std::string columnName) {
+	if (_data.find(columnName) != _data.end()) {
+		Instances::Log.warning("CX_DataFrame") << "addColumn: Column already exists in data frame.";
+		return;
+	}
+	_data[columnName].resize(_rowCount);
+}
 
 void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
 	if (_data[column].size() <= row) {
@@ -421,18 +556,5 @@ CX_DataFrameCell CX_SafeDataFrame::at(std::string column, rowIndex_t row) {
 	return at(row, column);
 }
 
-void CX_SafeDataFrame::setRowCount(rowIndex_t rowCount) {
-	_resizeToFit(rowCount - 1);
-}
 
-void CX_SafeDataFrame::addColumn(std::string columnName) {
-	_data[columnName].resize(_rowCount);
-}
-
-
-
-
-
-
-//CX_RandomNumberGenerator::shuffle (CX_DataFrame &df); //?
 

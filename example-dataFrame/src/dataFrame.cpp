@@ -25,6 +25,15 @@ mental model.
 void setupExperiment (void) {
 	CX_DataFrame df;
 
+	df.readFromFile("data frame.txt");
+	df.deleteColumn("rowNumber");
+	df.deleteRow(0);
+	cout << df.print() << endl;
+	
+	//vector<ofPoint> locations1 = df("locations", 1);
+
+	Log.flush();
+
 	//Use the () notation to access an element at the given (column, row). Columns are named with strings and rows
 	//are numbered. Due to some operator overloading, you
 	//can just use operator= to set the values. Most of the common types are supported: int, double, string, etc. 
@@ -100,6 +109,8 @@ void setupExperiment (void) {
 	string s3 = df["dwellings"][1].toString();
 	cout << "s1, s2, and s3: " << s1 << ", " << s2 << ", and " << s3 << endl;
 
+	df.printToFile("myDataFrame.txt");
+
 	/*
 	//Data can easily be moved into an R data frame. First, output the data to a file.
 	df.printToFile("[somewhere]/myDataFrame.txt"); //Check the return value for success.
@@ -131,6 +142,8 @@ void setupExperiment (void) {
 	columns.push_back("dwellings");
 	columns.push_back("ints");
 	CX_DataFrame cols = df.copyColumns(columns);
+
+
 
 	/*
 	There is another kind of data frame for those who believe themselves to be error prone (i.e. self-aware

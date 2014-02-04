@@ -62,6 +62,12 @@ public:
 	bool printToFile (std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
 	bool printToFile (std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
 
+	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"");
+
+	void clear (void);
+	bool deleteColumn (std::string columnName);
+	bool deleteRow (rowIndex_t row);
+
 	std::vector<std::string> columnNames (void);
 	rowIndex_t getRowCount (void) { return _rowCount; };
 
@@ -72,6 +78,9 @@ public:
 	void shuffleRows (CX_RandomNumberGenerator &rng);
 
 	template <typename T> std::vector<T> copyColumn(std::string column);
+
+	void setRowCount (rowIndex_t rowCount);
+	void addColumn (std::string columnName);
 
 protected:
 	friend class CX_DataFrameRow;
@@ -141,9 +150,6 @@ public:
 	CX_DataFrameCell at (rowIndex_t row, std::string column);
 	CX_DataFrameCell at (std::string column, rowIndex_t row);
 
-	void setRowCount (rowIndex_t rowCount);
-	void addColumn (std::string columnName);
-
 	using CX_DataFrame::appendRow;
 	using CX_DataFrame::print;
 	using CX_DataFrame::printToFile;
@@ -152,6 +158,9 @@ public:
 	using CX_DataFrame::columnNames;
 	using CX_DataFrame::getRowCount;
 	using CX_DataFrame::shuffleRows;
+
+	using CX_DataFrame::addColumn;
+	using CX_DataFrame::setRowCount;
 
 };
 
