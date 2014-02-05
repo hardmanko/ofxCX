@@ -90,7 +90,7 @@ double CX_RandomNumberGenerator::uniformDeviate (double lowerBound_closed, doubl
 \param withReplacement Sample with or without replacement.
 \return A vector of the samples. */
 vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
-	return sample(count, CX::intVector<int>(lowerBound, upperBound), withReplacement);
+	return sample(count, CX::Util::intVector<int>(lowerBound, upperBound), withReplacement);
 }
 
 /*! Samples count deviates from a uniform distribution with the range [lowerBound_closed, upperBound_open).

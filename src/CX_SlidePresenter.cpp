@@ -306,7 +306,7 @@ void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros slideDuration, string s
 
 	_slides.back().slideName = slideName;
 	Log.verbose("CX_SlidePresenter") << "Allocating framebuffer...";
-	_slides.back().framebuffer.allocate( _display->getResolution().x, _display->getResolution().y, GL_RGBA, CX::getSampleCount() );
+	_slides.back().framebuffer.allocate(_display->getResolution().x, _display->getResolution().y, GL_RGBA, CX::Util::getSampleCount());
 	Log.verbose("CX_SlidePresenter") << "Finished allocating.";
 	
 	_slides.back().intended.duration = slideDuration;
@@ -415,6 +415,6 @@ CX_Slide_t& CX_SlidePresenter::getSlide (unsigned int slideIndex) {
 
 unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Micros duration) {
 	double framesInDuration = (double)duration / _display->getFramePeriod();
-	framesInDuration = CX::round(framesInDuration, 0, CX::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+	framesInDuration = CX::Util::round(framesInDuration, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 	return (uint32_t)framesInDuration;
 }

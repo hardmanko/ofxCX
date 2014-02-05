@@ -318,7 +318,7 @@ std::string CX_SoundStream::formatsToString (RtAudioFormat formats, std::string 
 			rval.append( delim );
 		}
 	}
-
+	return rval;
 }
 
 /*! For the given api, lists all of the devices on the system that support that api.

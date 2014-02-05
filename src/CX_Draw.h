@@ -1,5 +1,4 @@
-#ifndef _CX_DRAWING_PRIMITIVES_H_
-#define _CX_DRAWING_PRIMITIVES_H_
+#pragma once
 
 #include "ofPoint.h"
 #include "ofPath.h"
@@ -12,6 +11,7 @@ namespace CX {
 	\ingroup video */
 	namespace Draw {
 
+		/*
 		struct CX_PathParams_t {
 			ofColor lineColor;
 			ofColor fillColor;
@@ -20,6 +20,7 @@ namespace CX {
 			float rotationAmount;
 			ofVec3f rotationAxes;
 		};
+		*/
 
 		ofPath squircleToPath(double radius, double amount = 0.9);
 		//void squircle(ofPoint center, double radius, double rotationDeg = 0, double amount = 0.9);
@@ -86,5 +87,3 @@ namespace CX {
 		void gabor (int x, int y, const CX_GaborProperties_t& properties);
 	}
 }
-
-#endif //_CX_DRAWING_H_

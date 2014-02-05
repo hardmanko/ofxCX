@@ -113,7 +113,7 @@ CX_Millis::operator CX_Micros (void) {
 	double temp = millis;
 	CX_Micros intPart = (CX_Micros)floor(temp); //Get integer part
 	temp -= intPart;
-	temp = round(temp, -3, CX_RoundingConfiguration::ROUND_TO_NEAREST);
+	temp = CX::Util::round(temp, -3, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 			
 	CX_Micros fracPart = temp * 1000;
 	return (intPart * 1000) + fracPart;

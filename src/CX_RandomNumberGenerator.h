@@ -104,7 +104,7 @@ namespace CX {
 				//Log a warning?
 				return samples;
 			}
-			vector<vector<T>::size_type> indices = shuffleVector( CX::intVector<vector<T>::size_type>(0, source.size() - 1) );
+			vector<vector<T>::size_type> indices = shuffleVector(CX::Util::intVector<vector<T>::size_type>(0, source.size() - 1));
 			for (unsigned int i = 0; i < count; i++) {
 				samples.push_back( source[ indices[i] ] );
 			}

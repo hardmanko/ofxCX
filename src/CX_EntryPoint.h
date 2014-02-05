@@ -102,6 +102,7 @@ namespace CX {
 
 using namespace CX;
 using namespace CX::Instances;
+using namespace CX::Util;
 
 //Declarations of user functions. To be implemented in user code.
 

@@ -2,6 +2,7 @@
 
 #include "ofAppRunner.h" //ofShowCursor()/ofHideCursor()
 #include "GLFW\glfw3.h"
+#include "CX_Private.h"
 
 using namespace CX;
 
@@ -145,14 +146,14 @@ void CX_Mouse::_listenForEvents (bool listen) {
 		ofAddListener( ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler );
 		ofAddListener( ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler );
 
-		ofAddListener( CX::Events.scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler );
+		ofAddListener( CX::Private::Events.scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler );
 	} else {
 		ofRemoveListener( ofEvents().mousePressed, this, &CX_Mouse::_mouseButtonPressedEventHandler );
 		ofRemoveListener( ofEvents().mouseReleased, this, &CX_Mouse::_mouseButtonReleasedEventHandler );
 		ofRemoveListener( ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler );
 		ofRemoveListener( ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler );
 
-		ofRemoveListener(CX::Events.scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler);
+		ofRemoveListener( CX::Private::Events.scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler );
 	}
 	_listeningForEvents = listen;
 }

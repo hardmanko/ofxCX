@@ -1,5 +1,6 @@
 #include "CX_EntryPoint.h"
 
+#include "CX_Private.h"
 #include "ofAppGLFWWindow.h"
 
 /*! An instance of CX::CX_Display that is hooked into the CX backend.
@@ -71,7 +72,7 @@ void CX::Private::App::setup (void) {
 	//Log.levelForFile(CX_LogLevel::LOG_ALL);
 	//Log.levelForFile(CX_LogLevel::LOG_ALL, "Log for last run.txt");
 
-	CX::Events.setup();
+	CX::Private::Events.setup();
 
 	//Call the user setup function
 	setupExperiment();
@@ -84,7 +85,7 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	glfwSetErrorCallback(&glfwErrorCallback);
 
 	ofPtr<ofAppGLFWWindow> window(new ofAppGLFWWindow);
-	window->setNumSamples(CX::getSampleCount());
+	window->setNumSamples(CX::Util::getSampleCount());
 
 	ofSetCurrentRenderer((ofPtr<ofBaseRenderer>)(new ofGLRenderer), true);
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), config.width, config.height, config.mode);

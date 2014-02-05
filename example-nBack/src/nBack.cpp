@@ -3,16 +3,19 @@
 //#include "CX_ContinuousSlidePresenter.h"
 
 /*! \file
-This example shows how to implement an N-Back task using a CX_ContinuousSlidePresenter (CSP).
-The CSP is a lot like a CX_SlidePresenter, except that it is designed to ask the user for more
-slide to present every time it gets to the end of the slides that it has. It also deallocates the
-video memory from the framebuffers of slides as soon as they are presented. The idea with the CSP
-is that it can be used to present a long series of stimuli that all must be synchronized without
-using up too many memory resources at once.
+This example shows how to implement an N-Back task using an advanced feature of the CX_SlidePresenter 
+(SP). There is a feature of the SP that allows you to give it a pointer to a function that will be 
+called every time the SP has just presented the final slide that it currently has. In your function,
+you can add more slides to the SP, which will allow it to continue presenting slides. If you don't
+add any more slides, slide presentation will stop with the currently-presented slide.
 
-In order to use a CSP, the user must provide a function
+For this N-Back task, the presentation of stimuli will follow the pattern stimulus-blank-stimulus-blank 
+etc. The idea is that you will load up the SP with the first few stimuli and blanks. The SP will be started
+and will present the first few stimuli. When it runs out of stimuli, the last slide user function will be 
+called. In this function, we will check for any responses that have been made since the last time the 
+function was called and draw the next stimulus-blank pair. See the definition of lastSlideFunction and
+setup for the implementation of these ideas.
 */
-
 
 CX_DataFrame df;
 CX_DataFrame::rowIndex_t trialNumber = 0;
@@ -38,9 +41,10 @@ void generateTrials (int numberOfTrials);
 
 void setupExperiment (void) {
 
-	Input.setup(true, false);
+	Input.setup(true, false); //Use keyboard, not mouse.
 
-	letterFont.loadFont(OF_TTF_SANS, 20);
+	letterFont.loadFont(OF_TTF_SANS, 20); //You can specify fonts by name, but it is much safer to use the constants OF_TTF_SANS,
+		//OF_TTF_MONO, or OF_TTF_SERIF, which will load system fonts that satify the stated criterion (sans serif, monospaced, or serif).
 	instructionFont.loadFont(OF_TTF_SANS, 12);
 
 	generateTrials(10);
@@ -56,8 +60,10 @@ void setupExperiment (void) {
 
 	config.deallocateCompletedSlides = true; //We know that for this experiment we will never want to present the
 		//same slide twice, so we set the SlidePresenter to deallocate the memory used for slides that have already been presented.
+		//This help to prevent out-of-memory issues with the video card.
 
 	SlidePresenter.setup(config);
+
 
 	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
 	for (int i = 3; i > 0; i--) {
@@ -92,8 +98,6 @@ void setupExperiment (void) {
 void updateExperiment (void) {
 	SlidePresenter.update(); //Make sure that you call the update function of the SlidePresenter, otherwise it does nothing.
 }
-
-
 
 void lastSlideFunction(CX_UserFunctionInfo_t& info) {
 

@@ -31,14 +31,14 @@ std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) {
 	if (getRowCount() == 0) {
 		return "No rows to print.";
 	}
-	return print(CX::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
+	return print(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
 std::string CX_DataFrame::print(const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) {
 	if (getRowCount() == 0) {
 		return "No rows to print.";
 	}
-	return print(columns, CX::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
+	return print(columns, CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
 std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
@@ -122,15 +122,15 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 }
 
 bool CX_DataFrame::printToFile(std::string filename, std::string delimiter, bool printRowNumbers) {
-	return CX::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
+	return CX::Util::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
 }
 
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) {
-	return CX::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
+	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
 bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
-	return CX::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
+	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }
 
 /*!
@@ -141,7 +141,7 @@ a local path, the file will be placed relative to the data directory of the proj
 \return True for success, false if there was some problem writing to the file (insufficient permissions, etc.)
 */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
-	return CX::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
+	return CX::Util::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
 }
 
 /*! Deletes the contents of the data frame. Resizes the data frame to have no rows or columns. */
@@ -376,7 +376,7 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 /*! Randomly re-orders the rows of the data frame.
 \param rng Reference to a CX_RandomNumberGenerator to be used for the shuffling. */
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
-	vector<CX_DataFrame::rowIndex_t> newOrder = CX::intVector<CX_DataFrame::rowIndex_t>(0, _rowCount - 1);
+	vector<CX_DataFrame::rowIndex_t> newOrder = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, _rowCount - 1);
 	rng.shuffleVector(&newOrder);
 	reorderRows(newOrder);
 }

@@ -12,8 +12,9 @@
 #include "CX_Mouse.h"
 #include "CX_Joystick.h"
 
-/*! \defgroup input Input Handling
-There are a number of different classes that together perform the input handling functions of CX. For interfacing with serial ports, use ofSerial.
+/*! \defgroup input Input
+There are a number of different classes that together perform the input handling functions of CX. For interfacing with serial ports, use ofSerial 
+(http://www.openframeworks.cc/documentation/communication/ofSerial.html).
 
 \sa CX::CX_InputManager for the primary interface to input devices.
 \sa CX::CX_Keyboard for keyboard specific information.

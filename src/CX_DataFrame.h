@@ -39,7 +39,7 @@ public:
 	CX_DataFrame (void);
 
 	CX_DataFrame& operator= (CX_DataFrame& df) {
-		CX_DataFrame temp = df.copyRows(CX::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount()));
+		CX_DataFrame temp = df.copyRows(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount()));
 		std::swap(this->_data, temp._data);
 		std::swap(this->_rowCount, temp._rowCount);
 		return *this;
