@@ -1,12 +1,13 @@
 #ifndef _CX_SOUND_OBJECT_H_
 #define _CX_SOUND_OBJECT_H_
 
-/* \class CX_SoundObject
+/*! \class CX::CX_SoundObject
 
 Note: Nearly all functions of this class should be considered blocking. Many of
 the operations take quite a while to complete because they are performed on
 a fairly large vector of sound samples.
 
+\ingroup sound
 */
 
 #include <algorithm>

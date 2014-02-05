@@ -4,7 +4,7 @@ This class is used to help with the fact that most psychology experiments
 are by nature more or less linear, but that CX requires non-blocking updating
 of the experiment.
 
-The way this works is that blocks of user code, each representing one part of
+The way this works is that segments of user code, each representing one part of
 a trial, are put into functions. Those functions are added to the trial controller
 with appendFunction(), which puts the function at the end of the list of functions.
 User functions take no arguments and return an int.
@@ -35,14 +35,25 @@ namespace CX {
 
 		int update (void);
 
-		void start(void) { _active = true; };
-		void stop(void) { _active = false; };
+		//! "Arm" the trial controller. Before this is called, update() will do nothing.
+		void start (void) { _active = true; }; 
+
+		 //! "Disarm" the trial controller. After this is called, update() will do nothing.
+		void stop (void) { _active = false; };
+
+		//! Check to see if the trial controller is active. See \ref start() and \ref stop().
+		bool isActive (void) { return _active; }; 
 	
 		void appendFunction (std::function<int(void)> userFunction);
 		void reset (void);
 
 		bool setCurrentFunction (int currentFunction);
-		int currentFunction (void) { return _functionIndex; };
+
+		//! Get the index of the current function (i.e. the function that will be called the next time update() is called).
+		int getCurrentFunction (void) { return _functionIndex; };
+
+		//! Get the number of user functions stored by this trial controller.
+		unsigned int getFunctionCount (void) { return _userFunctions.size(); };
 
 	private:
 		int _functionIndex;

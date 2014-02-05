@@ -104,6 +104,25 @@ using namespace CX;
 using namespace CX::Instances;
 
 //Declarations of user functions. To be implemented in user code.
+
+/*! \defgroup entryPoint Entry Point
+The entry point provides access to a number of instances of classes that can be used by user code.
+It also provides declarations (but not definitions) of two functions which the user should define
+(\ref setupExperiment() and \ref updateExperiment()).
+*/
+
+/*! \fn setupExperiment 
+The user code should define a function with this name and type signature. The user function will be called a single time
+at the beginning of the experiment.
+\ingroup entryPoint
+*/
+
+/*! \fn updateExperiment 
+The user code should define a function with this name and type signature. The user function will be called
+continuously until the program exits.
+\ingroup entryPoint
+*/
+
 void setupExperiment (void);
 void updateExperiment (void);
 

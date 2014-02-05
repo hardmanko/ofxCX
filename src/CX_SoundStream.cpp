@@ -3,6 +3,21 @@
 using namespace CX;
 using namespace CX::Instances;
 
+CX_SoundStream::CX_SoundStream (void) :
+	_rtAudio(NULL),
+	_lastSwapTime(0),
+	_lastSampleNumber(0),
+	_sampleNumberAtLastCheck(0)
+{}
+
+CX_SoundStream::~CX_SoundStream (void) {
+	close();
+	delete _rtAudio; //If a previous instance was allocated, delete it.
+}
+
+/*! Opens the sound stream with the specified configuration. If there was an error during configuration,
+messages will be logged.
+\return True if configuration appeared to be successful, false otherwise. */
 bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 	if (_rtAudio != NULL) {
 		close();
@@ -13,6 +28,7 @@ bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 		_rtAudio = new RtAudio( config.api );
 	} catch (RtError err) {
 		Log.error("CX_SoundStream") << err.getMessage();
+		_rtAudio = NULL;
 		return false;
 	}
 
@@ -92,25 +108,24 @@ bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 
 }
 
-
-CX_SoundStream::CX_SoundStream (void) :
-	_rtAudio(NULL),
-	_lastSwapTime(0),
-	_lastSampleNumber(0),
-	_sampleNumberAtLastCheck(0)
-{
-}
-
-CX_SoundStream::~CX_SoundStream (void) {
-	close();
-}
-
+/*! Starts the sound stream. The stream must already be open().
+\return False if the stream was not started, true if the stream was started or if it was already running. */
 bool CX_SoundStream::start (void) {
+
 	if(_rtAudio == NULL) {
+		Log.error("CX_SoundStream") << "start: Stream not started because instance pointer was NULL. Have you remembered to call open()?";
 		return false;
 	}
 
-	_lastSampleNumber = 0;
+	if (!_rtAudio->isStreamOpen()) {
+		Log.error("CX_SoundStream") << "start: Stream not started because the stream was not open. Have you remembered to call open()?";
+		return false;
+	}
+
+	if (_rtAudio->isStreamRunning()) {
+		Log.warning("CX_SoundStream") << "start: Stream was already running.";
+		return true;
+	}
 
 	try {
 		_rtAudio->startStream();
@@ -118,6 +133,11 @@ bool CX_SoundStream::start (void) {
 		Log.error("CX_SoundStream") << err.getMessage();
 		return false;
 	}
+
+	_lastSampleNumber = 0;
+	_lastSwapTime = Clock.getTime();
+	_sampleNumberAtLastCheck = 0;
+
 	return true;
 }
 
@@ -160,6 +180,15 @@ bool CX_SoundStream::close (void) {
 	return rval;
 }
 
+CX_Micros CX_SoundStream::getStreamLatency (void) {
+	long latencySamples = _rtAudio->getStreamLatency();
+	CX_Micros latency = (CX_Micros)(((CX_Micros)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
+	return latency;
+}
+
+/*! This function checks to see if the audio buffers have been swapped since the last time
+this function was called.
+\return True if at least one audio buffer has been swapped out, false if no buffers have been swapped. */
 bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 	if (_sampleNumberAtLastCheck != _lastSampleNumber) {
 		_sampleNumberAtLastCheck = _lastSampleNumber;
@@ -168,78 +197,20 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 	return false;
 }
 
-CX_Micros CX_SoundStream::getStreamLatency (void) {
-	long latencySamples = _rtAudio->getStreamLatency();
-	CX_Micros latencyUs = (CX_Micros)(((CX_Micros)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
-	return latencyUs;
-}
-
-
+/*! Estimate the time at which the next buffer swap will occur.
+\return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.getTime(). */
 CX_Micros CX_SoundStream::estimateNextSwapTime (void) {
 	CX_Micros bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
 	return _lastSwapTime + bufferSwapInterval;
 }
 
-int CX_SoundStream::rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
-
-	_lastSwapTime = CX::Instances::Clock.getTime();
-
-	if (status != 0) {
-		Log.error("CX_SoundStream") << "Buffer underflow/overflow detected.";
-	}
-
-	//I don't think that I really need to check for this error. I will check for a while and if it never happens, I might remove the check.
-	if (_config.bufferSize != bufferSize) {
-		Log.error("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is essentially broken.";	
-	}
-
-	if (_config.inputChannels > 0) {
-		CX_SSInputCallback_t callbackData;
-		callbackData.inputBuffer = (float*)inputBuffer;
-		callbackData.bufferSize = bufferSize;
-
-		//Does this data need to be passed on to the listener?
-		if (status & RTAUDIO_INPUT_OVERFLOW) {
-			callbackData.bufferOverflow = true;
-		}
-
-		ofNotifyEvent( this->inputCallbackEvent, callbackData );
-	}
-
-	if (_config.outputChannels > 0) {
-
-		//Set the output to 0 so that if the event listener does nothing, this passes silence. This is really wasteful.
-		memset(outputBuffer, 0, bufferSize * _config.outputChannels * sizeof(float));
-
-		CX_SSOutputCallback_t callbackData;
-		callbackData.outputBuffer = (float*)outputBuffer;
-		callbackData.bufferSize = bufferSize;
-
-		//Does this data need to be passed on to the listener?
-		if (status & RTAUDIO_OUTPUT_UNDERFLOW) {
-			callbackData.bufferUnderflow = true;
-		}
-
-		ofNotifyEvent(this->outputCallbackEvent, callbackData);
-	}
-
-	_lastSampleNumber += bufferSize;
-
-	return 0; //Return 0 to keep the stream going.
-}
-
-int CX_SoundStream::_rtAudioCallback (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data) {
-	return ((CX_SoundStream*)data)->rtAudioCallbackHandler(outputBuffer, inputBuffer, bufferSize, streamTime, status);
-}
-
-
-vector<RtAudio::Api> CX_SoundStream::getCompiledApis (void) {
+std::vector<RtAudio::Api> CX_SoundStream::getCompiledApis (void) {
 	vector<RtAudio::Api> rval;
 	RtAudio::getCompiledApi( rval );
 	return rval;
 }
 
-vector<string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) {
+std::vector<std::string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) {
 	//vector<RtAudio::Api> apis;
 	//RtAudio::getCompiledApi( apis );
 
@@ -252,7 +223,7 @@ vector<string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) 
 	return rval;
 }
 
-string CX_SoundStream::convertApiToString (RtAudio::Api api) {
+std::string CX_SoundStream::convertApiToString (RtAudio::Api api) {
 	switch (api) {
 	case RtAudio::Api::UNSPECIFIED:
 		return "UNSPECIFIED";
@@ -276,7 +247,7 @@ string CX_SoundStream::convertApiToString (RtAudio::Api api) {
 	return "NULL";
 }
 
-string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis) {
+std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis) {
 	vector<string> sApis = convertApisToStrings(apis);
 	string rval = "Available APIs:";
 	for (string s : sApis) {
@@ -286,7 +257,7 @@ string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis) {
 	return rval;
 }
 
-vector<string> CX_SoundStream::supportedFormatsToString (RtAudioFormat formats) {
+std::vector<std::string> CX_SoundStream::supportedFormatsToString (RtAudioFormat formats) {
 	vector<string> rval;
 
 	for (int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
@@ -309,7 +280,7 @@ vector<string> CX_SoundStream::supportedFormatsToString (RtAudioFormat formats) 
 	return rval;
 }
 
-vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
+std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
 	RtAudio *tempRt;
 	vector<RtAudio::DeviceInfo> devices;
 
@@ -334,7 +305,7 @@ vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
 }
 
 
-string CX_SoundStream::listDevices (RtAudio::Api api) {
+std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 	vector<RtAudio::DeviceInfo> devices = getDeviceList(api);
 
 	stringstream rval;
@@ -375,4 +346,56 @@ string CX_SoundStream::listDevices (RtAudio::Api api) {
 
 	}
 	return rval.str();
+}
+
+int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
+
+	_lastSwapTime = CX::Instances::Clock.getTime();
+
+	if (status != 0) {
+		Log.error("CX_SoundStream") << "Buffer underflow/overflow detected.";
+	}
+
+	//I don't think that I really need to check for this error. I will check for a while and if it never happens, I might remove the check.
+	if (_config.bufferSize != bufferSize) {
+		Log.error("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is broken.";	
+	}
+
+	if (_config.inputChannels > 0) {
+		CX_SSInputCallback_t callbackData;
+		callbackData.inputBuffer = (float*)inputBuffer;
+		callbackData.bufferSize = bufferSize;
+
+		//Does this data need to be passed on to the listener?
+		if (status & RTAUDIO_INPUT_OVERFLOW) {
+			callbackData.bufferOverflow = true;
+		}
+
+		ofNotifyEvent( this->inputCallbackEvent, callbackData );
+	}
+
+	if (_config.outputChannels > 0) {
+
+		//Set the output to 0 so that if the event listener does nothing, this passes silence. This is really wasteful.
+		memset(outputBuffer, 0, bufferSize * _config.outputChannels * sizeof(float));
+
+		CX_SSOutputCallback_t callbackData;
+		callbackData.outputBuffer = (float*)outputBuffer;
+		callbackData.bufferSize = bufferSize;
+
+		//Does this data need to be passed on to the listener?
+		if (status & RTAUDIO_OUTPUT_UNDERFLOW) {
+			callbackData.bufferUnderflow = true;
+		}
+
+		ofNotifyEvent(this->outputCallbackEvent, callbackData);
+	}
+
+	_lastSampleNumber += bufferSize;
+
+	return 0; //Return 0 to keep the stream going.
+}
+
+int CX_SoundStream::_rtAudioCallback (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data) {
+	return ((CX_SoundStream*)data)->_rtAudioCallbackHandler(outputBuffer, inputBuffer, bufferSize, streamTime, status);
 }

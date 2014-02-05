@@ -18,11 +18,16 @@ namespace CX {
 		RIGHT_MOUSE = OF_MOUSE_BUTTON_RIGHT
 	};
 
+	/*! This struct contains the results of a mouse event, which is any type of interaction with the mouse, be it
+	simply movement, a button press or release, a drag event (mouse button held while mouse is moved), or movement 
+	of the scroll wheel. 
+	\ingroup input */
 	struct CX_MouseEvent_t {
-		int button; //Can be compared with elements of enum CX_MouseButtons to find out about the primary buttons.
+		int button; /*!< \brief The relevant mouse button if the eventType is PRESSED, RELEASED, or DRAGGED. 
+						Can be compared with elements of enum CX_MouseButtons to find out about the primary buttons. */
 
-		int x;
-		int y;
+		int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the eventType is SCROLLED.
+		int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the eventType is SCROLLED.
 
 		//ofPoint cursor;
 
@@ -31,22 +36,28 @@ namespace CX {
 		//	double y;
 		//} scroll;
 
-		CX_Micros eventTime;
-		CX_Micros uncertainty;
+		CX_Micros eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+		CX_Micros uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
-		enum {
-			MOVED,
-			PRESSED,
-			RELEASED,
-			DRAGGED, //I'm not sure if this is something that this library should implement for itself or just use OF's version.
-			SCROLLED
-		} eventType;
+		enum MouseEventType {
+			MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
+			PRESSED, //!< A mouse button has been pressed. Check \ref button for the button index and \ref x and \ref y for the location.
+			RELEASED, //!< A mouse button has been released. Check \ref button for the button index and \ref x and \ref y for the location.
+			DRAGGED, //!< The mouse has been moved while at least one button was held. \ref button may not be meaningful because the held button 
+					 //!< can be changed during a drag, or multiple buttons may be held at once during a drag.
+			SCROLLED //!< The mouse wheel has been scrolled. Check \ref y to get the change in the standard mouse wheel, or \ref x if your 
+					 //!< mouse has a wheel that can move horizontally.
+		} eventType; //!< The type of the event.
+
 	};
 
 	std::ostream& operator<< (std::ostream& os, const CX_MouseEvent_t& ev);
 	std::istream& operator>> (std::istream& is, CX_MouseEvent_t& ev);
 
-
+	/*! This class is responsible for managing the mouse. 
+	
+	\ingroup input
+	*/
 	class CX_Mouse {
 	public:
 		CX_Mouse (void);

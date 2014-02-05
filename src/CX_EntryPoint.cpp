@@ -2,10 +2,19 @@
 
 #include "ofAppGLFWWindow.h"
 
-//using namespace CX;
-
+/*! An instance of CX::CX_Display that is hooked into the CX backend.
+\ingroup entryPoint */
 CX::CX_Display CX::Instances::Display;
-CX::CX_InputManager CX::Instances::Input;
+
+/*! An instance of CX_InputManager that is hooked into the CX backend. 
+CX::CX_InputManager::pollEvents() is automatically called for this instance just before updateExperiment() is called.
+\ingroup entryPoint */
+CX::CX_InputManager CX::Instances::Input; 
+
+/*! An instance of CX::CX_SlidePresenter that is hooked into the CX backend. 
+During setup, it is configured to use CX::Instances::Display as its display.
+CX::CX_SlidePresenter::update() is called for this instance just before updateExperiment() is called.
+\ingroup entryPoint */
 CX::CX_SlidePresenter CX::Instances::SlidePresenter;
 
 namespace CX {

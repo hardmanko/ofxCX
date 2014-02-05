@@ -18,8 +18,8 @@ namespace CX {
 
 		CX_RandomNumberGenerator (void);
 
-		void setSeed (uint64_t seed);
-		uint64_t getSeed (void) { return _seed; };
+		void setSeed (unsigned long seed);
+		unsigned long getSeed (void);
 	
 		CX_RandomInt_t getMinimumRandomInt(void);
 		CX_RandomInt_t getMaximumRandomInt(void);
@@ -42,7 +42,7 @@ namespace CX {
 		vector<int> sample (unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
 	private:
-		uint64_t _seed;
+		unsigned long _seed;
 
 		std::mt19937_64 _mersenneTwister;
 	};
@@ -105,8 +105,7 @@ namespace CX {
 
 	/*! Returns a single value sampled randomly from values.
 	\return The sampled value.
-	\note If values.size() == 0, an error will be logged and T() will be returned.
-	*/
+	\note If values.size() == 0, an error will be logged and T() will be returned. */
 	template <typename T> T CX_RandomNumberGenerator::sample (vector<T> values) {
 		if (values.size() == 0) {
 			Instances::Log.error("CX_RandomNumberGenerator") << "sample: Empty vector given to sample from.";
@@ -115,11 +114,21 @@ namespace CX {
 		return values[ randomInt(0, values.size() - 1) ];
 	}
 
+	/*! Get a random value from a vector, without the possibility of getting the excluded value.
+	\param values The vectors of values to sample from.
+	\param exclude The value to exclude from sampling. 
+	\return The sampled value. 
+	\note If all of the values are excluded, an error will be logged and T() will be returned. */
 	template <typename T> T CX_RandomNumberGenerator::randomExclusive (const vector<T> &values, const T &exclude) {
 		std::vector<T> excludes(1, exclude);
 		return randomExclusive(values, excludes);
 	}
 
+	/*! Get a random value from a vector without the possibility of getting any of the excluded values.
+	\param values The vector of values to sample from.
+	\param exclude The vector of values to exclude from sampling.
+	\return The sampled value.
+	\note If all of the values are excluded, an error will be logged and T() will be returned. */
 	template <typename T> T CX_RandomNumberGenerator::randomExclusive (const vector<T> &values, const vector<T> &exclude) {
 		std::set<T> s(exclude.begin(), exclude.end());
 

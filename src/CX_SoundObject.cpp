@@ -228,15 +228,16 @@ void CX_SoundObject::setLength (CX_Micros length) {
 	_soundData.resize( endOfDurationSample, 0 );
 }
 
-/*!
-Gets the length of the current sound in microseconds.
-*/
+/*! Gets the length, in time, of the sound object.
+\return The length. */
 CX_Micros CX_SoundObject::getLength (void) {
 	return ((uint64_t)_soundData.size() * 1000000)/(getChannelCount() * (uint64_t)getSampleRate());
 }
 
 
-
+/*! Finds the maximum amplitude in the sound object.
+\return The maximum amplitude.
+\note Amplitudes are between -1 and 1, inclusive. */
 float CX_SoundObject::getPositivePeak (void) {
 	float peak = numeric_limits<float>::min();
 	for (unsigned int i = 0; i < _soundData.size(); i++) {
@@ -247,6 +248,9 @@ float CX_SoundObject::getPositivePeak (void) {
 	return peak;
 }
 
+/*! Finds the minimum amplitude in the sound object.
+\return The minimum amplitude.
+\note Amplitudes are between -1 and 1, inclusive. */
 float CX_SoundObject::getNegativePeak (void) {
 	float peak = numeric_limits<float>::max();
 	for (unsigned int i = 0; i < _soundData.size(); i++) {
@@ -264,24 +268,22 @@ Therefore, a tolerance of 0 is unlikely to prove useful. Using getPositivePeak()
 help to give a reference amplitude of which some small fraction is perceived as "silent".
 
 \param tolerance All sound data up to and including the first instance of a sample with an amplitude
-with an absolute value greater than tolerance is removed from the sound.
+with an absolute value greater than or equal to tolerance is removed from the sound.
 */
 void CX_SoundObject::stripLeadingSilence (float tolerance) {
 	for (unsigned int concurrentSample = 0; concurrentSample < _soundData.size()/_soundChannels; concurrentSample++) {
 		for (int channel = 0; channel < _soundChannels; channel++) {
 			unsigned int index = (concurrentSample * _soundChannels) + channel;
 
-			if (abs(_soundData.at(index)) > tolerance) {
+			if (abs(_soundData.at(index)) >= tolerance) {
 				_soundData.erase(_soundData.begin(), _soundData.begin() + (concurrentSample * _soundChannels));
-				break;
+				return;
 			}
-
 		}
 	}
 }
 
-/*!
-Adds the specified amount of silence to the CX_SoundObject at either the beginning or end.
+/*! Adds the specified amount of silence to the CX_SoundObject at either the beginning or end.
 
 \param duration Duration of added silence in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
 so does the duration of silence.
@@ -298,12 +300,10 @@ void CX_SoundObject::addSilence (CX_Micros duration, bool atBeginning) {
 	}
 }
 
-/*!
-Deletes the specified amount of sound from the CX_SoundObject from either the beginning or end.
+/*! Deletes the specified amount of sound from the CX_SoundObject from either the beginning or end.
 
-\param duration Duration of removed sound in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
-so does the duration of removed sound.
-\param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer. 
+\param duration Duration of removed sound in microseconds.
+\param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer.
 If false, the sound is deleted from the end, toward the beginning.
 */
 void CX_SoundObject::deleteAmount (CX_Micros duration, bool fromBeginning) {

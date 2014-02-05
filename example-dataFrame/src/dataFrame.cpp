@@ -198,4 +198,5 @@ void setupExperiment (void) {
 
 void updateExperiment (void) {
 	//Do nothing
+	cout << Input.Mouse.getCursorPosition() << endl;
 }

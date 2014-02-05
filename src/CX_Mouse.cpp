@@ -1,7 +1,5 @@
 #include "CX_Mouse.h"
 
-
-
 #include "ofAppRunner.h" //ofShowCursor()/ofHideCursor()
 #include "GLFW\glfw3.h"
 
@@ -16,22 +14,52 @@ CX_Mouse::~CX_Mouse (void) {
 	_listenForEvents(false);
 }
 
-
+/*! Get the number of new events available for this input device. */
 int CX_Mouse::availableEvents (void) {
 	return _mouseEvents.size();
 }
 
+/*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
+from the input device. */
 CX_MouseEvent_t CX_Mouse::getNextEvent (void) {
 	CX_MouseEvent_t front = _mouseEvents.front();
 	_mouseEvents.pop();
 	return front;
 }
 
+/*! Clear (delete) all events from this input device. */
 void CX_Mouse::clearEvents (void) {
 	while (!_mouseEvents.empty()) {
 		_mouseEvents.pop();
 	}
 }
+
+/*! 
+Sets the position of the cursor, relative to the program the window. The window must be focused.
+\param pos The location within the window to set the cursor.
+*/
+void CX_Mouse::setCursorPosition(ofPoint pos) {
+	glfwSetCursorPos(CX::Private::glfwContext, pos.x, pos.y);
+}
+
+/*! Get the cursor position within the program window. If the mouse has left the window, 
+this will return the last known position of the cursor within the window.
+\return An ofPoint with the last cursor position. */
+ofPoint CX_Mouse::getCursorPosition(void) {
+	return ofPoint(ofGetMouseX(), ofGetMouseY());
+}
+
+/*! Show or hide the mouse cursor within the program window. If in windowed mode, the cursor will be visible outside of the window.
+\param show If true, the cursor will be shown, if false it will not be shown. */
+void CX_Mouse::showCursor (bool show) {
+	if (show) {
+		ofShowCursor();
+	} else {
+		ofHideCursor();
+	}
+}
+
+
 
 void CX_Mouse::_mouseButtonPressedEventHandler (ofMouseEventArgs &a) {
 	a.type = ofMouseEventArgs::Pressed; //To be clear, the only reason for this function and for mouseReleasedEventHandler are that OF does not
@@ -66,17 +94,6 @@ void CX_Mouse::_mouseWheelScrollHandler(CX_MouseScrollEventArgs_t &a) {
 	ev.y = (int)a.y;
 
 	_mouseEvents.push(ev);
-}
-
-
-
-void CX_Mouse::setCursorPosition(ofPoint pos) {
-	glfwSetCursorPos(CX::Private::glfwContext, pos.x, pos.y);
-}
-
-
-ofPoint CX_Mouse::getCursorPosition(void) {
-	return ofPoint(ofGetMouseX(), ofGetMouseY());
 }
 
 void CX_Mouse::_mouseEventHandler (ofMouseEventArgs &a) {
@@ -139,15 +156,6 @@ void CX_Mouse::_listenForEvents (bool listen) {
 	}
 	_listeningForEvents = listen;
 }
-
-void CX_Mouse::showCursor (bool show) {
-	if (show) {
-		ofShowCursor();
-	} else {
-		ofHideCursor();
-	}
-}
-
 
 std::ostream& CX::operator<< (std::ostream& os, const CX_MouseEvent_t& ev) {
 	string dlm = ", ";

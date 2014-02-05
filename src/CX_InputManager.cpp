@@ -15,7 +15,11 @@ CX_InputManager::CX_InputManager (void) :
 Setup the input manager to use the requested devices. You may call this function multiple times if you want to
 change the configuration over the course of the experiment. Every time this function is called, all input device
 events are cleared.
-\return False if the requested joystick could not be set up correctly.
+\param useKeyboard Enable or disable the keyboard.
+\param useMouse Enable or disable the mouse.
+\param joystickIndex Optional. If >= 0, an attempt will be made to set up the joystick at that index. If < 0, no attempt will 
+be made to set up the joystick.
+\return False if the requested joystick could not be set up correctly, true otherwise.
 */
 bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex) {
 	Keyboard.clearEvents();
@@ -27,7 +31,7 @@ bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex)
 	Mouse._listenForEvents(useMouse);
 
 	bool success = true;
-	if (joystickIndex != -1) {
+	if (joystickIndex >= 0) {
 		Joystick.clearEvents();
 		success = success && Joystick.setup(joystickIndex);
 		if (success) {

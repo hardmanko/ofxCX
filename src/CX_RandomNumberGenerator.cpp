@@ -6,27 +6,41 @@ using namespace CX;
 
 CX_RandomNumberGenerator Instances::RNG;
 
-CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
+/*! Constructs an instance of a CX_RandomNumberGenerator. Seeds the CX_RandomNumberGenerator
+using a std::random_device. 
 
-	std::random_device rd; //By the C++11 specification, std::random_device is supposed to be a non-deterministic 
-	//(e.g. hardware) RNG. However, from http://en.cppreference.com/w/cpp/numeric/random/random_device:
-	//"Note that std::random_device may be implemented in terms of a pseudo-random number engine if a 
-	//non-deterministic source (e.g. a hardware device) is not available to the implementation."
-	//According to a Stack Overflow comment, Microsoft's implementation of std::random_device is based
-	//on a ton of stuff, which should result in a fairly random result to be used as a seed for our
-	//Mersenne Twister. See the comment: http://stackoverflow.com/questions/9549357/the-implementation-of-random-device-in-vs2010/9575747#9575747
-	//However complicated this data, it is not a hardware RNG. The random_device is only used 
-	//to seed the Mersenne Twister, so as long as the initial value is random enough, it should be fine.
+By the C++11 specification, std::random_device is supposed to be a non-deterministic 
+(hardware) RNG. However, from http://en.cppreference.com/w/cpp/numeric/random/random_device:
+"Note that std::random_device may be implemented in terms of a pseudo-random number engine if a 
+non-deterministic source (e.g. a hardware device) is not available to the implementation."
+According to a Stack Overflow comment, Microsoft's implementation of std::random_device is based
+on a ton of stuff, which should result in a fairly random result to be used as a seed for our
+Mersenne Twister. See the comment: http://stackoverflow.com/questions/9549357/the-implementation-of-random-device-in-vs2010/9575747#9575747
+However complicated this data, it is not a hardware RNG. The random_device is only used 
+to seed the Mersenne Twister, so as long as the initial value is random enough, it should be fine.
+*/
+CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
+	std::random_device rd;
 	
 	setSeed( rd() ); //Store the seed for reference and seed the Mersenne Twister.
 }
 
-void CX_RandomNumberGenerator::setSeed (uint64_t seed) {
+/*! Set the seed for the random number generator. You can retrieve the seed with getSeed().
+\param seed The new seed. */
+void CX_RandomNumberGenerator::setSeed (unsigned long seed) {
 	_seed = seed; //Store the seed for reference.
 
-	_mersenneTwister.seed( (unsigned long)_seed );
+	_mersenneTwister.seed( _seed );
 }
 
+/*! Get the seed used to seed the random number generator. 
+\return The seed. May have been set by the user with setSeed() or during construction of the CX_RandomNumberGenerator. */
+unsigned long CX_RandomNumberGenerator::getSeed (void) { 
+	return _seed; 
+}
+
+/*! Get a random integer in the range getMinimumRandomInt(), getMaximumRandomInt(), inclusive.
+\return The int. */
 CX_RandomInt_t CX_RandomNumberGenerator::randomInt(void) {
 	return std::uniform_int_distribution<CX_RandomInt_t>(std::numeric_limits<CX_RandomInt_t>::min(), std::numeric_limits<CX_RandomInt_t>::max())(_mersenneTwister);
 }
@@ -45,10 +59,14 @@ CX_RandomInt_t CX_RandomNumberGenerator::randomInt(CX_RandomInt_t min, CX_Random
 	return std::uniform_int_distribution<CX_RandomInt_t>(min, max)(_mersenneTwister);
 }
 
+/*! Get the minimum value that can be returned by randomInt(). 
+\return The minimum value. */
 CX_RandomInt_t CX_RandomNumberGenerator::getMinimumRandomInt (void) {
 	return std::numeric_limits<CX_RandomInt_t>::min();
 }
 
+/*! Get the maximum possible value that can be returned by randomInt().
+\return The maximum value. */
 CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
 	return std::numeric_limits<CX_RandomInt_t>::max();
 }
@@ -58,11 +76,14 @@ CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
 //	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
 //}
 
-/*!
-Returns a vector of count integers from the range [lowerBound, upperBound] with or without replacement.
-*/
+/*! Returns a vector of count integers drawn randomly from the range [lowerBound, upperBound] with or without replacement.
+\param count The number of samples to draw.
+\param lowerBound The lower bound of the range to sample from. It is possible to sample this value.
+\param upperBound The upper bound of the range to sample from. It is possible to sample this value.
+\param withReplacement Sample with or without replacement.
+\return A vector of the samples. */
 vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
-	return sample(count, CX::intVector(lowerBound, upperBound), withReplacement);
+	return sample(count, CX::intVector<int>(lowerBound, upperBound), withReplacement);
 }
 
 /*! Samples count deviates from a uniform distribution with the given lower bound and upper bound.

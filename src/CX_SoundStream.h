@@ -1,6 +1,12 @@
 #ifndef _CX_SOUNDSTREAM_H_
 #define _CX_SOUNDSTREAM_H_
 
+/*! \class CX::CX_SoundStream
+CX_SoundStream uses RtAudio internally, so you are having problems, you might be able to figure out what is
+going wrong by checking out the page for it: http://www.music.mcgill.ca/~gary/rtaudio/index.html
+\ingroup sound
+*/
+
 #include "RtAudio.h"
 
 #include "ofConstants.h"
@@ -15,6 +21,8 @@
 
 namespace CX {
 
+	/*! This struct controls the configuration of the CX_SoundStream.
+	\ingroup sound*/
 	struct CX_SoundStreamConfiguration_t {
 
 		CX_SoundStreamConfiguration_t (void) :
@@ -34,16 +42,36 @@ namespace CX {
 			streamOptions.priority = 1;
 		}
 
-		int inputChannels;
-		int outputChannels;
-		int sampleRate;
-		unsigned int bufferSize; //Buffer size is per channel (i.e. if there are two channels and buffer size is set to 256, the actual buffer size will be 512 samples).
+		int inputChannels; //!< The number of input (e.g. microphone) channels to use. If 0, no input will be used.
+		int outputChannels; //!< The number of output channels to use. Currently only stereo and mono are well-supported.
+		int sampleRate; /*!< The requested sample rate for the input and output channels. If, for the selected device(s), this sample
+						cannot be used, the nearest greater sample rate will be chosen. If there is no greater sample rate, the next
+						lower sample rate will be used. */
 
+		/*! The size of the audio data buffer to use. A larger buffer size means more latency but also a greater potential for audio glitches
+		(clicks and pops). Buffer size is per channel (i.e. if there are two channels and buffer size is set to 256, the actual buffer size 
+		will be 512 samples). Defaults to 4096 samples. */
+		unsigned int bufferSize;
+
+		/*! This argument depends on your operating system. Using RtAudio::Api::UNSPECIFIED will attempt to pick a working
+		API from those that are available on your system. The API means the type of software interface to use. For example,
+		on Windows, you can choose from Windows Direct Sound (DS) and ASIO. ASIO is commonly used with audio recording equipment 
+		because	it has lower latency whereas DS is more of a consumer-grade interface. The choice of API does not affect
+		how you use this class, but it may affect the performance of sound playback.
+		
+		See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849 for a listing of
+		the APIs. See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#afd0bfa26deae9804e18faff59d0273d9 for the 
+		ordering of the APIs. */
 		RtAudio::Api api;
+
+		/*! See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1StreamOptions.html for more information.
+
+		flags must not include RTAUDIO_NONINTERLEAVED: The audio data used by CX is interleaved.
+		*/
 		RtAudio::StreamOptions streamOptions;
 
-		int inputDeviceId;
-		int outputDeviceId;
+		int inputDeviceId; //!< The ID of the desired input device. A value of -1 will cause the system default input device to be used.
+		int outputDeviceId; //!< The ID of the desired output device. A value of -1 will cause the system default output device to be used.
 
 	};
 
@@ -86,7 +114,7 @@ namespace CX {
 		uint64_t getLastSampleNumber (void) { return _lastSampleNumber; };
 		void setLastSampleNumber (uint64_t sampleNumber) { _lastSampleNumber = sampleNumber; };
 
-		int rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status);
+		
 		ofEvent<CX_SSOutputCallback_t> outputCallbackEvent;
 		ofEvent<CX_SSInputCallback_t> inputCallbackEvent;
 
@@ -96,19 +124,21 @@ namespace CX {
 		CX_Micros getLastSwapTime (void) { return _lastSwapTime; };
 		CX_Micros estimateNextSwapTime (void);
 
-		static vector<RtAudio::Api> getCompiledApis (void);
-		static vector<string> convertApisToStrings (vector<RtAudio::Api> apis);
-		static string convertApisToString (vector<RtAudio::Api> apis);
-		static string convertApiToString (RtAudio::Api api);
+		static std::vector<RtAudio::Api> getCompiledApis (void);
+		static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);
+		static std::string convertApisToString (vector<RtAudio::Api> apis);
+		static std::string convertApiToString (RtAudio::Api api);
 
-		static vector<string> supportedFormatsToString (RtAudioFormat formats);
+		static std::vector<std::string> supportedFormatsToString (RtAudioFormat formats);
 
-		static vector<RtAudio::DeviceInfo> getDeviceList (RtAudio::Api api);
-		static string listDevices (RtAudio::Api api);
+		static std::vector<RtAudio::DeviceInfo> getDeviceList (RtAudio::Api api);
+		static std::string listDevices (RtAudio::Api api);
 
 	private:
 
 		static int _rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data);
+
+		int _rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status);
 
 		RtAudio *_rtAudio;
 		CX_SoundStreamConfiguration_t _config;
