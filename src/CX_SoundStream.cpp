@@ -12,16 +12,18 @@ CX_SoundStream::CX_SoundStream (void) :
 
 CX_SoundStream::~CX_SoundStream (void) {
 	close();
-	delete _rtAudio; //If a previous instance was allocated, delete it.
 }
 
 /*! Opens the sound stream with the specified configuration. If there was an error during configuration,
 messages will be logged.
-\return True if configuration appeared to be successful, false otherwise. */
+\param config The configuration settings that are desired. Some of the configuration options are only suggestions,
+so some of the values that are used may differ from the values that are chosen. In those cases, config is updated
+based on the actually used settings. You can check the configuration later using getConfiguration().
+\return True if configuration appeared to be successful, false otherwise. 
+\note Opening the stream does not start it. See \ref start(). */
 bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
 	if (_rtAudio != NULL) {
 		close();
-		//delete _rtAudio; //If a previous instance was allocated, delete it. Done in close.
 	}
 
 	try {
@@ -123,7 +125,7 @@ bool CX_SoundStream::start (void) {
 	}
 
 	if (_rtAudio->isStreamRunning()) {
-		Log.warning("CX_SoundStream") << "start: Stream was already running.";
+		Log.notice("CX_SoundStream") << "start: Stream was already running.";
 		return true;
 	}
 
@@ -141,15 +143,19 @@ bool CX_SoundStream::start (void) {
 	return true;
 }
 
-
+/*! Stop the stream, if is running. If there is an error, a message will be logged.
+\return False if there was an error, true otherwise. */
 bool CX_SoundStream::stop (void) {
 	if(_rtAudio == NULL) {
+		Log.error("CX_SoundStream") << "stop: Stream not stopped because instance pointer was NULL. Have you remembered to call open()?";
 		return false;
 	}
 	
 	try {
 		if (_rtAudio->isStreamRunning()) {
     		_rtAudio->stopStream();
+		} else {
+			Log.notice("CX_SoundStream") << "stop: Stream was already stopped.";
 		}
   	} catch (RtError &err) {
    		Log.error("CX_SoundStream") << err.getMessage();
@@ -158,7 +164,8 @@ bool CX_SoundStream::stop (void) {
 	return true;
 }
 
-
+/*! Closes the sound stream.
+\return False if an error was encountered while closing the stream, true otherwise. */
 bool CX_SoundStream::close (void) {
 	if(_rtAudio == NULL) {
 		return false;
@@ -169,6 +176,8 @@ bool CX_SoundStream::close (void) {
 	try {
 		if(_rtAudio->isStreamOpen()) {
     		_rtAudio->closeStream();
+		} else {
+			Log.notice("CX_SoundStream") << "close: Stream was already closed.";
 		}
   	} catch (RtError &err) {
    		Log.error("CX_SoundStream") << err.getMessage();
@@ -204,12 +213,19 @@ CX_Micros CX_SoundStream::estimateNextSwapTime (void) {
 	return _lastSwapTime + bufferSwapInterval;
 }
 
+/*! Get a vector containing a list of all of the APIs for which the RtAudio driver
+has been compiled to use. If the API you want is not available, you might be able
+to get it by using a different version of RtAudio. */
 std::vector<RtAudio::Api> CX_SoundStream::getCompiledApis (void) {
 	vector<RtAudio::Api> rval;
 	RtAudio::getCompiledApi( rval );
 	return rval;
 }
 
+/*! This helper function converts a vector of RtAudio::Api to a vector of strings, using 
+convertApiToString() for the conversion.
+\param apis A vector of apis to convert to strings.
+\return A vector of string names of the apis. */
 std::vector<std::string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) {
 	//vector<RtAudio::Api> apis;
 	//RtAudio::getCompiledApi( apis );
@@ -223,6 +239,9 @@ std::vector<std::string> CX_SoundStream::convertApisToStrings (vector<RtAudio::A
 	return rval;
 }
 
+/*! This helper function converts an RtAudio::Api to a string.
+\param api The api to get a string of.
+\return A string of the api name. */
 std::string CX_SoundStream::convertApiToString (RtAudio::Api api) {
 	switch (api) {
 	case RtAudio::Api::UNSPECIFIED:
@@ -247,17 +266,27 @@ std::string CX_SoundStream::convertApiToString (RtAudio::Api api) {
 	return "NULL";
 }
 
-std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis) {
+/*! This helper function converts a vector of RtAudio::Api to a string, with
+the specified delimiter between API names.
+\param apis The vector of RtAudio::Api to convert to string.
+\param delim The delimiter between elements of the string.
+\return A string containing the names of the APIs.
+*/
+std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std::string delim) {
 	vector<string> sApis = convertApisToStrings(apis);
-	string rval = "Available APIs:";
-	for (string s : sApis) {
-		rval.append( "\r\n" );
-		rval.append( s );
+	string rval;
+
+	for (int i = 0; i < sApis.size(); i++) {
+		rval.append( sApis[i] );
+		if (i < sApis.size() - 1) {
+			rval.append( delim );
+		}
 	}
+
 	return rval;
 }
 
-std::vector<std::string> CX_SoundStream::supportedFormatsToString (RtAudioFormat formats) {
+std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats) {
 	vector<string> rval;
 
 	for (int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
@@ -280,6 +309,23 @@ std::vector<std::string> CX_SoundStream::supportedFormatsToString (RtAudioFormat
 	return rval;
 }
 
+std::string CX_SoundStream::formatsToString (RtAudioFormat formats, std::string delim) {
+	vector<string> sFormats = formatsToStrings(formats);
+	string rval;
+	for (int i = 0; i < sFormats.size(); i++) {
+		rval.append( sFormats[i] );
+		if (i < sFormats.size() - 1) {
+			rval.append( delim );
+		}
+	}
+
+}
+
+/*! For the given api, lists all of the devices on the system that support that api.
+\param api Devices that support this API are scanned.
+\return A machine-readable list of information. See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1DeviceInfo.html
+for information about the members of the RtAudio::DeviceInfo struct.
+*/
 std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
 	RtAudio *tempRt;
 	vector<RtAudio::DeviceInfo> devices;
@@ -304,7 +350,12 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api
 	return devices;
 }
 
-
+/*! For the given api, lists all of the devices on the system that support that api.
+Lots of information about each device is given, like supported sample rates, number of
+input and output channels, etc.
+\param api Devices that support this API are scanned.
+\return A human-readable formatted string containing the scanned information. Can be printed directly to std::cout or elsewhere.
+*/
 std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 	vector<RtAudio::DeviceInfo> devices = getDeviceList(api);
 
@@ -334,11 +385,8 @@ std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 			rval << "Input/output/duplex channels: " << dev.inputChannels << "/" << 
 				dev.outputChannels << "/" << dev.duplexChannels << endl;
 
-			vector<string> formats = supportedFormatsToString(dev.nativeFormats);
-			rval << "Supported formats: ";
-			for (int i = 0; i < formats.size(); i++) {
-				rval << formats.at(i) << "  ";
-			}
+			rval << "Supported formats: " << formatsToString(dev.nativeFormats, ", ");
+
 			rval << endl;
 			rval << "---------------------------------------" << endl;
 

@@ -9,6 +9,7 @@
 #include "CX_Utilities.h"
 #include "CX_Logger.h"
 
+/*! \defgroup timing Timing */
 
 namespace CX {
 
@@ -30,7 +31,11 @@ namespace CX {
 		double millis;
 	};
 	
-
+	/*! This class is responsible for getting timestamps for anything requiring timestamps. The way to
+	get timing information is the function getTime(). It returns the current time relative to the start
+	of the experiment in microseconds (on most systems, see getTickPeriod() to check the actual precision). 
+	\ingroup timing
+	*/
 	class CX_Clock {
 	public:
 
@@ -56,8 +61,7 @@ namespace CX {
 	};
 
 	namespace Instances {
-		extern CX_Clock Clock; //Single instance of this class. You should never need another instance. 
-			//You should never use another instance, as the experiment start times will not agree.
+		extern CX_Clock Clock;
 	}
 }
 

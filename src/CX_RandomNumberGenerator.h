@@ -2,6 +2,7 @@
 #define _CX_RANDOM_NUMBER_GENERATOR_H_
 
 #include <random>
+#include <cmath>
 #include <vector>
 #include <set>
 
@@ -9,10 +10,19 @@
 
 #include "CX_Utilities.h"
 
+/*! \defgroup random Randomization */
+
 namespace CX {
 
 	typedef int64_t CX_RandomInt_t;
 
+	/*! This class is used for generating random values from a pseudo-random number generator. If uses
+	a version of the Mersenne Twister algorithm, in particular std::mt19937_64 (see 
+	http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine for the parameters used with
+	this algorithm).
+
+	\ingroup random
+	*/
 	class CX_RandomNumberGenerator {
 	public:
 
@@ -30,7 +40,7 @@ namespace CX {
 		template <typename T> T randomExclusive (const vector<T> &values, const T& exclude);
 		template <typename T> T randomExclusive (const vector<T> &values, const vector<T> &exclude);
 
-		//double uniformDouble(double lowerBound_closed, double upperBound_open);
+		double uniformDeviate (double lowerBound_closed, double upperBound_open);
 		std::vector<double> uniformDeviates (unsigned int count, double lowerBound_closed, double upperBound_open);
 		template <typename T> std::vector<T> binomialDeviates (unsigned int count, T trials, double probSuccess);
 		std::vector<double> normalDeviates (unsigned int count, double mean, double standardDeviation);

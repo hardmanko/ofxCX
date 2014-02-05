@@ -1,7 +1,15 @@
 #ifndef _CX_DISPLAY_H_
 #define _CX_DISPLAY_H_
 
+/*! \defgroup video Video
+This module is related to creating and presenting visual stimuli. Mostly, it is responsible for controlling
+presentation timing of stimuli rather than actually creating the stimuli.
 
+Almost all of the actual drawing of stimuli is done using openFrameworks functions. A lot of the common
+functions can be found in ofGraphics.h (http://www.openframeworks.cc/documentation/graphics/ofGraphics.html),
+but there are a lot of other ways to draw stimuli: see the graphics and 3d sections if this page: 
+http://www.openframeworks.cc/documentation/.
+*/
 
 #include <deque>
 
@@ -18,6 +26,12 @@
 
 namespace CX {
 
+	/*! This class represents an abstract visual display surface, which is my way of saying that it doesn't 
+	necessarily represent a monitor. The display surface can either be a window or, if full screen, the whole 
+	monitor. It is also a bit abstract in that it does not draw anything, but only creates an context in which
+	things can be drawn.
+	\ingroup video
+	*/
 	class CX_Display {
 	public:
 

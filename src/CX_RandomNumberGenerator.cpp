@@ -4,7 +4,11 @@
 
 using namespace CX;
 
-CX_RandomNumberGenerator Instances::RNG;
+/*! An instance of CX_RandomNumberGenerator that is (lightly) hooked into the CX backend.
+\ingroup random
+\ingroup entryPoint
+*/
+CX_RandomNumberGenerator CX::Instances::RNG;
 
 /*! Constructs an instance of a CX_RandomNumberGenerator. Seeds the CX_RandomNumberGenerator
 using a std::random_device. 
@@ -71,10 +75,13 @@ CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
 	return std::numeric_limits<CX_RandomInt_t>::max();
 }
 
-//This function returns a double drawn from a uniform distribution with a range of [lowerBound_closed, upperBound_open).
-//double CX_RandomNumberGenerator::uniformDouble (double lowerBound_closed, double upperBound_open) {
-//	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
-//}
+/*! Samples a deviate from a uniform distribution with the range [lowerBound_closed, upperBound_open).
+\param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
+\param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.
+\return The deviate. */
+double CX_RandomNumberGenerator::uniformDeviate (double lowerBound_closed, double upperBound_open) {
+	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
+}
 
 /*! Returns a vector of count integers drawn randomly from the range [lowerBound, upperBound] with or without replacement.
 \param count The number of samples to draw.
@@ -86,7 +93,7 @@ vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound,
 	return sample(count, CX::intVector<int>(lowerBound, upperBound), withReplacement);
 }
 
-/*! Samples count deviates from a uniform distribution with the given lower bound and upper bound.
+/*! Samples count deviates from a uniform distribution with the range [lowerBound_closed, upperBound_open).
 \param count The number of deviates to generate.
 \param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
 \param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.

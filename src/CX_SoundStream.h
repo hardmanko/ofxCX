@@ -102,14 +102,16 @@ namespace CX {
 		CX_SoundStream (void);
 		~CX_SoundStream (void);
 
-		//Unlike the openFrameworks version, open does not start the stream automatically.
 		bool open (CX_SoundStreamConfiguration_t &config);
 		bool close (void);
 
 		bool start (void);
 		bool stop (void);
 	
-		CX_SoundStreamConfiguration_t& getConfiguration (void) { return _config; };
+		/*! Gets the configuration that was used on the last call to open(). Because some of the configuration
+		options are only suggestions, this function allows you to check what the actual configuration was.
+		\return A const reference to the configuration struct. */
+		const CX_SoundStreamConfiguration_t& getConfiguration (void) { return _config; };
 	
 		uint64_t getLastSampleNumber (void) { return _lastSampleNumber; };
 		void setLastSampleNumber (uint64_t sampleNumber) { _lastSampleNumber = sampleNumber; };
@@ -121,15 +123,17 @@ namespace CX {
 		CX_Micros getStreamLatency (void);
 
 		bool hasSwappedSinceLastCheck (void);
+		/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::Instances::Clock.getTime(). */
 		CX_Micros getLastSwapTime (void) { return _lastSwapTime; };
 		CX_Micros estimateNextSwapTime (void);
 
 		static std::vector<RtAudio::Api> getCompiledApis (void);
 		static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);
-		static std::string convertApisToString (vector<RtAudio::Api> apis);
+		static std::string convertApisToString (vector<RtAudio::Api> apis, std::string delim = "\r\n");
 		static std::string convertApiToString (RtAudio::Api api);
 
-		static std::vector<std::string> supportedFormatsToString (RtAudioFormat formats);
+		static std::vector<std::string> formatsToStrings (RtAudioFormat formats);
+		static std::string formatsToString (RtAudioFormat formats, std::string delim = "\r\n");
 
 		static std::vector<RtAudio::DeviceInfo> getDeviceList (RtAudio::Api api);
 		static std::string listDevices (RtAudio::Api api);

@@ -8,6 +8,8 @@
 
 namespace CX {
 
+	/*! This namespace contains functions for drawing certain complex stimuli.
+	\ingroup video */
 	namespace Draw {
 
 		struct CX_PathParams_t {

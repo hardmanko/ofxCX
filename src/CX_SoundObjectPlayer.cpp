@@ -92,7 +92,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 	}
 
 
-	CX_SoundStreamConfiguration_t &streamConfig = this->_soundStream.getConfiguration();
+	const CX_SoundStreamConfiguration_t &streamConfig = this->_soundStream.getConfiguration();
 
 	if (streamConfig.outputChannels != sound->getChannelCount()) {
 		if (!sound->setChannelCount(streamConfig.outputChannels)) {
@@ -142,7 +142,7 @@ bool CX_SoundObjectPlayer::_outputEventHandler (CX_SSOutputCallback_t &outputDat
 	vector<float> &soundData = _activeSoundObject->getRawDataReference();
 	int soundChannelCount = _activeSoundObject->getChannelCount();
 
-	CX_SoundStreamConfiguration_t &config = _soundStream.getConfiguration();
+	const CX_SoundStreamConfiguration_t &config = _soundStream.getConfiguration();
 
 	uint64_t concurrentSamplesToOutput = outputData.bufferSize;
 

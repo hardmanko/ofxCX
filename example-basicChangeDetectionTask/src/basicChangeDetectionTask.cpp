@@ -1,6 +1,6 @@
 #include "CX_EntryPoint.h"
 
-/*
+/*! \file
 This example shows how to do a simple change-detection experiment using CX.
 The stimuli are colored circles which are presented in a 3X3 matrix.
 */

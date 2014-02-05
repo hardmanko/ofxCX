@@ -2,7 +2,7 @@
 
 //#include "CX_ContinuousSlidePresenter.h"
 
-/*
+/*! \file
 This example shows how to implement an N-Back task using a CX_ContinuousSlidePresenter (CSP).
 The CSP is a lot like a CX_SlidePresenter, except that it is designed to ask the user for more
 slide to present every time it gets to the end of the slides that it has. It also deallocates the

@@ -68,7 +68,9 @@ namespace CX {
 		ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
 						   If drawingFunction points to a user function, framebuffer will not be drawn. */
 		void (*drawingFunction) (void); /*!< \brief Pointer to a user function that will be called to draw the slide. 
-										If this points to a user function, it overrides framebuffer. */
+										If this points to a user function, it overrides framebuffer. The drawing function does
+										not need to call ofBackground() or otherwise clear the display before drawing, which 
+										allow you to do what is essentially single-buffering using the back buffer as the framebuffer.*/
 
 		/*! Status of the current slide vis a vis presentation. */
 		enum {
@@ -89,6 +91,10 @@ namespace CX {
 	
 	};
 
+	/*! This class is a very useful abstraction that presents frames (slides) of visual stimuli at fixed time intervals.
+	See the basicChangeDetectionTask.cpp, advancedChangeDetectionTask.cpp, and nBack.cpp examples for the usage of this class.
+	\ingroup video
+	*/
 	class CX_SlidePresenter {
 	public:
 
