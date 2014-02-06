@@ -16,11 +16,14 @@ namespace CX {
 
 	enum class CX_SP_ErrorMode {
 		PROPAGATE_DELAYS,
-		FIX_TIMING_FROM_FIRST_SLIDE //Does not work.
+		FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
 	};
 
-	struct CX_UserFunctionInfo_t {
-		CX_UserFunctionInfo_t(void) :
+	/*! The final slide function takes a reference to this struct.
+	\ingroup video
+	*/
+	struct CX_FinalSlideFunctionInfo_t {
+		CX_FinalSlideFunctionInfo_t(void) :
 			instance(nullptr),
 			currentSlideIndex(0)
 		{}
@@ -30,24 +33,28 @@ namespace CX {
 
 	};
 
+	/*! This struct is used for configuring a CX_SlidePresenter.
+	\ingroup video
+	*/
 	struct CX_SP_Configuration {
 		CX_SP_Configuration(void) :
 			display(nullptr),
-			userFunction(nullptr),
+			finalSlideCallback(nullptr),
 			errorMode(CX_SP_ErrorMode::PROPAGATE_DELAYS),
 			deallocateCompletedSlides(true)
 		{}
 
-		CX_Display *display;
-		std::function<void(CX_UserFunctionInfo_t&)> userFunction;
+		CX_Display *display; //!< A pointer to the display to use.
+		std::function<void(CX_FinalSlideFunctionInfo_t&)> finalSlideCallback; //!< A pointer to a user function that will be called as soon as the final slide is presented.
 		CX_SP_ErrorMode errorMode;
-		bool deallocateCompletedSlides;
+		bool deallocateCompletedSlides; //<! If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
 
 		//bool singleThreadedMode;
 		//CX_Micros preSwapCPUHoggingDuration;
 	};
 
-	/*! Contains information about the presentation timing of the slide. */
+	/*! Contains information about the presentation timing of the slide. 
+	\ingroup video */
 	struct CX_SlideTimingInfo_t {
 		uint32_t startFrame; /*!< The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
 		uint32_t frameCount; /*!< The number of frames the slide was/should be presented for. */
@@ -55,7 +62,8 @@ namespace CX {
 		CX_Micros duration; /*!< Time amount of time the slide was/should have been presented for. */
 	};
 
-	/*! This struct contains information related to slide presentation using CX_SlidePresenter. */
+	/*! This struct contains information related to slide presentation using CX_SlidePresenter.
+	\ingroup video */
 	struct CX_Slide_t {
 
 		CX_Slide_t () :
@@ -129,7 +137,7 @@ namespace CX {
 	protected:
 
 		CX_Display *_display;
-		std::function<void(CX_UserFunctionInfo_t&)> _userFunction;
+		std::function<void(CX_FinalSlideFunctionInfo_t&)> _userFunction;
 
 		bool _presentingSlides;
 		bool _synchronizing;

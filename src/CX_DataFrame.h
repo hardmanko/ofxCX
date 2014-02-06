@@ -32,7 +32,7 @@ at the end of the experiment. A CX_DataFrame is a square two-dimensional array o
 is capable of holding a vector of data. Each cell is indexed with a column name (a string) and a row
 number. Cells can store many different kinds of data an the data can be inserted or extracted easily.
 The standard method of storing data is to use \ref operator(), which dynamically resizes the data frame.
-When done with an experiment, the data can be written to a file using printToFile("filename"). 
+When done with an experiment, the data can be written to a file using printToFile(). 
 
 See the example dataFrame.cpp for thorough examples of how to use a CX_DataFrame.
 
@@ -86,6 +86,7 @@ public:
 	bool deleteRow (rowIndex_t row);
 
 	std::vector<std::string> columnNames (void);
+	//! Returns the number of rows in the data frame.
 	rowIndex_t getRowCount (void) { return _rowCount; };
 
 	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);

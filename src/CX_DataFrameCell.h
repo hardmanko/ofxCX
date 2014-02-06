@@ -28,23 +28,30 @@ class CX_DataFrameCell {
 public:
 
 	CX_DataFrameCell (void);
-	template <typename T> CX_DataFrameCell (const T& value);
-	template <typename T> CX_DataFrameCell (const std::vector<T>& values);
+	template <typename T> CX_DataFrameCell (const T& value); //!< Construct the cell, assigning the value to it.
+	template <typename T> CX_DataFrameCell (const std::vector<T>& values); //!< Construct the cell, assigning the values to it.
 
-	CX_DataFrameCell& operator= (const char* c);
-	template <typename T> CX_DataFrameCell& operator= (const T& value);
-	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values);
+	CX_DataFrameCell& operator= (const char* c); //!< Assigns a string literal to the cell, treating it as a std::string.
+	template <typename T> CX_DataFrameCell& operator= (const T& value); //!< Assigns a value to the cell.
+	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values); //!< Assigns a vector of values to the cell.
 
-	template <typename T> operator T (void) const;
-	template <typename T> operator std::vector<T> (void) const;
+	template <typename T> operator T (void) const; //!< Attempts to convert the contents of the cell to T using to().
+	template <typename T> operator std::vector<T> (void) const; //!< Attempts to convert the contents of the cell to vector<T> using toVector<T>.
 
-	template <typename T> T to(void) const;
-	template<> std::string to<std::string>(void) const;
+	template <typename T> T to(void) const; //!< Returns a copy of the stored data, converted to T.
+	template<> std::string to<std::string>(void) const; 
+	
+	//! Returns the stored data as its string representation.
 	std::string toString(void) const { return *_str; };
-	bool toBool(void) const { return this->to<bool>(); };
-	int toInt(void) const { return this->to<int>(); };
-	double toDouble(void) const { return this->to<double>(); };
 
+	//! Returns a copy of the stored data converted to bool. Equivalent to to<bool>().
+	bool toBool(void) const { return this->to<bool>(); };
+
+	//! Returns a copy of the stored data converted to int. Equivalent to to<int>().
+	int toInt(void) const { return this->to<int>(); };
+
+	//! Returns a copy of the stored data converted to double. Equivalent to to<double>().
+	double toDouble(void) const { return this->to<double>(); };
 
 	template <typename T> std::vector<T> toVector (void) const;
 	template <typename T> void storeVector (std::vector<T> values);
@@ -100,7 +107,6 @@ CX_DataFrameCell& CX_DataFrameCell::operator= (const std::vector<T>& values) {
 	return *this;
 }
 
-/*! Attempts to convert the contents of the cell to T using to(). */
 template <typename T>
 CX_DataFrameCell::operator T (void) const {
 	return this->to<T>();
@@ -129,6 +135,12 @@ T CX_DataFrameCell::to (void) const {
 	return ofFromString<T>(*_str);
 }
 
+/*! Returns a copy of the contents of the cell converted to a vector of the given type. If the type
+of data stored in the cell was not a vector of the given type or the type does match but it was a 
+scalar that is stored, the logs a warning but attempts the conversion anyway.
+\tparam <T> The type of the elements of the returned vector.
+\return A vector containing the converted data.
+*/
 template <typename T> 
 std::vector<T> CX_DataFrameCell::toVector (void) const {
 	std::string typeName = typeid(T).name();
@@ -149,6 +161,10 @@ std::vector<T> CX_DataFrameCell::toVector (void) const {
 	return values;
 }
 
+/*! Stores a vector of data in the cell. The data is stored as a string with each element delimited by a semicolon.
+If the data to be stored are strings containing semicolons, the data will not be extracted properly.
+\param values A vector of values to store.
+*/
 template <typename T> 
 void CX_DataFrameCell::storeVector (std::vector<T> values) {
 	*_str = "\"" + CX::Util::vectorToString(values, ";", 16) + "\"";
@@ -158,9 +174,10 @@ void CX_DataFrameCell::storeVector (std::vector<T> values) {
 	*_type += ">";
 }
 
+/*! \brief Returns the stored data as its string representation. Equivalent to toString(). */
 template<>
 std::string CX_DataFrameCell::to<std::string>(void) const {
-	return *_str;
+	return toString();
 }
 
 std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);

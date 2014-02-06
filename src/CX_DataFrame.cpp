@@ -65,6 +65,7 @@ CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 	return CX_DataFrameRow(this, row);
 }
 
+/*! Reduced argument version of print(). Prints all rows and columns. */
 std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) {
 	if (getRowCount() == 0) {
 		return "No rows to print.";
@@ -72,6 +73,7 @@ std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) {
 	return print(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
+/*! Reduced argument version of print(). Prints all rows and the selected columns. */
 std::string CX_DataFrame::print(const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) {
 	if (getRowCount() == 0) {
 		return "No rows to print.";
@@ -79,6 +81,7 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, std::strin
 	return print(columns, CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
+/*! Reduced argument version of print(). Prints all columns and the selected rows. */
 std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
 	set<string> columns;
 	vector<string> names = columnNames();
@@ -159,14 +162,17 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 	return output.str();
 }
 
+/*! Reduced argument version of printToFile(). Prints all rows and columns. */
 bool CX_DataFrame::printToFile(std::string filename, std::string delimiter, bool printRowNumbers) {
 	return CX::Util::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
 }
 
+/*! Reduced argument version of printToFile(). Prints all rows and the selected columns. */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) {
 	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
+/*! Reduced argument version of printToFile(). Prints all columns and the selected rows. */
 bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
 	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }

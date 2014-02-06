@@ -28,7 +28,7 @@ bool CX_SlidePresenter::setup(const CX_SP_Configuration &config) {
 		return false;
 	}
 
-	_userFunction = config.userFunction;
+	_userFunction = config.finalSlideCallback;
 	_deallocateFramebuffersForCompletedSlides = config.deallocateCompletedSlides;
 	_errorMode = config.errorMode;
 	return true;
@@ -109,10 +109,10 @@ void CX_SlidePresenter::_finishPreviousSlide(void) {
 }
 
 void CX_SlidePresenter::_handleFinalSlide(void) {
-	CX_UserFunctionInfo_t info;
+	CX_FinalSlideFunctionInfo_t info;
 	info.currentSlideIndex = _currentSlide;
 	info.instance = this;
-	//info.userStatus = CX_UserFunctionInfo_t::CONTINUE_PRESENTATION;
+	//info.userStatus = CX_FinalSlideFunctionInfo_t::CONTINUE_PRESENTATION;
 
 	unsigned int previousSlideCount = _slides.size();
 

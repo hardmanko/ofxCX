@@ -35,7 +35,7 @@ char nonTargetKey = 'j';
 CX_Millis stimulusPresentationDuration = 1000.0;
 CX_Millis interStimulusInterval = 1000.0;
 
-void lastSlideFunction (CX_UserFunctionInfo_t& info);
+void lastSlideFunction (CX_FinalSlideFunctionInfo_t& info);
 void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
 
@@ -56,7 +56,7 @@ void setupExperiment (void) {
 	//Set a function that you want to be called every time the SlidePresenter has started to present the last
 	//slide you put in. In your function, you can add more slides to the SlidePresenter. Every time it reaches 
 	//the last slide, it will called lastSlideFunction again.
-	config.userFunction = &lastSlideFunction;
+	config.finalSlideCallback = &lastSlideFunction;
 
 	config.deallocateCompletedSlides = true; //We know that for this experiment we will never want to present the
 		//same slide twice, so we set the SlidePresenter to deallocate the memory used for slides that have already been presented.
@@ -99,7 +99,7 @@ void updateExperiment (void) {
 	SlidePresenter.update(); //Make sure that you call the update function of the SlidePresenter, otherwise it does nothing.
 }
 
-void lastSlideFunction(CX_UserFunctionInfo_t& info) {
+void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
 
 	//At this point in time, the last slide has just been put on screen. The last slide is a blank, which means that the slide before it
 	//was a stimulus that should have been responded to. We'll check for keyboard events.

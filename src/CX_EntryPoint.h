@@ -6,6 +6,10 @@
 ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments.
 
+The most well-organized way to access the documentation is go to the \ref modules page.
+
+\page modules Modules
+
 \section install Installation
 Drop the contents of this repository into a subdirectory directory under openFrameworksDirectory/addons (typically addons/ofxCX).
 
