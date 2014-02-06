@@ -8,7 +8,8 @@ is designed to be used used for creating psychology experiments.
 
 The most well-organized way to access the documentation is go to the \ref modules page.
 
-\page modules Modules
+To find out more about presenting visual stimuli, go to the \ref video page.
+To find out about auditory stimuli, go to the \ref sound page.
 
 \section install Installation
 Drop the contents of this repository into a subdirectory directory under openFrameworksDirectory/addons (typically addons/ofxCX).
@@ -50,6 +51,8 @@ cursor movement, clicks, and scroll wheel activity.
 + renderingTest - Includes several examples of how to draw stuff using ofPath (arbitrary lines), ofTexture (a kind 
 of pixel buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
 (ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace.
+
+\page modules Modules
 
 */
 

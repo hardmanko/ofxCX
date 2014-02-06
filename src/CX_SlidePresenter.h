@@ -117,7 +117,7 @@ namespace CX {
 		void beginDrawingNextSlide (CX_Micros duration, string slideName = "");
 		void endDrawingCurrentSlide (void);
 
-		void startSlidePresentation(void);
+		bool startSlidePresentation(void);
 		void stopPresentation(void);
 
 		void clearSlides (void);	

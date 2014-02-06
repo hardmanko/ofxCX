@@ -188,8 +188,9 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 	}
 }
 
-/*! Sets the log level for the given module.
-\param level See the CX_LogLevel enum for valid values.
+/*! Sets the log level for the given module. Messages from that module that are at a lower level than
+\ref level will be ignored.
+\param level See the CX::CX_LogLevel enum for valid values.
 \param module A string representing one of the modules from which log messages are generated.
 */
 void CX_Logger::level(CX_LogLevel level, std::string module) {
@@ -228,9 +229,15 @@ void CX_Logger::timestamps (bool logTimestamps, std::string format) {
 }
 
 /*! This is the basic logging function for this class. Example use:
-Log.log(CX_LogLevel::LOG_WARNING, "myModule") << "My message number " << 20;
-\param level Log level for this message.
-\param module Name of the module that this log message is related to.
+
+	Log.log(CX_LogLevel::LOG_WARNING, "myModule") << "My message number " << 20;
+
+Possible output: "[warning] <myModule> My message number 20"
+
+\param level Log level for this message. This has implications for message filtering. See level().
+This should not be LOG_ALL or LOG_NONE, because that would be weird, wouldn't it?
+\param module Name of the module that this log message is related to. This has implications for message filtering.
+See level().
 \return A reference to a std::stringstream that the log message data should be streamed into.
 */
 std::stringstream& CX_Logger::log(CX_LogLevel level, std::string module) {
