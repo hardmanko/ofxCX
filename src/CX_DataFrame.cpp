@@ -3,13 +3,30 @@
 using namespace std;
 using namespace CX;
 
-CX_DataFrame::DataFrameConfiguration CX_DataFrame::Configuration = { ",", "\"", "\"", "\t" };
+//CX_DataFrame::DataFrameConfiguration CX_DataFrame::Configuration = { ",", "\"", "\"", "\t" };
 
 CX_DataFrame::CX_DataFrame(void) :
 	_rowCount(0)
 {}
 
-/*! Access the cell at the given row and column. You may read from or assign to the accessed cell. */
+/*! Copy the contents of another CX_DataFrame.
+\param df The data frame to copy.
+\return A reference to this data frame.
+\note The contents of this data frame are deleted during the copy.
+*/
+CX_DataFrame& CX_DataFrame::operator= (CX_DataFrame& df) {
+	CX_DataFrame temp = df.copyRows(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount()));
+	std::swap(this->_data, temp._data);
+	std::swap(this->_rowCount, temp._rowCount);
+	return *this;
+}
+
+/*! Access the cell at the given row and column. If the row or column is out of bounds,
+the data frame will be dynamically resized in order to fit the row or column.
+\param row The row number.
+\param column The column name.
+\return A CX_DataFrameCell that can be read from or written to.
+*/
 CX_DataFrameCell CX_DataFrame::operator() (std::string column, rowIndex_t row) {
 	_resizeToFit(column, row);
 	return _data[column][row];
@@ -17,6 +34,27 @@ CX_DataFrameCell CX_DataFrame::operator() (std::string column, rowIndex_t row) {
 
 CX_DataFrameCell CX_DataFrame::operator() (rowIndex_t row, std::string column) {
 	return this->operator()(column, row);
+}
+
+/*! Access the cell at the given row and column with bounds checking. Throws a std::exception
+and logs an error if either the row or column is out of bounds.
+\param row The row number.
+\param column The column name.
+\return A CX_DataFrameCell that can be read from or written to.
+*/
+CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
+	try {
+		return _data.at(column).at(row);
+	} catch (std::exception& e) {
+		std::stringstream s;
+		s << "CX_SafeDataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
+		Instances::Log.error("CX_DataFrame") << s.str();
+		throw std::exception(s.str().c_str());
+	}
+}
+
+CX_DataFrameCell CX_DataFrame::at(std::string column, rowIndex_t row) {
+	return at(row, column);
 }
 
 CX_DataFrameColumn CX_DataFrame::operator[] (std::string column) {
@@ -144,7 +182,7 @@ bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>
 	return CX::Util::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
 }
 
-/*! Deletes the contents of the data frame. Resizes the data frame to have no rows or columns. */
+/*! Deletes the contents of the data frame. Resizes the data frame to have no rows and no columns. */
 void CX_DataFrame::clear (void) {
 	_data.clear();
 	_rowCount = 0;
@@ -413,7 +451,7 @@ void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
 		for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
 			_data[it->first].resize(_rowCount);
 		}
-		//CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit (\"" << column << "\", " << row << ")";
+		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit (\"" << column << "\", " << row << ")";
 	}
 }
 
@@ -422,14 +460,14 @@ void CX_DataFrame::_resizeToFit(rowIndex_t row) {
 	if ((row >= _rowCount) && (_data.size() != 0)) {
 		_data.begin()->second.resize(row + 1);
 		_equalizeRowLengths();
-		//CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit row " << row;
+		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit row " << row;
 	}
 }
 
 void CX_DataFrame::_resizeToFit(std::string column) {
 	if (_data[column].size() != _rowCount) {
 		_equalizeRowLengths();
-		//CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit column " << column;
+		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit column " << column;
 	}
 }
 
@@ -540,21 +578,5 @@ CX_DataFrameCell CX_SafeDataFrame::operator() (std::string column, rowIndex_t ro
 CX_DataFrameCell CX_SafeDataFrame::operator() (rowIndex_t row, std::string column) {
 	return this->operator()(column, row);
 }
-
-CX_DataFrameCell CX_SafeDataFrame::at(rowIndex_t row, std::string column) {
-	try {
-		return _data.at(column).at(row);
-	}
-	catch (std::exception& e) {
-		std::stringstream s;
-		s << "CX_SafeDataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
-		throw std::exception(s.str().c_str());
-	}
-}
-
-CX_DataFrameCell CX_SafeDataFrame::at(std::string column, rowIndex_t row) {
-	return at(row, column);
-}
-
 
 

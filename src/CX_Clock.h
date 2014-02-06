@@ -9,7 +9,9 @@
 #include "CX_Utilities.h"
 #include "CX_Logger.h"
 
-/*! \defgroup timing Timing */
+/*! \defgroup timing Timing 
+This module provides methods for timestamping events in experiments.
+*/
 
 namespace CX {
 
@@ -33,7 +35,9 @@ namespace CX {
 	
 	/*! This class is responsible for getting timestamps for anything requiring timestamps. The way to
 	get timing information is the function getTime(). It returns the current time relative to the start
-	of the experiment in microseconds (on most systems, see getTickPeriod() to check the actual precision). 
+	of the experiment in microseconds (on most systems, see getTickPeriod() to check the actual precision).
+
+	An instance of this class is preinstantiated for you. See CX::Instances::Clock.
 	\ingroup timing
 	*/
 	class CX_Clock {

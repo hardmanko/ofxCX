@@ -10,7 +10,9 @@
 
 #include "CX_Utilities.h"
 
-/*! \defgroup random Randomization */
+/*! \defgroup random Randomization 
+This module provides a class that is used for random number generation.
+*/
 
 namespace CX {
 

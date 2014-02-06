@@ -25,14 +25,14 @@ mental model.
 void setupExperiment (void) {
 	CX_DataFrame df;
 
+	/*
 	df.readFromFile("data frame.txt");
 	df.deleteColumn("rowNumber");
 	df.deleteRow(0);
 	cout << df.print() << endl;
-	
-	//vector<ofPoint> locations1 = df("locations", 1);
 
 	Log.flush();
+	*/
 
 	//Use the () notation to access an element at the given (column, row). Columns are named with strings and rows
 	//are numbered. Due to some operator overloading, you
@@ -42,15 +42,15 @@ void setupExperiment (void) {
 	df("ints", 0) = 3; //The integer 3 is put into the first row of the column named "ints"
 	df("ints", 1) = 42; //Second row, same column...
 	df("dwellings", 1) = "house"; //You don't have to start with the first row, everything is dynamically resized.
-	df("vect", 0) = CX::sequence(3, 1, -1); //You can easily store vectors of data.
+	df("vect", 0) = CX::Util::sequence(3, 1, -1); //You can easily store vectors of data.
 	df(0, "doubles") = 123.456; //You can do (row, column), if desired.
 
 	//You can also use operator[] to access cells in the data frame. However, using (row,column) is faster (computationally) than using operator[].
 	df["doubles"][1] = 1.996;
-	df[1]["vect"] = CX::sequence(9, 5, -2);
+	df[1]["vect"] = CX::Util::sequence(9, 5, -2);
 
 	//The contents of the data frame can be printed to a string, then used as you wish:
-	string dataFrame = df.print(";"); //The semicolon delimiter makes it easy to see which cells have not been initialized (a dwelling is missing).
+	string dataFrame = df.print("/"); //The forward-slash delimiter makes it easy to see which cells have not been initialized (a dwelling is missing).
 	cout << "The initial data in the data frame: " << endl << dataFrame << endl;
 
 	//Once stuff has been put into the data frame, you can extract it fairly easily:
@@ -60,14 +60,14 @@ void setupExperiment (void) {
 	string house = df("dwellings", 1).toString(); //The common case that is tricky are strings, which require a special function call to be extracted.
 
 	//You can see that what comes out looks like what went in:
-	cout << endl << "Some selected data: " << endl << d << endl << i << endl << house << endl << CX::vectorToString(intvector) << endl << endl;
+	cout << endl << "Some selected data: " << endl << d << endl << i << endl << house << endl << CX::Util::vectorToString(intvector) << endl << endl;
 
 	//Although you can use operator() to set data, it is somewhat safer to fill out a row of data at at time
 	//(e.g. over the course of a trial) and append that row to the data frame because you don't have to worry about getting the row index right.
 	CX_DataFrameRow cellRow;
 	cellRow["dwellings"] = "wigwam"; //CX_DataFrameRow is just a map<string, CX_DataFrameCell>, so access is done using operator[] and assignment.
 	cellRow["ints"] = -7;
-	cellRow["vect"] = CX::intVector(-1, 1);
+	cellRow["vect"] = CX::Util::intVector(-1, 1);
 	//Notice that the "doubles" column is missing. This is handled silently.
 	df.appendRow(cellRow);
 
@@ -77,8 +77,8 @@ void setupExperiment (void) {
 	set<string> printCol;
 	printCol.insert("dwellings");
 	printCol.insert("vect");
-	vector<unsigned int> printRow = CX::intVector<unsigned int>(0, 1);
-	cout << endl << "Only selected rows and columns: " << df.print( printCol, printRow, ";" ); 
+	vector<unsigned int> printRow = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, 1);
+	cout << endl << "Only selected rows and columns: " << df.print( printCol, printRow, "\t" ); 
 
 	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.getRowCount() to get the
 	//the information needed. Rows in a CX_DataFrame are always numbered from 0.
@@ -101,7 +101,7 @@ void setupExperiment (void) {
 	row1["new"] = "This is new";
 
 	//Print the final version of the data frame
-	cout << endl << "Final version: " << df.print() << endl;
+	cout << endl << "Final version: " << endl << df.print() << endl;
 
 	//This shows the equivalence of various orders of the use of operator[].
 	string s1 = row1["dwellings"].toString();
@@ -131,7 +131,7 @@ void setupExperiment (void) {
 
 	//You can copy rows from a data frame into a new data frame. You can specify which rows
 	//to copy. You can even copy the same row multiple times.
-	vector<CX_DataFrame::rowIndex_t> copyOrder = CX::intVector<CX_DataFrame::rowIndex_t>(2, 0);
+	vector<CX_DataFrame::rowIndex_t> copyOrder = CX::Util::intVector<CX_DataFrame::rowIndex_t>(2, 0);
 	copyOrder.push_back(0); //Copy the first row twice.
 	CX_DataFrame copyDf = df.copyRows(copyOrder);
 
@@ -198,5 +198,4 @@ void setupExperiment (void) {
 
 void updateExperiment (void) {
 	//Do nothing
-	cout << Input.Mouse.getCursorPosition() << endl;
 }

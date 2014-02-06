@@ -135,7 +135,8 @@ int getResponse (void) {
 				Log.flush();
 
 				if (++trialIndex >= trialDf.getRowCount()) {
-					trialDf.printToFile("CD data.txt");
+					trialDf.printToFile("change detection data.txt"); //This is all you have to do to output the data from the data frame. 
+						//Compare to the data output function from the basicChangeDetectionTask example.
 					cout << "Experiment complete: exiting..." << endl;
 					ofSleepMillis(3000);
 					ofExit();

@@ -6,10 +6,8 @@ using namespace CX;
 that requires timing information uses this instance. You should use this instance in
 your code and not make your own instance of CX_Clock. You should never need another instance. 
 You should never use another instance, as the experiment start times will not agree between 
-instances. 
-\ingroup timing
-\ingroup entryPoint
-*/
+instances.
+\ingroup timing */
 CX_Clock CX::Instances::Clock;
 
 CX_Clock::CX_Clock (void) {

@@ -22,11 +22,28 @@ namespace CX {
 class CX_DataFrameRow;
 class CX_DataFrameColumn;
 
+/*! \defgroup data Data 
+This module is related to storing experimental data. CX_DataFrame is the most important class in this module.
+
+*/
+
+/*! This class provides and easy way to store data from an experiment and output that data to a file
+at the end of the experiment. A CX_DataFrame is a square two-dimensional array of cells, but each cell
+is capable of holding a vector of data. Each cell is indexed with a column name (a string) and a row
+number. Cells can store many different kinds of data an the data can be inserted or extracted easily.
+The standard method of storing data is to use \ref operator(), which dynamically resizes the data frame.
+When done with an experiment, the data can be written to a file using printToFile("filename"). 
+
+See the example dataFrame.cpp for thorough examples of how to use a CX_DataFrame.
+
+\ingroup data
+*/
 class CX_DataFrame {
 public:
 
 	typedef std::vector<CX_DataFrameCell>::size_type rowIndex_t;
 
+	/*
 	static struct DataFrameConfiguration {
 		std::string vectorElementDelimiter;
 		std::string vectorStart;
@@ -35,18 +52,18 @@ public:
 		//bool printHeaders;
 		//bool printRowNumbers;
 	} Configuration;
+	*/
 
 	CX_DataFrame (void);
 
-	CX_DataFrame& operator= (CX_DataFrame& df) {
-		CX_DataFrame temp = df.copyRows(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount()));
-		std::swap(this->_data, temp._data);
-		std::swap(this->_rowCount, temp._rowCount);
-		return *this;
-	}
+	CX_DataFrame& operator= (CX_DataFrame& df);
 
 	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
 	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
+
+	CX_DataFrameCell at(rowIndex_t row, std::string column);
+	CX_DataFrameCell at(std::string column, rowIndex_t row);
+
 	CX_DataFrameColumn operator[] (std::string column);
 	CX_DataFrameRow operator[] (rowIndex_t row);
 
@@ -109,6 +126,7 @@ template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column
 	return rval;
 }
 
+/*! \ingroup data */
 class CX_DataFrameColumn {
 public:
 	CX_DataFrameColumn (void);
@@ -124,7 +142,7 @@ private:
 	std::string _columnName;
 };
 
-
+/*! \ingroup data */
 class CX_DataFrameRow {
 public:
 	CX_DataFrameRow (void);
@@ -141,14 +159,14 @@ private:
 	CX_DataFrame::rowIndex_t _rowNumber;
 };
 
+/*! \ingroup data */
 class CX_SafeDataFrame : protected CX_DataFrame {
 public:
 
 	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
 	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
 
-	CX_DataFrameCell at (rowIndex_t row, std::string column);
-	CX_DataFrameCell at (std::string column, rowIndex_t row);
+	using CX_DataFrame::at;
 
 	using CX_DataFrame::appendRow;
 	using CX_DataFrame::print;
