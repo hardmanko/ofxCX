@@ -33,6 +33,32 @@ namespace CX {
 
 	};
 
+	/*! Contains information about errors that were detected during slide presentation. 
+	See CX_SlidePresenter::checkForPresentationErrors().
+	\ingroup video */
+	struct CX_SP_PresentationErrors_t {
+		CX_SP_PresentationErrors_t(void) :
+			presentationErrorsSuccessfullyChecked(false),
+			incorrectFrameCounts(0),
+			lateCopiesToBackBuffer(0)
+		{}
+
+		/*! \brief True if presentation errors were successfully checked for. This does not mean that there were 
+		no presentation errors, but that there were no presentation error checking errors. */
+		bool presentationErrorsSuccessfullyChecked; 
+
+		unsigned int incorrectFrameCounts; //!< The number of slides for which the actual and intended frame counts did not match.
+
+		/*! \brief The number of slides for which the time at which the slide finished being copied
+		to the back buffer was after the actual start time of the slide. */
+		unsigned int lateCopiesToBackBuffer;
+
+		unsigned int totalErrors(void) {
+			return incorrectFrameCounts + lateCopiesToBackBuffer;
+		}
+
+	};
+
 	/*! This struct is used for configuring a CX_SlidePresenter.
 	\ingroup video
 	*/
@@ -66,12 +92,13 @@ namespace CX {
 	\ingroup video */
 	struct CX_Slide_t {
 
-		CX_Slide_t () :
+		CX_Slide_t() :
+			slideName("unnamed"),
 			drawingFunction(NULL),
 			slideStatus(NOT_STARTED)
 		{}
 
-		string slideName; //!< The name of the slide. Set by the user during slide creation.
+		std::string slideName; //!< The name of the slide. Set by the user during slide creation.
 
 		ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
 						   If drawingFunction points to a user function, framebuffer will not be drawn. */
@@ -99,8 +126,9 @@ namespace CX {
 	
 	};
 
-	/*! This class is a very useful abstraction that presents frames (slides) of visual stimuli at fixed time intervals.
+	/*! This class is a very useful abstraction that presents slides (a full display's worth) of visual stimuli for fixed durations.
 	See the basicChangeDetectionTask.cpp, advancedChangeDetectionTask.cpp, and nBack.cpp examples for the usage of this class.
+
 	\ingroup video
 	*/
 	class CX_SlidePresenter {
@@ -113,26 +141,31 @@ namespace CX {
 		virtual void update (void);
 		
 		void appendSlide (CX_Slide_t slide);
-		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros duration, string slideName = "");
-		void beginDrawingNextSlide (CX_Micros duration, string slideName = "");
+		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros duration, std::string slideName = "");
+		void beginDrawingNextSlide (CX_Micros duration, std::string slideName = "");
 		void endDrawingCurrentSlide (void);
 
 		bool startSlidePresentation(void);
-		void stopPresentation(void);
+		void stopSlidePresentation(void);
 
-		void clearSlides (void);	
-		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
+		//! Returns true if slide presentation is in progress, even if the first slide has not yet been presented.
+		bool isPresentingSlides(void) { return _presentingSlides || _synchronizing; };
 
-		unsigned int getActiveSlideIndex (void) { return _currentSlide; };
-		unsigned int getSlideCount(void) { return _slides.size(); };
-		string getActiveSlideName (void);
-		CX_Slide_t& getSlide (unsigned int slideIndex);
+		void clearSlides (void);
+		
+		//!< Returns the index of the slide that is currently being presented.
+		//This is weird because the active slide becomes active before it is on screen.
+		//unsigned int getActiveSlideIndex (void) { return _currentSlide; };
+		//std::string getActiveSlideName (void); //This sucks for the same reason that getActiveSlideIndex sucks.
+		//unsigned int getSlideCount(void) { return _slides.size(); }; //Just use getSlides().size()
+		//CX_Slide_t& getSlide (unsigned int slideIndex);
 
-		vector<CX_Slide_t> getSlides (void); //Return reference??
-		vector<CX_Micros> getActualPresentationDurations (void);
-		vector<unsigned int> getActualFrameCounts (void);
+		std::vector<CX_Slide_t>& getSlides(void);
 
-		int checkForPresentationErrors (void); //Maybe return a struct with specifics about the errors?
+		std::vector<CX_Micros> getActualPresentationDurations(void);
+		std::vector<unsigned int> getActualFrameCounts(void);
+
+		CX_SP_PresentationErrors_t checkForPresentationErrors(void);
 
 	protected:
 
@@ -142,7 +175,7 @@ namespace CX {
 		bool _presentingSlides;
 		bool _synchronizing;
 		unsigned int _currentSlide;
-		vector<CX_Slide_t> _slides;
+		std::vector<CX_Slide_t> _slides;
 
 		bool _awaitingFenceSync;
 		GLsync _fenceSyncObject;

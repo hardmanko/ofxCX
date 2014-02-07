@@ -221,7 +221,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
 
-	vector<int> changeTrial = CX::repeat(intVector<int>(0, 1), trialCount / 2);
+	vector<int> changeTrial = repeat(intVector<int>(0, 1), trialCount / 2);
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
@@ -230,7 +230,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 		//RNG is an instance of CX_RandomNumberGenerator that is instantiated for you. It is useful for a variety of randomization stuff.
 		//This version of shuffleVector() returns a shuffled copy of the argument without changing the argument.
-		vector<int> colorIndices = RNG.shuffleVector( CX::intVector<int>(0, objectColors.size() - 1) );
+		vector<int> colorIndices = RNG.shuffleVector( intVector<int>(0, objectColors.size() - 1) );
 		
 		for (int i = 0; i < tr.arraySize; i++) {
 			tr.colors.push_back( objectColors[colorIndices[i]] );
@@ -265,8 +265,8 @@ becuase of the lack of reflection in c++. The main problems are:
 1) Making errors because the column names must line up with the data, but are output at different places, so
 it is really easy to make an error in the naming of columns (swapping names).
 2) Leaving out a piece of data just because it was forgotten. This is easy to do if you have 20+ columns of data,
-some of which are not very important to the main thrust of the experiment, but might be useful for secondary analyses.
-Even for an experiment as simple as this example, making sure that nothing was missing took a little time.
+some of which are not very important to the main point of the experiment, but might be useful for secondary analyses.
+Even for an experiment as simple as this example, making sure that nothing was missing took me a little time.
 3) It is a waste of time to manually write data outputting functions, because it is a trivial problem yet must be done carefully.
 You have to make sure that you always include the delimiter between items, that line endings are in the right place, etc. This
 is all a waste of time.
@@ -298,13 +298,13 @@ void outputData(void) {
 		}
 		out << "\"";
 
-		//CX::vectorToString() does the above ^^^ but doesn't automatically add quotes. vectorToString makes manually outputting data
+		//CX::vectorToString() does the above ^^^, more or less. vectorToString makes manually outputting data
 		//better, but still loses out to the convenience of a data frame.
-		out << t << "\"" << CX::vectorToString(it->locations, ";") << "\"";
+		out << t << "\"" << vectorToString(it->locations, ";") << "\"";
 		out << endl;
 	}
 
-	CX::writeToFile("CD data.txt", out.str(), false); //This file can be found in the data directory of the project.
+	writeToFile("CD data.txt", out.str(), false); //This file can be found in the data directory of the project.
 		//i.e. %openFrameworks directory%/apps/myApps/%your app name%/bin/data. You can also specify an absolute path
 		//and the file should end up there as long the location does not require write permissions.
 }

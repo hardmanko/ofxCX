@@ -106,7 +106,7 @@ void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
 	bool validResponseMade = false;
 	if (Input.Keyboard.availableEvents() > 0) {
 		//We don't want any responses made before the stimulus was presented, so let's find out when it was presented.
-		CX_Slide_t &lastStimulusSlide = SlidePresenter.getSlide( info.currentSlideIndex - 1 );
+		CX_Slide_t &lastStimulusSlide = SlidePresenter.getSlides().at( info.currentSlideIndex - 1 );
 		CX_Micros stimulusOnset = lastStimulusSlide.actual.startTime;
 
 		while (Input.Keyboard.availableEvents() > 0) {
@@ -133,11 +133,12 @@ void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
 	}
 
 	if (++trialNumber == trialCount) {
-		info.instance->stopPresentation(); //Because we're about to exit the program, this has no effect,
+		info.instance->stopSlidePresentation(); //Because we're about to exit the program, this has no effect,
 			//but you can explicitly stop presentation using this function. You can also stop presentation
-			//by simply not adding any slides to the SlidePresenter.
+			//by simply not adding any more slides to the SlidePresenter. Because it has no more slides to
+			//present, it will just stop.
 
-		df.printToFile("N-Back output.txt");
+		df.printToFile("N-Back output.txt"); //Output the data.
 
 		Display.beginDrawingToBackBuffer();
 		ofBackground(backgroundColor);
@@ -158,7 +159,7 @@ void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
 	info.instance->endDrawingCurrentSlide();
 
 	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. You could simply wait until
-		//the experiment is finished to flush.
+		//the experiment is finished or the end of a trial block to flush.
 
 }
 

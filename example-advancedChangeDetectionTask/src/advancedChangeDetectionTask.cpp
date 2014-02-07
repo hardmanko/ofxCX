@@ -176,14 +176,14 @@ void generateTrials (int trialCount) {
 
 	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
 
-	vector<int> changeTrial = CX::repeat( intVector<int>(0, 1), trialCount/2 );	
+	vector<int> changeTrial = repeat( intVector<int>(0, 1), trialCount/2 );	
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
 		CX_DataFrameRow tr;
 		tr["arraySize"] = 4;
 
-		vector<unsigned int> colorIndices = RNG.shuffleVector( CX::intVector<unsigned int>(0, objectColors.size() - 1) );
+		vector<unsigned int> colorIndices = RNG.shuffleVector( intVector<unsigned int>(0, objectColors.size() - 1) );
 		vector<ofColor> colors;
 
 		//Note that you'll have to use functions like toInt() in cases like this, where it isn't obvious what type the data should be converted to.
