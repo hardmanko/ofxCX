@@ -36,12 +36,15 @@ public:
 	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values); //!< Assigns a vector of values to the cell.
 
 	template <typename T> operator T (void) const; //!< Attempts to convert the contents of the cell to T using to().
-	template <typename T> operator std::vector<T> (void) const; //!< Attempts to convert the contents of the cell to vector<T> using toVector<T>.
+	template <typename T> operator std::vector<T> (void) const; //!< Attempts to convert the contents of the cell to vector<T> using toVector<T>().
 
-	template <typename T> T to(void) const; //!< Returns a copy of the stored data, converted to T.
+	//! Returns a copy of the stored data, converted to T.
+	template <typename T> T to(void) const; 
+
+	//! Returns a copy of the stored data as its string representation. Equivalent to toString().
 	template<> std::string to<std::string>(void) const; 
 	
-	//! Returns the stored data as its string representation.
+	//! Returns a copy of the stored data as its string representation.
 	std::string toString(void) const { return *_str; };
 
 	//! Returns a copy of the stored data converted to bool. Equivalent to to<bool>().
@@ -174,7 +177,6 @@ void CX_DataFrameCell::storeVector (std::vector<T> values) {
 	*_type += ">";
 }
 
-/*! \brief Returns the stored data as its string representation. Equivalent to toString(). */
 template<>
 std::string CX_DataFrameCell::to<std::string>(void) const {
 	return toString();

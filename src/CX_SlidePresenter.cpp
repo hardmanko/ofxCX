@@ -233,7 +233,7 @@ std::vector<CX_Slide_t>& CX_SlidePresenter::getSlides (void) {
 	return _slides;
 }
 
-/*! Get a reference to the slide at a given index.
+/* Get a reference to the slide at a given index.
 \param slideIndex The index of the slide to get. This function throws a std::exception of slideIndex is out of range.
 \return A reference to the slide. */
 /*
@@ -251,8 +251,8 @@ CX_Slide_t& CX_SlidePresenter::getSlide(unsigned int slideIndex) {
 */
 
 /*! Gets a vector containing the durations of the slides from the last presentation of slides.
-Note that these durations may be wrong. If checkForPresentationErrors() returns 0, they are 
-likely to be right, but there is no guarantee.
+Note that these durations may be wrong. If checkForPresentationErrors() does not detect any errors,
+the durations are likely to be right, but there is no guarantee.
 \return A vector containing the durations. The duration corresponding to the first slide added 
 to the slide presenter will be at index 0.
 \note The duration of the last slide is meaningless. As far as the slide presenter is concerned,
@@ -275,7 +275,7 @@ std::vector<CX_Micros> CX_SlidePresenter::getActualPresentationDurations (void) 
 
 /*! Gets a vector containing the number of frames that each of the slides from the last presentation 
 of slides was presented for. Note that these frame counts may be wrong. If checkForPresentationErrors()
-returns 0, they are likely to be right, but there is no guarantee.
+not detect any errors, the frame counts are likely to be right, but there is no guarantee.
 \return A vector containing the frame counts. The frame count corresponding to the first slide added
 to the slide presenter will be at index 0.
 \note The frame count of the last slide is meaningless. As far as the slide presenter is concerned,
@@ -425,9 +425,8 @@ void CX_SlidePresenter::_finishPreviousSlide(void) {
 
 void CX_SlidePresenter::_handleFinalSlide(void) {
 	CX_FinalSlideFunctionInfo_t info;
-	info.currentSlideIndex = _currentSlide;
 	info.instance = this;
-	//info.userStatus = CX_FinalSlideFunctionInfo_t::CONTINUE_PRESENTATION;
+	info.currentSlideIndex = _currentSlide;
 
 	unsigned int previousSlideCount = _slides.size();
 

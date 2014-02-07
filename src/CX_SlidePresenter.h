@@ -19,7 +19,7 @@ namespace CX {
 		FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
 	};
 
-	/*! The final slide function takes a reference to this struct.
+	/*! The final slide function takes a reference to a struct of this type.
 	\ingroup video
 	*/
 	struct CX_FinalSlideFunctionInfo_t {
@@ -53,6 +53,7 @@ namespace CX {
 		to the back buffer was after the actual start time of the slide. */
 		unsigned int lateCopiesToBackBuffer;
 
+		/*! \brief Sums up all of the different types of errors that are measured. */
 		unsigned int totalErrors(void) {
 			return incorrectFrameCounts + lateCopiesToBackBuffer;
 		}
@@ -73,7 +74,7 @@ namespace CX {
 		CX_Display *display; //!< A pointer to the display to use.
 		std::function<void(CX_FinalSlideFunctionInfo_t&)> finalSlideCallback; //!< A pointer to a user function that will be called as soon as the final slide is presented.
 		CX_SP_ErrorMode errorMode;
-		bool deallocateCompletedSlides; //<! If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
+		bool deallocateCompletedSlides; //!< If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
 
 		//bool singleThreadedMode;
 		//CX_Micros preSwapCPUHoggingDuration;
@@ -141,19 +142,19 @@ namespace CX {
 		virtual void update (void);
 		
 		void appendSlide (CX_Slide_t slide);
-		void appendSlideFunction (void (*drawingFunction) (void), CX_Micros duration, std::string slideName = "");
-		void beginDrawingNextSlide (CX_Micros duration, std::string slideName = "");
+		void appendSlideFunction (void (*drawingFunction)(void), CX_Micros slideDuration, std::string slideName = "");
+		void beginDrawingNextSlide (CX_Micros slideDuration, std::string slideName = "");
 		void endDrawingCurrentSlide (void);
 
-		bool startSlidePresentation(void);
-		void stopSlidePresentation(void);
+		bool startSlidePresentation (void);
+		void stopSlidePresentation (void);
 
 		//! Returns true if slide presentation is in progress, even if the first slide has not yet been presented.
-		bool isPresentingSlides(void) { return _presentingSlides || _synchronizing; };
+		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
 
 		void clearSlides (void);
 		
-		//!< Returns the index of the slide that is currently being presented.
+		// Returns the index of the slide that is currently being presented.
 		//This is weird because the active slide becomes active before it is on screen.
 		//unsigned int getActiveSlideIndex (void) { return _currentSlide; };
 		//std::string getActiveSlideName (void); //This sucks for the same reason that getActiveSlideIndex sucks.

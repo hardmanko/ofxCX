@@ -29,7 +29,7 @@ namespace CX {
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 
 		template <typename T> std::vector<T> sequence(T start, T end, T stepSize);
-		template <typename T> std::vector<T> sequenceSteps(T start, T stepSize, unsigned int steps);
+		template <typename T> std::vector<T> sequenceSteps(T start, unsigned int steps, T stepSize);
 		template <typename T> std::vector<T> sequenceAlong(T start, T end, unsigned int steps);
 
 		template <typename T> std::vector<T> intVector(T start, T end);
@@ -178,13 +178,31 @@ std::vector<T> CX::Util::sequence(T start, T end, T stepSize) {
 	return rval;
 }
 
-template <typename T> std::vector<T> CX::Util::sequenceSteps(T start, T stepSize, unsigned int steps) {
-	return CX::sequence<T>(start, start + (stepSize * steps), stepSize);
+/*! Make a sequence starting from start and taking steps steps of stepSize.
+
+    sequenceSteps( 1.5, 4, 2.5 );
+
+Creates the sequence {1.5, 4, 6.5, 9, 11.5}
+
+\param start Value from which to start.
+\param steps The number of steps to take.
+\param stepSize The size of each step.
+\return A vector containing the sequence.
+*/
+template <typename T> std::vector<T> CX::Util::sequenceSteps(T start, unsigned int steps, T stepSize) {
+	return CX::Util::sequence<T>(start, start + (stepSize * steps), stepSize);
 }
 
+/*! Creates a sequence from start to end, where the size of each step is chosen so that the length
+of the sequence if equal to outputLength.
+\param start The value at which to start the sequence.
+\param end The value to which to end the sequence.
+\param outputLength The number of elements in the returned sequence.
+\return A vector containing the sequence.
+*/
 template <typename T> std::vector<T> CX::Util::sequenceAlong(T start, T end, unsigned int outputLength) {
 	T stepSize = (end - start)/(outputLength - 1);
-	return CX::sequence<T>(start, end, stepSize);
+	return CX::Util::sequence<T>(start, end, stepSize);
 }
 
 /*!
@@ -204,6 +222,13 @@ template <typename T> std::vector<T> CX::Util::intVector(T start, T end) {
 	return rval;
 }
 
+/*! Copies arraySize elements of an array of T to a vector<T>.
+\tparam <T> The type of the array. Is often inferred by the compiler.
+\param arr The array of data to put into the vector.
+\param arraySize The length of the array, or the number of elements to copy from the array
+if not all of the elements are wanted.
+\return The elements in a vector.
+*/
 template <typename T> std::vector<T> CX::Util::arrayToVector(T arr[], unsigned int arraySize) {
 	std::vector<T> rval(arraySize);
 	for (std::vector<T>::size_type i = 0; i < arraySize; i++) {

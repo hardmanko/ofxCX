@@ -37,6 +37,7 @@ int circleRadius = 30;
 ofColor backgroundColor(50);
 
 void setupExperiment (void) {
+
 	generateTrials(8);
 
 	Input.setup(true, false);

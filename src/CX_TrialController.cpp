@@ -1,6 +1,7 @@
 #include "CX_TrialController.h"
 
 using namespace CX;
+using namespace CX::Util;
 
 CX_TrialController::CX_TrialController(void) :
 	_functionIndex(0),
