@@ -3,7 +3,15 @@
 
 /*! \class CX::CX_SoundObject
 
-Note: Nearly all functions of this class should be considered blocking. Many of
+This class is a container for a sound. It can load sound files, manipulate the contents
+of the sound data, add other sounds to an existing sound at specified offsets.
+
+In order to play a CX_SoundObject, you use a \ref CX::CX_SoundObjectPlayer.
+
+See the soundObject example for an introduction on how to use this class along with
+a CX_SoundObjectPlayer.
+
+\note Nearly all functions of this class should be considered \ref blocking. Many of
 the operations take quite a while to complete because they are performed on
 a fairly large vector of sound samples.
 
