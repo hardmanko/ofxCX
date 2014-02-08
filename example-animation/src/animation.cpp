@@ -55,6 +55,7 @@ void updateExperiment (void) {
 	}
 
 	//Do a little bit of stuff to get the state of the mouse.
+	Input.pollEvents();
 	while (Input.Mouse.availableEvents() > 0) {
 		CX_MouseEvent_t mev = Input.Mouse.getNextEvent();
 		if (mev.eventType == CX_MouseEvent_t::MOVED) {

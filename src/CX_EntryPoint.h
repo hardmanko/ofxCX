@@ -73,9 +73,9 @@ just takes a long time to execute.
 Blocking code is bad because it prevents some parts of CX from working in some situations. It is not a cardinal
 sin and there are times when using blocking code is acceptable. However, blocking code should
 not be used when trying to present stimuli or when responses are being made. There is of course an exception to
-the responses rule, which is when your blocking code is explicitly polling for user input.
+the responses rule, which is when your blocking code is explicitly polling for user input, e.g.:
 
-	Input.pollEvents();
+	while(!Input.pollEvents());
 
 */
 
@@ -125,7 +125,7 @@ CX::Instances::SlidePresenter is a very useful abstraction that is used for the 
 namespace CX {
 	namespace Instances {
 		extern CX_Display Display;
-		extern CX_SlidePresenter SlidePresenter;
+		//extern CX_SlidePresenter SlidePresenter;
 		extern CX_InputManager Input;
 	}
 }

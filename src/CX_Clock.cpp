@@ -40,13 +40,13 @@ CX_Micros CX_Clock::getTime(void) {
 This function returns the current system time in microseconds.
 
 This cannot be converted to time/day in any meaningful way. Use getDateTimeString() for that.
-This value can only be compared to the result of other calls to this function and to getExperimentStartTime().
+\return A time value can be compared to the result of other calls to this function and to getExperimentStartTime().
 */
 CX_Micros CX_Clock::getSystemTime(void) {
 	return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
 
-/*! Get a string representing the date/time of the start of the experiment encoded according to some format.
+/*! Get a string representing the date/time of the start of the experiment encoded according to a format.
 \param format See getDateTimeString() for the definition of the format. */
 std::string CX_Clock::getExperimentStartDateTimeString(std::string format) {
 	return Poco::DateTimeFormatter::format(_pocoExperimentStart, format);

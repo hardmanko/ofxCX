@@ -7,14 +7,14 @@ This example shows how to implement an N-Back task using an advanced feature of 
 (SP). There is a feature of the SP that allows you to give it a pointer to a function that will be 
 called every time the SP has just presented the final slide that it currently has. In your function,
 you can add more slides to the SP, which will allow it to continue presenting slides. If you don't
-add any more slides, slide presentation will stop with the currently-presented slide.
+add any more slides, slide presentation will stop with the currently presented slide.
 
 For this N-Back task, the presentation of stimuli will follow the pattern stimulus-blank-stimulus-blank 
 etc. The idea is that you will load up the SP with the first few stimuli and blanks. The SP will be started
 and will present the first few stimuli. When it runs out of stimuli, the last slide user function will be 
 called. In this function, we will check for any responses that have been made since the last time the 
 function was called and draw the next stimulus-blank pair. See the definition of lastSlideFunction and
-setup for the implementation of these ideas.
+setupExperiment for the implementation of these ideas.
 */
 
 CX_DataFrame df;
@@ -35,6 +35,7 @@ char nonTargetKey = 'j';
 CX_Millis stimulusPresentationDuration = 1000.0;
 CX_Millis interStimulusInterval = 1000.0;
 
+CX_SlidePresenter SlidePresenter;
 void lastSlideFunction (CX_FinalSlideFunctionInfo_t& info);
 void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
@@ -97,6 +98,11 @@ void setupExperiment (void) {
 
 void updateExperiment (void) {
 	SlidePresenter.update(); //Make sure that you call the update function of the SlidePresenter, otherwise it does nothing.
+
+	Input.pollEvents(); //You must poll for input at regular intervals in order to get meaningful timing data
+		//for responses. The reason for this is that responses are given timestamps in the pollEvents function,
+		//so if it does not get called for long periods of time, what will happen is that the responses will
+		//still be collected, but the timestamps for the responses will be wrong.
 }
 
 void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {

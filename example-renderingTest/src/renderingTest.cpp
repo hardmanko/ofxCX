@@ -37,7 +37,7 @@ void setupExperiment (void) {
 	Display.setWindowResolution(800, 600);
 
 #ifdef CX_RT_USE_FBO
-	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::getSampleCount() );
+	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::Util::getSampleCount() );
 
 	//Here is an example of both 1) storing drawn data in a framebuffer and then drawing that framebuffer at multiple places
 	//and 2) drawing with transparency.
@@ -91,17 +91,19 @@ void setupExperiment (void) {
 
 void updateExperiment (void) {
 
-	while (Input.Keyboard.availableEvents()) {
-		CX_KeyEvent_t ev = Input.Keyboard.getNextEvent();
-		if (ev.eventType == CX_KeyEvent_t::PRESSED) {
-			drawingToFboFirst = !drawingToFboFirst;
+	if (Input.pollEvents()) {
+		while (Input.Keyboard.availableEvents()) {
+			CX_KeyEvent_t ev = Input.Keyboard.getNextEvent();
+			if (ev.eventType == CX_KeyEvent_t::PRESSED) {
+				drawingToFboFirst = !drawingToFboFirst;
+			}
 		}
-	}
 
-	while (Input.Mouse.availableEvents()) {
-		CX_MouseEvent_t ev = Input.Mouse.getNextEvent();
-		if (ev.eventType == CX_MouseEvent_t::SCROLLED) {
-			starSize += .05 * ev.y;
+		while (Input.Mouse.availableEvents()) {
+			CX_MouseEvent_t ev = Input.Mouse.getNextEvent();
+			if (ev.eventType == CX_MouseEvent_t::SCROLLED) {
+				starSize += .05 * ev.y;
+			}
 		}
 	}
 

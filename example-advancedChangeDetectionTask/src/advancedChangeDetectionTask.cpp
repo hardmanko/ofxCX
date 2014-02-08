@@ -24,11 +24,11 @@ int getResponse (void);
 
 void generateTrials (int trialCount);
 
+CX_SlidePresenter SlidePresenter;
 void drawFixation (void);
 void drawBlank (void);
 void drawSampleArray (void);
 void drawTestArray (void);
-
 
 CX_SafeDataFrame trialDf;
 int trialIndex = 0;
@@ -42,11 +42,7 @@ void setupExperiment (void) {
 
 	Input.setup(true, false);
 
-	CX_SP_Configuration config;
-	config.errorMode = CX_SP_ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE;
-	config.display = &Display;
-
-	SlidePresenter.setup(config);
+	SlidePresenter.setup(&Display);
 
 	cout << "Insturctions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 
@@ -102,7 +98,10 @@ int drawStimuli (void) {
 //If its done, then we want to move on to the next stage of the trial, which is getting 
 //the response.
 int presentStimuli (void) {
+	SlidePresenter.update();
+
 	if (!SlidePresenter.isPresentingSlides()) {
+		Input.pollEvents();
 		Input.Keyboard.clearEvents();
 		return 1; //Move on to next function
 	}
@@ -110,6 +109,8 @@ int presentStimuli (void) {
 }
 
 int getResponse (void) {
+	Input.pollEvents();
+
 	while (Input.Keyboard.availableEvents() > 0) {
 
 		CX_KeyEvent_t keyEvent = Input.Keyboard.getNextEvent();

@@ -39,7 +39,6 @@ namespace CX {
 		~CX_Display (void);
 
 		void setup (void);
-		void update (void);
 		void exit (void);
 
 		void setFullScreen (bool fullScreen);

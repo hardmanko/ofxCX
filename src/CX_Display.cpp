@@ -45,11 +45,6 @@ void CX_Display::setup (void) {
 	BLOCKING_estimateFramePeriod( 300 * 1000 ); //Estimate for 300 ms.
 }
 
-/*! This function has no effect. */
-void CX_Display::update (void) {
-}
-
-
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().

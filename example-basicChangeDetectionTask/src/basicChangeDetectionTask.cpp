@@ -3,6 +3,9 @@
 /*! \file
 This example shows how to do a simple change-detection experiment using CX.
 The stimuli are colored circles which are presented in a 3X3 matrix.
+
+Press the S key to indicate that you think the test array is the same or the D
+key to indicate that you think the test array is different.
 */
 
 
@@ -25,6 +28,7 @@ struct TrialData_t {
 vector<TrialData_t> generateTrials (int trialCount);
 void outputData (void);
 
+CX_SlidePresenter SlidePresenter;
 void drawFixation (void);
 void drawBlank (void);
 void drawSampleArray (const TrialData_t &tr);
@@ -41,52 +45,15 @@ string trialPhase = "drawStimuli";
 
 
 void setupExperiment (void) {
-	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how it does that)
+	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how the trials are generated).
+
+	SlidePresenter.setup(&Display); //Associate Display with the SlidePresenter so that the SlidePresenter has something to draw to.
 
 	Input.setup(true, false); //Use the keyboard for this experiment, but not the mouse.
 
-	cout << "Insturctions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
+	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 }
 
-/*
-updateExperiment is where most of the experiment takes place. It is critical that
-the code you put into updateExperiment does not block (i.e. you cannot call functions
-like ofSleepMillis() that prevent program execution for a long amount of time). This is
-possibly the largest downside to CX, which forces program flow to be nonlinear.
-In most psychology experiment software, program flow is linear, which is to say
-that you can do, e.g.:
-
-drawThing1();
-sleep(1000000); //Sleep for 1 sec (argument in microseconds)
-drawThing2();
-waitForResponse();
-
-In CX, you can't just sleep whenever you want because the back end code needs to work,
-which can only happen if your code returns from updateExperiment quickly. In CX you have
-to do something more like this (within updateExperiment):
-
-void updateExperiment (void) {
-	if (phase == "draw thing1") {
-		drawThing1();
-
-		presentThing2Time = Clock.getTime() + 1000000; //Present thing2 1000000 microseconds from now.
-		phase = "draw thing2";
-	}
-	if (phase == "draw thing2") {
-		if (Clock.getTime() <= presentThing2Time) {
-			drawThing2();
-		}
-		phase == "get response";
-	}
-	if (phase == "get response") {
-		checkForResponse();
-		phase = "draw thing1";
-	}
-}
-
-There is an abstraction which reduces the pain associated with this design pattern, called CX_TrialController.
-It's application to this exact problem can be found in the advancedChangeDetection example.
-*/
 void updateExperiment (void) {
 	if (trialPhase == "drawStimuli") {
 		//At this phase of the experiment, we want to draw all of our stimuli for the coming trial.
@@ -116,9 +83,9 @@ void updateExperiment (void) {
 		//The duration given for the last slide must be > 0, but is otherwise ignored.
 		//The last slide has an infinite duration: Once it is presented, it will stay
 		//on screen until something else is drawn (i.e. the slide presenter does not
-		//remove it from the screen after the duration is complete). If this is confusing
+		//remove it from the screen after its duration is complete). If this is confusing
 		//to you, consider the question of what the slide presenter should replace the
-		//last frame with that will always be correct.
+		//last slide with that will always be correct.
 		SlidePresenter.beginDrawingNextSlide(1, "test");
 		drawTestArray( trials.at( trialIndex ) );
 		SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
@@ -131,15 +98,23 @@ void updateExperiment (void) {
 	}
 
 	if (trialPhase == "presentStimuli") {
+		SlidePresenter.update(); //The whole time that stimuli are being presented, the update function of the
+			//SlidePresenter should be called all the time. This will allow it to update its state and present
+			//the next stimulus, etc.
+
 		//Check that the slide presenter is still at work (i.e. not yet on the last slide).
 		//As soon as the last slide is presented, isPresentingSlides() will return false.
 		if (!SlidePresenter.isPresentingSlides()) {
-			Input.Keyboard.clearEvents(); //Clear all keyboard responses, if any, made during the frame presentation.
+			Input.pollEvents(); //Check for any events that were made during encoding and maintenance.
+			Input.Keyboard.clearEvents(); //Then clear all keyboard responses, if any, that were made,
+				//because we are not interested in responses made before the test array is presented.
 			trialPhase = "getResponse";
 		}
 	}
 
 	if (trialPhase == "getResponse") {
+		Input.pollEvents(); //Check to see if any input has been given since the last time updateExperiment was called.
+
 		while (Input.Keyboard.availableEvents() > 0) { //While there are available events, 
 
 			CX_KeyEvent_t keyEvent = Input.Keyboard.getNextEvent(); //get the next event for processing.
@@ -247,6 +222,8 @@ vector<TrialData_t> generateTrials (int trialCount) {
 				//of the colors sampled for the stimuli, so it can be used for the changed stimulus
 		} else {
 			//You don't have to set the newColor or the changedObjectIndex for a no-change trial because there is no change and they won't be used.
+			tr.changedObjectIndex = -1; //But we'll set them anyway to unreasonable values just to make sure they aren't mistaken for real values.
+			tr.newColor = backgroundColor;
 		}
 		
 		_trials.push_back( tr );
