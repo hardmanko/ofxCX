@@ -1,5 +1,4 @@
-#ifndef _CX_MOUSE_H_
-#define _CX_MOUSE_H_
+#pragma once
 
 #include <queue>
 #include <set>
@@ -21,7 +20,7 @@ namespace CX {
 	/*! This struct contains the results of a mouse event, which is any type of interaction with the mouse, be it
 	simply movement, a button press or release, a drag event (mouse button held while mouse is moved), or movement 
 	of the scroll wheel. 
-	\ingroup input */
+	\ingroup inputDevices */
 	struct CX_MouseEvent_t {
 		int button; /*!< \brief The relevant mouse button if the eventType is PRESSED, RELEASED, or DRAGGED. 
 						Can be compared with elements of enum CX_MouseButtons to find out about the primary buttons. */
@@ -56,7 +55,7 @@ namespace CX {
 
 	/*! This class is responsible for managing the mouse. 
 	
-	\ingroup input
+	\ingroup inputDevices
 	*/
 	class CX_Mouse {
 	public:
@@ -82,7 +81,7 @@ namespace CX {
 		void _mouseButtonReleasedEventHandler (ofMouseEventArgs &a);
 		void _mouseMovedEventHandler (ofMouseEventArgs &a);
 		void _mouseDraggedEventHandler (ofMouseEventArgs &a);
-		void _mouseWheelScrollHandler (CX_MouseScrollEventArgs_t &a);
+		void _mouseWheelScrollHandler (Private::CX_MouseScrollEventArgs_t &a);
 
 		void _mouseEventHandler (ofMouseEventArgs &a);
 
@@ -91,5 +90,3 @@ namespace CX {
 
 	};
 }
-
-#endif //_CX_MOUSE_H_

@@ -17,7 +17,7 @@
 #include "CX_Clock.h"
 #include "CX_LoggerChannel.h"
 
-/*! \defgroup logging Logging
+/*! \defgroup errorLogging Error Logging
 
 */
 
@@ -28,8 +28,9 @@ namespace CX {
 	Depending on the settings set using level(), levelForConsole(), or levelForFile(), if the log level of a message is below
 	the level set for the module or logging target it will not be printed. For example, if LOG_ERROR is the level for the console
 	and LOG_NOTICE is the level for the module "test", then messages logged to the "test" module will be completely ignored if
-	at verbose level (because of the module setting) and will not be printed to the console if they are below the error level.
-	\ingroup logging
+	at verbose level (because of the module setting) and will not be printed to the console if they are below the level of an
+	error (because of the console setting).
+	\ingroup errorLogging
 	*/
 	//These rely on ordering; do not change it.
 	enum class CX_LogLevel {
@@ -59,8 +60,10 @@ namespace CX {
 
 	/*! This class is used for logging messages throughout the CX backend code. It can also be used
 	in user code to log messages. Rather than instantiating your own copy of CX_Logger, it is probably
-	better to use the preinstantiated \ref CX::Instances::Log. 
-	\ingroup logging */
+	better to use the preinstantiated \ref CX::Instances::Log.
+
+	There is an example showing a number of the features of CX_Logger named example-logging.
+	\ingroup errorLogging */
 	class CX_Logger {
 	public:
 
@@ -102,7 +105,7 @@ namespace CX {
 
 		CX_LogLevel _defaultLogLevel;
 
-		CX_LoggerChannel _ofLoggerChannel;
+		ofPtr<CX_LoggerChannel> _ofLoggerChannel;
 		void _loggerChannelEventHandler(CX_ofLogMessageEventData_t& md);
 	};
 

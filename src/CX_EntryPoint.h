@@ -9,7 +9,12 @@ is designed to be used used for creating psychology experiments.
 The most well-organized way to access the documentation is go to the \ref modules page.
 
 To find out more about presenting visual stimuli, go to the \ref video page.
+
 To find out about auditory stimuli, go to the \ref sound page.
+
+To learn about how CX logs errors, see the \ref errorLogging page.
+
+
 
 \section install Installation
 Drop the contents of this repository into a subdirectory directory under openFrameworksDirectory/addons (typically addons/ofxCX).
@@ -125,7 +130,6 @@ CX::Instances::SlidePresenter is a very useful abstraction that is used for the 
 namespace CX {
 	namespace Instances {
 		extern CX_Display Display;
-		//extern CX_SlidePresenter SlidePresenter;
 		extern CX_InputManager Input;
 	}
 }

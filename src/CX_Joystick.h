@@ -13,7 +13,7 @@ namespace CX {
 	press or release or a change in the axes of the joystick. 
 	
 	\see CX::CX_Joystick::getNextEvent() provides access to joystick events.
-	\ingroup input */
+	\ingroup inputDevices */
 	struct CX_JoystickEvent_t {
 
 		int buttonIndex; //!< If eventType is BUTTON_PRESS or BUTTON_RELEASE, this contains the index of the button that was changed.
@@ -35,7 +35,7 @@ namespace CX {
 
 	/*! This class manages a joystick that is attached to the system (if any). If more than one joystick is needed
 	for the experiment, you can create more instances of CX_Joystick other than the one in CX::Instances::Input.
-	\ingroup input */
+	\ingroup inputDevices */
 	class CX_Joystick {
 	public:
 		CX_Joystick (void);

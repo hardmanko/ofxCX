@@ -7,16 +7,9 @@
 \ingroup entryPoint */
 CX::CX_Display CX::Instances::Display;
 
-/*! An instance of CX_InputManager that is hooked into the CX backend. 
-CX::CX_InputManager::pollEvents() is automatically called for this instance just before updateExperiment() is called.
+/*! An instance of CX_InputManager that is hooked into the CX backend.
 \ingroup entryPoint */
 CX::CX_InputManager CX::Instances::Input; 
-
-/* An instance of CX::CX_SlidePresenter that is hooked into the CX backend. 
-During setup, it is configured to use CX::Instances::Display as its display.
-CX::CX_SlidePresenter::update() is called for this instance just before updateExperiment() is called.
-\ingroup entryPoint */
-//CX::CX_SlidePresenter CX::Instances::SlidePresenter;
 
 namespace CX {
 	namespace Private {
@@ -34,6 +27,7 @@ namespace CX {
 			ofWindowMode mode;
 		};
 
+		
 		class App {
 		public:
 			void setup(void);
@@ -42,6 +36,7 @@ namespace CX {
 			void update(void);
 			void exit(ofEventArgs &a);
 		};
+		
 
 		void glfwErrorCallback(int code, const char* message) {
 			CX::Instances::Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
@@ -63,7 +58,6 @@ void CX::Private::App::setup (void) {
 	ofAddListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );
 
 	CX::Instances::Display.setup();
-	//CX::Instances::SlidePresenter.setup(&Instances::Display);
 
 	CX::Instances::Log.captureOFLogMessages();
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
@@ -72,7 +66,7 @@ void CX::Private::App::setup (void) {
 	//Log.levelForFile(CX_LogLevel::LOG_ALL);
 	//Log.levelForFile(CX_LogLevel::LOG_ALL, "Log for last run.txt");
 
-	CX::Private::Events.setup();
+	//CX::Private::Events.setup();
 
 	//Call the user setup function
 	setupExperiment();
@@ -87,7 +81,7 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	ofPtr<ofAppGLFWWindow> window(new ofAppGLFWWindow);
 	window->setNumSamples(CX::Util::getSampleCount());
 
-	ofSetCurrentRenderer((ofPtr<ofBaseRenderer>)(new ofGLRenderer), true);
+	ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), config.width, config.height, config.mode);
 
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer
@@ -100,10 +94,6 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 }
 
 void CX::Private::App::update (void) {
-	//CX::Instances::SlidePresenter.update();
-	
-	//CX::Instances::Input.pollEvents();
-
 	updateExperiment(); //Call the user update function
 
 	//ofSleepMillis(0); //sleep(0) is similar to yield()

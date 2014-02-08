@@ -12,8 +12,11 @@
 #include "CX_Mouse.h"
 #include "CX_Joystick.h"
 
-/*! \defgroup input Input
-There are a number of different classes that together perform the input handling functions of CX. For interfacing with serial ports, use ofSerial 
+/*! \defgroup inputDevices Input Devices
+There are a number of different classes that together perform the input handling functions of CX. Start by looking at CX::CX_InputManager
+and the instance of that class that is created for you: CX::Instances::Input.
+
+For interfacing with serial ports, use ofSerial 
 (http://www.openframeworks.cc/documentation/communication/ofSerial.html).
 
 \sa CX::CX_InputManager for the primary interface to input devices.
@@ -31,7 +34,7 @@ namespace CX {
 
 	By default, all three input devices are disabled. Call \ref setup() to enable specific devices.
 	
-	\ingroup input
+	\ingroup inputDevices
 	*/
 	class CX_InputManager {
 	public:

@@ -14,8 +14,22 @@ namespace CX {
 
 	class CX_SlidePresenter;
 
+	/*! The settings in this enum are related to what a CX_SlidePresenter does when it encounters a timing error.
+	Timing errors are probably almost exclusively related to one slide being presented for too long.
+
+	The PROPAGATE_DELAYS setting causes the slide presenter to handle these errors by moving the start time
+	of all future stimuli back by the number of extra frame that the erroneous slide used. This makes the
+	durations of all future stimuli correct, so that there is only an error in the duration of one slide.
+	
+	An alternative option is to try to keep the onsets of all slides as constant as possible
+	relative to each other. This means that if one slide is presented for an extra frame, the next slide
+	will be presented for one frame less than it should have been. If one slide is presented for several
+	extra frames (this should almost never happen), the next slide may be skipped altogether. However,
+	this mode (FIX_TIMING_FROM_FIRST_SLIDE) does not completely work currently so it should not be used.
+	*/
 	enum class CX_SP_ErrorMode {
-		PROPAGATE_DELAYS,
+		PROPAGATE_DELAYS, //!< This mode handles timing errors by changing the onset times of future stimuli so
+			//that their durations are kept the same.
 		FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
 	};
 
@@ -29,7 +43,7 @@ namespace CX {
 		{}
 
 		CX_SlidePresenter *instance; //!< A pointer to the CX_SlidePresenter that called the user function.
-		unsigned int currentSlideIndex; //!< Redundant: May be gotten using instance->getActiveSlideIndex().
+		unsigned int currentSlideIndex; //!< The index of the slide that is currently being presented.
 
 	};
 

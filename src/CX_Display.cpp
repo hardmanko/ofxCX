@@ -20,6 +20,7 @@ CX_Display::~CX_Display (void) {
 	//_swapThread->waitForThread(false);
 	delete _swapThread;
 }
+
 void CX_Display::exit(void) {
 	_swapThread->stopThread();
 	_swapThread->waitForThread(false);

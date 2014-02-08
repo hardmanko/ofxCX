@@ -27,7 +27,7 @@ namespace CX {
 
 
 	/*! This struct contains the results of a keyboard event, whether it be a key press or release, or key repeat.
-	\ingroup input
+	\ingroup inputDevices
 	*/
 	struct CX_KeyEvent_t {
 		int key; /*!< The key involved in this event. The value of this can be compared with chars for many keys
@@ -51,7 +51,7 @@ namespace CX {
 
 	/*!  
 	//This class is responsible for managing the mouse.
-	\ingroup input
+	\ingroup inputDevices
 	*/
 	class CX_Keyboard {
 	public:
