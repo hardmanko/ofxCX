@@ -23,6 +23,7 @@ int presentStimuli (void);
 int getResponse (void);
 
 void generateTrials (int trialCount);
+void updateExperiment (void);
 
 CX_SlidePresenter SlidePresenter;
 void drawFixation (void);
@@ -36,7 +37,7 @@ int trialIndex = 0;
 int circleRadius = 30;
 ofColor backgroundColor(50);
 
-void setupExperiment (void) {
+void runExperiment (void) {
 
 	generateTrials(8);
 
@@ -51,6 +52,10 @@ void setupExperiment (void) {
 	trialController.appendFunction( &presentStimuli );
 	trialController.appendFunction( &getResponse );
 	trialController.start();
+
+	while (true) {
+		updateExperiment();
+	}
 }
 
 /*
@@ -126,13 +131,13 @@ int getResponse (void) {
 
 				if ((changeTrial && keyEvent.key == 'd') || (!changeTrial && keyEvent.key == 's')) {
 					trialDf(trialIndex, "responseCorrect") = true;
-					Log.notice("myExperiment") << "Correct!";
+					Log.notice() << "Response correct!";
 				} else {
 					trialDf(trialIndex, "responseCorrect") = false;
-					Log.notice("myExperiment") << "Incorrect";
+					Log.notice() << "Response incorrect.";
 				}
 
-				trialDf(trialIndex, "presentationErrors") = SlidePresenter.checkForPresentationErrors();
+				trialDf(trialIndex, "presentationErrors") = SlidePresenter.checkForPresentationErrors().totalErrors();
 
 				Log.flush();
 
@@ -194,36 +199,30 @@ void generateTrials (int trialCount) {
 		}
 
 		tr["colors"] = colors;
-		unsigned int newColorIndex = colorIndices[ tr["arraySize"] ];
+		unsigned int newColorIndex = colorIndices[ tr["arraySize"].toInt() ];
 
-		tr["locations"] = RNG.sample( tr["arraySize"], objectLocations, false );
+		tr["locations"] = RNG.sample( tr["arraySize"].toInt(), objectLocations, false );
 
-		tr["changeTrial"] = changeTrial[trial];
+		tr["changeTrial"] = (bool)changeTrial[trial]; //Cast changeTrial to bool so that it will be stored
+			//by the data frame as a boolean value, which means you won't get warnings when extracting the
+			//value from the cell as bool.
 		if (changeTrial[trial]) {
-			tr["changedObjectIndex"] = RNG.randomInt( 0, tr["arraySize"].toInt() - 1 ); 
+			tr["changedObjectIndex"] = (int)RNG.randomInt( 0, tr["arraySize"].toInt() - 1 ); //Store explicitly as int
 			tr["newObjectColor"] = objectColors[ newColorIndex ];
 		}
 		
 		trialDf.appendRow( tr );
 	}
 
-	/*
-	set<string> columns;
-	columns.insert("changeTrial");
-	columns.insert("newObjectColor");
-	columns.insert("changedObjectIndex");
-
-	cout << trialDf.print(columns) << endl << endl;
-	*/
 	trialDf.shuffleRows();
 
-	//cout << trialDf.print(columns) << endl << endl;
-
 	//After generating the trials, the column names for all of those trials will be in the data frame, 
-	//but we still need to add two more columns for response data:
+	//but we still need to add two more columns for response data and a column to track presentation errors:
 	trialDf.addColumn("responseCorrect");
 	trialDf.addColumn("responseTime");
 	trialDf.addColumn("presentationErrors");
+
+	Log.flush();
 
 }
 
@@ -247,7 +246,7 @@ void drawSampleArray (void) {
 
 	ofBackground( backgroundColor );
 
-	//We know that the contents of the colors and locations *cells* are vectors, so we read them out into vectors of the appropriate type.
+	//We know that the contents of the colors and locations cells are vectors, so we read them out into vectors of the appropriate type.
 	vector<ofColor> colors = trialDf(trialIndex, "colors");
 	vector<ofPoint> locations = trialDf(trialIndex, "locations");
 

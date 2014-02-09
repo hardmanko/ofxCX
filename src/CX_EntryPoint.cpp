@@ -33,11 +33,10 @@ namespace CX {
 			void setup(void);
 			void setupWindow(CX_WindowConfiguration_t config);
 
-			void update(void);
-			void exit(ofEventArgs &a);
+			//void update(void);
 		};
 		
-
+		//Apparently oF has added this, so expect to remove it when oF version 0.9.0 is supported.
 		void glfwErrorCallback(int code, const char* message) {
 			CX::Instances::Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
 		}
@@ -47,6 +46,8 @@ namespace CX {
 
 void CX::Private::App::setup (void) {
 
+	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
+
 	ofSetWorkingDirectoryToDefault();
 
 	setupWindow(CX::Private::CX_WindowConfiguration_t());
@@ -54,8 +55,6 @@ void CX::Private::App::setup (void) {
 	//Why use these? CX has RNG and Clock.
 	ofSeedRandom();
 	ofResetElapsedTimeCounter();
-
-	ofAddListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );
 
 	CX::Instances::Display.setup();
 
@@ -66,12 +65,7 @@ void CX::Private::App::setup (void) {
 	//Log.levelForFile(CX_LogLevel::LOG_ALL);
 	//Log.levelForFile(CX_LogLevel::LOG_ALL, "Log for last run.txt");
 
-	//CX::Private::Events.setup();
-
-	//Call the user setup function
-	setupExperiment();
-
-	CX::Instances::Log.flush(); //Flush logs after the user setup function, so they can see if any errors happened during their setup.
+	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened their setup.
 }
 
 void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
@@ -93,24 +87,9 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	ofSetOrientation(ofOrientation::OF_ORIENTATION_DEFAULT, true);
 }
 
-void CX::Private::App::update (void) {
-	updateExperiment(); //Call the user update function
-
-	//ofSleepMillis(0); //sleep(0) is similar to yield()
-}
-
-void CX::Private::App::exit (ofEventArgs &a) {
-	CX::Instances::Display.exit();
-
-	ofRemoveListener( ofEvents().exit, this, &CX::Private::App::exit, OF_EVENT_ORDER_APP );
-}
-
-
 int main (void) {	
 	CX::Private::App A;
 	A.setup();
-	while (true) {
-		A.update();
-	}
+	runExperiment();
 	return 0;
 }

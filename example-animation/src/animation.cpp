@@ -1,19 +1,19 @@
 #include "CX_EntryPoint.h"
 
 /*
-It is not immediately obvious how to do animations using CX while not blocking
-in updateExperiment(), so I've made an example showing how to do so.
+It is not immediately obvious how to do animations using CX while not blocking, 
+so I've made an example showing how to do so.
 
 There are really just four critical functions:
-CX_Display::BLOCKING_setSwappingState(), CX_Display::hasSwappedSinceLastCheck(),
+CX_Display::BLOCKING_setAutoSwapping(), CX_Display::hasSwappedSinceLastCheck(),
 CX_Display::beginDrawingToBackBuffer(), and CX_Display::endDrawingToBackBuffer().
 
 All you have to do to set up the animation is to call:
-CX_Display::BLOCKING_setSwappingState(true);
+CX_Display::BLOCKING_setAutoSwapping(true);
 This causes the contents of the back buffer to be automatically swapped to
 the front buffer every monitor refresh.
 
-Then, in updateExperiment(), check hasSwappedSinceLastCheck() to see if
+Then, in updateAnimation(), check hasSwappedSinceLastCheck() to see if
 a swap has just occured. If so, use beginDrawingToBackBuffer() and 
 endDrawingToBackBuffer() to draw whatever the next frame of the animation
 is into the back buffer.
@@ -30,10 +30,11 @@ int directions[3] = { 1, 1, 1 };
 double distancesFromCenter[3] = { 75, 150, 225 };
 double distanceMultiplier = 1;
 
+void updateAnimation (void);
 void drawNextFrameOfAnimation (void);
 ofPoint calculateCircleCenter(double angleDeg, double distanceFromCenter);
 
-void setupExperiment (void) {
+void runExperiment (void) {
 	//Use mouse, but not keyboard.
 	Input.setup(false, true);
 
@@ -41,10 +42,14 @@ void setupExperiment (void) {
 	Display.setWindowResolution(600, 600);
 
 	//See the main comment at the top of this file.
-	Display.BLOCKING_setSwappingState(true);
+	Display.BLOCKING_setAutoSwapping(true);
+
+	while (true) {
+		updateAnimation();
+	}
 }
 
-void updateExperiment (void) {
+void updateAnimation (void) {
 	//See the main comment at the top of this file.
 	if (Display.hasSwappedSinceLastCheck()) {
 		Display.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.

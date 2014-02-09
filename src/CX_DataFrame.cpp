@@ -309,7 +309,7 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	vector<string> names = row.names();
 	for (unsigned int i = 0; i < names.size(); i++) {
 		_data[names[i]].resize(_rowCount);
-		_data[names[i]].back() = row[names[i]].toString(); //Copy the string data to the cell in the data frame.
+		row[names[i]].copyCellTo( _data[names[i]].back() ); //Copy the cell in the row into the data frame.
 	}
 
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
@@ -346,10 +346,15 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 	vector<string> names = this->columnNames();
 
 	for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
-		vector<string> columnStrings = this->copyColumn<string>(*it);
+		
+		vector<CX_DataFrameCell> columnCopy(_rowCount); //Data must first be copied into new columns,
+			//otherwise moving data from one row to another could overwrite a row that hasn't been copied
+			//yet.
 		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
-			_data.at(*it).at(i) = columnStrings.at(newOrder[i]);
+			this->_data[*it][newOrder[i]].copyCellTo( columnCopy[i] );
 		}
+
+		this->_data[*it] = columnCopy;
 	}
 	return true;
 }
@@ -376,13 +381,12 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 	CX_DataFrame copyDf;
 
 	vector<string> columnNames = this->columnNames();
-	for (vector<string>::iterator it = columnNames.begin(); it != columnNames.end(); it++) {
+	for (vector<string>::iterator col = columnNames.begin(); col != columnNames.end(); col++) {
 		//copyDf._data[*it].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
 		//next columns, they will be resized to the proper size when they are created.
 
-		vector<string> columnStrings = this->copyColumn<string>(*it);
-		for (rowIndex_t i = 0; i < rowOrder.size(); i++) {
-			copyDf(*it, i) = columnStrings[rowOrder[i]];
+		for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
+			this->operator()(*col, rowOrder[row]).copyCellTo( copyDf(*col, row) );
 		}
 	}
 
@@ -407,10 +411,9 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 	}
 
 	CX_DataFrame copyDf;
-	for (std::set<string>::iterator it = columnSet.begin(); it != columnSet.end(); it++) {
-		vector<string> s = this->copyColumn<string>(*it);
-		for (rowIndex_t i = 0; i < this->getRowCount(); i++) {
-			copyDf(*it, i) = s[i];
+	for (std::set<string>::iterator col = columnSet.begin(); col != columnSet.end(); col++) {
+		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
+			this->operator()(*col, row).copyCellTo(copyDf(*col, row));
 		}
 	}
 

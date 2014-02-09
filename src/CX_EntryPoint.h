@@ -6,7 +6,8 @@
 ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments.
 
-The most well-organized way to access the documentation is go to the \ref modules page.
+The most well-organized way to access the documentation is go to the \ref modules page. The best way to get
+an overview of how CX works is to look at the \ref examplesAndTutorials.
 
 To find out more about presenting visual stimuli, go to the \ref video page.
 
@@ -14,21 +15,33 @@ To find out about auditory stimuli, go to the \ref sound page.
 
 To learn about how CX logs errors, see the \ref errorLogging page.
 
+To learn about how to store and output experiment data, see the \ref dataManagement page.
+
+To learn about random number generation, see the \ref randomNumberGeneration page.
 
 
 \section install Installation
-Drop the contents of this repository into a subdirectory directory under openFrameworksDirectory/addons (typically addons/ofxCX).
+In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
+Currently only version 0.8.0 of openFrameworks is supported by CX.
+
+Once you have installed openFrameworks, you can install CX by putting the contents of this repository into a subdirectory 
+under openFrameworksInstallDirectory/addons (typically openFrameworksInstallDirectory/addons/ofxCX), where openFrameworksInstallDirectory
+is where you put openFramworks when you installed it.
+
+To use CX in a project, use the openFrameworks project generator and select ofxCX as an addon to use. The project generator can
+be found in openFrameworksInstallDirectory/projectGenerator.
 
 In order to use the examples, do the following:
-1. Use the oF project generator (in openFrameworksDirectory/projectGenerator) to create a new project that uses the ofxCX addon.
+1. Use the oF project generator (in openFrameworksInstallDirectory/projectGenerator) to create a new project that uses the ofxCX addon.
 2. Go to the newly-created project directory (that you chose when creating the project in step 1) and go into the src subdirectory.
 3. Delete all of the files in the src directory (main.cpp, testApp.h, and testApp.cpp)
 4. Copy the example .cpp file into this directory
-4a. If the example has a data folder, copy the contents of that folder into %yourProject%/bin/data. These folders probably won't exist at this point. You can create them.
+4a. If the example has a data folder, copy the contents of that folder into yourProjectDirectory/bin/data. bin/data folders probably won't 
+exist at this point. You can create it.
 5. This step depends on your compiler, but you'll need to tell it to use the example source file (.cpp) when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
 6. Compile and run the project
 
-\section tutorial Examples and Tutorials
+\section examplesAndTutorials Examples and Tutorials
 There are several examples that serve as tutorials for CX. Some of the examples are on a specific topic and others 
 are sample experiments that integrate together different features of CX. The example files can be found in the CX
 directory (see \ref install) in subfolders with names beginning with "example-".
@@ -122,7 +135,6 @@ CX::Instances::SlidePresenter is a very useful abstraction that is used for the 
 #include "CX_TrialController_Class.h"
 #include "CX_SoundObjectPlayer.h" //All of the sound stuff comes with this header
 #include "CX_DataFrame.h"
-//#include "CX_Events.h" //I kind of don't want the user to be aware of this
 
 #include "CX_Utilities.h"
 #include "CX_Draw.h"
@@ -146,19 +158,18 @@ It also provides declarations (but not definitions) of two functions which the u
 (\ref setupExperiment() and \ref updateExperiment()).
 */
 
-/*! \fn setupExperiment 
-The user code should define a function with this name and type signature. The user function will be called a single time
-at the beginning of the experiment.
-\ingroup entryPoint
-*/
-
-/*! \fn updateExperiment 
+/*! \fn runExperiment 
 The user code should define a function with this name and type signature. The user function will be called
-continuously until the program exits.
+once setup is done for CX. When runExperiment returns, the program will exit.
+
+	void runExperiment (void) {
+		//Do your experiment.
+		return; //When done. You can alternately call std::exit() or ofExit()
+	}
+
 \ingroup entryPoint
 */
 
-void setupExperiment (void);
-void updateExperiment (void);
+void runExperiment (void);
 
 #endif //_CX_ENTRY_POINT_H_

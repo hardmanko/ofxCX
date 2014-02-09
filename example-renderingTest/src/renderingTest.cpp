@@ -28,10 +28,10 @@ ofTexture mirroredBirds;
 bool drawingToFboFirst = false;
 float starSize = .8;
 
+void updateDrawings(void);
 void drawStuff (void);
 
-
-void setupExperiment (void) {
+void runExperiment(void) {
 	Input.setup(true, true);
 
 	Display.setWindowResolution(800, 600);
@@ -87,9 +87,13 @@ void setupExperiment (void) {
 	mirroredBirds.allocate(mirroredPix);
 	mirroredBirds.loadData(mirroredPix);
 #endif
+
+	while (true) {
+		updateDrawings();
+	}
 }
 
-void updateExperiment (void) {
+void updateDrawings (void) {
 
 	if (Input.pollEvents()) {
 		while (Input.Keyboard.availableEvents()) {

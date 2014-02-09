@@ -4,6 +4,7 @@
 //There are a lot of symbols in this file that should not leak into the user space.
 
 #include "CX_Private.h" //glfwContext
+#include "CX_Events.h" //exit event
 
 using namespace CX;
 using namespace CX::Instances;
@@ -16,16 +17,10 @@ CX_Display::CX_Display (void) :
 }
 
 CX_Display::~CX_Display (void) {
-	//_swapThread->stopThread();
-	//_swapThread->waitForThread(false);
-	delete _swapThread;
-}
-
-void CX_Display::exit(void) {
 	_swapThread->stopThread();
 	_swapThread->waitForThread(false);
+	delete _swapThread;
 }
-
 
 /*! Set up the display. Must be called for the display to function correctly. */
 void CX_Display::setup (void) {
@@ -50,7 +45,7 @@ void CX_Display::setup (void) {
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
 \param autoSwap If true, the front and back buffer will swap automatically every frame.*/
-void CX_Display::BLOCKING_setSwappingState (bool autoSwap) {
+void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
 			_swapThread->startThread(true, false); //verbose is true only for testing.
@@ -65,7 +60,7 @@ void CX_Display::BLOCKING_setSwappingState (bool autoSwap) {
 
 /*! Determine whether the display is configured to automatically swap the front and back buffers
 every frame.
-See \ref BLOCKING_setSwappingState for more information.
+See \ref BLOCKING_setAutoSwapping for more information.
 */
 bool CX_Display::isAutomaticallySwapping (void) {
 	return _swapThread->isThreadRunning();
@@ -100,7 +95,7 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 
 /*! This function returns the number of the last frame presented, as determined by 
 number of front and back buffer swaps. It tracks buffer swaps that result from 
-1) the front and back buffer swapping automatically (as a result of BLOCKING_setSwappingState(true)) and 
+1) the front and back buffer swapping automatically (as a result of BLOCKING_setAutoSwapping(true)) and 
 2) manual swaps resulting from a call to BLOCKING_swapFrontAndBackBuffers().
 \return The number of the last frame. This value can only be compared with other values 
 returned by this function. */
@@ -210,7 +205,7 @@ is desired, this function can be called again with a longer wait duration.
 */
 void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();
-	BLOCKING_setSwappingState(false);
+	BLOCKING_setAutoSwapping(false);
 
 	vector<CX_Micros> swapTimes;
 
@@ -229,7 +224,7 @@ void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
 		_framePeriod = swapSum/(swapTimes.size() - 1);
 	}
 	
-	BLOCKING_setSwappingState(wasSwapping);
+	BLOCKING_setAutoSwapping(wasSwapping);
 }
 
 /*! Set whether the display is full screen or not. If the display is set to full screen, 

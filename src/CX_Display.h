@@ -39,7 +39,6 @@ namespace CX {
 		~CX_Display (void);
 
 		void setup (void);
-		void exit (void);
 
 		void setFullScreen (bool fullScreen);
 		
@@ -49,7 +48,7 @@ namespace CX {
 		void endDrawingToBackBuffer (void);
 		void BLOCKING_swapFrontAndBackBuffers (void);
 
-		void BLOCKING_setSwappingState (bool autoSwap);
+		void BLOCKING_setAutoSwapping (bool autoSwap);
 		bool isAutomaticallySwapping (void);
 		bool hasSwappedSinceLastCheck (void);
 		CX_Micros getLastSwapTime (void);
@@ -73,6 +72,8 @@ namespace CX {
 		CX_Micros _framePeriod;
 
 		uint64_t _manualBufferSwaps;
+
+		void _exitHandler(void);
 
 	};
 

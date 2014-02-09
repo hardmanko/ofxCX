@@ -22,17 +22,9 @@ mental model.
 //the data frame.
 //#include "myType.h"
 
-void setupExperiment (void) {
+void runExperiment (void) {
+
 	CX_DataFrame df;
-
-	/*
-	df.readFromFile("data frame.txt");
-	df.deleteColumn("rowNumber");
-	df.deleteRow(0);
-	cout << df.print() << endl;
-
-	Log.flush();
-	*/
 
 	//Use the () notation to access an element at the given (column, row). Columns are named with strings and rows
 	//are numbered. Due to some operator overloading, you
@@ -78,7 +70,7 @@ void setupExperiment (void) {
 	printCol.insert("dwellings");
 	printCol.insert("vect");
 	vector<unsigned int> printRow = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, 1);
-	cout << endl << "Only selected rows and columns: " << df.print( printCol, printRow, "\t" ); 
+	cout << endl << "Only selected rows and columns: " << endl << df.print( printCol, printRow, "\t" ); 
 
 	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.getRowCount() to get the
 	//the information needed. Rows in a CX_DataFrame are always numbered from 0.
@@ -128,6 +120,13 @@ void setupExperiment (void) {
 
 	numericVector(df$vect[1]) #Example use
 	*/
+
+
+	df.readFromFile("myDataFrame.txt");
+	df.deleteColumn("rowNumber");
+	cout << "Data frame read in from file: " << endl << df.print() << endl;
+
+
 
 	//You can copy rows from a data frame into a new data frame. You can specify which rows
 	//to copy. You can even copy the same row multiple times.
@@ -194,8 +193,19 @@ void setupExperiment (void) {
 
 	sdf.getRowCount(); //These are both still avalable.
 	sdf.columnNames();
-}
 
-void updateExperiment (void) {
-	//Do nothing
+	Log.flush(); //Check to see if any errors occured during the running of this example.
+
+	Display.setWindowResolution(500, 100);
+	Display.beginDrawingToBackBuffer();
+	ofBackground(0);
+	ofSetColor(255);
+	ofDrawBitmapString("Examine the console for various printouts that \ncorrespond to certain parts of the code.\n\n"
+					   "Press any key to exit.", ofPoint(20, 20));
+	Display.endDrawingToBackBuffer();
+	Display.BLOCKING_swapFrontAndBackBuffers();
+
+	Input.setup(true, false);
+	while (!Input.pollEvents())
+		;
 }

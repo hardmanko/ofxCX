@@ -19,7 +19,7 @@ bool CX::Util::checkOFVersion(int versionMajor, int versionMinor, int versionPat
 	if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
 		return true;
 	}
-	Instances::Log.warning("CX::checkOFVersion") << "oF version does not match. Current version: " << ofGetVersionInfo();
+	Instances::Log.warning("CX::Util::checkOFVersion") << "openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
 	return false;
 }
 
@@ -36,7 +36,7 @@ an error message will be logged.
 bool CX::Util::writeToFile(std::string filename, std::string data, bool append) {
 	ofFile out( ofToDataPath(filename), ofFile::Reference );
 	if (out.exists() && !append) {
-		Instances::Log.warning("CX::writeToFile") << "File " << filename << " already exists. I will be overwritten.";
+		Instances::Log.warning("CX::Util::writeToFile") << "File " << filename << " already exists. It will be overwritten.";
 	}
 	out.close();
 	out.open( ofToDataPath(filename), (append ? ofFile::Append : ofFile::WriteOnly), false );
@@ -45,7 +45,7 @@ bool CX::Util::writeToFile(std::string filename, std::string data, bool append) 
 		out.close();
 		return true;
 	} else {
-		Instances::Log.error("CX::writeToFile") << "File " << filename << " could not be opened.";
+		Instances::Log.error("CX::Util::writeToFile") << "File " << filename << " could not be opened.";
 	}
 	return false;
 }

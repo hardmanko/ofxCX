@@ -17,7 +17,7 @@ CX_SoundObject cow;
 CX_SoundObject duck;
 CX_SoundObject compoundSound;
 
-void setupExperiment (void) {
+void runExperiment (void) {
 
 	//CX_SoundObjectPlayer uses RtAudio (http://www.music.mcgill.ca/~gary/rtaudio/) for playing sounds.
 	//Because of this, configuring the CX_SoundObjectPlayer is more or less directly configuring
@@ -126,10 +126,4 @@ void setupExperiment (void) {
 	while (player.isPlaying())
 		;
 
-	ofExit();
-
-}
-
-void updateExperiment (void) {
-	
 }

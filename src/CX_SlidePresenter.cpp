@@ -66,7 +66,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	}
 
 	if (!_display->isAutomaticallySwapping()) {
-		_display->BLOCKING_setSwappingState(true); //This class requires that the monitor be swapping constantly while presenting slides.
+		_display->BLOCKING_setAutoSwapping(true); //This class requires that the monitor be swapping constantly while presenting slides.
 		Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
 	}
 

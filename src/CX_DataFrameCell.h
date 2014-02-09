@@ -22,7 +22,7 @@ or extracted and logs warnings if the inserted type does not match the extracted
 \note There are a few exceptions to the type tracking. If the inserted type is const char*, it is treated as a string.
 Additionally, you can extract anything as string without a warning. This is because the data is stored as a string 
 internally so extracting the data as a string is a lossless operation.
-\ingroup data
+\ingroup dataManagement
 */
 class CX_DataFrameCell {
 public:
@@ -32,11 +32,15 @@ public:
 	template <typename T> CX_DataFrameCell (const std::vector<T>& values); //!< Construct the cell, assigning the values to it.
 
 	CX_DataFrameCell& operator= (const char* c); //!< Assigns a string literal to the cell, treating it as a std::string.
+	//CX_DataFrameCell& operator= (const CX_DataFrameCell& cell); //!< 
+
 	template <typename T> CX_DataFrameCell& operator= (const T& value); //!< Assigns a value to the cell.
 	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values); //!< Assigns a vector of values to the cell.
 
 	template <typename T> operator T (void) const; //!< Attempts to convert the contents of the cell to T using to().
 	template <typename T> operator std::vector<T> (void) const; //!< Attempts to convert the contents of the cell to vector<T> using toVector<T>().
+
+	template <typename T> void store(const T& value);
 
 	//! Returns a copy of the stored data, converted to T.
 	template <typename T> T to(void) const; 
@@ -58,6 +62,11 @@ public:
 
 	template <typename T> std::vector<T> toVector (void) const;
 	template <typename T> void storeVector (std::vector<T> values);
+
+	//CX_DataFrameCell copyCell(void);
+	void copyCellTo(CX_DataFrameCell& targetCell);
+
+	std::string getStoredType (void);
 
 private:
 	std::shared_ptr<std::string> _str;
@@ -86,8 +95,7 @@ template <typename T>
 CX_DataFrameCell::CX_DataFrameCell (const T& value) {
 	_str = std::shared_ptr<std::string>(new std::string);
 	_type = std::shared_ptr<std::string>(new std::string);
-	*_str = _toString<T>(value);
-	*_type = typeid(T).name();
+	this->store(value);
 }
 
 template <typename T> 
@@ -99,8 +107,7 @@ CX_DataFrameCell::CX_DataFrameCell (const std::vector<T>& values) {
 
 template <typename T>
 CX_DataFrameCell& CX_DataFrameCell::operator= (const T& value) {
-	*_str = _toString(value);
-	*_type = typeid(T).name();
+	this->store(value);
 	return *this;
 }
 
@@ -180,6 +187,16 @@ void CX_DataFrameCell::storeVector (std::vector<T> values) {
 template<>
 std::string CX_DataFrameCell::to<std::string>(void) const {
 	return toString();
+}
+
+/*! Stores the given value with the given type. This function is a good way to explicitly
+state the type of the data you are storing into the cell if, for example, it is a literal.
+\tparam <T> The type to store the value as. If T is not specified, this function is essentially equivalent to using operator=.
+\param value The value to store.
+*/
+template <typename T> void CX_DataFrameCell::store(const T& value) {
+	*_str = ofToString<T>(value);
+	*_type = typeid(T).name();
 }
 
 std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);

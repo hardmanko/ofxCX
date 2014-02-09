@@ -1,9 +1,7 @@
+#pragma once
 
-//#ifdef TARGET_WIN32
-//#include "Windows.h" //Must include Windows.h before glfw3.h?
-//#endif
+//This file should not be included in a location that will make its contents visible to user code.
 
-//struct GLFWwindow;
 #include "GLFW\glfw3.h"
 
 namespace CX {

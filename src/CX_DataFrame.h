@@ -22,7 +22,7 @@ namespace CX {
 class CX_DataFrameRow;
 class CX_DataFrameColumn;
 
-/*! \defgroup data Data 
+/*! \defgroup dataManagement Data
 This module is related to storing experimental data. CX_DataFrame is the most important class in this module.
 
 */
@@ -36,7 +36,7 @@ When done with an experiment, the data can be written to a file using printToFil
 
 See the example dataFrame.cpp for thorough examples of how to use a CX_DataFrame.
 
-\ingroup data
+\ingroup dataManagement
 */
 class CX_DataFrame {
 public:
@@ -127,7 +127,7 @@ template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column
 	return rval;
 }
 
-/*! \ingroup data */
+/*! \ingroup dataManagement */
 class CX_DataFrameColumn {
 public:
 	CX_DataFrameColumn (void);
@@ -143,7 +143,7 @@ private:
 	std::string _columnName;
 };
 
-/*! \ingroup data */
+/*! \ingroup dataManagement */
 class CX_DataFrameRow {
 public:
 	CX_DataFrameRow (void);
@@ -160,7 +160,7 @@ private:
 	CX_DataFrame::rowIndex_t _rowNumber;
 };
 
-/*! \ingroup data */
+/*! \ingroup dataManagement */
 class CX_SafeDataFrame : protected CX_DataFrame {
 public:
 

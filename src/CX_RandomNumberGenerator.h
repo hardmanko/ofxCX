@@ -10,7 +10,7 @@
 
 #include "CX_Utilities.h"
 
-/*! \defgroup random Randomization 
+/*! \defgroup randomNumberGeneration Randomization 
 This module provides a class that is used for random number generation.
 */
 
@@ -23,7 +23,18 @@ namespace CX {
 	http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine for the parameters used with
 	this algorithm).
 
-	\ingroup random
+	The monolithic structure of CX_RandomNumberGenerator provides a certain important feature that a collection
+	of loose function does not have, which is the ability to trivially track the random seed being used
+	for the random number generator. The function CX_RandomNumberGenerator::setSeed() sets the seed for
+	all random number generation tasks performed by this class. Likewise, CX_RandomNumberGenerator::getSeed()
+	allows you to easily find the seed that is being used for random number generation. Due to this structure,
+	you can easily save the seed that was used for each participant, which allows you to repeat the exact
+	randomizations used for that participant (unless random number generation varies as a function of the 
+	responses given by a participant).
+
+	An instance of this class is preinstsantiated for you. See CX::Instances::RNG for information about the instance.
+
+	\ingroup randomNumberGeneration
 	*/
 	class CX_RandomNumberGenerator {
 	public:

@@ -1,10 +1,12 @@
 #include "CX_EntryPoint.h"
 
+//The body of this function is commented out so as to not interfere with reading what is in the console.
+//You can uncomment it to see the result of this callback.
 void loggerFlushCallback (CX_MessageFlushData& mfd) {
 	//cout << "Callback message: " << mfd.message << endl;
 }
 
-void setupExperiment (void) {
+void runExperiment (void) {
 	Log.levelForFile(CX_LogLevel::LOG_ALL); //Calling levelForFile() without a filename causes a log file with a date/time string filename to be created.
 	Log.levelForFile(CX_LogLevel::LOG_ERROR, "Errors only.txt"); //You can have different log levels for different files.
 		//You can log to any number of files at once, although for each additional file there is a linear performance 
@@ -38,7 +40,8 @@ void setupExperiment (void) {
 	//becuase there is no way to control when messages are flushed when using the standard oF logging.
 	//See the documentation http://openframeworks.cc/documentation/utils/ofLog.html for more information about oF logging
 
-	Log.flush(); //Flush the stored messages to the various logging targets (console and files). This is a BLOCKING operation.
+	Log.flush(); //Flush the stored messages to the various logging targets (console and files). 
+		//This is a potentially blocking operation, depending on the number of stored log messages that haven't been flushed.
 
 	Log.levelForConsole(CX_LogLevel::LOG_ALL); //Log everything to the console
 
@@ -49,19 +52,11 @@ void setupExperiment (void) {
 	Log.level(CX_LogLevel::LOG_ALL, "myTargetModule");
 
 	Log.notice("myTargetModule") << "Special message";
-	Log.fatalError("anythingElse") << "Meltdown imminent!!!";
+	Log.fatalError("anythingElse") << "Meltdown imminent!!! To bad you won't get this...";
 
 	Log.flush();
-}
 
-bool doingTimeSensitiveStuff = true;
-
-void updateExperiment (void) {
-	if (doingTimeSensitiveStuff) {
-		//Time sensitive stuff...
-		doingTimeSensitiveStuff = false;
-	} else {
-		Log.flush(); //In case it wasn't clear, only flush() when not doing time sensitive stuff
-		doingTimeSensitiveStuff = true;
-	}
+	Input.setup(true, false);
+	while (!Input.pollEvents())
+		;
 }

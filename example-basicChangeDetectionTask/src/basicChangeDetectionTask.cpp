@@ -25,6 +25,7 @@ struct TrialData_t {
 };
 
 //Function declarations (could be in a header file, if preferred).
+void updateExperiment (void);
 vector<TrialData_t> generateTrials (int trialCount);
 void outputData (void);
 
@@ -44,7 +45,7 @@ ofColor backgroundColor(50);
 string trialPhase = "drawStimuli";
 
 
-void setupExperiment (void) {
+void runExperiment (void) {
 	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how the trials are generated).
 
 	SlidePresenter.setup(&Display); //Associate Display with the SlidePresenter so that the SlidePresenter has something to draw to.
@@ -52,6 +53,10 @@ void setupExperiment (void) {
 	Input.setup(true, false); //Use the keyboard for this experiment, but not the mouse.
 
 	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
+
+	while (1) {
+		updateExperiment();
+	}
 }
 
 void updateExperiment (void) {
@@ -141,10 +146,10 @@ void updateExperiment (void) {
 					//Code the response. For a lot of keys, you can compare the CX_KeyEvent_t::key to a character literal.
 					if ((trials.at( trialIndex ).changeTrial && keyEvent.key == 'd') || (!trials.at( trialIndex ).changeTrial && keyEvent.key == 's')) {
 						trials.at(trialIndex).responseCorrect = true;
-						cout << "Correct!" << endl;
+						Log.notice() << "Response correct!";
 					} else {
 						trials.at(trialIndex).responseCorrect = false;
-						cout << "Incorrect" << endl;
+						Log.notice() << "Response incorrect.";
 					}
 
 					//The end of a trial is a good time to flush() the logs, to see if any warnings/errors have happened during the trial.

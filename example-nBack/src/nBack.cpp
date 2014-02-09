@@ -1,7 +1,5 @@
 #include "CX_EntryPoint.h"
 
-//#include "CX_ContinuousSlidePresenter.h"
-
 /*! \file
 This example shows how to implement an N-Back task using an advanced feature of the CX_SlidePresenter 
 (SP). There is a feature of the SP that allows you to give it a pointer to a function that will be 
@@ -40,7 +38,7 @@ void lastSlideFunction (CX_FinalSlideFunctionInfo_t& info);
 void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
 
-void setupExperiment (void) {
+void runExperiment (void) {
 
 	Input.setup(true, false); //Use keyboard, not mouse.
 
@@ -94,15 +92,30 @@ void setupExperiment (void) {
 
 	//Once everything is set up, start presenting the slides.
 	SlidePresenter.startSlidePresentation();
-}
 
-void updateExperiment (void) {
-	SlidePresenter.update(); //Make sure that you call the update function of the SlidePresenter, otherwise it does nothing.
+	while (SlidePresenter.isPresentingSlides()) {
+		SlidePresenter.update(); //Make sure that you call the update function of the SlidePresenter, otherwise it does nothing.
 
-	Input.pollEvents(); //You must poll for input at regular intervals in order to get meaningful timing data
-		//for responses. The reason for this is that responses are given timestamps in the pollEvents function,
-		//so if it does not get called for long periods of time, what will happen is that the responses will
-		//still be collected, but the timestamps for the responses will be wrong.
+		Input.pollEvents(); //You must poll for input at regular intervals in order to get meaningful timing data
+			//for responses. The reason for this is that responses are given timestamps in the pollEvents function,
+			//so if it does not get called for long periods of time, what will happen is that the responses will
+			//still be collected, but the timestamps for the responses will be wrong.
+	}
+
+	//When the slide presenter is done presenting slides, that means we are done with this mini-experiment.
+	df.printToFile("N-Back output.txt"); //Output the data.
+
+	Display.beginDrawingToBackBuffer();
+	ofBackground(backgroundColor);
+	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!", letterFont);
+	Display.endDrawingToBackBuffer();
+	Display.BLOCKING_swapFrontAndBackBuffers();
+
+	Log.flush();
+
+	ofSleepMillis(3000); //Wait for three seconds before returning.
+
+	//Just past this point, runExperiment will implicitly return and the program will exit.
 }
 
 void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
@@ -139,33 +152,22 @@ void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
 	}
 
 	if (++trialNumber == trialCount) {
-		info.instance->stopSlidePresentation(); //Because we're about to exit the program, this has no effect,
-			//but you can explicitly stop presentation using this function. You can also stop presentation
-			//by simply not adding any more slides to the SlidePresenter. Because it has no more slides to
-			//present, it will just stop.
+		info.instance->stopSlidePresentation(); //You can explicitly stop presentation using this function. 
+			//You can also stop presentation by simply not adding any more slides to the SlidePresenter. 
+			//Because it has no more slides to present, it will just stop.
 
-		df.printToFile("N-Back output.txt"); //Output the data.
+	} else {
+		//Draw the next letter and the following blank.
+		info.instance->beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
+		drawStimulusForTrial(trialNumber, true);
 
-		Display.beginDrawingToBackBuffer();
+		info.instance->beginDrawingNextSlide(interStimulusInterval, "blank");
 		ofBackground(backgroundColor);
-		Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!", letterFont);
-		Display.endDrawingToBackBuffer();
-		Display.BLOCKING_swapFrontAndBackBuffers();
+		info.instance->endDrawingCurrentSlide();
 
-		ofSleepMillis(3000);
-		ofExit();
-	}
-
-	//Draw the next letter and the following blank.
-	info.instance->beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
-	drawStimulusForTrial(trialNumber, true);
-
-	info.instance->beginDrawingNextSlide(interStimulusInterval, "blank");
-	ofBackground(backgroundColor);
-	info.instance->endDrawingCurrentSlide();
-
-	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. You could simply wait until
+		Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. You could simply wait until
 		//the experiment is finished or the end of a trial block to flush.
+	}
 
 }
 
