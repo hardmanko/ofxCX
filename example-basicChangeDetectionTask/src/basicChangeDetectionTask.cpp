@@ -54,7 +54,7 @@ void runExperiment (void) {
 
 	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 
-	while (1) {
+	while (true) {
 		updateExperiment();
 	}
 }

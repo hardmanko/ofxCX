@@ -33,8 +33,12 @@ void runExperiment (void) {
 		//which APIs are available for your OS by using:
 		//cout << CX_SoundStream::convertApisToString( CX_SoundStream::getCompiledApis() ) << endl;
 
-	config.outputDeviceId = -1; //Using -1 means to use the default output device.
+	config.outputDeviceId = -1; //Using -1 means to use the default output device. If you would like to
+		//see which output devices are available on your system, use
+		//cout << CX_SoundStream::listDevices(RtAudio::Api::UNSPECIFIED) << endl;
+		//where UNSPECIFIED is replaced with the API you are using.
 	config.outputChannels = 2; //We want at least stereo output for this example. CX does not gracefully
+
 		//support channel configurations past stereo.
 	
 	config.sampleRate = 48000; //Note that this sample rate is only requested: it may not be supported by your
@@ -43,15 +47,14 @@ void runExperiment (void) {
 
 	config.bufferSize = 4096; //Bigger buffers mean fewer audio glitches and more latency.
 	config.streamOptions.numberOfBuffers = 4; //More buffers means fewer audio glitches and more latency.
+		//Not all APIs allow you to change the number of buffers, in which case this setting will have no effect.
 
 	if (!player.setup(config)) { //Use the configuration settings to set up the CX_SoundObjectPlayer.
 		cout << "There was an error setting up the sound player." << endl;
 	}
-	//If you are having a hard time getting sound to work, try the commented out code below to 
-	//check out what devices you have available on your system for the specified API:
-	//cout << CX_SoundStream::listDevices(RtAudio::Api::WINDOWS_DS) << endl;
 
 	config = player.getConfiguration(); //By doing this, we can check to see what sample rate was actually chosen.
+	cout << "Actual sample rate: " << config.sampleRate << endl;
 
 	//Now we're going to load up a couple of sounds. These files should be present in ./bin/data
 	//(relative to the visual studio project directory). They should come with this example.
