@@ -49,7 +49,7 @@ CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
 		std::stringstream s;
 		s << "CX_SafeDataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
 		Instances::Log.error("CX_DataFrame") << s.str();
-		throw std::exception(s.str().c_str());
+		throw std::out_of_range(s.str().c_str());
 	}
 }
 
@@ -232,8 +232,7 @@ bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter
 
 			if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
 				i += vectorEncloser.size();
-				int vectorStart = i;
-				for (; i < line.size(); i++) {
+				for (/* */; i < line.size(); i++) {
 					if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
 						break;
 					}
@@ -309,7 +308,7 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	vector<string> names = row.names();
 	for (unsigned int i = 0; i < names.size(); i++) {
 		_data[names[i]].resize(_rowCount);
-		row[names[i]].copyCellTo( _data[names[i]].back() ); //Copy the cell in the row into the data frame.
+		row[names[i]].copyCellTo( &_data[names[i]].back() ); //Copy the cell in the row into the data frame.
 	}
 
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
@@ -351,10 +350,14 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 			//otherwise moving data from one row to another could overwrite a row that hasn't been copied
 			//yet.
 		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
-			this->_data[*it][newOrder[i]].copyCellTo( columnCopy[i] );
+			this->_data[*it][newOrder[i]].copyCellTo( &columnCopy[i] );
 		}
 
-		this->_data[*it] = columnCopy;
+		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
+			columnCopy[i].copyCellTo( &this->_data[*it][newOrder[i]] );
+		}
+
+		//this->_data[*it] = columnCopy;
 	}
 	return true;
 }
@@ -386,7 +389,7 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 		//next columns, they will be resized to the proper size when they are created.
 
 		for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
-			this->operator()(*col, rowOrder[row]).copyCellTo( copyDf(*col, row) );
+			this->operator()(*col, rowOrder[row]).copyCellTo( &copyDf._data[*col][row] );
 		}
 	}
 
@@ -413,8 +416,8 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 	CX_DataFrame copyDf;
 	for (std::set<string>::iterator col = columnSet.begin(); col != columnSet.end(); col++) {
 		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
-			this->operator()(*col, row).copyCellTo(copyDf(*col, row));
-		}
+			this->operator()(*col, row).copyCellTo( &copyDf._data[*col][row] );
+		}		
 	}
 
 	return copyDf;

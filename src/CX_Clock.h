@@ -2,6 +2,7 @@
 #define _CX_CLOCK_H_
 
 #include <string>
+#include <vector>
 #include <chrono>
 
 #include "Poco/DateTimeFormatter.h"
@@ -32,6 +33,7 @@ namespace CX {
 	private:
 		double millis;
 	};
+
 	
 	/*! This class is responsible for getting timestamps for anything requiring timestamps. The way to
 	get timing information is the function getTime(). It returns the current time relative to the start
@@ -43,7 +45,11 @@ namespace CX {
 	class CX_Clock {
 	public:
 
+		typedef std::chrono::steady_clock CX_InternalClockType;
+
 		CX_Clock (void);
+
+		void precisionTest(void);
 
 		CX_Micros getTime(void);
 		CX_Micros getSystemTime(void);
@@ -53,16 +59,42 @@ namespace CX {
 
 		static std::string getDateTimeString (std::string format = "%Y-%b-%e %h-%M-%S %a");
 
-		double getTickPeriod(void);
-
 	private:
 		void _resetExperimentStartTime (void);
 
-		std::chrono::high_resolution_clock::time_point _experimentStart;
+		CX_InternalClockType::time_point _experimentStart;
 
 		Poco::LocalDateTime _pocoExperimentStart;
+
+		double _getTheoreticalTickPeriod(void);
 		
 	};
+
+
+	class CX_LapTimer {
+	public:
+
+		void setup(CX_Clock *clock, unsigned int samples);
+
+		void reset(void);
+
+		void collectData(void);
+
+		std::string getStatString(void);
+
+		CX_Micros getAverage(void);
+		CX_Micros getMinimum(void);
+		CX_Micros getMaximum(void);
+
+	private:
+
+		CX_Clock *_clock;
+		vector<CX_Micros> _timePoints;
+		unsigned int _sampleIndex;
+
+	};
+
+
 
 	namespace Instances {
 		extern CX_Clock Clock;

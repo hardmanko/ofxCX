@@ -18,7 +18,7 @@ CX_SoundObjectPlayer::~CX_SoundObjectPlayer (void) {
 
 /*! Configures the CX_SoundObjectPlayer with the given configuration. */
 bool CX_SoundObjectPlayer::setup (CX_SoundObjectPlayerConfiguration_t config) {
-	bool openedSuccessfully = _soundStream.open( (CX_SoundStreamConfiguration_t)config );
+	bool openedSuccessfully = _soundStream.open( (CX_SoundStreamConfiguration_t&)config );
 	
 	bool startedSuccessfully = _soundStream.start();
 
@@ -140,7 +140,7 @@ bool CX_SoundObjectPlayer::_outputEventHandler (CX_SSOutputCallback_t &outputDat
 	//cout << "Playing sample " << _currentSample << endl;
 
 	vector<float> &soundData = _activeSoundObject->getRawDataReference();
-	int soundChannelCount = _activeSoundObject->getChannelCount();
+	//int soundChannelCount = _activeSoundObject->getChannelCount();
 
 	const CX_SoundStreamConfiguration_t &config = _soundStream.getConfiguration();
 

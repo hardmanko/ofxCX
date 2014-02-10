@@ -31,6 +31,7 @@ float starSize = .8;
 void updateDrawings(void);
 void drawStuff (void);
 
+
 void runExperiment(void) {
 	Input.setup(true, true);
 

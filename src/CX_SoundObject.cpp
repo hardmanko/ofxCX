@@ -116,7 +116,9 @@ bool CX_SoundObject::loadFile (string fileName) {
 	case FMOD_SOUND_FORMAT_VAG:
 	case FMOD_SOUND_FORMAT_XMA:
 	case FMOD_SOUND_FORMAT_MPEG:
-		Log.error("CX_SoundOutput") << "File " << fileName << " is of unsupported file format (compressed/video game console). There as no plans to ever support these formats.";
+	case FMOD_SOUND_FORMAT_MAX:
+	case FMOD_SOUND_FORMAT_FORCEINT:
+		Log.error("CX_SoundOutput") << "File " << fileName << " is of unsupported file format (compressed/video game console). There are no plans to ever support these formats.";
 		_successfullyLoaded = false;
 		break;
 	};
@@ -470,8 +472,6 @@ void CX_SoundObject::resample (float newSampleRate) {
 	uint64_t newSampleCount = (uint64_t)(getConcurrentSampleCount() * ((double)newSampleRate/_soundSampleRate));
 
 	vector<float> completeNewData((unsigned int)newSampleCount * _soundChannels);
-
-	unsigned int lastI1 = 0;
 
 	for (int channel = 0; channel < _soundChannels; channel++) {
 

@@ -45,7 +45,7 @@ void runExperiment (void) {
 
 	SlidePresenter.setup(&Display);
 
-	cout << "Insturctions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
+	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 
 	//Add the functions to the trial controller in the order in which you want them to be called.
 	trialController.appendFunction( &drawStimuli );

@@ -24,6 +24,13 @@ mental model.
 
 void runExperiment (void) {
 
+
+	CX_DataFrameCell cell = "50";
+	//int ii = cell.toInt();
+	string s = cell.to<string>();
+	cout << "s: " << s << " as an int: " << cell.to<int>() << endl;
+
+
 	CX_DataFrame df;
 
 	//Use the () notation to access an element at the given (column, row). Columns are named with strings and rows

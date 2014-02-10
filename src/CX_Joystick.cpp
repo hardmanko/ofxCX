@@ -67,7 +67,7 @@ bool CX_Joystick::pollEvents (void) {
 	CX_Micros pollTime = CX::Instances::Clock.getTime();
 
 	if (axisCount == _axisPositions.size()) {
-		for (int i = 0; i < axisCount; i++) {
+		for (unsigned int i = 0; i < axisCount; i++) {
 			if (_axisPositions[i] != axes[i]) {
 				CX_JoystickEvent_t ev;
 
@@ -87,7 +87,7 @@ bool CX_Joystick::pollEvents (void) {
 	}
 	
 	if (buttonCount == _buttonStates.size()) {
-		for (int i = 0; i < buttonCount; i++) {
+		for (unsigned int i = 0; i < buttonCount; i++) {
 			if (_buttonStates[i] != buttons[i]) {
 				CX_JoystickEvent_t ev;
 

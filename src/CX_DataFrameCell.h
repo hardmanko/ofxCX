@@ -30,6 +30,7 @@ public:
 	CX_DataFrameCell (void);
 	template <typename T> CX_DataFrameCell (const T& value); //!< Construct the cell, assigning the value to it.
 	template <typename T> CX_DataFrameCell (const std::vector<T>& values); //!< Construct the cell, assigning the values to it.
+	CX_DataFrameCell(const char* c);
 
 	CX_DataFrameCell& operator= (const char* c); //!< Assigns a string literal to the cell, treating it as a std::string.
 	//CX_DataFrameCell& operator= (const CX_DataFrameCell& cell); //!< 
@@ -45,9 +46,6 @@ public:
 	//! Returns a copy of the stored data, converted to T.
 	template <typename T> T to(void) const; 
 
-	//! Returns a copy of the stored data as its string representation. Equivalent to toString().
-	template<> std::string to<std::string>(void) const; 
-	
 	//! Returns a copy of the stored data as its string representation.
 	std::string toString(void) const { return *_str; };
 
@@ -63,14 +61,16 @@ public:
 	template <typename T> std::vector<T> toVector (void) const;
 	template <typename T> void storeVector (std::vector<T> values);
 
-	//CX_DataFrameCell copyCell(void);
-	void copyCellTo(CX_DataFrameCell& targetCell);
+	void copyCellTo(CX_DataFrameCell* targetCell);
 
 	std::string getStoredType (void);
+
+	
 
 private:
 	std::shared_ptr<std::string> _str;
 	std::shared_ptr<std::string> _type;
+	std::shared_ptr<std::size_t> _typeHash;
 
 	template <typename T>
 	std::string _toString (const T& value) {
@@ -184,11 +184,6 @@ void CX_DataFrameCell::storeVector (std::vector<T> values) {
 	*_type += ">";
 }
 
-template<>
-std::string CX_DataFrameCell::to<std::string>(void) const {
-	return toString();
-}
-
 /*! Stores the given value with the given type. This function is a good way to explicitly
 state the type of the data you are storing into the cell if, for example, it is a literal.
 \tparam <T> The type to store the value as. If T is not specified, this function is essentially equivalent to using operator=.
@@ -198,6 +193,11 @@ template <typename T> void CX_DataFrameCell::store(const T& value) {
 	*_str = ofToString<T>(value);
 	*_type = typeid(T).name();
 }
+
+/*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
+\return A copy of the stored data encoded as a string.
+*/
+template<> std::string CX_DataFrameCell::to(void) const;
 
 std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);
 

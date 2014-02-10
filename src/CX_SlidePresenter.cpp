@@ -82,7 +82,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 
 		CX_Micros framePeriod = _display->getFramePeriod();
 
-		for (int i = 0; i < _slides.size(); i++) {
+		for (unsigned int i = 0; i < _slides.size(); i++) {
 			//This doesn't need to be done here any more, it's done as slides are added
 			//_slides.at(i).intended.frameCount = _calculateFrameCount(_slides.at(i).intended.duration);
 
@@ -317,8 +317,7 @@ CX_SP_PresentationErrors_t CX_SlidePresenter::checkForPresentationErrors(void) {
 		return errors;
 	}
 
-	//int presentationErrors = 0;
-	for (int i = 0; i < _slides.size(); i++) {
+	for (unsigned int i = 0; i < _slides.size(); i++) {
 		CX_Slide_t &sl = _slides.at(i);
 
 		if (sl.intended.frameCount != sl.actual.frameCount) {

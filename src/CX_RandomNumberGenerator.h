@@ -32,7 +32,7 @@ namespace CX {
 	randomizations used for that participant (unless random number generation varies as a function of the 
 	responses given by a participant).
 
-	An instance of this class is preinstsantiated for you. See CX::Instances::RNG for information about the instance.
+	An instance of this class is preinstantiated for you. See CX::Instances::RNG for information about the instance.
 
 	\ingroup randomNumberGeneration
 	*/
@@ -50,19 +50,19 @@ namespace CX {
 		CX_RandomInt_t randomInt(void);
 		CX_RandomInt_t randomInt(CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper);
 
-		template <typename T> T randomExclusive (const vector<T> &values, const T& exclude);
-		template <typename T> T randomExclusive (const vector<T> &values, const vector<T> &exclude);
+		template <typename T> T randomExclusive(const std::vector<T> &values, const T& exclude);
+		template <typename T> T randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
 
 		double uniformDeviate (double lowerBound_closed, double upperBound_open);
 		std::vector<double> uniformDeviates (unsigned int count, double lowerBound_closed, double upperBound_open);
 		template <typename T> std::vector<T> binomialDeviates (unsigned int count, T trials, double probSuccess);
 		std::vector<double> normalDeviates (unsigned int count, double mean, double standardDeviation);
 
-		template <typename T> void shuffleVector (vector<T> *v);
-		template <typename T> vector<T> shuffleVector (vector<T> v);
-		template <typename T> T sample (vector<T> values);
-		template <typename T> vector<T> sample (unsigned int count, const vector<T> &source, bool withReplacement);
-		vector<int> sample (unsigned int count, int lowerBound, int upperBound, bool withReplacement);
+		template <typename T> void shuffleVector(std::vector<T> *v);
+		template <typename T> std::vector<T> shuffleVector(std::vector<T> v);
+		template <typename T> T sample(std::vector<T> values);
+		template <typename T> std::vector<T> sample(unsigned int count, const std::vector<T> &source, bool withReplacement);
+		std::vector<int> sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
 	private:
 		unsigned long _seed;
@@ -77,7 +77,7 @@ namespace CX {
 	/*! Randomizes the order of the given vector.
 	\param v A pointer to the vector to be shuffled. */
 	template <typename T>
-	void CX_RandomNumberGenerator::shuffleVector (vector<T> *v) {
+	void CX_RandomNumberGenerator::shuffleVector(std::vector<T> *v) {
 		std::shuffle( v->begin(), v->end(), _mersenneTwister );
 	}
 
@@ -85,7 +85,7 @@ namespace CX {
 	\param v The vector to be operated on. 
 	\return A shuffled copy of v. */
 	template <typename T>
-	vector<T> CX_RandomNumberGenerator::shuffleVector (vector<T> v) {
+	std::vector<T> CX_RandomNumberGenerator::shuffleVector(std::vector<T> v) {
 		std::shuffle( v.begin(), v.end(), _mersenneTwister );
 		return v;
 	}
@@ -98,9 +98,9 @@ namespace CX {
 	\note If (count > source.size() && withReplacement == false), an empty vector is returned.
 	*/
 	template <typename T>
-	vector<T> CX_RandomNumberGenerator::sample (unsigned int count, const vector<T> &source, bool withReplacement) {
+	std::vector<T> CX_RandomNumberGenerator::sample(unsigned int count, const std::vector<T> &source, bool withReplacement) {
 
-		vector<T> samples;
+		std::vector<T> samples;
 
 		if (source.size() == 0) {
 			Instances::Log.error("CX_RandomNumberGenerator") << "sample: Empty vector given to sample from.";
@@ -108,8 +108,8 @@ namespace CX {
 		}
 
 		if (withReplacement) {
-			for (vector<T>::size_type i = 0; i < count; i++) {
-				samples.push_back( source.at( (vector<CX_RandomInt_t>::size_type)randomInt(0, source.size() - 1) ) );
+			for (typename std::vector<T>::size_type i = 0; i < count; i++) {
+				samples.push_back(source.at((std::vector<CX_RandomInt_t>::size_type)randomInt(0, source.size() - 1)));
 			}
 		} else {
 			//Without replacement. Make a vector of indices into the source vector, shuffle them, and select count of them from the vector.
@@ -117,7 +117,7 @@ namespace CX {
 				//Log a warning?
 				return samples;
 			}
-			vector<vector<T>::size_type> indices = shuffleVector(CX::Util::intVector<vector<T>::size_type>(0, source.size() - 1));
+			std::vector<typename std::vector<T>::size_type> indices = shuffleVector(CX::Util::intVector<typename std::vector<T>::size_type>(0, source.size() - 1));
 			for (unsigned int i = 0; i < count; i++) {
 				samples.push_back( source[ indices[i] ] );
 			}
@@ -129,7 +129,7 @@ namespace CX {
 	/*! Returns a single value sampled randomly from values.
 	\return The sampled value.
 	\note If values.size() == 0, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::sample (vector<T> values) {
+	template <typename T> T CX_RandomNumberGenerator::sample(std::vector<T> values) {
 		if (values.size() == 0) {
 			Instances::Log.error("CX_RandomNumberGenerator") << "sample: Empty vector given to sample from.";
 			return T();
@@ -142,7 +142,7 @@ namespace CX {
 	\param exclude The value to exclude from sampling. 
 	\return The sampled value. 
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::randomExclusive (const vector<T> &values, const T &exclude) {
+	template <typename T> T CX_RandomNumberGenerator::randomExclusive(const std::vector<T> &values, const T &exclude) {
 		std::vector<T> excludes(1, exclude);
 		return randomExclusive(values, excludes);
 	}
@@ -152,7 +152,7 @@ namespace CX {
 	\param exclude The vector of values to exclude from sampling.
 	\return The sampled value.
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::randomExclusive (const vector<T> &values, const vector<T> &exclude) {
+	template <typename T> T CX_RandomNumberGenerator::randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude) {
 		std::set<T> s(exclude.begin(), exclude.end());
 
 		if (values.size() == exclude.size()) {
@@ -164,7 +164,7 @@ namespace CX {
 			}
 
 			if (allExcluded) {
-				Log.error("CX_RandomNumberGenerator") << "randomExclusive: All values are excluded.";
+				CX::Instances::Log.error("CX_RandomNumberGenerator") << "randomExclusive: All values are excluded.";
 				return T();
 			}
 		}

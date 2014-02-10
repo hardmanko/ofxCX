@@ -100,7 +100,7 @@ std::vector<T> CX::Util::repeat(std::vector<T> values, std::vector<unsigned int>
 	std::vector<T> rval;
 
 	if (values.size() != each.size()) {
-		Log.error("CX::Util::repeat") << "values.size() != each.size()";
+		CX::Instances::Log.error("CX::Util::repeat") << "values.size() != each.size()";
 		return rval;
 	}
 
@@ -231,7 +231,7 @@ if not all of the elements are wanted.
 */
 template <typename T> std::vector<T> CX::Util::arrayToVector(T arr[], unsigned int arraySize) {
 	std::vector<T> rval(arraySize);
-	for (std::vector<T>::size_type i = 0; i < arraySize; i++) {
+	for (unsigned int i = 0; i < arraySize; i++) {
 		rval[i] = arr[i];
 	}
 	return rval;

@@ -61,6 +61,8 @@ void CX::Private::App::setup (void) {
 	CX::Instances::Log.captureOFLogMessages();
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
 
+	Clock.precisionTest();
+
 	//Log.levelForConsole(CX_LogLevel::LOG_ALL);
 	//Log.levelForFile(CX_LogLevel::LOG_ALL);
 	//Log.levelForFile(CX_LogLevel::LOG_ALL, "Log for last run.txt");

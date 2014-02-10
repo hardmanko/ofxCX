@@ -34,7 +34,11 @@ void updateAnimation (void);
 void drawNextFrameOfAnimation (void);
 ofPoint calculateCircleCenter(double angleDeg, double distanceFromCenter);
 
+CX_LapTimer timer;
+
 void runExperiment (void) {
+	timer.setup(&Clock, 100000);
+
 	//Use mouse, but not keyboard.
 	Input.setup(false, true);
 
@@ -50,6 +54,9 @@ void runExperiment (void) {
 }
 
 void updateAnimation (void) {
+
+	timer.collectData();
+
 	//See the main comment at the top of this file.
 	if (Display.hasSwappedSinceLastCheck()) {
 		Display.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.

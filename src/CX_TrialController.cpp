@@ -14,7 +14,7 @@ CX_TrialController::CX_TrialController(void) :
 Because it is a std::function, it can also be a lamda. */
 void CX_TrialController::appendFunction (std::function<int(void)> userFunction) {
 	if (userFunction == nullptr) {
-		Instances::Log.error("CX_TrialController") << "Attempt to add a user function that was nullptr at index " << _userFunctions.size();
+		CX::Instances::Log.error("CX_TrialController") << "Attempt to add a user function that was nullptr at index " << _userFunctions.size();
 		return;
 	}
 
@@ -64,7 +64,7 @@ that function should return 0. If it does not, setCurrentFunction() will set the
 will be incremented after the user function completes. However, if 0 is returned, the function index is not incremented. */
 bool CX_TrialController::setCurrentFunction (int currentFunction) {
 	if ((unsigned int)currentFunction >= _userFunctions.size()) {
-		Instances::Log.error("CX_TrialController") << "Attempt to set current function to out of range index. Size is " <<
+		CX::Instances::Log.error("CX_TrialController") << "Attempt to set current function to out of range index. Size is " <<
 			_userFunctions.size() << " and attempted index was " << currentFunction;
 		return false;
 	}

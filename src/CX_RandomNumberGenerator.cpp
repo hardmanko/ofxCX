@@ -5,10 +5,9 @@
 using namespace CX;
 
 /*! An instance of CX_RandomNumberGenerator that is (lightly) hooked into the CX backend.
-\ingroup random
 \ingroup entryPoint
 */
-CX_RandomNumberGenerator CX::Instances::RNG;
+CX::CX_RandomNumberGenerator CX::Instances::RNG;
 
 /*! Constructs an instance of a CX_RandomNumberGenerator. Seeds the CX_RandomNumberGenerator
 using a std::random_device. 
