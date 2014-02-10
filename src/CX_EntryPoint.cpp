@@ -52,6 +52,8 @@ void CX::Private::App::setup (void) {
 
 	setupWindow(CX::Private::CX_WindowConfiguration_t());
 
+	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
+
 	//Why use these? CX has RNG and Clock.
 	ofSeedRandom();
 	ofResetElapsedTimeCounter();

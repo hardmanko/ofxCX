@@ -157,7 +157,7 @@ namespace CX {
 
 		if (values.size() == exclude.size()) {
 			bool allExcluded = true;
-			for (std::vector<T>::size_type i = 0; i < values.size(); i++) {
+			for (typename std::vector<T>::size_type i = 0; i < values.size(); i++) {
 				if (s.find(values[i]) == s.end()) {
 					allExcluded = allExcluded && false;
 				}

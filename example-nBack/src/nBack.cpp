@@ -40,9 +40,11 @@ void generateTrials (int numberOfTrials);
 
 void runExperiment (void) {
 
+	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
+
 	Input.setup(true, false); //Use keyboard, not mouse.
 
-	letterFont.loadFont(OF_TTF_SANS, 20); //You can specify fonts by name, but it is much safer to use the constants OF_TTF_SANS,
+	letterFont.loadFont(OF_TTF_SANS, 26); //The easiest way to pick fonts is to use the constants OF_TTF_SANS,
 		//OF_TTF_MONO, or OF_TTF_SERIF, which will load system fonts that satify the stated criterion (sans serif, monospaced, or serif).
 	instructionFont.loadFont(OF_TTF_SANS, 12);
 
@@ -107,13 +109,15 @@ void runExperiment (void) {
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
-	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!", letterFont);
+	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!\nPress any key to exit.", letterFont);
 	Display.endDrawingToBackBuffer();
 	Display.BLOCKING_swapFrontAndBackBuffers();
 
 	Log.flush();
 
-	ofSleepMillis(3000); //Wait for three seconds before returning.
+	//ofSleepMillis(3000); //Wait for three seconds before returning.
+	while (!Input.pollEvents())
+		;
 
 	//Just past this point, runExperiment will implicitly return and the program will exit.
 }

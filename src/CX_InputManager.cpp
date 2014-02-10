@@ -22,6 +22,9 @@ be made to set up the joystick.
 \return False if the requested joystick could not be set up correctly, true otherwise.
 */
 bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex) {
+
+	pollEvents(); //Flush out all waiting events during setup.
+
 	Keyboard.clearEvents();
 	_usingKeyboard = useKeyboard;
 	Keyboard._listenForEvents(useKeyboard);

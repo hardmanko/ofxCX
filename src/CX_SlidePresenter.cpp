@@ -80,7 +80,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 			endDrawingCurrentSlide();
 		}
 
-		CX_Micros framePeriod = _display->getFramePeriod();
+		//CX_Micros framePeriod = _display->getFramePeriod();
 
 		for (unsigned int i = 0; i < _slides.size(); i++) {
 			//This doesn't need to be done here any more, it's done as slides are added
@@ -147,6 +147,7 @@ void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros slideDuration, string s
 	_slides.back().framebuffer.begin();
 	_lastFramebufferActive = true;
 
+	Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().slideName << ") drawing begun. Frame count: " << _slides.back().intended.frameCount;
 }
 
 /*! Ends drawing to the framebuffer of the slide that is currently being drawn to. See beginDrawingNextSlide(). */
@@ -185,6 +186,8 @@ void CX_SlidePresenter::appendSlide (CX_Slide_t slide) {
 
 	_slides.push_back( slide );
 	_slides.back().intended.frameCount = _calculateFrameCount(slide.intended.duration);
+
+	Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().slideName << ") appended. Frame count: " << _slides.back().intended.frameCount;
 }
 
 /*! Appends a slide to the slide presenter that will call the given drawing function when it comes time
@@ -220,6 +223,8 @@ void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), CX_
 	_slides.back().intended.duration = slideDuration;
 	_slides.back().intended.frameCount = _calculateFrameCount(slideDuration);
 	_slides.back().slideName = slideName;
+
+	Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << slideName << ") function appended. Frame count: " << _slides.back().intended.frameCount;
 }
 
 
@@ -336,7 +341,7 @@ CX_SP_PresentationErrors_t CX_SlidePresenter::checkForPresentationErrors(void) {
 	return errors;
 }
 
-/*! \brief Get the name of slide that is currently being presented. */
+/* \brief Get the name of slide that is currently being presented. */
 /*
 std::string CX_SlidePresenter::getActiveSlideName (void) {
 	if (_currentSlide < _slides.size()) {
@@ -361,6 +366,8 @@ void CX_SlidePresenter::update(void) {
 			if (_slides.at(_currentSlide).slideStatus == CX_Slide_t::SWAP_PENDING) {
 
 				CX_Micros currentSlideOnset = _display->getLastSwapTime();
+
+				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " in progress";
 
 				_slides.at(_currentSlide).slideStatus = CX_Slide_t::IN_PROGRESS;
 				_slides.at(_currentSlide).actual.startFrame = currentFrameNumber;
@@ -412,6 +419,8 @@ void CX_SlidePresenter::update(void) {
 void CX_SlidePresenter::_finishPreviousSlide(void) {
 	CX_Slide_t &previousSlide = _slides.at(_currentSlide - 1);
 	previousSlide.slideStatus = CX_Slide_t::FINISHED;
+
+	Log.verbose("CX_SlidePresenter") << "Slide #" << (_currentSlide - 1) << " marked as finished.";
 
 	if (_deallocateFramebuffersForCompletedSlides) {
 		previousSlide.framebuffer.allocate(0, 0); //"Deallocate" the framebuffer
@@ -487,7 +496,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 				nextSlide.actual.duration = 0;
 				nextSlide.actual.frameCount = 0;
 
-				Log.error("CX_SlidePresenter") << "Slide skipped at index " << _currentSlide;
+				Log.error("CX_SlidePresenter") << "Slide #" << _currentSlide << " skipped.";
 
 				_prepareNextSlide(); //Keep skipping slides
 
@@ -516,12 +525,11 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 
 				_slides.at(_currentSlide).slideStatus = CX_Slide_t::SWAP_PENDING;
 
-				Log.verbose("CX_SlidePresenter") << "Fence sync done for slide #" << _currentSlide;
+				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " copied to back buffer";
 			} else {
-				Log.error("CX_SlidePresenter") << "Fence sync completed when active slide was not waiting for copy to back buffer.";
+				Log.error("CX_SlidePresenter") << "Slide #" << _currentSlide << " fence sync completed when active slide was not waiting for copy to back buffer.";
 				_awaitingFenceSync = false;
 			}
-
 		}
 	}
 }
@@ -534,6 +542,9 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 	} else {
 		_display->drawFboToBackBuffer(_slides.at(_currentSlide).framebuffer);
 	}
+
+	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started";
+
 	_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glFlush();
 	_awaitingFenceSync = true;

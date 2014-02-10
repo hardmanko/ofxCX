@@ -100,7 +100,7 @@ std::vector<T> CX::Util::repeat(std::vector<T> values, std::vector<unsigned int>
 	std::vector<T> rval;
 
 	if (values.size() != each.size()) {
-		CX::Instances::Log.error("CX::Util::repeat") << "values.size() != each.size()";
+		//CX::Instances::Log.error("CX::Util::repeat") << "values.size() != each.size()"; //For some reason GCC doesn't like this.
 		return rval;
 	}
 

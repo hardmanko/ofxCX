@@ -14,6 +14,7 @@ CX_DataFrameCell::CX_DataFrameCell (void) {
 	*_type = "NULL";
 }
 
+/*! Constructs the cell with a string literal, treating it as a std::string. */
 CX_DataFrameCell::CX_DataFrameCell(const char* c) {
 	_str = std::shared_ptr<std::string>(new std::string);
 	_type = std::shared_ptr<std::string>(new std::string);
@@ -21,6 +22,7 @@ CX_DataFrameCell::CX_DataFrameCell(const char* c) {
 	*_type = typeid(std::string).name();
 }
 
+/*! Assigns a string literal to the cell, treating it as a std::string. */
 CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 	*_str = c;
 	*_type = typeid(std::string).name();

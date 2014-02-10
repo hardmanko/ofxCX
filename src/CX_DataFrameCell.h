@@ -28,13 +28,11 @@ class CX_DataFrameCell {
 public:
 
 	CX_DataFrameCell (void);
+	CX_DataFrameCell(const char* c);
 	template <typename T> CX_DataFrameCell (const T& value); //!< Construct the cell, assigning the value to it.
 	template <typename T> CX_DataFrameCell (const std::vector<T>& values); //!< Construct the cell, assigning the values to it.
-	CX_DataFrameCell(const char* c);
-
-	CX_DataFrameCell& operator= (const char* c); //!< Assigns a string literal to the cell, treating it as a std::string.
-	//CX_DataFrameCell& operator= (const CX_DataFrameCell& cell); //!< 
-
+	
+	CX_DataFrameCell& operator= (const char* c);
 	template <typename T> CX_DataFrameCell& operator= (const T& value); //!< Assigns a value to the cell.
 	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values); //!< Assigns a vector of values to the cell.
 
@@ -46,7 +44,7 @@ public:
 	//! Returns a copy of the stored data, converted to T.
 	template <typename T> T to(void) const; 
 
-	//! Returns a copy of the stored data as its string representation.
+	//! Returns a copy of the stored data in the internal string representation. Type checking is not done because this is a lossless operation.
 	std::string toString(void) const { return *_str; };
 
 	//! Returns a copy of the stored data converted to bool. Equivalent to to<bool>().

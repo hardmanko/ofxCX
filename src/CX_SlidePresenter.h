@@ -57,6 +57,8 @@ namespace CX {
 			lateCopiesToBackBuffer(0)
 		{}
 
+		//how about indices for the frames with errors?
+
 		/*! \brief True if presentation errors were successfully checked for. This does not mean that there were 
 		no presentation errors, but that there were no presentation error checking errors. */
 		bool presentationErrorsSuccessfullyChecked; 
