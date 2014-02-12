@@ -150,8 +150,6 @@ using namespace CX;
 using namespace CX::Instances;
 using namespace CX::Util;
 
-//Declarations of user functions. To be implemented in user code.
-
 /*! \defgroup entryPoint Entry Point
 The entry point provides access to a number of instances of classes that can be used by user code.
 It also provides declarations (but not definitions) of two functions which the user should define
@@ -171,5 +169,12 @@ once setup is done for CX. When runExperiment returns, the program will exit.
 */
 
 void runExperiment (void);
+
+#define CX_DEBUG
+//#define CX_USE_VIDEO_HW_COMPAT
+#define CX_GLSL_VERSION_MAJOR 0
+#define CX_GLSL_VERSION_MINOR 0
+#define CX_GL_VERSION_MAJOR 1
+#define CX_GL_VERSION_MINOR 4
 
 #endif //_CX_ENTRY_POINT_H_

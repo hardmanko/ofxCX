@@ -10,7 +10,8 @@ using namespace CX;
 CX_ConstantlySwappingThread::CX_ConstantlySwappingThread (void) :
 	_frameCount(0),
 	_frameCountOnLastCheck(0),
-	_isLocked(false)
+	_isLocked(false),
+	_swapsBeforeStop(-1)
 {
 }
 
@@ -29,7 +30,35 @@ void CX_ConstantlySwappingThread::threadedFunction (void) {
 				_recentSwapTimes.pop_front();
 			}
 
+			bool stopSwapping = false;
+			if (_swapsBeforeStop > 0) {
+				if (--_swapsBeforeStop == 0) {
+					stopSwapping = true;
+				}
+			}
+
 			unlock();
+
+			if (stopSwapping) {
+				this->stopThread();
+			}
+		}
+	}
+}
+
+
+void CX_ConstantlySwappingThread::swapNFrames (unsigned int n) {
+	if (n == 0) {
+		return;
+	}
+
+	if (!this->isThreadRunning()) {
+		_swapsBeforeStop = n;
+		this->startThread(true, false);
+	} else {
+		if (_lockMutex()) {
+			_swapsBeforeStop = n;
+			_unlockMutex();
 		}
 	}
 }

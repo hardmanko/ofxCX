@@ -47,6 +47,7 @@ namespace CX {
 		void beginDrawingToBackBuffer (void);
 		void endDrawingToBackBuffer (void);
 		void BLOCKING_swapFrontAndBackBuffers (void);
+		void swapFrontAndBackBuffers (void);
 
 		void BLOCKING_setAutoSwapping (bool autoSwap);
 		bool isAutomaticallySwapping (void);

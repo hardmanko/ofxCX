@@ -16,6 +16,8 @@ namespace CX {
 
 		void threadedFunction (void);
 
+		void swapNFrames (unsigned int n);
+
 		bool swappedSinceLastCheck (void);
 
 		CX_Micros getTypicalSwapPeriod (void);
@@ -37,6 +39,8 @@ namespace CX {
 
 		uint64_t _frameCount;
 		uint64_t _frameCountOnLastCheck;
+
+		int _swapsBeforeStop;
 
 	};
 

@@ -157,6 +157,10 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 	}
 }
 
+void CX_Display::swapFrontAndBackBuffers (void) {
+	_swapThread->swapNFrames(1);
+}
+
 /*!
 Wait until all OpenGL instructions that were given before
 this was called to complete. Any commands put into the pipeline

@@ -84,7 +84,9 @@ namespace CX {
 			display(nullptr),
 			finalSlideCallback(nullptr),
 			errorMode(CX_SP_ErrorMode::PROPAGATE_DELAYS),
-			deallocateCompletedSlides(true)
+			deallocateCompletedSlides(true),
+			swappingMode(CX_SP_Configuration::MULTI_CORE),
+			preSwapCPUHoggingDuration(5000)
 		{}
 
 		CX_Display *display; //!< A pointer to the display to use.
@@ -92,8 +94,16 @@ namespace CX {
 		CX_SP_ErrorMode errorMode;
 		bool deallocateCompletedSlides; //!< If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
 
-		//bool singleThreadedMode;
-		//CX_Micros preSwapCPUHoggingDuration;
+		/*! \brief Only used if swappingMode is a single core mode. The amount of time, before a slide is swapped from 
+		the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */
+		CX_Micros preSwapCPUHoggingDuration;
+
+		enum SwappingMode {
+			SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
+			SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED
+			MULTI_CORE //could be FRAME_COUNTED_THREADED
+		} swappingMode;
+
 	};
 
 	/*! Contains information about the presentation timing of the slide. 
@@ -186,33 +196,33 @@ namespace CX {
 
 	protected:
 
-		CX_Display *_display;
-		std::function<void(CX_FinalSlideFunctionInfo_t&)> _userFunction;
+		CX_SP_Configuration _config;
+
+		CX_Micros _hoggingStartTime;
 
 		bool _presentingSlides;
 		bool _synchronizing;
 		unsigned int _currentSlide;
 		std::vector<CX_Slide_t> _slides;
 
-		bool _awaitingFenceSync;
-		GLsync _fenceSyncObject;
-	
 		bool _lastFramebufferActive;
-
-		void _renderCurrentSlide (void);
-		void _waitSyncCheck (void);
-
-		void _handleFinalSlide(void);
-		void _finishPreviousSlide(void);
-		void _prepareNextSlide(void);
 
 		unsigned int _calculateFrameCount(CX_Micros duration);
 
-		CX_SP_ErrorMode _errorMode;
-		bool _deallocateFramebuffersForCompletedSlides;
+		void _singleCoreBlockingUpdate (void);
+		void _singleCoreThreadedUpdate (void);
+		void _multiCoreUpdate (void);
 
+		void _renderCurrentSlide(void);
+
+		void _waitSyncCheck(void);
+		bool _awaitingFenceSync;
+		GLsync _fenceSyncObject;
+
+		void _finishPreviousSlide(void);
+		void _handleFinalSlide(void);
+		void _prepareNextSlide(void);
 	};
-
 }
 
 #endif //_CX_SLIDE_PRESENTER_H_

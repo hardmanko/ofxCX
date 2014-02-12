@@ -14,6 +14,8 @@
 This module provides methods for timestamping events in experiments.
 */
 
+#include "CX_ClockImplementations.h"
+
 namespace CX {
 
 	typedef long long CX_Micros;
@@ -44,8 +46,11 @@ namespace CX {
 	*/
 	class CX_Clock {
 	public:
-
+#ifdef TARGET_WIN32
+		typedef HighResClock CX_InternalClockType;
+#else
 		typedef std::chrono::steady_clock CX_InternalClockType;
+#endif
 
 		CX_Clock (void);
 

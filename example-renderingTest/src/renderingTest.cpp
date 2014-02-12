@@ -4,13 +4,15 @@
 //experiencing crashes, you can try commenting out these defines in order to eliminate certain types
 //of rendering in order to help localize the source of the problem.
 #define CX_RT_USE_FBO
-#define CX_RT_USE_PATH
+//#define CX_RT_USE_PATH
 #define CX_RT_USE_TEXTURE
 #define CX_RT_USE_IMAGE
+#define CX_RT_USE_TTF
 
 #ifdef CX_RT_USE_FBO
 ofFbo fbo;
 ofFbo transparency;
+ofFbo trivialFbo;
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -23,6 +25,11 @@ ofImage birds;
 
 #ifdef CX_RT_USE_TEXTURE
 ofTexture mirroredBirds;
+#endif
+
+#ifdef CX_RT_USE_TTF
+ofTrueTypeFont smallFont;
+ofTrueTypeFont largeFont;
 #endif
 
 bool drawingToFboFirst = false;
@@ -65,6 +72,12 @@ void runExperiment(void) {
 	ofDrawBitmapString( "ofFbo + transparency", 10, 10 );
 
 	transparency.end(); //Stop drawing to the fbo
+
+	trivialFbo.allocate(100, 100, GL_RGB );
+	trivialFbo.begin();
+	ofBackground(0, 255, 0);
+	trivialFbo.end();
+
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -87,6 +100,11 @@ void runExperiment(void) {
 	//Save the mirrored data into an ofTexture, which an be drawn directly
 	mirroredBirds.allocate(mirroredPix);
 	mirroredBirds.loadData(mirroredPix);
+#endif
+
+#ifdef CX_RT_USE_TTF
+	smallFont.loadFont(OF_TTF_MONO, 12);
+	largeFont.loadFont(OF_TTF_SERIF, 40);
 #endif
 
 	while (true) {
@@ -182,17 +200,22 @@ void drawStuff (void) {
 	//For more examples of using ofPaths, check out the source code for CX::Draw::starToPath and CX::Draw::squircleToPath in CX_Draw.h
 	
 
-	ofSetColor(255); //Before drawing an ofFbo that has transparent elements, if the color is not set to white, 
-		//the output of the draw command looks wrong (merged with the current color).
-	transparency.draw(30, 280);
-
-
 	//This squircle is rotated around all three axes at once. If you want to rotate ofPaths only around the Z axis (i.e. the normal 2D rotation),
 	//use ofVec3f(0,0,1) for the axis argument (no x, no y, yes z).
 	squirclePath.rotate(.5, ofVec3f(1,1,1)); //The current rotation is saved by the ofPath, so each time this called, it rotates a little more.
 	squirclePath.draw(300, 70);
 #endif
 
+#ifdef CX_RT_USE_FBO
+	ofSetColor(255); //Before drawing an ofFbo that has transparent elements, if the color is not set to white, 
+		//the output of the draw command looks wrong (merged with the current color).
+	transparency.draw(30, 280);
+
+	ofSetColor(255);
+	trivialFbo.draw(30, 450);
+
+	//trivialFbo.getTextureReference().d
+#endif
 
 #ifdef CX_RT_USE_TEXTURE
 	//This section of code makes the strange bird picture effect. The image of the birds is mirrored in setup.
@@ -221,6 +244,13 @@ void drawStuff (void) {
 #ifdef CX_RT_USE_PATH
 	//The size of this star can be changed with the mouse wheel
 	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::blue, ofColor::azure, 2);
+#endif
+
+#ifdef CX_RT_USE_TTF
+	ofSetColor(255);
+	smallFont.drawString("Some small text", 400, 500);
+	ofSetColor(255,0,0);
+	largeFont.drawString("Big text", 400, 540);
 #endif
 
 #ifdef CX_RT_USE_TEXTURE

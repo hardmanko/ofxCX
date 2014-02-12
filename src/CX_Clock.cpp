@@ -15,13 +15,14 @@ CX_Clock::CX_Clock (void) {
 }
 
 void CX_Clock::precisionTest(void) {
-	std::vector<CX_InternalClockType::time_point> timePoints(100001);
+	std::vector<long long> durations(1000000);
 
-	for (unsigned int i = 0; i < timePoints.size(); i++) {
-		timePoints[i] = CX_InternalClockType::now();
+	for (unsigned int i = 0; i < durations.size(); i++) {
+		CX_InternalClockType::time_point t1 = CX_InternalClockType::now();
+		CX_InternalClockType::time_point t2 = CX_InternalClockType::now();
+
+		durations[i] = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
 	}
-
-	std::vector<long long> durations(timePoints.size() - 1);
 
 	uint64_t differenceSum = 0;
 	long long maxDifference = 0;
@@ -30,9 +31,8 @@ void CX_Clock::precisionTest(void) {
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
 
-		long long duration = std::chrono::duration_cast<std::chrono::nanoseconds>(timePoints[i + 1] - timePoints[i]).count();
+		long long duration = durations[i];
 		durations[i] = duration;
-
 
 		differenceSum += duration;
 
@@ -49,12 +49,12 @@ void CX_Clock::precisionTest(void) {
 		}
 	}
 
-	cout << "Precision test results (Min, min-nonzero, mean, max): " <<
-		minDifference << ", " << minNonzeroDuration << ", " << differenceSum / (timePoints.size() - 1) << ", " << maxDifference;
+	cout << "Precision test results (nanoseconds): Min, min-nonzero, mean, max " <<
+		minDifference << ", " << minNonzeroDuration << ", " << differenceSum / durations.size() << ", " << maxDifference;
 
-	//Convert the tick period to microseconds. If it is less than the measured minimum nonzero duration,
+	//Convert the tick period to nanoseconds. If it is less than the measured minimum nonzero duration,
 	//then it is misrepresented my the system clock.
-	if (_getTheoreticalTickPeriod() * 1000000000 < minNonzeroDuration) {
+	if (_getTheoreticalTickPeriod() < ((double)minNonzeroDuration / 1000000000)) {
 		CX::Instances::Log.warning("CX_Clock") << "The system clock appears to be misrepresenting its precision.";
 	}
 
