@@ -215,6 +215,7 @@ namespace CX {
 
 		void _renderCurrentSlide(void);
 
+		bool _useFenceSync;
 		void _waitSyncCheck(void);
 		bool _awaitingFenceSync;
 		GLsync _fenceSyncObject;

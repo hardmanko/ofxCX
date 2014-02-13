@@ -36,6 +36,7 @@ bool CX_SlidePresenter::setup(const CX_SP_Configuration &config) {
 	_config = config;
 
 	if (!CX::Private::glFenceSyncSupported()) {
+		_useFenceSync = false;
 		Log.warning("CX_SlidePresenter") << "OpenGL fence sync not supported by the video card in this computer. This means that the slide"
 			" presenter will be unable to determine when rendering commands are complete. Normally, the slide presenter uses a fence sync"
 			" to verify that all drawing operations have completed by a certain point of time. Typically, that they have completed by the"
@@ -361,7 +362,6 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 			//Check to see if we are within the CPU hogging phase of presentation
 			CX_Micros currentTime = CX::Instances::Clock.getTime();
 			if (currentTime >= _hoggingStartTime) {
-
 				_config.display->swapFrontAndBackBuffers();
 			}
 		}
@@ -655,6 +655,10 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 
 
 void CX_SlidePresenter::_waitSyncCheck(void) {
+	if (!_useFenceSync) {
+		return;
+	}
+
 	//By forcing the fence sync to complete before the slide is marked as ready to swap, you run into the potential
 	//for a late fence sync paired with an on time write to the back buffer to result in false positives for an error
 	//condition. Better a false positive than a miss, I guess.
@@ -688,10 +692,17 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 
 	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started";
 
-	_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	glFlush();
-	_awaitingFenceSync = true;
-	_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
+	if (_useFenceSync) {
+		_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		glFlush();
+		_awaitingFenceSync = true;
+		_slides.at(_currentSlide).slideStatus = CX_Slide_t::COPY_TO_BACK_BUFFER_PENDING;
+	} else {
+		_awaitingFenceSync = false;
+		_slides.at(_currentSlide).slideStatus = CX_Slide_t::SWAP_PENDING;
+	}
+
+
 }
 
 
