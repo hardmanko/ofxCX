@@ -167,9 +167,13 @@ this was called to complete. Any commands put into the pipeline
 after this is called (from other threads) are not waited for. 
 */
 void CX_Display::BLOCKING_waitForOpenGL (void) {
-	GLsync fence = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
-	glFlush();
-	glWaitSync( fence, 0, GL_TIMEOUT_IGNORED );
+	if (CX::Private::glFenceSyncSupported()) {
+		GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		glFlush();
+		glWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+	} else {
+		glFinish(); //I don't see why not to just use glFinish()
+	}
 }
 
 /*!

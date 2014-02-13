@@ -1,13 +1,16 @@
 #include "CX_SlidePresenter.h"
 
+#include "CX_Private.h"
+
 using namespace CX;
 using namespace CX::Instances;
 
-CX_SlidePresenter::CX_SlidePresenter (void) :
+CX_SlidePresenter::CX_SlidePresenter(void) :
 	_presentingSlides(false),
 	_synchronizing(false),
 	_currentSlide(0),
 	_lastFramebufferActive(false),
+	_useFenceSync(true),
 	_awaitingFenceSync(false)
 {}
 
@@ -31,6 +34,15 @@ bool CX_SlidePresenter::setup(const CX_SP_Configuration &config) {
 	}
 
 	_config = config;
+
+	if (!CX::Private::glFenceSyncSupported()) {
+		Log.warning("CX_SlidePresenter") << "OpenGL fence sync not supported by the video card in this computer. This means that the slide"
+			" presenter will be unable to determine when rendering commands are complete. Normally, the slide presenter uses a fence sync"
+			" to verify that all drawing operations have completed by a certain point of time. Typically, that they have completed by the"
+			" time at which the front and back buffers are swapped, bringing the new stimulus onscreen. Without fence sync, there is no"
+			" way for the slide presenter to know if the drawing has completed by swap time, potentially allowing vertical tearing to go"
+			" unnoticed";
+	}
 
 	return true;
 }

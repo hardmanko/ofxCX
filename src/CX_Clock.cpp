@@ -14,8 +14,8 @@ CX_Clock::CX_Clock (void) {
 	_resetExperimentStartTime();
 }
 
-void CX_Clock::precisionTest(void) {
-	std::vector<long long> durations(1000000);
+void CX_Clock::precisionTest (unsigned int iterations) {
+	std::vector<long long> durations(iterations);
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
 		CX_InternalClockType::time_point t1 = CX_InternalClockType::now();
@@ -52,15 +52,9 @@ void CX_Clock::precisionTest(void) {
 	cout << "Precision test results (nanoseconds): Min, min-nonzero, mean, max " <<
 		minDifference << ", " << minNonzeroDuration << ", " << differenceSum / durations.size() << ", " << maxDifference;
 
-	//Convert the tick period to nanoseconds. If it is less than the measured minimum nonzero duration,
-	//then it is misrepresented my the system clock.
-	if (_getTheoreticalTickPeriod() < ((double)minNonzeroDuration / 1000000000)) {
-		CX::Instances::Log.warning("CX_Clock") << "The system clock appears to be misrepresenting its precision.";
-	}
-
 	if (minNonzeroDuration > 1000) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock is worse than "
-			"microsecond precision. Actual tick period of the system clock is " << minNonzeroDuration/1000 << " microseconds";
+			"microsecond precision. Actual tick period of the system clock is " << minNonzeroDuration << " nanoseconds.";
 	}
 }
 
@@ -76,7 +70,12 @@ The start of the experiment is defined by default as when the CX_Clock instance 
 (instantiated in this file) is constructed (typically the beginning of program execution). */
 CX_Micros CX_Clock::getTime(void) {
 	CX_InternalClockType::time_point t = CX_InternalClockType::now();
+
+#ifndef CX_CLOCK_IMPLEMENTATION_COUNTS_FROM_ZERO
 	return std::chrono::duration_cast<std::chrono::microseconds>(t - _experimentStart).count();
+#else
+	return std::chrono::duration_cast<std::chrono::microseconds>(t.time_since_epoch()).count();
+#endif
 }
 
 /*!
@@ -106,16 +105,13 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
 
-/* Get the period of the underlying system clock used by CX_Clock. If the returned value 
-is 1e-6 or less, the clock has microsecond precision or better. Otherwise, it has degraded 
-precision. */
-double CX_Clock::_getTheoreticalTickPeriod(void) {
-	return (double)CX_InternalClockType::period().num / CX_InternalClockType::period().den;
-}
-
 void CX_Clock::_resetExperimentStartTime(void) {
 	_pocoExperimentStart = Poco::LocalDateTime();
-	_experimentStart = CX_InternalClockType::now();
+#ifdef CX_CLOCK_IMPLEMENTATION_COUNTS_FROM_ZERO
+	_experimentStart = CX_InternalClockType::time_point(CX_InternalClockType::duration(0));
+#else
+	_experimentStart = CX_InternalClockType::now(); //This is actually irrelevant when using CX_HighResClockImplementation.
+#endif
 }
 
 /*

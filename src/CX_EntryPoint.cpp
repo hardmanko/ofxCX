@@ -63,7 +63,14 @@ void CX::Private::App::setup (void) {
 
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
 
+	
+
 	setupWindow(CX::Private::CX_WindowConfiguration_t());
+
+	float oglv = CX::Private::getOpenGLVersion();
+	if (oglv == 3.3) {
+		cout << "3.3!" << endl;
+	}
 
 	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
 		//This must happen after the window is condifured because it relies on GLFW.
@@ -74,7 +81,7 @@ void CX::Private::App::setup (void) {
 
 	CX::Instances::Display.setup();
 
-	Clock.precisionTest();
+	Clock.precisionTest(100000);
 
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
 }

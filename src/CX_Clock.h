@@ -47,14 +47,14 @@ namespace CX {
 	class CX_Clock {
 	public:
 #ifdef TARGET_WIN32
-		typedef HighResClock CX_InternalClockType;
+		typedef CX::Private::CX_HighResClockImplementation CX_InternalClockType;
 #else
 		typedef std::chrono::steady_clock CX_InternalClockType;
 #endif
 
 		CX_Clock (void);
 
-		void precisionTest(void);
+		void precisionTest(unsigned int iterations);
 
 		CX_Micros getTime(void);
 		CX_Micros getSystemTime(void);
@@ -70,8 +70,6 @@ namespace CX {
 		CX_InternalClockType::time_point _experimentStart;
 
 		Poco::LocalDateTime _pocoExperimentStart;
-
-		double _getTheoreticalTickPeriod(void);
 		
 	};
 

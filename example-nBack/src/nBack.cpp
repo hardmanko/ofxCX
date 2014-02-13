@@ -39,9 +39,7 @@ void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
 
 void runExperiment (void) {
-
-	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
-
+	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
 	letterFont.loadFont(OF_TTF_SANS, 26); //The easiest way to pick fonts is to use the constants OF_TTF_SANS,
