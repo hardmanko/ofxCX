@@ -18,20 +18,6 @@ CX::CX_InputManager CX::Instances::Input;
 
 namespace CX {
 	namespace Private {
-
-		struct CX_WindowConfiguration_t {
-			CX_WindowConfiguration_t(void) :
-			width(800),
-			height(600),
-			mode(ofWindowMode::OF_WINDOW)
-			{}
-
-			int width;
-			int height;
-
-			ofWindowMode mode;
-		};
-
 		
 		class App {
 		public:
@@ -63,7 +49,9 @@ void CX::Private::App::setup (void) {
 
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
 
-	setupWindow(CX::Private::CX_WindowConfiguration_t());
+	CX::CX_WindowConfiguration_t config = preSetupFunction();
+
+	setupWindow(CX::CX_WindowConfiguration_t());
 
 	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
 		//This must happen after the window is condifured because it relies on GLFW.
@@ -89,6 +77,7 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 #endif
 
 #ifdef CX_USE_VIDEO_HW_COMPAT
+#warning "Using video HW compat"
 	ofPtr<ofAppGLFWCompatibilityWindow> window(new ofAppGLFWCompatibilityWindow);
 	window->setGLSLVersion(CX_GLSL_VERSION_MAJOR, CX_GLSL_VERSION_MINOR);
 	window->setOpenGLVersion(CX_GL_VERSION_MAJOR, CX_GL_VERSION_MINOR);

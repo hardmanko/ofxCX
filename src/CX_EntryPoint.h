@@ -144,6 +144,22 @@ namespace CX {
 		extern CX_Display Display;
 		extern CX_InputManager Input;
 	}
+
+	struct CX_WindowConfiguration_t {
+		CX_WindowConfiguration_t(void) :
+		width(800),
+		height(600),
+		mode(ofWindowMode::OF_WINDOW),
+		useVideoHardwareCompatibilityMode(false)
+		{}
+
+		int width;
+		int height;
+
+		ofWindowMode mode;
+
+		bool useVideoHardwareCompatibilityMode;
+	};
 }
 
 using namespace CX;
@@ -169,6 +185,12 @@ once setup is done for CX. When runExperiment returns, the program will exit.
 */
 
 void runExperiment (void);
+
+#ifdef CX_USE_PRE_WINDOW_SETUP_FUNCTION
+CX::CX_WindowConfiguration_t preSetupFunction (void);
+#else
+static CX::CX_WindowConfiguration_t preSetupFunction (void) { return CX::CX_WindowConfiguration_t(); };
+#endif
 
 #define CX_DEBUG
 //#define CX_USE_VIDEO_HW_COMPAT
