@@ -14,7 +14,13 @@ namespace CX {
 	namespace Private {
 		extern GLFWwindow *glfwContext;
 
-		int getOpenGLVersion(void);
+		struct CX_GLVersion {
+			int major;
+			int minor;
+			int release;
+		};
+
+		CX_GLVersion getOpenGLVersion(void);
 		int getGLSLVersion(void);
 		bool glFenceSyncSupported(void);
 		bool glVersionAtLeast(int versionMajor, int versionMinor, int versionRevision = 0);

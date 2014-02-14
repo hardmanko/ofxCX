@@ -3,27 +3,25 @@
 #include "GLFW\glfw3.h"
 GLFWwindow *CX::Private::glfwContext = NULL;
 
-struct CX_GLVersion {
-	int major;
-	int minor;
-	int revision;
-};
 
 
-CX_GLVersion getGlVersion(void) {
+
+CX::Private::CX_GLVersion CX::Private::getOpenGLVersion(void) {
 	static CX_GLVersion ver = []()->CX_GLVersion {
 		std::string s = (char*)glGetString(GL_VERSION);
 
-		std::vector<std::string> parts = ofSplitString(s, ".", false);
+		vector<string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space.
+		vector<string> version = ofSplitString(versionVendor[0], "."); //Version numbers
 
 		CX_GLVersion v;
-		v.major = ofToInt(parts[0]);
-		v.minor = ofToInt(parts[1]);
-		if (parts.size() >= 3) {
-			v.revision = ofToInt(parts[2]); //This is basically meaningless because no recent versions have used it. The only version to do so was 1.2.1
+		v.major = ofToInt(version[0]);
+		v.minor = ofToInt(version[1]);
+		if (version.size() == 3) {
+			v.release = ofToInt(version[2]);
 		} else {
-			v.revision = 0;
+			v.release = 0;
 		}
+
 		return v;
 	}();
 
@@ -32,19 +30,21 @@ CX_GLVersion getGlVersion(void) {
 
 
 //The version is encoded as 330 for version 3.3.0
-int CX::Private::getOpenGLVersion(void) {
+
+int getGLVersionInt(void) {
 	static int version = [](void) -> int {
-		CX_GLVersion ver = getGlVersion();
-		int version = 100 * ver.major + 10 * ver.minor + ver.revision;
+		CX::Private::CX_GLVersion ver = CX::Private::getOpenGLVersion();
+		int version = 100 * ver.major + 10 * ver.minor + ver.release;
 		return version;
 	}();
 
 	return version;
 }
 
+
 int CX::Private::getGLSLVersion(void) {
 	static int glslVersion = [](void) -> int {
-		int glv = getOpenGLVersion();
+		int glv = getGLVersionInt();
 
 		int glslv;
 
@@ -75,21 +75,17 @@ bool CX::Private::glFenceSyncSupported(void) {
 }
 
 
-bool CX::Private::glVersionAtLeast(int versionMajor, int versionMinor, int versionRevision = 0) {
-	CX_GLVersion ver = getGlVersion();
-	if (versionMajor > ver.major) {
+bool CX::Private::glVersionAtLeast(int desiredMajor, int desiredMinor, int desiredRevision) {
+	CX_GLVersion actual = getOpenGLVersion();
+	if (actual.major > desiredMajor) {
 		return true;
-	} else if (versionMajor < ver.major) {
-		return false;
-	} else {
-		if (versionMinor >= ver.minor) {
-			if (versionRevision >= ver.revision) {
+	} else if (actual.major == desiredMajor) {
+		if (actual.minor > desiredMinor) {
+			return true;
+		} else if (actual.minor == desiredMinor) {
+			if (actual.release >= desiredRevision) {
 				return true;
-			} else {
-				return false;
 			}
-		} else {
-			return false;
 		}
 	}
 	return false;
