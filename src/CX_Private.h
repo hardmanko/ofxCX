@@ -8,22 +8,36 @@
 #include <sstream>
 #include <string>
 
-
-
 namespace CX {
 	namespace Private {
 		extern GLFWwindow *glfwContext;
 
 		struct CX_GLVersion {
+			CX_GLVersion(void) :
+				major(0),
+				minor(0),
+				release(0)
+			{}
+
+			CX_GLVersion(int maj, int min, int rel) :
+				major(maj),
+				minor(min),
+				release(rel)
+			{}
+
 			int major;
 			int minor;
 			int release;
+
 		};
 
 		CX_GLVersion getOpenGLVersion(void);
-		int getGLSLVersion(void);
+		CX_GLVersion getGLSLVersion(void);
 		bool glFenceSyncSupported(void);
-		bool glVersionAtLeast(int versionMajor, int versionMinor, int versionRevision = 0);
+		bool glVersionAtLeast(int desiredMajor, int desiredMinor, int desiredRelease = 0);
+		int glCompareVersions(CX_GLVersion a, CX_GLVersion b);
+
+		CX_GLVersion getGLSLVersionFromGLVersion(CX_GLVersion glVersion);
 
 	}
 }

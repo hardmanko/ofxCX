@@ -41,12 +41,10 @@ int getGLVersionInt(void) {
 	return version;
 }
 
-
+/*
 int CX::Private::getGLSLVersion(void) {
 	static int glslVersion = [](void) -> int {
 		int glv = getGLVersionInt();
-
-		int glslv;
 
 		if (glv >= 330) {
 			return glv;
@@ -69,24 +67,67 @@ int CX::Private::getGLSLVersion(void) {
 
 	return glslVersion;
 }
+*/
+
+CX::Private::CX_GLVersion CX::Private::getGLSLVersionFromGLVersion(CX::Private::CX_GLVersion glVersion) {
+	if (glVersion.major >= 3 && glVersion.minor >= 3) {
+		return glVersion;
+	} else if (glVersion.major < 2) {
+		return CX_GLVersion(0, 0, 0); //No version exists
+	} else if (glVersion.major == 2 && glVersion.minor == 0) {
+		return CX_GLVersion(1, 10, 59);
+	} else if (glVersion.major == 2 && glVersion.minor == 1) {
+		return CX_GLVersion(1, 20, 8);
+	} else if (glVersion.major == 3 && glVersion.minor == 0) {
+		return CX_GLVersion(1, 30, 10);
+	} else if (glVersion.major == 3 && glVersion.minor == 1) {
+		return CX_GLVersion(1, 40, 8);
+	} else if (glVersion.major == 3 && glVersion.minor == 2) {
+		return CX_GLVersion(1, 50, 11);
+	}
+
+	return CX_GLVersion(0, 0, 0); //No version exists
+}
+
+CX::Private::CX_GLVersion CX::Private::getGLSLVersion(void) {
+	static CX_GLVersion ver = getGLSLVersionFromGLVersion(getOpenGLVersion());
+
+	return ver;
+}
 
 bool CX::Private::glFenceSyncSupported(void) {
 	return glVersionAtLeast(3,2,0); //Fence sync is also supported by ARB_sync, but that means dealing with potentially device-specific implementations.
 }
 
 
-bool CX::Private::glVersionAtLeast(int desiredMajor, int desiredMinor, int desiredRevision) {
+bool CX::Private::glVersionAtLeast(int desiredMajor, int desiredMinor, int desiredRelease) {
 	CX_GLVersion actual = getOpenGLVersion();
-	if (actual.major > desiredMajor) {
-		return true;
-	} else if (actual.major == desiredMajor) {
-		if (actual.minor > desiredMinor) {
-			return true;
-		} else if (actual.minor == desiredMinor) {
-			if (actual.release >= desiredRevision) {
-				return true;
+	CX_GLVersion desired(desiredMajor, desiredMinor, desiredRelease);
+
+	return glCompareVersions(actual, desired) >= 0;
+}
+
+//Returns 1 of a > b, 0 if b == a, or -1 if a < b
+int CX::Private::glCompareVersions(CX_GLVersion a, CX_GLVersion b) {
+	if (a.major > b.major) {
+		return 1;
+	} else if (a.major < b.major) {
+		return -1;
+	} else {
+		if (a.minor > b.minor) {
+			return 1;
+		} else if (a.minor > b.minor) {
+			return -1;
+		} else {
+			if (a.release > b.release) {
+				return 1;
+			} else if (a.release < b.release) {
+				return -1;
+			} else {
+				return 0;
 			}
 		}
 	}
-	return false;
+
+	return 0;
 }

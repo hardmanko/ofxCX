@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "ofConstants.h"
@@ -103,6 +101,7 @@ public:
 	HGLRC 		getWGLContext();
 	HWND 		getWin32Window();
 #endif
+
 
 private:
 	// callbacks

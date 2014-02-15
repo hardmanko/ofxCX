@@ -2,11 +2,7 @@
 
 #include "CX_Private.h"
 
-#ifdef CX_USE_VIDEO_HW_COMPAT
 #include "CX_GLFWWindow_Compat.h"
-#else
-#include "ofAppGLFWWindow.h"
-#endif
 
 /*! An instance of CX::CX_Display that is hooked into the CX backend.
 \ingroup entryPoint */
@@ -23,8 +19,6 @@ namespace CX {
 		public:
 			void setup(void);
 			void setupWindow(CX_WindowConfiguration_t config);
-
-			//void update(void);
 		};
 		
 		//Apparently oF has added this, so expect to remove it when oF version 0.9.0 is supported.
@@ -40,21 +34,14 @@ void CX::Private::App::setup (void) {
 	ofSetWorkingDirectoryToDefault();
 
 	CX::Instances::Log.captureOFLogMessages();
-#ifdef CX_DEBUG
-	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
-	CX::Instances::Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
-#else
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
-#endif
 
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
-
-	CX::CX_WindowConfiguration_t config = preSetupFunction();
 
 	setupWindow(CX::CX_WindowConfiguration_t());
 
 	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
-		//This must happen after the window is condifured because it relies on GLFW.
+		//This must happen after the window is configured because it relies on GLFW.
 
 	//Why use these? CX has RNG and Clock.
 	ofSeedRandom();
@@ -71,47 +58,43 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 
 	glfwSetErrorCallback(&glfwErrorCallback);
 
-#ifdef CX_DEBUG
-	CX::Instances::Log.notice() << "Error callback set";
-	CX::Instances::Log.flush();
-#endif
 
-#ifdef CX_USE_VIDEO_HW_COMPAT
-#warning "Using video HW compat"
-	ofPtr<ofAppGLFWCompatibilityWindow> window(new ofAppGLFWCompatibilityWindow);
-	window->setGLSLVersion(CX_GLSL_VERSION_MAJOR, CX_GLSL_VERSION_MINOR);
-	window->setOpenGLVersion(CX_GL_VERSION_MAJOR, CX_GL_VERSION_MINOR);
-#else
-	ofPtr<ofAppGLFWWindow> window(new ofAppGLFWWindow);
-#endif
+	CX::Private::CX_GLVersion glver(1,0,0);
 	
+	//Find out what version of openGL the graphics card supports, which requires the creation 
+	//of a GLFW window (or other initialization of openGL).
+	glfwInit();
+	GLFWwindow *windowP;
+	glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+	windowP = glfwCreateWindow(1, 1, "", NULL, NULL);
+	glfwMakeContextCurrent(windowP);
+	glver = CX::Private::getOpenGLVersion();
+	glfwDestroyWindow(windowP);
+	glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
+	
+	
+
+	ofPtr<ofAppGLFWCompatibilityWindow> window(new ofAppGLFWCompatibilityWindow);
+	window->setOpenGLVersion(glver.major, glver.minor);
 	window->setNumSamples(CX::Util::getSampleCount());
 
-#ifdef CX_DEBUG
-	CX::Instances::Log.notice() << "Window constructed";
-	CX::Instances::Log.flush();
-#endif
-
-	ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+	//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
+	if (glver.major >= 3 && glver.minor >= 2) {
+		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
+	} else {
+		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+	}
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), config.width, config.height, config.mode);
-
-#ifdef CX_DEBUG
-	CX::Instances::Log.notice() << "OpenGL set up";
-	CX::Instances::Log.flush();
-#endif
 
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer
 
 	window->initializeWindow();
-
-#ifdef CX_DEBUG
-	CX::Instances::Log.notice() << "Window initialized";
-	CX::Instances::Log.flush();
-#endif
+	window->setWindowTitle("CX Experiment");
 
 	CX::Private::glfwContext = glfwGetCurrentContext();
 
-	ofSetOrientation(ofOrientation::OF_ORIENTATION_DEFAULT, true); //For some reason, this is need in order to get text to display properly.
+	//For some reason, this is needed in order to get text to display properly: (not any more, apparently)
+	//ofSetOrientation(ofOrientation::OF_ORIENTATION_DEFAULT, true); 
 }
 
 int main (void) {	

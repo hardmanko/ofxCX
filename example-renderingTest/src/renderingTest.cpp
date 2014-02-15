@@ -4,7 +4,7 @@
 //experiencing crashes, you can try commenting out these defines in order to eliminate certain types
 //of rendering in order to help localize the source of the problem.
 #define CX_RT_USE_FBO
-//#define CX_RT_USE_PATH
+#define CX_RT_USE_PATH
 #define CX_RT_USE_TEXTURE
 #define CX_RT_USE_IMAGE
 #define CX_RT_USE_TTF
@@ -249,7 +249,7 @@ void drawStuff (void) {
 #ifdef CX_RT_USE_TTF
 	ofSetColor(255);
 	smallFont.drawString("Some small text", 400, 500);
-	ofSetColor(255,0,0);
+	ofSetColor(255,0,150);
 	largeFont.drawString("Big text", 400, 540);
 #endif
 

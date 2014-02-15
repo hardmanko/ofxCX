@@ -6,6 +6,8 @@
 #include "ofGLProgrammableRenderer.h"
 #include "ofAppRunner.h"
 
+#include "CX_Private.h"
+
 #ifdef TARGET_LINUX
 	#include "ofIcon.h"
 	#include "ofImage.h"
@@ -153,12 +155,16 @@ void ofAppGLFWCompatibilityWindow::setStencilBits(int stencil){
 	stencilBits=stencil;
 }
 
-
-
 //------------------------------------------------------------
 void ofAppGLFWCompatibilityWindow::setOpenGLVersion(int major, int minor){
 	glVersionMajor = major;
 	glVersionMinor = minor;
+
+	CX::Private::CX_GLVersion glVer = CX::Private::CX_GLVersion(major, minor, 0);
+	CX::Private::CX_GLVersion glslVer = CX::Private::getGLSLVersionFromGLVersion(glVer);
+
+	glslVersionMajor = glslVer.major;
+	glslVersionMinor = glslVer.minor;
 }
 
 //------------------------------------------------------------
@@ -172,7 +178,6 @@ void ofAppGLFWCompatibilityWindow::setupOpenGL(int w, int h, int screenMode){
 
 	requestedWidth = w;
 	requestedHeight = h;
-
 
 	if(!glfwInit( )){
 		ofLogError("ofAppGLFWCompatibilityWindow") << "couldn't init GLFW";
@@ -189,6 +194,8 @@ void ofAppGLFWCompatibilityWindow::setupOpenGL(int w, int h, int screenMode){
 	glfwWindowHint(GLFW_ALPHA_BITS, aBits);
 	glfwWindowHint(GLFW_DEPTH_BITS, depthBits);
 	glfwWindowHint(GLFW_STENCIL_BITS, stencilBits);
+
+
 #ifdef TARGET_LINUX
 	// start the window hidden so we can set the icon before it shows
 	glfwWindowHint(GLFW_VISIBLE,GL_FALSE);
@@ -815,7 +822,6 @@ void ofAppGLFWCompatibilityWindow::setFullscreen(bool fullscreen){
 //------------------------------------------------------------
 void ofAppGLFWCompatibilityWindow::toggleFullscreen(){
 	if (windowMode == OF_GAME_MODE) return;
-
 
 	if (windowMode == OF_WINDOW){
 		setFullscreen(true);

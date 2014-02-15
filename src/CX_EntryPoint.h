@@ -186,17 +186,4 @@ once setup is done for CX. When runExperiment returns, the program will exit.
 
 void runExperiment (void);
 
-#ifdef CX_USE_PRE_WINDOW_SETUP_FUNCTION
-CX::CX_WindowConfiguration_t preSetupFunction (void);
-#else
-static CX::CX_WindowConfiguration_t preSetupFunction (void) { return CX::CX_WindowConfiguration_t(); };
-#endif
-
-#define CX_DEBUG
-//#define CX_USE_VIDEO_HW_COMPAT
-#define CX_GLSL_VERSION_MAJOR 0
-#define CX_GLSL_VERSION_MINOR 0
-#define CX_GL_VERSION_MAJOR 1
-#define CX_GL_VERSION_MINOR 4
-
 #endif //_CX_ENTRY_POINT_H_
