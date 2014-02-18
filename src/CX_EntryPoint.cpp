@@ -4,11 +4,11 @@
 
 #include "CX_GLFWWindow_Compat.h"
 
-/*! An instance of CX::CX_Display that is hooked into the CX backend.
+/*! An instance of CX::CX_Display that is lightly hooked into the CX backend. setup() is called for Display before runExperiment() is called.
 \ingroup entryPoint */
 CX::CX_Display CX::Instances::Display;
 
-/*! An instance of CX_InputManager that is hooked into the CX backend.
+/*! An instance of CX_InputManager that is very lightly hooked into the CX backend.
 \ingroup entryPoint */
 CX::CX_InputManager CX::Instances::Input; 
 
@@ -23,7 +23,7 @@ namespace CX {
 		
 		//Apparently oF has added this, so expect to remove it when oF version 0.9.0 is supported.
 		void glfwErrorCallback(int code, const char* message) {
-			CX::Instances::Log.error("ofAppGLFWWindow") << "GLFW error code: " << code << " " << message;
+			CX::Instances::Log.error("GLFW") << "Error code: " << code << " " << message;
 		}
 	}
 }
@@ -58,23 +58,24 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 
 	glfwSetErrorCallback(&glfwErrorCallback);
 
-
-	CX::Private::CX_GLVersion glver(1,0,0);
+	
 	
 	//Find out what version of openGL the graphics card supports, which requires the creation 
 	//of a GLFW window (or other initialization of openGL).
+	CX::Private::CX_GLVersion glver; //Variable to save the GL version in
+
 	glfwInit();
 	GLFWwindow *windowP;
-	glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
-	windowP = glfwCreateWindow(1, 1, "", NULL, NULL);
+	glfwWindowHint(GLFW_VISIBLE, GL_FALSE); //Make the window invisible
+	windowP = glfwCreateWindow(1, 1, "", NULL, NULL); //Create the window
 	glfwMakeContextCurrent(windowP);
-	glver = CX::Private::getOpenGLVersion();
+	glver = CX::Private::getOpenGLVersion(); //Once GL is initialized, get the version number
 	glfwDestroyWindow(windowP);
-	glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
+	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
 	
-	
-
-	ofPtr<ofAppGLFWCompatibilityWindow> window(new ofAppGLFWCompatibilityWindow);
+	//Now that the GL version is known, initialize the real window
+//	ofPtr<ofAppGLFWCompatibilityWindow> window(new ofAppGLFWCompatibilityWindow);
+	CX::Private::window = ofPtr<ofAppGLFWCompatibilityWindow>(new ofAppGLFWCompatibilityWindow);
 	window->setOpenGLVersion(glver.major, glver.minor);
 	window->setNumSamples(CX::Util::getSampleCount());
 
@@ -86,7 +87,7 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	}
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), config.width, config.height, config.mode);
 
-	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer
+	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
 
 	window->initializeWindow();
 	window->setWindowTitle("CX Experiment");

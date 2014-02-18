@@ -43,6 +43,7 @@ void runExperiment(void) {
 	Input.setup(true, true);
 
 	Display.setWindowResolution(800, 600);
+	Display.setWindowTitle("CX Rendering Test");
 
 #ifdef CX_RT_USE_FBO
 	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::Util::getSampleCount() );

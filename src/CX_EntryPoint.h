@@ -176,10 +176,14 @@ It also provides declarations (but not definitions) of two functions which the u
 The user code should define a function with this name and type signature. The user function will be called
 once setup is done for CX. When runExperiment returns, the program will exit.
 
-	void runExperiment (void) {
-		//Do your experiment.
-		return; //When done. You can alternately call std::exit() or ofExit()
-	}
+\code{.cpp}
+void runExperiment (void) {
+	//Do your experiment.
+
+	return; //Return when done to exit the program. You don't have to explicity return; you can just fall off the end of the function. 
+		//You can alternately call std::exit() or ofExit() at any point.
+}
+\endcode
 
 \ingroup entryPoint
 */

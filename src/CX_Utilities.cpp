@@ -4,7 +4,6 @@
 #include "ofConstants.h"
 //#include "ofFileUtils.h"
 
-
 using namespace std;
 using namespace CX;
 

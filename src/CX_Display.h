@@ -56,6 +56,7 @@ namespace CX {
 
 		CX_Micros getFramePeriod (void);
 		void setWindowResolution (int width, int height);
+		void setWindowTitle(std::string title);
 		ofRectangle getResolution (void);
 		ofPoint getCenterOfDisplay (void);
 		uint64_t getFrameNumber (void);

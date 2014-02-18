@@ -203,6 +203,13 @@ void CX_Display::setWindowResolution (int width, int height) {
 	}
 }
 
+/* Sets the title of the experiment window.
+\param title The new title.
+*/
+void CX_Display::setWindowTitle(std::string title) {
+	CX::Private::window->setWindowTitle(title);
+}
+
 /*!
 This function estimates the typical period of the display refresh.
 This function blocks for estimationInterval while the swapping thread swaps in the background.
