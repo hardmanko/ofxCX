@@ -38,8 +38,61 @@ float starSize = .8;
 void updateDrawings(void);
 void drawStuff (void);
 
+class CX_DegreeToPixelConverter {
+public:
+
+	//Units don't matter: Can be inches, centimeters, nautical miles, but they must agree on units!
+	CX_DegreeToPixelConverter (float pixelsPerUnit, float distanceFromMonitor) :
+		_pixelsPerUnit(pixelsPerUnit),
+		_eyeDistance(distanceFromMonitor)
+	{}
+
+	//Equivalent to i(deg)
+	unsigned int operator() (float deg) {
+		return CX::Util::round(this->f(deg), 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+	}
+
+	/* Returns the closest integer to the number of pixels needed to subtend deg degrees of visual angle.
+	\param deg Number of degrees.
+	\return An unsigned integer nearest to the number of pixels. */
+	unsigned int i (float deg) {
+		return CX::Util::round(this->f(deg), 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+	}
+
+	/* Returns the number of pixels needed to subtend deg degrees of visual angle.
+	\param deg Number of degrees.
+	\return The needed number of pixels. */
+	float f (float deg) {
+		float rad = (deg / 2) * PI / 180;
+		float width = 2 * sin(rad) * _eyeDistance;
+
+		return width * _pixelsPerUnit;
+	}
+
+	float p2d (unsigned int pix) {
+		float width = (float)pix/_pixelsPerUnit;
+
+		float rad = asin(width/(2 * _eyeDistance));
+		return 2 * rad * 180 / PI;
+	}
+
+private:
+
+	float _pixelsPerUnit;
+	float _eyeDistance;
+
+};
+
 
 void runExperiment(void) {
+
+
+	CX_DegreeToPixelConverter d2p(200/5.5, 100);
+	cout << d2p(1) << endl;
+
+	cout << d2p.p2d(d2p.f(1)) << endl;
+
+
 	Input.setup(true, true);
 
 	Display.setWindowResolution(800, 600);
@@ -88,12 +141,12 @@ void runExperiment(void) {
 #endif
 
 #ifdef CX_RT_USE_IMAGE
-	//Example of loading an image file. Pretty painless. 
+	//Example of loading an image file. Quite painless. 
 	birds.loadImage("4birds.png");
 #endif
 
 #ifdef CX_RT_USE_TEXTURE
-	//You can manipulate the data in the image if you read it out into some ofPixels:
+	//You can manipulate the data in the image if you read it out into an ofPixels:
 	ofPixels mirroredPix;
 	mirroredPix.allocate(birds.width, birds.height, birds.getPixelsRef().getImageType());
 	birds.getPixelsRef().mirrorTo(mirroredPix, true, true);
