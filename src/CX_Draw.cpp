@@ -4,9 +4,9 @@ using namespace CX::Draw;
 
 /*!
 This function draws an approximation of a squircle (http://en.wikipedia.org/wiki/Squircle) using Bezier curves.
-The squircle will be centered on 0,0 in the ofPath.
+The squircle will be centered on (0,0) in the ofPath.
 \param radius The radius of the largest circle that can be enclosed in the squircle.
-\param amount The squicliness of the squircle. The default (0.9) seems like a pretty good amount for a good 
+\param amount The "squircliness" of the squircle. The default (0.9) seems like a pretty good amount for a good 
 approximation of a squircle, but different amounts can give different sorts of shapes.
 \return An ofPath containing the squircle.
 */
@@ -41,9 +41,9 @@ void squircle(ofPoint center, double radius, double rotationDeg, double amount) 
 */
 
 /*!
-This draws an N-pointed star to an ofPath. The star will be centered on 0,0 in the ofPath.
+This draws an N-pointed star to an ofPath. The star will be centered on (0,0) in the ofPath.
 \param numberOfPoints The number of points in the star.
-\param innerRadius The distance from the center of the star to where the inner points of
+\param innerRadius The distance from the center of the star at which the inner points of
 the star hit.
 \param outerRadius The distance from the center of the star to the outer points of the star.
 \return An ofPath containing the star.
@@ -100,6 +100,15 @@ void CX::Draw::star(ofPoint center, int numberOfPoints, float innerRadius, float
 	star.draw(center.x, center.y);
 }
 
+/*! Draws a string centered on a given location using the given font. Strings are normally
+drawn such that the x coordinate gives the left edge of the string and the y coordinate
+gives a line on which the letters will be drawn, where some characters (like y or g) can descend
+below the line.
+\param x The x coordinate of the center of the string.
+\param y The y coordinate of the center of the string.
+\param s The string to draw.
+\param font A font that has already been prepared for use.
+*/
 void CX::Draw::centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;

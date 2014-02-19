@@ -13,18 +13,18 @@ To find out more about presenting visual stimuli, go to the \ref video page.
 
 To find out about auditory stimuli, go to the \ref sound page.
 
-To learn about how CX logs errors, see the \ref errorLogging page.
-
 To learn about how to store and output experiment data, see the \ref dataManagement page.
 
 To learn about random number generation, see the \ref randomNumberGeneration page.
 
+To learn about how CX logs errors and other runtime information, see the \ref errorLogging page.
 
-\section install Installation
+
+\section installationInstructions Installation
 In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
 Currently only version 0.8.0 of openFrameworks is supported by CX.
 
-Once you have installed openFrameworks, you can install CX by putting the contents of this repository into a subdirectory 
+Once you have installed openFrameworks, you can install CX by putting the contents of the CX repository into a subdirectory 
 under openFrameworksInstallDirectory/addons (typically openFrameworksInstallDirectory/addons/ofxCX), where openFrameworksInstallDirectory
 is where you put openFramworks when you installed it.
 
@@ -34,17 +34,18 @@ be found in openFrameworksInstallDirectory/projectGenerator.
 In order to use the examples, do the following:
 1. Use the oF project generator (in openFrameworksInstallDirectory/projectGenerator) to create a new project that uses the ofxCX addon.
 2. Go to the newly-created project directory (that you chose when creating the project in step 1) and go into the src subdirectory.
-3. Delete all of the files in the src directory (main.cpp, testApp.h, and testApp.cpp)
-4. Copy the example .cpp file into this directory
-4a. If the example has a data folder, copy the contents of that folder into yourProjectDirectory/bin/data. bin/data folders probably won't 
-exist at this point. You can create it.
-5. This step depends on your compiler, but you'll need to tell it to use the example source file (.cpp) when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
-6. Compile and run the project
+3. Delete all of the files in the src directory (main.cpp, testApp.h, and testApp.cpp).
+4a. Copy the example .cpp file into this directory.
+4b. If the example has a data folder, copy the contents of that folder into yourProjectDirectory/bin/data. bin/data folders probably won't 
+exist at this point. You can create them.
+5. This step depends on your compiler, but you'll need to tell it to use the example source file that you copied in step 4a
+when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
+6. Compile and run the project.
 
 \section examplesAndTutorials Examples and Tutorials
 There are several examples that serve as tutorials for CX. Some of the examples are on a specific topic and others 
 are sample experiments that integrate together different features of CX. The example files can be found in the CX
-directory (see \ref install) in subfolders with names beginning with "example-".
+directory (see \ref installationInstructions) in subfolders with names beginning with "example-".
 
 Tutorials:
 -----------------------
@@ -124,7 +125,6 @@ CX::Instances::Log is used throughout CX for message logging.
 CX::Instances::RNG is an instance of a CX_RandomNumberGenerator.
 CX::Instances::Input manages the three primary input devices (Mouse, Keyboard, and Joystick).
 CX::Instances::Display is the primary display used for presenting visual stimuli.
-CX::Instances::SlidePresenter is a very useful abstraction that is used for the presentation of visual stimuli.
 */
 
 #include "ofMain.h" //Include all of the oF stuff.

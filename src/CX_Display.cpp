@@ -12,7 +12,8 @@ using namespace CX::Instances;
 CX_Display::CX_Display (void) :
 	_framePeriod(0),
 	_swapThread(NULL),
-	_manualBufferSwaps(0)
+	_manualBufferSwaps(0),
+	_frameNumberOnLastSwapCheck(0)
 {
 }
 
@@ -44,7 +45,7 @@ void CX_Display::setup (void) {
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
-\param autoSwap If true, the front and back buffer will swap automatically every frame.*/
+\param autoSwap If true, the front and back buffer will swap automatically every frame. */
 void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
@@ -87,16 +88,25 @@ CX_Micros CX_Display::getFramePeriod(void) {
 }
 
 /*! Check to see if the display has swapped the front and back buffers since the last call to this function.
-If isAutomaticallySwapping() is false, the result of this function is meaningless.
+This is generally used in conjuction with automatic swapping of the buffers (BLOCKING_setAutoSwapping())
+or with an individual threaded swap of the buffers (swapFrontAndBackBuffers()). This technically works
+with BLOCKING_swapFrontAndBackBuffers(), but given that that function only returns once the buffers have
+swapped, checking that the buffers have swapped is redundant.
 \return True if a swap has been made since the last call to this function, false otherwise. */
 bool CX_Display::hasSwappedSinceLastCheck (void) {
-	return _swapThread->swappedSinceLastCheck();
+	bool hasSwapped = false;
+	uint64_t currentFrameNumber = this->getFrameNumber();
+	if (currentFrameNumber != _frameNumberOnLastSwapCheck) {
+		_frameNumberOnLastSwapCheck = currentFrameNumber;
+		hasSwapped = true;
+	}
+	return hasSwapped;
 }
 
 /*! This function returns the number of the last frame presented, as determined by 
 number of front and back buffer swaps. It tracks buffer swaps that result from 
-1) the front and back buffer swapping automatically (as a result of BLOCKING_setAutoSwapping(true)) and 
-2) manual swaps resulting from a call to BLOCKING_swapFrontAndBackBuffers().
+1) the front and back buffer swapping automatically (as a result of BLOCKING_setAutoSwapping() with true as the argument) and 
+2) manual swaps resulting from a call to BLOCKING_swapFrontAndBackBuffers() or swapFrontAndBackBuffers().
 \return The number of the last frame. This value can only be compared with other values 
 returned by this function. */
 uint64_t CX_Display::getFrameNumber (void) {

@@ -74,6 +74,7 @@ namespace CX {
 		CX_Micros _framePeriod;
 
 		uint64_t _manualBufferSwaps;
+		uint64_t _frameNumberOnLastSwapCheck;
 
 		void _exitHandler(void);
 
