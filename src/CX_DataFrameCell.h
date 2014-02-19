@@ -41,7 +41,6 @@ public:
 
 	template <typename T> void store(const T& value);
 
-	//! Returns a copy of the stored data, converted to T.
 	template <typename T> T to(void) const; 
 
 	//! Returns a copy of the stored data in the internal string representation. Type checking is not done because this is a lossless operation.

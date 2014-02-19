@@ -157,6 +157,9 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 	}
 }
 
+/*! This function cues a swap of the front and back buffers. It avoids blocking
+(like BLOCKING_swapFrontAndBackBuffers()) by spawning a thread in which the 
+swap is waited for. */
 void CX_Display::swapFrontAndBackBuffers (void) {
 	_swapThread->swapNFrames(1);
 }
@@ -203,8 +206,8 @@ void CX_Display::setWindowResolution (int width, int height) {
 	}
 }
 
-/* Sets the title of the experiment window.
-\param title The new title.
+/*! Sets the title of the experiment window.
+\param title The new window title.
 */
 void CX_Display::setWindowTitle(std::string title) {
 	CX::Private::window->setWindowTitle(title);
