@@ -137,6 +137,7 @@ CX::Instances::SlidePresenter is a very useful abstraction that is used for the 
 #include "CX_DataFrame.h"
 
 #include "CX_Utilities.h"
+#include "CX_UnitConversion.h"
 #include "CX_Draw.h"
 
 namespace CX {

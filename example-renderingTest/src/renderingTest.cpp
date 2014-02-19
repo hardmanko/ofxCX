@@ -41,8 +41,6 @@ void drawStuff (void);
 
 void runExperiment(void) {
 
-	
-
 	Input.setup(true, true);
 
 	Display.setWindowResolution(800, 600);
@@ -276,21 +274,6 @@ void drawStuff (void) {
 	prop.pattern.fallOffPower = 6;
 	CX::Draw::gabor(ofGetMouseX(), ofGetMouseY(), prop);
 #endif
-
-	CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Make the center of the display the origin and invert
-	//the Y-axis. This makes positive x values go to the right and positive y values go up from the center of the display.
-
-	CX_D2P unitConverter(200/5.6, 70);
-	cc.setUnitConverter(&unitConverter);
-
-
-	ofSetColor(255, 0, 0); //Draw a red circle in the center of the display.
-	ofCircle(cc(0, 0), unitConverter(.5));
-	ofSetColor(0, 255, 0); //Draw a green circle 100 pixels to the right of the center.
-	ofCircle(cc(3, 0), unitConverter(.5));
-	ofSetColor(0, 0, 255); //Draw a blue circle 100 pixels above the center (inverted y-axis).
-	ofCircle(cc(0, 3), unitConverter(.5));
-
 
 	/*
 	ofSetSphereResolution(100);
