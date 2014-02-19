@@ -49,8 +49,8 @@ void CX_Clock::precisionTest (unsigned int iterations) {
 		}
 	}
 
-	cout << "Precision test results (nanoseconds): Min, min-nonzero, mean, max " <<
-		minDifference << ", " << minNonzeroDuration << ", " << differenceSum / durations.size() << ", " << maxDifference;
+	//cout << "Precision test results (nanoseconds): Min, min-nonzero, mean, max " <<
+	//	minDifference << ", " << minNonzeroDuration << ", " << differenceSum / durations.size() << ", " << maxDifference;
 
 	if (minNonzeroDuration > 1000) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock is worse than "

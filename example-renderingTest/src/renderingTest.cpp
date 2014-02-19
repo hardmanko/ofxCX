@@ -38,65 +38,16 @@ float starSize = .8;
 void updateDrawings(void);
 void drawStuff (void);
 
-class CX_DegreeToPixelConverter {
-public:
-
-	//Units don't matter: Can be inches, centimeters, nautical miles, but they must agree on units!
-	CX_DegreeToPixelConverter (float pixelsPerUnit, float distanceFromMonitor) :
-		_pixelsPerUnit(pixelsPerUnit),
-		_eyeDistance(distanceFromMonitor)
-	{}
-
-	//Equivalent to i(deg)
-	unsigned int operator() (float deg) {
-		return CX::Util::round(this->f(deg), 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
-	}
-
-	/* Returns the closest integer to the number of pixels needed to subtend deg degrees of visual angle.
-	\param deg Number of degrees.
-	\return An unsigned integer nearest to the number of pixels. */
-	unsigned int i (float deg) {
-		return CX::Util::round(this->f(deg), 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
-	}
-
-	/* Returns the number of pixels needed to subtend deg degrees of visual angle.
-	\param deg Number of degrees.
-	\return The needed number of pixels. */
-	float f (float deg) {
-		float rad = (deg / 2) * PI / 180;
-		float width = 2 * sin(rad) * _eyeDistance;
-
-		return width * _pixelsPerUnit;
-	}
-
-	float p2d (unsigned int pix) {
-		float width = (float)pix/_pixelsPerUnit;
-
-		float rad = asin(width/(2 * _eyeDistance));
-		return 2 * rad * 180 / PI;
-	}
-
-private:
-
-	float _pixelsPerUnit;
-	float _eyeDistance;
-
-};
-
 
 void runExperiment(void) {
 
-
-	CX_DegreeToPixelConverter d2p(200/5.5, 100);
-	cout << d2p(1) << endl;
-
-	cout << d2p.p2d(d2p.f(1)) << endl;
-
+	
 
 	Input.setup(true, true);
 
 	Display.setWindowResolution(800, 600);
 	Display.setWindowTitle("CX Rendering Test");
+
 
 #ifdef CX_RT_USE_FBO
 	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::Util::getSampleCount() );
@@ -325,6 +276,21 @@ void drawStuff (void) {
 	prop.pattern.fallOffPower = 6;
 	CX::Draw::gabor(ofGetMouseX(), ofGetMouseY(), prop);
 #endif
+
+	CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Make the center of the display the origin and invert
+	//the Y-axis. This makes positive x values go to the right and positive y values go up from the center of the display.
+
+	CX_D2P unitConverter(200/5.6, 70);
+	cc.setUnitConverter(&unitConverter);
+
+
+	ofSetColor(255, 0, 0); //Draw a red circle in the center of the display.
+	ofCircle(cc(0, 0), unitConverter(.5));
+	ofSetColor(0, 255, 0); //Draw a green circle 100 pixels to the right of the center.
+	ofCircle(cc(3, 0), unitConverter(.5));
+	ofSetColor(0, 0, 255); //Draw a blue circle 100 pixels above the center (inverted y-axis).
+	ofCircle(cc(0, 3), unitConverter(.5));
+
 
 	/*
 	ofSetSphereResolution(100);

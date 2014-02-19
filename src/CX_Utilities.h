@@ -51,6 +51,88 @@ namespace CX {
 
 		double round(double d, int roundingPower, CX_RoundingConfiguration c);
 
+		float degreesToPixels(float degrees, float pixelsPerUnit, float viewingDistance);
+		float pixelsToDegrees(float pixels, float pixelsPerUnit, float viewingDistance);
+
+		class CX_BaseUnitConverter {
+		public:
+			virtual float operator() (float inputUnits) {
+				return inputUnits;
+			};
+		};
+
+		/* This simple utility class is used for converting degrees of visual angle to pixels on a monitor.
+		This class uses CX::Util::degreesToPixels() internally.
+
+		\code{.cpp}
+		CX_degreeToPixelConverter d2p(34, 60); //34 pixels per (e.g.) cm, user is 60 cm from monitor.
+		ofLine( 200, 100, 200 + d2p(1), 100 + d2p(2) ); //Draw a line from (200, 100) in pixel coordinates to 1 degree
+		//horizontally and 2 degrees vertically from that point.
+
+		\endcode
+		*/
+		class CX_DegreeToPixelConverter : public CX_BaseUnitConverter {
+		public:
+			CX_DegreeToPixelConverter(float pixelsPerUnit, float viewingDistance, bool roundResult = false);
+			float operator() (float degrees);
+
+		private:
+			float _pixelsPerUnit;
+			float _viewingDistance;
+			bool _roundResult;
+		};
+
+		class CX_LengthToPixelConverter : public CX_BaseUnitConverter {
+		public:
+			CX_LengthToPixelConverter(float pixelsPerUnit, bool roundResult = false);
+			float operator() (float length);
+
+		private:
+			float _pixelsPerUnit;
+			bool _roundResult;
+		};
+
+
+
+		/* This helper class is used for converting the standard computer monitor coordinate system
+		into more familiar coordinate systems.
+
+		\code{.cpp}
+		CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Make the center of the display the origin and invert
+			//the Y-axis. This makes positive x values go to the right and positive y values go up from the center of the display.
+		ofSetColor(255, 0, 0); //Draw a red circle in the center of the display.
+		ofCircle(cc(0, 0), 20);
+		ofSetColor(0, 255, 0); //Draw a green circle 100 pixels to the right of the center.
+		ofCircle(cc(100, 0), 20);
+		ofSetColor(0, 0, 255); //Draw a blue circle 100 pixels above the center (inverted y-axis).
+		ofCircle(cc(0, 100), 20);
+		\endcode
+
+		*/
+		class CX_CoordinateConverter {
+		public:
+
+			CX_CoordinateConverter(ofPoint origin, bool invertX, bool invertY, bool invertZ = false);
+
+			ofPoint operator() (ofPoint p);
+			ofPoint operator() (float x, float y, float z = 0);
+
+			void setAxisInversion(bool invertX, bool invertY, bool invertZ = false);
+			void setOrigin(ofPoint newOrigin);
+
+			void setUnitConverter(CX_BaseUnitConverter *converter);
+
+		private:
+			ofPoint _origin;
+			bool _invertX;
+			bool _invertY;
+			bool _invertZ;
+
+			//ofVec3f _orientations; to do input * orientations
+
+			CX_BaseUnitConverter *_conv;
+		};
+
 	}
 };
 
