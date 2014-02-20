@@ -48,16 +48,13 @@ namespace CX {
 		CX_WindowConfiguration_t(void) :
 		width(800),
 		height(600),
-		mode(ofWindowMode::OF_WINDOW),
-		useVideoHardwareCompatibilityMode(false)
+		mode(ofWindowMode::OF_WINDOW)
 		{}
 
 		int width;
 		int height;
 
 		ofWindowMode mode;
-
-		bool useVideoHardwareCompatibilityMode;
 	};
 }
 

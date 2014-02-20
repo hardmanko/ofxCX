@@ -1,5 +1,7 @@
 #include "CX_ClockImplementations.h"
 
+#ifdef TARGET_WIN32
+
 #include "Windows.h"
 
 /*
@@ -18,15 +20,32 @@ occurs.
 Take this value and divide it by frequency in order to get the number of seconds between overflows.
 
 See this R code:
-freq = 4e6 #Assume 4 GHz
+freq = 4236547897 #Assume near 4 GHz tick rate. It could be lower, not likely to be faster
 uint64_t_max = 2^64
 tickPeriodDen = 1e9
-adjust = 1e5
+adjust = 1e6
 
 ticksPerOvf = uint64_t_max/((tickPeriodDen * adjust)/freq)
 secPerOvf = ticksPerOvf/freq
 
-hoursPerOvf = secPerOvf/60/60
+hoursPerOvf = secPerOvf/60/60 #These settings result in slightly over 5 hours before an overflow occurs
+
+
+The error characteristics of the clock can be calculated using this R code using the same variables from above:
+multiplier = (tickPeriodDen * adjust)/freq
+multiplierRound = round(multiplier, 0)
+ticks = 1 * freq
+nonRoundedValue = ticks * multiplier / adjust
+roundedValue = ticks * multiplierRound / adjust
+
+print(roundedValue/nonRoundedValue, digits=12)
+
+if (abs(roundedValue/nonRoundedValue - 1) < 1e-6) {
+print("Microsecond accuracy")
+} else {
+print("Worse than microseconds accuracy: ")
+print(abs(roundedValue/nonRoundedValue - 1), digits=12)
+}
 
 */
 CX::Private::CX_HighResClockImplementation::time_point CX::Private::CX_HighResClockImplementation::now() {
@@ -48,8 +67,10 @@ CX::Private::CX_HighResClockImplementation::time_point CX::Private::CX_HighResCl
 	QueryPerformanceCounter(&count);
 
 	uint64_t relative = count.QuadPart - start;
-	uint64_t multiplier = ((uint64_t)period::den * 100000) / freq;
-	return time_point(duration((relative * multiplier) / 100000));
+	uint64_t multiplier = ((uint64_t)period::den * 1000000) / freq;
+	return time_point(duration((relative * multiplier) / 1000000));
 
 	//return time_point(duration(((count.QuadPart - start) * (static_cast<rep>(period::den * 100000) / freq)) / 100000));
 }
+
+#endif //TARGET_WIN32

@@ -49,7 +49,7 @@ namespace CX {
 #ifdef TARGET_WIN32
 		typedef CX::Private::CX_HighResClockImplementation CX_InternalClockType;
 #else
-		typedef std::chrono::steady_clock CX_InternalClockType;
+		typedef std::chrono::high_resolution_clock CX_InternalClockType;
 #endif
 
 		CX_Clock (void);
