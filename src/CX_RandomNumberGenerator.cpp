@@ -19,7 +19,7 @@ non-deterministic source (e.g. a hardware device) is not available to the implem
 According to a Stack Overflow comment, Microsoft's implementation of std::random_device is based
 on a ton of stuff, which should result in a fairly random result to be used as a seed for our
 Mersenne Twister. See the comment: http://stackoverflow.com/questions/9549357/the-implementation-of-random-device-in-vs2010/9575747#9575747
-However complicated this data, it is not a hardware RNG. The random_device is only used 
+Although this data should have high entropy, it is not a hardware RNG. The random_device is only used 
 to seed the Mersenne Twister, so as long as the initial value is random enough, it should be fine.
 */
 CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
@@ -88,7 +88,7 @@ double CX_RandomNumberGenerator::uniformDeviate (double lowerBound_closed, doubl
 \param upperBound The upper bound of the range to sample from. It is possible to sample this value.
 \param withReplacement Sample with or without replacement.
 \return A vector of the samples. */
-vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
+std::vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
 	return sample(count, CX::Util::intVector<int>(lowerBound, upperBound), withReplacement);
 }
 

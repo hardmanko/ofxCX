@@ -38,7 +38,6 @@ float starSize = .8;
 void updateDrawings(void);
 void drawStuff (void);
 
-
 void runExperiment(void) {
 
 	Input.setup(true, true);
@@ -48,7 +47,7 @@ void runExperiment(void) {
 
 
 #ifdef CX_RT_USE_FBO
-	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::Util::getSampleCount() );
+	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGB, CX::Util::getSampleCount() );
 
 	//Here is an example of both 1) storing drawn data in a framebuffer and then drawing that framebuffer at multiple places
 	//and 2) drawing with transparency.

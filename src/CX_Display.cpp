@@ -1,10 +1,6 @@
 #include "CX_Display.h"
 
-#include "ofAppGLFWWindow.h" //This is included here in order to avoid leaking symbols. 
-//There are a lot of symbols in this file that should not leak into the user space.
-
 #include "CX_Private.h" //glfwContext
-#include "CX_Events.h" //exit event
 
 using namespace CX;
 using namespace CX::Instances;
