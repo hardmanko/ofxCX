@@ -62,18 +62,64 @@ public:
 
 	std::string getStoredType (void);
 
-	
-
 private:
 	std::shared_ptr<std::string> _str;
 	std::shared_ptr<std::string> _type;
-	std::shared_ptr<std::size_t> _typeHash;
+	std::shared_ptr<bool> _dataIsVector;
+	//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
+	/*
+	// For linking back to data frame
+	friend class CX_DataFrame;
+	void _setOwner(CX_DataFrame *df, std::string column, CX_DataFrame::rowIndex_t row) {
+		//Because the cell is changing owners, the data storage format may be changing. If the stored data is a vector
+		//it needs to be read out and then read back in with the new settings.
+		vector<std::string> strings;
+		std::string oldType = *_type;
+		if (*_dataIsVector) {
+			strings = toVector<std::string>(); //This will likely result in warnings.
+		}
+		
+
+
+		_df = df;
+		_column = column;
+		_row = row;
+
+		if (*_dataIsVector) {
+			storeVector<string>(strings);
+			*_type = oldType;
+		}
+
+	}
+	CX_DataFrame *_df;
+	std::string _column;
+	CX_DataFrame::rowIndex_t _row;
+	*/
+
+	unsigned int _getFloatingPointPrecision(void) const {
+		return 16;
+	}
+
+	std::string _getVectorElementDelimiter(void) const {
+		return ";";
+	}
+
+	std::string _getVectorStartString(void) const {
+		return std::string("\"");
+	}
+
+	std::string _getVectorEndString(void) const {
+		return std::string("\"");
+	}
 
 	template <typename T>
 	std::string _toString (const T& value) {
-		return ofToString<T>(value, 16);
+		return ofToString<T>(value, _getFloatingPointPrecision());
 	}
 
+	void _allocatePointers(void);
+
+	/*
 	template <typename T>
 	std::string _vectorToString (std::vector<T> values, std::string delimiter, int significantDigits) {
 		std::stringstream s;
@@ -86,19 +132,18 @@ private:
 		}
 		return s.str();
 	}
+	*/
 };
 
 template <typename T> 
 CX_DataFrameCell::CX_DataFrameCell (const T& value) {
-	_str = std::shared_ptr<std::string>(new std::string);
-	_type = std::shared_ptr<std::string>(new std::string);
+	_allocatePointers();
 	this->store(value);
 }
 
 template <typename T> 
 CX_DataFrameCell::CX_DataFrameCell (const std::vector<T>& values) {
-	_str = std::shared_ptr<std::string>(new std::string);
-	_type = std::shared_ptr<std::string>(new std::string);
+	_allocatePointers();
 	storeVector<T>(values);
 }
 
@@ -134,6 +179,11 @@ cell, a warning will be logged.
 */
 template <typename T> 
 T CX_DataFrameCell::to (void) const {
+
+	if (*_dataIsVector) {
+		CX::Instances::Log.warning("CX_DataFrameCell") << "to: Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
+	}
+
 	std::string typeName = typeid(T).name();
 	if (*_type != typeName) {
 		CX::Instances::Log.warning("CX_DataFrameCell") << "to: Attempt to extract data of different type than was inserted:" << 
@@ -151,15 +201,31 @@ scalar that is stored, the logs a warning but attempts the conversion anyway.
 template <typename T> 
 std::vector<T> CX_DataFrameCell::toVector (void) const {
 	std::string typeName = typeid(T).name();
+
+	if (!(*_dataIsVector)) {
+		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract a vector when the stored data was a scalar. The returned vector will be of length one.";
+	}
+
+	if (*_type != typeName) {
+		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract data of different type than was inserted:" <<
+			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << typeName << "\".";
+	}
+
+	/*
 	if (*_type != "vector<" + typeName + ">") {
 		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract data of different type than was inserted:" <<
 			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"vector<" + typeName + ">" << "\".";
 	}
+	*/
 
 	std::string encodedVect = *_str;
-	encodedVect = encodedVect.substr(1, encodedVect.size() - 2); //Strip off the quotes at either end. ofStringReplace(encodedVect, "\"", "");
 
-	std::vector<std::string> parts = ofSplitString(encodedVect, ";");
+	int startSize = _getVectorStartString().size();
+	int endSize = _getVectorEndString().size();
+
+	encodedVect = encodedVect.substr(startSize, encodedVect.size() - startSize - endSize); //Strip off the characters at either end. ofStringReplace(encodedVect, "\"", "");
+
+	std::vector<std::string> parts = ofSplitString(encodedVect, _getVectorElementDelimiter());
 
 	std::vector<T> values;
 	for (unsigned int i = 0; i < parts.size(); i++) {
@@ -174,11 +240,15 @@ If the data to be stored are strings containing semicolons, the data will not be
 */
 template <typename T> 
 void CX_DataFrameCell::storeVector (std::vector<T> values) {
-	*_str = "\"" + CX::Util::vectorToString(values, ";", 16) + "\"";
+	*_str = _getVectorStartString() + CX::Util::vectorToString(values, _getVectorElementDelimiter(), _getFloatingPointPrecision()) + _getVectorEndString();
 
-	*_type = "vector<";
-	*_type += typeid(T).name();
-	*_type += ">";
+	//*_type = "vector<";
+	//*_type += typeid(T).name();
+	//*_type += ">";
+
+	*_type = typeid(T).name();
+
+	*_dataIsVector = true;
 }
 
 /*! Stores the given value with the given type. This function is a good way to explicitly
@@ -189,6 +259,7 @@ state the type of the data you are storing into the cell if, for example, it is 
 template <typename T> void CX_DataFrameCell::store(const T& value) {
 	*_str = ofToString<T>(value);
 	*_type = typeid(T).name();
+	*_dataIsVector = false;
 }
 
 /*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.

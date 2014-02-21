@@ -24,13 +24,6 @@ mental model.
 
 void runExperiment (void) {
 
-
-	CX_DataFrameCell cell = "50";
-	//int ii = cell.toInt();
-	string s = cell.to<string>();
-	cout << "s: " << s << " as an int: " << cell.to<int>() << endl;
-
-
 	CX_DataFrame df;
 
 	//Use the () notation to access an element at the given (column, row). Columns are named with strings and rows
@@ -41,7 +34,7 @@ void runExperiment (void) {
 	df("ints", 0) = 3; //The integer 3 is put into the first row of the column named "ints"
 	df("ints", 1) = 42; //Second row, same column...
 	df("dwellings", 1) = "house"; //You don't have to start with the first row, everything is dynamically resized.
-	df("vect", 0) = CX::Util::sequence(3, 1, -1); //You can easily store vectors of data.
+	df("vect", 0) = CX::Util::sequence(1, 3, 1); //You can easily store vectors of data.
 	df(0, "doubles") = 123.456; //You can do (row, column), if desired.
 
 	//You can also use operator[] to access cells in the data frame. However, using (row,column) is faster (computationally) than using operator[].
@@ -49,14 +42,18 @@ void runExperiment (void) {
 	df[1]["vect"] = CX::Util::sequence(9, 5, -2);
 
 	//The contents of the data frame can be printed to a string, then used as you wish:
-	string dataFrame = df.print("/"); //The forward-slash delimiter makes it easy to see which cells have not been initialized (a dwelling is missing).
-	cout << "The initial data in the data frame: " << endl << dataFrame << endl;
+	string dataFrameString = df.print("/"); //The forward-slash delimiter makes it easy to see which cells have not been initialized (a dwelling is missing).
+	cout << "The initial data in the data frame: " << endl << dataFrameString << endl;
+
+	Log.flush();
 
 	//Once stuff has been put into the data frame, you can extract it fairly easily:
 	double d = df("doubles", 0); //The type is implicitly converted during extraction.
 	int i = df["ints"][0]; //operator[] can also be used to read out data.
-	vector<int> intvector = df("vect", 0); //You can extract vectors easily. You must specify what type the data should be converted to (in this case, <int>).
+	vector<int> intvector = df("vect", 0); //You can extract vectors easily.
 	string house = df("dwellings", 1).toString(); //The common case that is tricky are strings, which require a special function call to be extracted.
+
+	Log.flush();
 
 	//You can see that what comes out looks like what went in:
 	cout << endl << "Some selected data: " << endl << d << endl << i << endl << house << endl << CX::Util::vectorToString(intvector) << endl << endl;
@@ -108,19 +105,19 @@ void runExperiment (void) {
 	string s3 = df["dwellings"][1].toString();
 	cout << "s1, s2, and s3: " << s1 << ", " << s2 << ", and " << s3 << endl;
 
-	df.printToFile("myDataFrame.txt");
 
+	df.printToFile("myDataFrame.txt");
 	/*
-	//Data can easily be moved into an R data frame. First, output the data to a file.
-	df.printToFile("[somewhere]/myDataFrame.txt"); //Check the return value for success.
+	//Data can easily be moved into an R data frame. First, output the data to a file:
+	df.printToFile("[somewhere]/myDataFrame.txt"); //You can check the return value to see if writing the data to a file was successful.
 	
 	#Then read the data into R with:
 	df = read.delim("[somewhere]/myDataFrame.txt")
-	#That's it!
+	#That's it! The defaults agree on both ends. You can read the data into Excel as well, by reading it in as a delimited file.
 
-	#Here is an R helper function for getting data out of the ghetto vectors used by CX_DataFrame
+	#Here is an R helper function for getting data out of the stringified vectors used by CX_DataFrame
 	#x is a character or a factor element that can be converted with as.character().
-	#This function only operates on the first element of x if it has length > 1.
+	#This function only operates on the first element of x if it has length > 1 (i.e. a vector of vectors is not properly processed).
 	numericVector = function(x, delimiter=";") {
 	  as.numeric(strsplit(as.character(x), split=delimiter, fixed=TRUE)[[1]])
 	}
@@ -132,7 +129,6 @@ void runExperiment (void) {
 	df.readFromFile("myDataFrame.txt");
 	df.deleteColumn("rowNumber");
 	cout << "Data frame read in from file: " << endl << df.print() << endl;
-
 
 
 	//You can copy rows from a data frame into a new data frame. You can specify which rows
@@ -148,8 +144,6 @@ void runExperiment (void) {
 	columns.push_back("dwellings");
 	columns.push_back("ints");
 	CX_DataFrame cols = df.copyColumns(columns);
-
-
 
 	/*
 	There is another kind of data frame for those who believe themselves to be error prone (i.e. self-aware
@@ -191,7 +185,7 @@ void runExperiment (void) {
 	try {
 		sdf.at("undefined", 4) = 5;
 	} catch (std::exception& e) {
-		cout << endl << e.what() << endl;
+		cout << endl << "Exception caught: " << e.what() << endl;
 	}
 
 	vector<int> intColumn = sdf.copyColumn<int>("int"); //You can still copy out vectors of converted data.

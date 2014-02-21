@@ -22,6 +22,18 @@ namespace CX {
 class CX_DataFrameRow;
 class CX_DataFrameColumn;
 
+struct CX_DataFrameConfiguration {
+	std::string cellDelimiter;
+
+	std::string vectorElementDelimiter;
+	std::string vectorStart;
+	std::string vectorEnd;
+
+	unsigned int floatingPointPrecision;
+
+	bool suppressTypeMismatchWarnings;
+};
+
 /*! \defgroup dataManagement Data
 This module is related to storing experimental data. CX_DataFrame is the most important class in this module.
 */
@@ -42,17 +54,6 @@ public:
 
 	typedef std::vector<CX_DataFrameCell>::size_type rowIndex_t;
 
-	/*
-	static struct DataFrameConfiguration {
-		std::string vectorElementDelimiter;
-		std::string vectorStart;
-		std::string vectorEnd;
-		std::string cellDelimiter;
-		//bool printHeaders;
-		//bool printRowNumbers;
-	} Configuration;
-	*/
-
 	CX_DataFrame (void);
 
 	CX_DataFrame& operator= (CX_DataFrame& df);
@@ -67,6 +68,8 @@ public:
 	CX_DataFrameRow operator[] (rowIndex_t row);
 
 	void appendRow (CX_DataFrameRow row);
+	void setRowCount(rowIndex_t rowCount);
+	void addColumn(std::string columnName);
 
 	std::string print (std::string delimiter = "\t", bool printRowNumbers = true);
 	std::string print (const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true);
@@ -96,8 +99,7 @@ public:
 
 	template <typename T> std::vector<T> copyColumn(std::string column);
 
-	void setRowCount (rowIndex_t rowCount);
-	void addColumn (std::string columnName);
+	
 
 protected:
 	friend class CX_DataFrameRow;

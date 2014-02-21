@@ -15,7 +15,7 @@ CX_DataFrame::CX_DataFrame(void) :
 \note The contents of this data frame are deleted during the copy.
 */
 CX_DataFrame& CX_DataFrame::operator= (CX_DataFrame& df) {
-	CX_DataFrame temp = df.copyRows(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount()));
+	CX_DataFrame temp = df.copyRows(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount() - 1));
 	std::swap(this->_data, temp._data);
 	std::swap(this->_rowCount, temp._rowCount);
 	return *this;
@@ -278,7 +278,7 @@ bool CX_DataFrame::deleteColumn (std::string columnName) {
 		_data.erase(it);
 		return true;
 	}
-	Instances::Log.warning("CX_DataFrame") << "Failed to delete column: " << columnName << " not found in the data frame.";
+	Instances::Log.warning("CX_DataFrame") << "Failed to delete column \"" << columnName << "\". It was not found in the data frame.";
 	return false;
 }
 
@@ -294,7 +294,7 @@ bool CX_DataFrame::deleteRow (rowIndex_t row) {
 		_rowCount--;
 		return true;
 	}
-	Instances::Log.warning("CX_DataFrame") << "Failed to delete row: Index " << row << " was out of bounds. Number of rows " << this->getRowCount();
+	Instances::Log.warning("CX_DataFrame") << "Failed to delete row " << row << ". It was out of bounds. Number of rows: " << this->getRowCount();
 	return false;
 }
 
@@ -385,8 +385,10 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 
 	vector<string> columnNames = this->columnNames();
 	for (vector<string>::iterator col = columnNames.begin(); col != columnNames.end(); col++) {
-		//copyDf._data[*it].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
+		//copyDf._data[*col].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
 		//next columns, they will be resized to the proper size when they are created.
+
+		copyDf._resizeToFit(*col, rowOrder.size() - 1);
 
 		for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
 			this->operator()(*col, rowOrder[row]).copyCellTo( &copyDf._data[*col][row] );
@@ -415,6 +417,7 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 
 	CX_DataFrame copyDf;
 	for (std::set<string>::iterator col = columnSet.begin(); col != columnSet.end(); col++) {
+		copyDf._resizeToFit(*col, this->getRowCount() - 1);
 		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
 			this->operator()(*col, row).copyCellTo( &copyDf._data[*col][row] );
 		}		
@@ -468,6 +471,7 @@ void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
 }
 
 //This function fails if there are no columns in the data frame
+//Resizes the data frame to fit a row with this index, NOT to fit this many rows.
 void CX_DataFrame::_resizeToFit(rowIndex_t row) {
 	if ((row >= _rowCount) && (_data.size() != 0)) {
 		_data.begin()->second.resize(row + 1);
