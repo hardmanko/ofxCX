@@ -76,7 +76,7 @@ private:
 		vector<std::string> strings;
 		std::string oldType = *_type;
 		if (*_dataIsVector) {
-			strings = toVector<std::string>(); //This will likely result in warnings.
+			strings = toVector<std::string>(); //This will likely result in warnings. Maybe temporarily suppress warnings?
 		}
 		
 
