@@ -1,4 +1,4 @@
-#include "CX_GLFWWindow_Compat.h"
+#include "CX_AppWindow.h"
 
 #include "ofEvents.h"
 
@@ -7,6 +7,7 @@
 #include "ofAppRunner.h"
 
 #include "CX_Private.h"
+#include "CX_Events.h"
 
 #ifdef TARGET_LINUX
 	#include "ofIcon.h"
@@ -35,9 +36,9 @@
 //========================================================================
 // static variables:
 
-ofBaseApp*	ofAppGLFWCompatibilityWindow::ofAppPtr;
-ofAppGLFWCompatibilityWindow* ofAppGLFWCompatibilityWindow::instance;
-GLFWwindow* ofAppGLFWCompatibilityWindow::windowP = NULL;
+ofBaseApp*	CX_AppWindow::ofAppPtr;
+CX_AppWindow* CX_AppWindow::instance;
+GLFWwindow* CX_AppWindow::windowP = NULL;
 
 void CompatGLReadyCallback(bool checkGLSLVersion) {
 
@@ -73,8 +74,8 @@ void CompatGLReadyCallback(bool checkGLSLVersion) {
 }
 
 //-------------------------------------------------------
-ofAppGLFWCompatibilityWindow::ofAppGLFWCompatibilityWindow():ofAppBaseWindow(){
-	ofLogVerbose("ofAppGLFWCompatibilityWindow") << "creating GLFW window";
+CX_AppWindow::CX_AppWindow():ofAppBaseWindow(){
+	ofLogVerbose("CX_AppWindow") << "creating GLFW window";
 	bEnableSetupScreen	= true;
 	buttonInUse			= 0;
 	buttonPressed		= false;
@@ -119,44 +120,44 @@ ofAppGLFWCompatibilityWindow::ofAppGLFWCompatibilityWindow():ofAppBaseWindow(){
 
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setNumSamples(int _samples){
+void CX_AppWindow::setNumSamples(int _samples){
 	samples=_samples;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setMultiDisplayFullscreen(bool bMultiFullscreen){
+void CX_AppWindow::setMultiDisplayFullscreen(bool bMultiFullscreen){
     bMultiWindowFullscreen = bMultiFullscreen; 
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setDoubleBuffering(bool doubleBuff){
+void CX_AppWindow::setDoubleBuffering(bool doubleBuff){
 	bDoubleBuffered = doubleBuff;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setColorBits(int r, int g, int b){
+void CX_AppWindow::setColorBits(int r, int g, int b){
 	rBits=r;
 	gBits=g;
 	bBits=b;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setAlphaBits(int a){
+void CX_AppWindow::setAlphaBits(int a){
 	aBits=a;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setDepthBits(int depth){
+void CX_AppWindow::setDepthBits(int depth){
 	depthBits=depth;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setStencilBits(int stencil){
+void CX_AppWindow::setStencilBits(int stencil){
 	stencilBits=stencil;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setOpenGLVersion(int major, int minor){
+void CX_AppWindow::setOpenGLVersion(int major, int minor){
 	glVersionMajor = major;
 	glVersionMinor = minor;
 
@@ -168,23 +169,23 @@ void ofAppGLFWCompatibilityWindow::setOpenGLVersion(int major, int minor){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setGLSLVersion(int major, int minor) {
+void CX_AppWindow::setGLSLVersion(int major, int minor) {
 	glslVersionMinor = minor;
 	glslVersionMajor = major;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setupOpenGL(int w, int h, int screenMode){
+void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 
 	requestedWidth = w;
 	requestedHeight = h;
 
 	if(!glfwInit( )){
-		ofLogError("ofAppGLFWCompatibilityWindow") << "couldn't init GLFW";
+		ofLogError("CX_AppWindow") << "couldn't init GLFW";
 		return;
 	}
 
-//	ofLogNotice("ofAppGLFWCompatibilityWindow") << "WINDOW MODE IS " << screenMode;
+//	ofLogNotice("CX_AppWindow") << "WINDOW MODE IS " << screenMode;
 
 	int requestedMode = screenMode;
 
@@ -224,13 +225,13 @@ void ofAppGLFWCompatibilityWindow::setupOpenGL(int w, int h, int screenMode){
 		if(count>0){
 			windowP = glfwCreateWindow(w, h, "", monitors[0], NULL);
 		}else{
-			ofLogError("ofAppGLFWCompatibilityWindow") << "couldn't find any monitors";
+			ofLogError("CX_AppWindow") << "couldn't find any monitors";
 			return;
 		}
 	}else{
 		windowP = glfwCreateWindow(w, h, "", NULL, NULL);
 		if(!windowP){
-			ofLogError("ofAppGLFWCompatibilityWindow") << "couldn't create GLFW window";
+			ofLogError("CX_AppWindow") << "couldn't create GLFW window";
 		}
 		#ifdef TARGET_LINUX
 			if(!iconSet){
@@ -251,7 +252,7 @@ void ofAppGLFWCompatibilityWindow::setupOpenGL(int w, int h, int screenMode){
 		}
 	}
     if(!windowP) {
-        ofLogError("ofAppGLFWCompatibilityWindow") << "couldn't create window";
+        ofLogError("CX_AppWindow") << "couldn't create window";
         return;
     }
 
@@ -278,12 +279,12 @@ void ofAppGLFWCompatibilityWindow::setupOpenGL(int w, int h, int screenMode){
 }
 
 //--------------------------------------------
-void ofAppGLFWCompatibilityWindow::exit_cb(GLFWwindow* windowP_){
+void CX_AppWindow::exit_cb(GLFWwindow* windowP_){
 	OF_EXIT_APP(0);
 }
 
 //--------------------------------------------
-void ofAppGLFWCompatibilityWindow::initializeWindow(){
+void CX_AppWindow::initializeWindow(){
 	 //----------------------
 	 // setup the callbacks
 
@@ -299,14 +300,14 @@ void ofAppGLFWCompatibilityWindow::initializeWindow(){
 
 #ifdef TARGET_LINUX
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setWindowIcon(const string & path){
+void CX_AppWindow::setWindowIcon(const string & path){
     ofPixels iconPixels;
 	ofLoadImage(iconPixels,path);
 	setWindowIcon(iconPixels);
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setWindowIcon(const ofPixels & iconPixels){
+void CX_AppWindow::setWindowIcon(const ofPixels & iconPixels){
 	iconSet = true;
 	int length = 2+iconPixels.getWidth()*iconPixels.getHeight();
 	unsigned long * buffer = new unsigned long[length];
@@ -326,7 +327,7 @@ void ofAppGLFWCompatibilityWindow::setWindowIcon(const ofPixels & iconPixels){
 #endif
 
 //--------------------------------------------
-void ofAppGLFWCompatibilityWindow::runAppViaInfiniteLoop(ofBaseApp * appPtr){
+void CX_AppWindow::runAppViaInfiniteLoop(ofBaseApp * appPtr){
 	ofAppPtr = appPtr;
 
 	glfwMakeContextCurrent(windowP);
@@ -339,7 +340,7 @@ void ofAppGLFWCompatibilityWindow::runAppViaInfiniteLoop(ofBaseApp * appPtr){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::display(void){
+void CX_AppWindow::display(void){
 
 	ofPtr<ofGLProgrammableRenderer> renderer = ofGetGLProgrammableRenderer();
 	if(renderer){
@@ -409,12 +410,12 @@ void ofAppGLFWCompatibilityWindow::display(void){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setWindowTitle(string title){
+void CX_AppWindow::setWindowTitle(string title){
 	glfwSetWindowTitle(windowP,title.c_str());
 }
 
 //------------------------------------------------------------
-ofPoint ofAppGLFWCompatibilityWindow::getWindowSize(){
+ofPoint CX_AppWindow::getWindowSize(){
 	if(windowMode == OF_GAME_MODE)
 	{
 		const GLFWvidmode * desktopMode = glfwGetVideoMode(glfwGetWindowMonitor(windowP));
@@ -430,7 +431,7 @@ ofPoint ofAppGLFWCompatibilityWindow::getWindowSize(){
 }
 
 //------------------------------------------------------------
-ofPoint ofAppGLFWCompatibilityWindow::getWindowPosition(){
+ofPoint CX_AppWindow::getWindowPosition(){
     int x, y; 
 	glfwGetWindowPos(windowP, &x, &y);
     
@@ -448,7 +449,7 @@ ofPoint ofAppGLFWCompatibilityWindow::getWindowPosition(){
 
 //------------------------------------------------------------
 
-int ofAppGLFWCompatibilityWindow::getCurrentMonitor(){
+int CX_AppWindow::getCurrentMonitor(){
 	int numberOfMonitors;
 	GLFWmonitor** monitors = glfwGetMonitors(&numberOfMonitors);
 
@@ -470,7 +471,7 @@ int ofAppGLFWCompatibilityWindow::getCurrentMonitor(){
 
 
 //------------------------------------------------------------
-ofPoint ofAppGLFWCompatibilityWindow::getScreenSize(){
+ofPoint CX_AppWindow::getScreenSize(){
 	int count;
 	GLFWmonitor** monitors = glfwGetMonitors(&count);
 	if(count>0){
@@ -491,7 +492,7 @@ ofPoint ofAppGLFWCompatibilityWindow::getScreenSize(){
 }
 
 //------------------------------------------------------------
-int ofAppGLFWCompatibilityWindow::getWidth(){
+int CX_AppWindow::getWidth(){
 	if(windowMode == OF_GAME_MODE)
 	{
 		return getScreenSize().x;
@@ -507,7 +508,7 @@ int ofAppGLFWCompatibilityWindow::getWidth(){
 }
 
 //------------------------------------------------------------
-int ofAppGLFWCompatibilityWindow::getHeight()
+int CX_AppWindow::getHeight()
 {
 	if(windowMode == OF_GAME_MODE)
 	{
@@ -523,12 +524,12 @@ int ofAppGLFWCompatibilityWindow::getHeight()
 }
 
 //------------------------------------------------------------
-int	ofAppGLFWCompatibilityWindow::getWindowMode(){
+int	CX_AppWindow::getWindowMode(){
 	return windowMode;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setWindowPosition(int x, int y){
+void CX_AppWindow::setWindowPosition(int x, int y){
     glfwSetWindowPos(windowP,x,y);
     
     if( windowMode == OF_WINDOW ){
@@ -538,7 +539,7 @@ void ofAppGLFWCompatibilityWindow::setWindowPosition(int x, int y){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setWindowShape(int w, int h){
+void CX_AppWindow::setWindowShape(int w, int h){
 	glfwSetWindowSize(windowP,w,h);
 	// this is useful, esp if we are in the first frame (setup):
 	requestedWidth  = w;
@@ -546,27 +547,27 @@ void ofAppGLFWCompatibilityWindow::setWindowShape(int w, int h){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::hideCursor(){
+void CX_AppWindow::hideCursor(){
 	glfwSetInputMode(windowP,GLFW_CURSOR,GLFW_CURSOR_HIDDEN);
 };
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::showCursor(){
+void CX_AppWindow::showCursor(){
 	glfwSetInputMode(windowP,GLFW_CURSOR,GLFW_CURSOR_NORMAL);
 };
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::enableSetupScreen(){
+void CX_AppWindow::enableSetupScreen(){
 	bEnableSetupScreen = true;
 };
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::disableSetupScreen(){
+void CX_AppWindow::disableSetupScreen(){
 	bEnableSetupScreen = false;
 };
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setFullscreen(bool fullscreen){
+void CX_AppWindow::setFullscreen(bool fullscreen){
  
     int curWindowMode  = windowMode;
  
@@ -820,7 +821,7 @@ void ofAppGLFWCompatibilityWindow::setFullscreen(bool fullscreen){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::toggleFullscreen(){
+void CX_AppWindow::toggleFullscreen(){
 	if (windowMode == OF_GAME_MODE) return;
 
 	if (windowMode == OF_WINDOW){
@@ -831,18 +832,18 @@ void ofAppGLFWCompatibilityWindow::toggleFullscreen(){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setOrientation(ofOrientation orientation){
+void CX_AppWindow::setOrientation(ofOrientation orientation){
 	this->orientation = orientation;
 }
 
 //------------------------------------------------------------
-ofOrientation ofAppGLFWCompatibilityWindow::getOrientation(){
+ofOrientation CX_AppWindow::getOrientation(){
 	return orientation;
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::exitApp(){
-	ofLogVerbose("ofAppGLFWCompatibilityWindow") << "terminating GLFW app!";
+void CX_AppWindow::exitApp(){
+	ofLogVerbose("CX_AppWindow") << "terminating GLFW app!";
 
 	// Terminate GLFW
 	glfwTerminate();
@@ -878,8 +879,8 @@ static void rotateMouseXY(ofOrientation orientation, double &x, double &y) {
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::mouse_cb(GLFWwindow* windowP_, int button, int state, int mods) {
-	ofLogVerbose("ofAppGLFWCompatibilityWindow") << "mouse button: " << button;
+void CX_AppWindow::mouse_cb(GLFWwindow* windowP_, int button, int state, int mods) {
+	ofLogVerbose("CX_AppWindow") << "mouse button: " << button;
 
 #ifdef TARGET_OSX
     //we do this as unlike glut, glfw doesn't report right click for ctrl click or middle click for alt click 
@@ -916,7 +917,7 @@ void ofAppGLFWCompatibilityWindow::mouse_cb(GLFWwindow* windowP_, int button, in
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::motion_cb(GLFWwindow* windowP_, double x, double y) {
+void CX_AppWindow::motion_cb(GLFWwindow* windowP_, double x, double y) {
 	rotateMouseXY(ofGetOrientation(), x, y);
 
 	if(!instance->buttonPressed){
@@ -927,12 +928,12 @@ void ofAppGLFWCompatibilityWindow::motion_cb(GLFWwindow* windowP_, double x, dou
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::scroll_cb(GLFWwindow* windowP_, double x, double y) {
+void CX_AppWindow::scroll_cb(GLFWwindow* windowP_, double x, double y) {
 	// ofSendMessage("scroll|"+ofToString(x,5) + "|" + ofToString(y,5));
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::drop_cb(GLFWwindow* windowP_, const char* dropString) {
+void CX_AppWindow::drop_cb(GLFWwindow* windowP_, const char* dropString) {
 	string drop = dropString;
 	ofDragInfo drag;
 	drag.position.set(ofGetMouseX(),ofGetMouseY());
@@ -946,9 +947,9 @@ void ofAppGLFWCompatibilityWindow::drop_cb(GLFWwindow* windowP_, const char* dro
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods) {
+void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods) {
 
-	ofLogVerbose("ofAppGLFWCompatibilityWindow") << "key: " << key << " state: " << action;
+	ofLogVerbose("CX_AppWindow") << "key: " << key << " state: " << action;
 
 	switch (key) {
 		case GLFW_KEY_ESCAPE:
@@ -1066,18 +1067,27 @@ void ofAppGLFWCompatibilityWindow::keyboard_cb(GLFWwindow* windowP_, int key, in
 		key += 32;
 	}
 
-	if(action == GLFW_PRESS || action == GLFW_REPEAT){
+	//This would be a good place for a little optimization: Add a key repeat event to CX_Events
+	if (action == GLFW_REPEAT) {
+		CX::Private::CX_KeyRepeatEventArgs_t args;
+		args.key = key;
+		ofNotifyEvent(CX::Private::getEvents().keyRepeatEvent, args);
+	}
+
+	if (action == GLFW_PRESS) {
+	//if(action == GLFW_PRESS || action == GLFW_REPEAT){
 		ofNotifyKeyPressed(key);
-		if (key == OF_KEY_ESC){				// "escape"
-			exitApp();
-		}
+		//This was a bug: When setEscapeQuitsApp was false, this still killed the app.
+		//if (key == OF_KEY_ESC) {
+		//	exitApp();
+		//}
 	}else if (action == GLFW_RELEASE){
 		ofNotifyKeyReleased(key);
 	}
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::resize_cb(GLFWwindow* windowP_,int w, int h) {
+void CX_AppWindow::resize_cb(GLFWwindow* windowP_,int w, int h) {
 	instance->windowW = w;
 	instance->windowH = h;
 	ofNotifyWindowResized(w, h);
@@ -1086,7 +1096,7 @@ void ofAppGLFWCompatibilityWindow::resize_cb(GLFWwindow* windowP_,int w, int h) 
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::setVerticalSync(bool bVerticalSync){
+void CX_AppWindow::setVerticalSync(bool bVerticalSync){
 	if(bVerticalSync){
 		glfwSwapInterval( 1);
 	}else{
@@ -1095,7 +1105,7 @@ void ofAppGLFWCompatibilityWindow::setVerticalSync(bool bVerticalSync){
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::listVideoModes(){
+void CX_AppWindow::listVideoModes(){
 	int numModes;
 	const GLFWvidmode * vidModes = glfwGetVideoModes(NULL, &numModes );
 	for(int i=0; i<numModes; i++){
@@ -1105,23 +1115,23 @@ void ofAppGLFWCompatibilityWindow::listVideoModes(){
 }
 
 //------------------------------------------------------------
-bool ofAppGLFWCompatibilityWindow::isWindowIconified(){
+bool CX_AppWindow::isWindowIconified(){
 	return glfwGetWindowAttrib(windowP, GLFW_ICONIFIED);
 }
 
 //------------------------------------------------------------
-bool ofAppGLFWCompatibilityWindow::isWindowActive(){
+bool CX_AppWindow::isWindowActive(){
 //	return glfwGetWindowParam(GLFW_ACTIVE);
 	return true;
 }
 
 //------------------------------------------------------------
-bool ofAppGLFWCompatibilityWindow::isWindowResizeable(){
+bool CX_AppWindow::isWindowResizeable(){
 	return !glfwGetWindowAttrib(windowP, GLFW_RESIZABLE);
 }
 
 //------------------------------------------------------------
-void ofAppGLFWCompatibilityWindow::iconify(bool bIconify){
+void CX_AppWindow::iconify(bool bIconify){
 	if(bIconify)
 			glfwIconifyWindow(windowP);
 	else
@@ -1130,51 +1140,51 @@ void ofAppGLFWCompatibilityWindow::iconify(bool bIconify){
 
 
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
-Display* ofAppGLFWCompatibilityWindow::getX11Display(){
+Display* CX_AppWindow::getX11Display(){
 	return glfwGetX11Display();
 }
 
-Window ofAppGLFWCompatibilityWindow::getX11Window(){
+Window CX_AppWindow::getX11Window(){
 	return glfwGetX11Window(windowP);
 }
 #endif
 
 #if defined(TARGET_LINUX) && !defined(TARGET_OPENGLES)
-GLXContext ofAppGLFWCompatibilityWindow::getGLXContext(){
+GLXContext CX_AppWindow::getGLXContext(){
 	return glfwGetGLXContext(windowP);
 }
 #endif
 
 #if defined(TARGET_LINUX) && defined(TARGET_OPENGLES)
-EGLDisplay ofAppGLFWCompatibilityWindow::getEGLDisplay(){
+EGLDisplay CX_AppWindow::getEGLDisplay(){
 	return glfwGetEGLDisplay();
 }
 
-EGLContext ofAppGLFWCompatibilityWindow::getEGLContext(){
+EGLContext CX_AppWindow::getEGLContext(){
 	return glfwGetEGLContext(windowP);
 }
 
-EGLSurface ofAppGLFWCompatibilityWindow::getEGLSurface(){
+EGLSurface CX_AppWindow::getEGLSurface(){
 	return glfwGetEGLSurface(windowP);
 }
 #endif
 
 #if defined(TARGET_OSX)
-void * ofAppGLFWCompatibilityWindow::getNSGLContext(){
+void * CX_AppWindow::getNSGLContext(){
 	return glfwGetNSGLContext(windowP);
 }
 
-void * ofAppGLFWCompatibilityWindow::getCocoaWindow(){
+void * CX_AppWindow::getCocoaWindow(){
 	return glfwGetCocoaWindow(windowP);
 }
 #endif
 
 #if defined(TARGET_WIN32)
-HGLRC ofAppGLFWCompatibilityWindow::getWGLContext(){
+HGLRC CX_AppWindow::getWGLContext(){
 	return glfwGetWGLContext(windowP);
 }
 
-HWND ofAppGLFWCompatibilityWindow::getWin32Window(){
+HWND CX_AppWindow::getWin32Window(){
 	return glfwGetWin32Window(windowP);
 }
 

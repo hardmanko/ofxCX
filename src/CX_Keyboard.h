@@ -7,6 +7,7 @@
 #include "CX_Clock.h"
 
 #include "ofEvents.h"
+#include "CX_Events.h"
 
 namespace CX {
 
@@ -72,7 +73,8 @@ namespace CX {
 
 		void _keyPressHandler (ofKeyEventArgs &a);
 		void _keyReleaseHandler (ofKeyEventArgs &a);
-		void _keyEventHandler (ofKeyEventArgs &a);
+		void _keyRepeatHandler (CX::Private::CX_KeyRepeatEventArgs_t &a);
+		void _keyEventHandler(CX_KeyEvent_t &a);
 
 		//CX_KeyboardModifiers_t _heldModifiers;
 

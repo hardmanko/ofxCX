@@ -8,13 +8,13 @@
 #include <sstream>
 #include <string>
 
-#include "CX_GLFWWindow_Compat.h"
+#include "CX_AppWindow.h"
 
 namespace CX {
 	namespace Private {
 		extern GLFWwindow *glfwContext;
 
-		extern ofPtr<ofAppGLFWCompatibilityWindow> window;
+		extern ofPtr<CX_AppWindow> window;
 
 		struct CX_GLVersion {
 			CX_GLVersion(void) :

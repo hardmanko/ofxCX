@@ -126,7 +126,7 @@ void runExperiment (void) {
 	*/
 
 
-	df.readFromFile("myDataFrame.txt");
+	df.readFromFile("myDataFrame.txt"); //Read the data back in from the file.
 	df.deleteColumn("rowNumber");
 	cout << "Data frame read in from file: " << endl << df.print() << endl;
 

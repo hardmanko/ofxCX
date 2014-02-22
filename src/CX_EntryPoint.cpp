@@ -2,7 +2,7 @@
 
 #include "CX_Private.h"
 
-#include "CX_GLFWWindow_Compat.h"
+#include "CX_AppWindow.h"
 
 /*! An instance of CX::CX_Display that is lightly hooked into the CX backend. setup() is called for Display before runExperiment() is called.
 \ingroup entryPoint */
@@ -74,8 +74,8 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
 	
 	//Now that the GL version is known, initialize the real window
-//	ofPtr<ofAppGLFWCompatibilityWindow> window(new ofAppGLFWCompatibilityWindow);
-	CX::Private::window = ofPtr<ofAppGLFWCompatibilityWindow>(new ofAppGLFWCompatibilityWindow);
+//	ofPtr<CX_AppWindow> window(new CX_AppWindow);
+	CX::Private::window = ofPtr<CX_AppWindow>(new CX_AppWindow);
 	window->setOpenGLVersion(glver.major, glver.minor);
 	window->setNumSamples(CX::Util::getSampleCount());
 

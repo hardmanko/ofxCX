@@ -17,14 +17,14 @@
 //class ofVec3f;
 class ofBaseApp;
 
-class ofAppGLFWCompatibilityWindow : public ofAppBaseWindow {
+class CX_AppWindow : public ofAppBaseWindow {
 
 	static GLFWwindow* windowP;
 
 public:
 
-	ofAppGLFWCompatibilityWindow();
-	~ofAppGLFWCompatibilityWindow(){}
+	CX_AppWindow();
+	~CX_AppWindow(){}
 
 
 	// window settings, this functions can be called from main before calling ofSetupOpenGL
@@ -149,7 +149,7 @@ private:
     
 	int				getCurrentMonitor();
 	
-	static ofAppGLFWCompatibilityWindow	* instance;
+	static CX_AppWindow	* instance;
 	static ofBaseApp *	ofAppPtr;
 
 	ofOrientation orientation;

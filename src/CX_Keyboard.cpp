@@ -39,6 +39,7 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 	if (listen) {
 		ofAddListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
 		ofAddListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
+		ofAddListener(CX::Private::getEvents().keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
 	} else {
 		ofRemoveListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
 		ofRemoveListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
@@ -47,24 +48,56 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 }
 
 void CX_Keyboard::_keyPressHandler (ofKeyEventArgs &a) {
-	a.type = ofKeyEventArgs::Pressed;
-	_keyEventHandler(a);
+	//a.type = ofKeyEventArgs::Pressed;
+	//_keyEventHandler(a);
+
+	CX_KeyEvent_t ev;
+	ev.eventType = CX_KeyEvent_t::PRESSED;
+	ev.key = a.key;
+	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyReleaseHandler (ofKeyEventArgs &a) {
-	a.type = ofKeyEventArgs::Released;
-	_keyEventHandler(a);
-}
-
-void CX_Keyboard::_keyEventHandler (ofKeyEventArgs &a) {
 
 	CX_KeyEvent_t ev;
+	ev.eventType = CX_KeyEvent_t::RELEASED;
+	ev.key = a.key;
+	_keyEventHandler(ev);
+
+	//a.type = ofKeyEventArgs::Released;
+	//_keyEventHandler(a);
+}
+
+void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
+	CX_KeyEvent_t ev;
+	ev.eventType = CX_KeyEvent_t::REPEAT;
+	ev.key = a.key;
+	_keyEventHandler(ev);
+}
+
+void CX_Keyboard::_keyEventHandler(CX_KeyEvent_t &ev) {
+
+	//CX_KeyEvent_t ev;
 	ev.eventTime = CX::Instances::Clock.getTime();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
-	ev.key = a.key;
+	//ev.key = a.key;
 
 	//int modifierKeyChange = 0;
+
+	switch (ev.eventType) {
+	case CX_KeyEvent_t::PRESSED:
+		_heldKeys.insert(ev.key);
+		break;
+	case CX_KeyEvent_t::RELEASED:
+		_heldKeys.erase(ev.key);
+		break;
+	case CX_KeyEvent_t::REPEAT:
+
+		break;
+	}
+
+	/*
 	if (a.type == ofKeyEventArgs::Pressed) {
 		bool keyAlreadyHeld = (_heldKeys.find(a.key) != _heldKeys.end());
 
@@ -83,6 +116,7 @@ void CX_Keyboard::_keyEventHandler (ofKeyEventArgs &a) {
 
 		//modifierKeyChange = -1;
 	}
+	*/
 
 	_keyEvents.push( ev );
 

@@ -109,6 +109,8 @@ void runExperiment(void) {
 	largeFont.loadFont(OF_TTF_SERIF, 40);
 #endif
 
+	ofSetEscapeQuitsApp(false);
+
 	while (true) {
 		updateDrawings();
 	}

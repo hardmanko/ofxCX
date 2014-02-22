@@ -11,6 +11,10 @@ namespace Private {
 		double y;
 	};
 
+	struct CX_KeyRepeatEventArgs_t {
+		int key;
+	};
+
 	class CX_Events {
 	public:
 		CX_Events(void);
@@ -19,6 +23,7 @@ namespace Private {
 		void setup (void);
 
 		ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
+		ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
 	};
 	
 	CX_Events& getEvents(void);

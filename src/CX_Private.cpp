@@ -3,7 +3,7 @@
 #include "GLFW\glfw3.h"
 GLFWwindow *CX::Private::glfwContext = NULL;
 
-ofPtr<ofAppGLFWCompatibilityWindow> CX::Private::window;
+ofPtr<CX_AppWindow> CX::Private::window;
 
 CX::Private::CX_GLVersion CX::Private::getOpenGLVersion(void) {
 	static CX_GLVersion ver = []()->CX_GLVersion {
