@@ -18,7 +18,7 @@ CX_SoundObjectPlayer::~CX_SoundObjectPlayer (void) {
 
 /*! Configures the CX_SoundObjectPlayer with the given configuration. */
 bool CX_SoundObjectPlayer::setup (CX_SoundObjectPlayerConfiguration_t config) {
-	bool openedSuccessfully = _soundStream.open( (CX_SoundStreamConfiguration_t&)config );
+	bool openedSuccessfully = _soundStream.setup( (CX_SoundStreamConfiguration_t&)config );
 	
 	bool startedSuccessfully = _soundStream.start();
 
@@ -27,7 +27,7 @@ bool CX_SoundObjectPlayer::setup (CX_SoundObjectPlayerConfiguration_t config) {
 
 void CX_SoundObjectPlayer::_exitHandler (ofEventArgs &a) {
 	this->stop();
-	_soundStream.close();
+	_soundStream.closeStream();
 }
 
 /*!

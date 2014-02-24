@@ -48,9 +48,6 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 }
 
 void CX_Keyboard::_keyPressHandler (ofKeyEventArgs &a) {
-	//a.type = ofKeyEventArgs::Pressed;
-	//_keyEventHandler(a);
-
 	CX_KeyEvent_t ev;
 	ev.eventType = CX_KeyEvent_t::PRESSED;
 	ev.key = a.key;
@@ -58,14 +55,10 @@ void CX_Keyboard::_keyPressHandler (ofKeyEventArgs &a) {
 }
 
 void CX_Keyboard::_keyReleaseHandler (ofKeyEventArgs &a) {
-
 	CX_KeyEvent_t ev;
 	ev.eventType = CX_KeyEvent_t::RELEASED;
 	ev.key = a.key;
 	_keyEventHandler(ev);
-
-	//a.type = ofKeyEventArgs::Released;
-	//_keyEventHandler(a);
 }
 
 void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
@@ -76,14 +69,16 @@ void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
 }
 
 void CX_Keyboard::_keyEventHandler(CX_KeyEvent_t &ev) {
+	switch (ev.key) {
+	case OF_KEY_CONTROL:
+	case OF_KEY_ALT:
+	case OF_KEY_SHIFT:
+	case OF_KEY_SUPER:
+		return; //These keys are reported by oF twice: once as OF_KEY_X and again as OF_KEY_RIGHT_X or OF_KEY_LEFT_X. We ignore the generic version.
+	}
 
-	//CX_KeyEvent_t ev;
 	ev.eventTime = CX::Instances::Clock.getTime();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
-
-	//ev.key = a.key;
-
-	//int modifierKeyChange = 0;
 
 	switch (ev.eventType) {
 	case CX_KeyEvent_t::PRESSED:
@@ -97,42 +92,7 @@ void CX_Keyboard::_keyEventHandler(CX_KeyEvent_t &ev) {
 		break;
 	}
 
-	/*
-	if (a.type == ofKeyEventArgs::Pressed) {
-		bool keyAlreadyHeld = (_heldKeys.find(a.key) != _heldKeys.end());
-
-		if (keyAlreadyHeld) {
-			ev.eventType = CX_KeyEvent_t::REPEAT;
-		} else {
-			ev.eventType = CX_KeyEvent_t::PRESSED;
-		}
-
-		_heldKeys.insert(a.key);
-
-		//modifierKeyChange = 1;
-	} else if (a.type == ofKeyEventArgs::Released) {
-		ev.eventType = CX_KeyEvent_t::RELEASED;
-		_heldKeys.erase(a.key);
-
-		//modifierKeyChange = -1;
-	}
-	*/
-
 	_keyEvents.push( ev );
-
-	//Do I even want to do this????!?!?!!?!?!???!?!??!?!?!!!!!!!?!?!?!!?!!?!?!?????!?! NO!!!!!!!!?!!!
-	/*
-	if ((a.key & OF_KEY_CONTROL) == OF_KEY_CONTROL) {
-		_heldModifiers.ctrl += modifierKeyChange;
-	} else if ((a.key & OF_KEY_ALT) == OF_KEY_ALT) {
-		_heldModifiers.alt += modifierKeyChange;
-	} else if ((a.key & OF_KEY_SHIFT) == OF_KEY_SHIFT) {
-		_heldModifiers.shift += modifierKeyChange;
-	} else if ((a.key & OF_KEY_SUPER) == OF_KEY_SUPER) {
-		_heldModifiers.meta += modifierKeyChange;
-	}
-	*/
-
 }
 
 

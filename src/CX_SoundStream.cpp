@@ -11,7 +11,7 @@ CX_SoundStream::CX_SoundStream (void) :
 {}
 
 CX_SoundStream::~CX_SoundStream (void) {
-	close();
+	closeStream();
 }
 
 /*! Opens the sound stream with the specified configuration. If there was an error during configuration,
@@ -21,9 +21,9 @@ so some of the values that are used may differ from the values that are chosen. 
 based on the actually used settings. You can check the configuration later using getConfiguration().
 \return True if configuration appeared to be successful, false otherwise. 
 \note Opening the stream does not start it. See \ref start(). */
-bool CX_SoundStream::open (CX_SoundStreamConfiguration_t &config) {
+bool CX_SoundStream::setup (CX_SoundStreamConfiguration_t &config) {
 	if (_rtAudio != NULL) {
-		close();
+		closeStream();
 	}
 
 	try {
@@ -166,7 +166,7 @@ bool CX_SoundStream::stop (void) {
 
 /*! Closes the sound stream.
 \return False if an error was encountered while closing the stream, true otherwise. */
-bool CX_SoundStream::close (void) {
+bool CX_SoundStream::closeStream(void) {
 	if(_rtAudio == NULL) {
 		return false;
 	}
@@ -177,7 +177,7 @@ bool CX_SoundStream::close (void) {
 		if(_rtAudio->isStreamOpen()) {
     		_rtAudio->closeStream();
 		} else {
-			Log.notice("CX_SoundStream") << "close: Stream was already closed.";
+			Log.notice("CX_SoundStream") << "closeStream: Stream was already closed.";
 		}
   	} catch (RtError &err) {
    		Log.error("CX_SoundStream") << err.getMessage();
@@ -413,6 +413,8 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 		CX_SSInputCallback_t callbackData;
 		callbackData.inputBuffer = (float*)inputBuffer;
 		callbackData.bufferSize = bufferSize;
+		callbackData.inputChannels = _config.inputChannels;
+		callbackData.instance = this;
 
 		//Does this data need to be passed on to the listener?
 		if (status & RTAUDIO_INPUT_OVERFLOW) {
@@ -424,12 +426,14 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 
 	if (_config.outputChannels > 0) {
 
-		//Set the output to 0 so that if the event listener does nothing, this passes silence. This is really wasteful.
+		//Set the output to 0 so that if the event listener(s) do(es) nothing, this passes silence. This is wasteful if the event listeners do stuff.
 		memset(outputBuffer, 0, bufferSize * _config.outputChannels * sizeof(float));
 
 		CX_SSOutputCallback_t callbackData;
 		callbackData.outputBuffer = (float*)outputBuffer;
 		callbackData.bufferSize = bufferSize;
+		callbackData.outputChannels = _config.outputChannels;
+		callbackData.instance = this;
 
 		//Does this data need to be passed on to the listener?
 		if (status & RTAUDIO_OUTPUT_UNDERFLOW) {

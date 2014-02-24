@@ -109,8 +109,6 @@ void runExperiment(void) {
 	largeFont.loadFont(OF_TTF_SERIF, 40);
 #endif
 
-	ofSetEscapeQuitsApp(false);
-
 	while (true) {
 		updateDrawings();
 	}
@@ -123,7 +121,7 @@ void updateDrawings (void) {
 			CX_KeyEvent_t ev = Input.Keyboard.getNextEvent();
 			if (ev.eventType == CX_KeyEvent_t::PRESSED) {
 				drawingToFboFirst = !drawingToFboFirst;
-			}
+			}			
 		}
 
 		while (Input.Mouse.availableEvents()) {

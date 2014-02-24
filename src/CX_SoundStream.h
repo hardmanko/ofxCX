@@ -21,6 +21,8 @@ going wrong by checking out the page for it: http://www.music.mcgill.ca/~gary/rt
 
 namespace CX {
 
+	class CX_SoundStream;
+
 	/*! This struct controls the configuration of the CX_SoundStream.
 	\ingroup sound*/
 	struct CX_SoundStreamConfiguration_t {
@@ -61,7 +63,7 @@ namespace CX {
 		
 		See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849 for a listing of
 		the APIs. See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#afd0bfa26deae9804e18faff59d0273d9 for the 
-		ordering of the APIs. */
+		default ordering of the APIs if RtAudio::Api::UNSPECIFIED is used. */
 		RtAudio::Api api;
 
 		/*! See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1StreamOptions.html for more information.
@@ -82,7 +84,10 @@ namespace CX {
 
 		bool bufferUnderflow;
 		float *outputBuffer;
-		unsigned int bufferSize; //Isn't this a bit redundant?
+		unsigned int bufferSize; //This is really "neededSamples". (This * outputChannels) == the actual size of the buffer.
+		int outputChannels;
+
+		CX_SoundStream *instance;
 	};
 
 	struct CX_SSInputCallback_t {
@@ -93,6 +98,9 @@ namespace CX {
 		bool bufferOverflow;
 		float *inputBuffer;
 		unsigned int bufferSize;
+		int inputChannels;
+
+		CX_SoundStream *instance;
 	};
 
 
@@ -102,8 +110,8 @@ namespace CX {
 		CX_SoundStream (void);
 		~CX_SoundStream (void);
 
-		bool open (CX_SoundStreamConfiguration_t &config);
-		bool close (void);
+		bool setup(CX_SoundStreamConfiguration_t &config);
+		bool closeStream (void);
 
 		bool start (void);
 		bool stop (void);

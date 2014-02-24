@@ -14,8 +14,13 @@
 #include "ofEvents.h"
 #include "ofPixels.h"
 
+#include "CX_Events.h"
+
 //class ofVec3f;
 class ofBaseApp;
+
+namespace CX {
+namespace Private {
 
 class CX_AppWindow : public ofAppBaseWindow {
 
@@ -39,10 +44,10 @@ public:
 	bool		isWindowActive();
 	bool		isWindowResizeable();
 	void		iconify(bool bIconify);
-    void        setMultiDisplayFullscreen(bool bMultiFullscreen); //note this just enables the mode, you have to toggle fullscreen to activate it.
+	void        setMultiDisplayFullscreen(bool bMultiFullscreen); //note this just enables the mode, you have to toggle fullscreen to activate it.
 
 
-    // this functions are only meant to be called from inside OF don't call them from your code
+	// this functions are only meant to be called from inside OF don't call them from your code
 	void setOpenGLVersion(int major, int minor);
 	void setGLSLVersion(int major, int minor); //0.0 is interpreted as "does not have GLSL".
 	void setupOpenGL(int w, int h, int screenMode);
@@ -123,7 +128,7 @@ private:
 
 	//utils
 	int				samples;
-	int				rBits,gBits,bBits,aBits,depthBits,stencilBits;
+	int				rBits, gBits, bBits, aBits, depthBits, stencilBits;
 
 	int				windowMode;
 
@@ -145,10 +150,10 @@ private:
 
 	int 			nFramesSinceWindowResized;
 	bool			bDoubleBuffered;
-    bool            bMultiWindowFullscreen; 
-    
+	bool            bMultiWindowFullscreen;
+
 	int				getCurrentMonitor();
-	
+
 	static CX_AppWindow	* instance;
 	static ofBaseApp *	ofAppPtr;
 
@@ -161,10 +166,14 @@ private:
 
 	bool iconSet;
 
-    #ifdef TARGET_WIN32
-    LONG lExStyle, lStyle;
-    #endif // TARGET_WIN32
+#ifdef TARGET_WIN32
+	LONG lExStyle, lStyle;
+#endif // TARGET_WIN32
 };
+
+} //namespace Private
+} //namespace CX
+
 
 
 //#endif

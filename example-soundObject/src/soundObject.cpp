@@ -38,7 +38,6 @@ void runExperiment (void) {
 		//cout << CX_SoundStream::listDevices(RtAudio::Api::UNSPECIFIED) << endl;
 		//where UNSPECIFIED is replaced with the API you are using.
 	config.outputChannels = 2; //We want at least stereo output for this example. CX does not gracefully
-
 		//support channel configurations past stereo.
 	
 	config.sampleRate = 48000; //Note that this sample rate is only requested: it may not be supported by your

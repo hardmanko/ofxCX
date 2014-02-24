@@ -191,7 +191,7 @@ Creates the sequence {1.5, 4, 6.5, 9, 11.5}
 \return A vector containing the sequence.
 */
 template <typename T> std::vector<T> CX::Util::sequenceSteps(T start, unsigned int steps, T stepSize) {
-	return CX::Util::sequence<T>(start, start + (stepSize * steps), stepSize);
+	return CX::Util::sequence<T>(start, start + (stepSize * (steps - 1)), stepSize);
 }
 
 /*! Creates a sequence from start to end, where the size of each step is chosen so that the length

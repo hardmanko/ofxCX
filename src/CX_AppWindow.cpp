@@ -9,6 +9,8 @@
 #include "CX_Private.h"
 #include "CX_Events.h"
 
+using namespace CX::Private;
+
 #ifdef TARGET_LINUX
 	#include "ofIcon.h"
 	#include "ofImage.h"
@@ -929,7 +931,8 @@ void CX_AppWindow::motion_cb(GLFWwindow* windowP_, double x, double y) {
 
 //------------------------------------------------------------
 void CX_AppWindow::scroll_cb(GLFWwindow* windowP_, double x, double y) {
-	// ofSendMessage("scroll|"+ofToString(x,5) + "|" + ofToString(y,5));
+	CX_MouseScrollEventArgs_t ev(x, y);
+	ofNotifyEvent(CX::Private::getEvents().scrollEvent, ev);
 }
 
 //------------------------------------------------------------
@@ -1067,22 +1070,18 @@ void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int 
 		key += 32;
 	}
 
-	//This would be a good place for a little optimization: Add a key repeat event to CX_Events
-	if (action == GLFW_REPEAT) {
+	switch (action) {
+	case GLFW_PRESS:
+		ofNotifyKeyPressed(key);
+		break;
+	case GLFW_REPEAT:
 		CX::Private::CX_KeyRepeatEventArgs_t args;
 		args.key = key;
 		ofNotifyEvent(CX::Private::getEvents().keyRepeatEvent, args);
-	}
-
-	if (action == GLFW_PRESS) {
-	//if(action == GLFW_PRESS || action == GLFW_REPEAT){
-		ofNotifyKeyPressed(key);
-		//This was a bug: When setEscapeQuitsApp was false, this still killed the app.
-		//if (key == OF_KEY_ESC) {
-		//	exitApp();
-		//}
-	}else if (action == GLFW_RELEASE){
+		break;
+	case GLFW_RELEASE:
 		ofNotifyKeyReleased(key);
+		break;
 	}
 }
 
