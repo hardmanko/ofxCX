@@ -17,13 +17,13 @@ void runExperiment(void) {
 	config.streamOptions.numberOfBuffers = 4;
 	ss.setup(config);
 
-	/*
+	TrivialGenerator triv;
 	Oscillator osc1;
 	Splitter split;
-	Amplifier a1;
-	Amplifier a2;
+	Multiplier a1;
+	Multiplier a2;
 	RCFilter filt1;
-	Mixer mix;
+	Adder mix;
 	SoundObjectOutput soOut;
 
 	osc1.setGeneratorFunction(Oscillator::saw);
@@ -33,50 +33,69 @@ void runExperiment(void) {
 
 	filt1.setBreakpoint(300);
 
-	a1.amplitude = .1;
-	a2.amplitude = .5;
+	triv.step = 1;
 
-	split.setInput(&osc1);
-	split.addOutput(&a1);
-	split.addOutput(&a2);
+	a1.amount = .1;
+	a2.amount = .05;
 
-	filt1.setInput(&a2);
+	//triv >> split;
+	//split >> a1 >> mix;
+	//split >> a2 >> mix;
+	//mix >> soOut;
 
-	mix.addInput(&a1);
-	mix.addInput(&filt1);
-
-	soOut.setInput(&mix);
-
-	soOut.sampleData(.01, 48000);
-
-	for (int i = 0; i < 10; i++) {
-		cout << mix.getNextSample() << endl;
-	}
-	*/
+	//for (int i = 0; i < 10; i++) {
+	//	cout << mix.getNextSample() << endl;
+	//}
 
 	Oscillator osc;
-	osc.frequency = 2000;
-	osc.setGeneratorFunction(Oscillator::sine);
+	osc.frequency = 1000;
+	osc.setGeneratorFunction(Oscillator::saw);
 
 	RCFilter f;
-	f.setBreakpoint(1000);
+	f.setBreakpoint(4000);
 
-	Amplifier a;
-	a.amplitude = .01;
+	Multiplier a;
+	a.amount = .01;
 
 	Envelope en;
 	en.a = 1;
-	en.d = 2;
+	en.d = 1;
 	en.s = .5;
 	en.r = 1;
 	
 	StreamOutput output;
 	output.setOuputStream(ss);
 
-	f.setInput(&osc);
-	a.setInput(&f);
-	en.setInput(&a);
-	output.setInput(&en);
+	
+	osc >> f >> a >> soOut;
+
+	soOut.setup(44100);
+
+	osc.setGeneratorFunction(Oscillator::sine);
+	osc.frequency = 1500;
+	f.setBreakpoint(10000);
+	a.amount = 1;
+	soOut.sampleData(.1);
+	a.amount = 0;
+	soOut.sampleData(.1);
+	a.amount = 1;
+	soOut.sampleData(.1);
+
+	soOut.so.normalize(1);
+	soOut.so.writeToFile("beep beep.wav");
+
+
+	soOut.so.clear();
+	osc.setGeneratorFunction(Oscillator::sine);
+	osc.frequency = 600;
+	f.setBreakpoint(10000);
+	a.amount = 1;
+	soOut.sampleData(.5);
+
+	soOut.so.normalize(1);
+	soOut.so.writeToFile("beep.wav");
+
+
 	
 	ss.start();
 
@@ -92,8 +111,8 @@ void runExperiment(void) {
 					osc.frequency = ev.x * 8;
 					cout << "F = " << osc.frequency << endl;
 
-					a.amplitude = (pow(Display.getResolution().y - ev.y, 1.5)) / (Display.getResolution().y * 10);
-					cout << "A = " << a.amplitude << endl;
+					a.amount = (pow(Display.getResolution().y - ev.y, 1.5)) / (Display.getResolution().y * 10);
+					cout << "A = " << a.amount << endl;
 					
 					/*
 					float smax = 0;
@@ -108,7 +127,7 @@ void runExperiment(void) {
 				}
 
 				if (ev.eventType == CX_MouseEvent_t::PRESSED) {
-					en.gate();
+					en.attack();
 				}
 
 				if (ev.eventType == CX_MouseEvent_t::RELEASED) {

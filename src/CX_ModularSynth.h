@@ -12,149 +12,113 @@ struct ModuleControlData_t {
 
 	bool initialized;
 	float sampleRate;
+
+	bool operator==(const ModuleControlData_t& right) {
+		return ((this->initialized == right.initialized) && (this->sampleRate == right.sampleRate));
+	}
+
+	bool operator!=(const ModuleControlData_t& right) {
+		return ((this->initialized != right.initialized) || (this->sampleRate != right.sampleRate));
+	}
 };
 
 class ModuleBase {
 public:
 
-	ModuleBase(void) :
-		input(nullptr)
-		//output(nullptr)
+	ModuleBase(void)
 	{
-		data = std::shared_ptr<ModuleControlData_t>(new ModuleControlData_t);
+		_data = std::shared_ptr<ModuleControlData_t>(new ModuleControlData_t);
 	}
 
 	virtual double getNextSample(void) {
 		return 0;
 	}
 
-	virtual void setInput(ModuleBase* newInput) {
-		input = newInput;
-		//if (this->data->initialized) {
-		//	newInput->data = data;
-		//} else {
-		//	data = newInput->data;
-		//}
-		if (newInput->output != this) {
-			newInput->setOutput(this);
-		}
-		_dataSet();
-	}
-
-	virtual void setOutput(ModuleBase* newOutput) {
-		output = newOutput;
-		//if (!output->data->initialized) {
-		//	output->setData(*data);
-		//}
-		if (newOutput->input != this) {
-			newOutput->setInput(this);
-		}
-		_dataSet();
-	}
-
 	void setData(ModuleControlData_t d) {
-		*data = d;
-		data->initialized = true;
-		_dataSet();
+		*_data = d;
+		_data->initialized = true;
+		this->_dataSet(nullptr);
 	}
-
-	ModuleBase *input;
-	ModuleBase *output;
-
-	std::shared_ptr<ModuleControlData_t> data;
 
 protected:
 
-	virtual void _dataSetEvent(void) {
+	virtual int _maxInputs(void) {
+		return 1;
+	}
+
+	virtual int _maxOutputs(void) {
+		return 1;
+	}
+
+	friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
+
+	//virtual void _dataSetEvent(void) { return; }
+
+	vector<ModuleBase*> _inputs;
+	vector<ModuleBase*> _outputs;
+	std::shared_ptr<ModuleControlData_t> _data;
+
+	virtual void _assignInput(ModuleBase* in) {
+		if (std::find(_inputs.begin(), _inputs.end(), in) == _inputs.end()) { //If it is not in the vector, try to add it.
+			
+			if (_inputs.size() == _maxInputs()) { //If the vector is full, pop off an element before adding the new one.
+				_inputs.pop_back();
+			}
+
+			_inputs.push_back(in);
+			_setDataIfNotSet(in);
+			_inputAssigned(in);
+		}
+	}
+
+	virtual void _assignOutput(ModuleBase* out) {
+		if (std::find(_outputs.begin(), _outputs.end(), out) == _outputs.end()) {
+
+			if (_outputs.size() == _maxOutputs()) {
+				_outputs.pop_back();
+			}
+
+			_outputs.push_back(out);
+			_setDataIfNotSet(out);
+			_outputAssigned(out);
+		}
+	}
+
+	virtual void _dataSet(ModuleBase* caller) {
+		//this->_dataSetEvent();
+
+		for (int i = 0; i < _inputs.size(); i++) {
+			if (_inputs[i] != nullptr && _inputs[i] != caller) {
+				_setDataIfNotSet(_inputs[i]);
+			}
+		}
+
+		for (int i = 0; i < _outputs.size(); i++) {
+			if (_outputs[i] != nullptr && _outputs[i] != caller) {
+				_setDataIfNotSet(_outputs[i]);
+			}
+		}
+	}
+
+	void _setDataIfNotSet(ModuleBase* target) {
+		if (target->_data != this->_data) {
+			target->_data = this->_data;
+			target->_dataSet(this);
+		}
+		//target->_dataSetEvent();
+	}
+
+	virtual void _inputAssigned(ModuleBase* in) {
 		return;
 	}
 
-	void _dataSet(void) {
-		this->_dataSetEvent();
-		if (input != nullptr) {
-			if (!input->data->initialized) {
-				input->data = this->data;
-			}
-			input->_dataSet();
-		}
+	virtual void _outputAssigned(ModuleBase* out) {
+		return;
 	}
 
 };
 
-class Mixer : public ModuleBase {
-public:
-
-	double getNextSample(void) {
-		double d = 0;
-		for (int i = 0; i < inputs.size(); i++) {
-			d += inputs[i]->getNextSample();
-		}
-		return d;
-	}
-
-	void addInput(ModuleBase *m) {
-		if (std::find(inputs.begin(), inputs.end(), m) == inputs.end()) {
-			inputs.push_back(m);
-			m->setOutput(this);
-		}
-	}
-
-	void setInput(ModuleBase* newInput) {
-		input = newInput;
-		if (newInput->output != this) {
-			newInput->setOutput(this);
-		}
-		_dataSet();
-	}
-
-	void removeInput(ModuleBase *m) {
-		auto pos = std::find(inputs.begin(), inputs.end(), m);
-		if (pos != inputs.end()) {
-			inputs.erase(pos);
-		}
-	}
-
-private:
-
-	vector<ModuleBase*> inputs;
-
-};
-
-class Splitter : public ModuleBase {
-public:
-
-	Splitter(void) :
-		_allOutputsFed(false),
-		_currentSample(0.0),
-		_fedOutputs(0)
-	{}
-
-	void addOutput(ModuleBase* m) {
-		if (std::find(outputs.begin(), outputs.end(), m) == outputs.end()) {
-			outputs.push_back(m);
-			m->setInput(this);
-			_fedOutputs = outputs.size();
-		}
-	}
-
-	double getNextSample(void) {
-		if (_fedOutputs >= outputs.size()) {
-			_currentSample = input->getNextSample();
-			_fedOutputs = 0;
-		}
-		++_fedOutputs;
-		return _currentSample;
-	}
-
-private:
-
-	bool _allOutputsFed;
-	double _currentSample;
-	int _fedOutputs;
-
-	vector<ModuleBase*> outputs;
-};
-
+//For testing purposes
 class TrivialGenerator : public ModuleBase {
 public:
 
@@ -173,6 +137,67 @@ public:
 
 };
 
+class Adder : public ModuleBase {
+public:
+
+	double getNextSample(void) {
+		double d = 0;
+		for (int i = 0; i < _inputs.size(); i++) {
+			d += _inputs[i]->getNextSample();
+		}
+		return d;
+	}
+
+private:
+
+	int _maxInputs(void) override {
+		return 32;
+	}
+};
+
+class Splitter : public ModuleBase {
+public:
+
+	Splitter(void) :
+		_currentSample(0.0),
+		_fedOutputs(0)
+	{}
+
+	/*
+	void addOutput(ModuleBase* m) {
+		if (std::find(outputs.begin(), outputs.end(), m) == outputs.end()) {
+			outputs.push_back(m);
+			m->setInput(this);
+			_fedOutputs = outputs.size();
+		}
+	}
+	*/
+
+	double getNextSample(void) override {
+		if (_fedOutputs >= _outputs.size()) {
+			_currentSample = _inputs.front()->getNextSample();
+			_fedOutputs = 0;
+		}
+		++_fedOutputs;
+		return _currentSample;
+	}
+
+private:
+
+	void _outputAssigned(ModuleBase* out) override {
+		_fedOutputs = _outputs.size();
+	}
+
+	int _maxOutputs(void) override {
+		return 32;
+	}
+
+	double _currentSample;
+	int _fedOutputs;
+
+	//vector<ModuleBase*> outputs;
+};
+
 class SoundObjectInput : public ModuleBase {
 public:
 
@@ -185,18 +210,24 @@ public:
 	void setSoundObject(CX::CX_SoundObject *so, unsigned int channel = 0) {
 		_so = so;
 		_channel = channel;
+
+		_data->sampleRate = _so->getSampleRate();
+		_data->initialized = true;
+		_dataSet(nullptr);
 	}
 
+	//Set where in the sound you are
 	void setTime(double t) {
-		if (data->initialized) {
-			unsigned int startSample = (unsigned int)(data->sampleRate * t);
-			startSample -= startSample % _so->getChannelCount();
+		if (_so != nullptr) {
+			unsigned int startSample = _so->getChannelCount() * (unsigned int)(_so->getSampleRate() * t);
 			_currentSample = startSample + _channel;
+		} else {
+			_currentSample = _channel;
 		}
-		_currentSample = _channel;
+		
 	}
 
-	double getNextSample(void) {
+	double getNextSample(void) override {
 		if (_so == nullptr || _currentSample >= _so->getTotalSampleCount()) {
 			return 0;
 		}
@@ -214,9 +245,9 @@ private:
 	CX::CX_SoundObject *_so;
 	unsigned int _channel;
 
-	void _dataSetEvent(void) {
+	//void _dataSetEvent(void) {
 		//_timePerSample = 1 / data->sampleRate;
-	}
+	//}
 
 	unsigned int _currentSample;
 
@@ -225,28 +256,37 @@ private:
 class SoundObjectOutput : public ModuleBase {
 public:
 
-	//Sample t seconds of data at the given sample rate. The result is stored in so.
-	void sampleData(double t, float sampleRate) {
-		unsigned int samplesToTake = ceil(sampleRate * t);
-		data->sampleRate = sampleRate;
-		data->initialized = true;
-		this->_dataSet();
+	void setup(float sampleRate) {
+		_data->sampleRate = sampleRate;
+		_data->initialized = true;
+	}
 
-		so.deleteAmount(so.getLength() + 1000000, true); //Delete all of the sound, plus an extra second to be sure
+	//Sample t seconds of data at the given sample rate (see setup). The result is stored in so.
+	//If so is not empty, the data is appended.
+	void sampleData(double t) {
+
+		unsigned int samplesToTake = ceil(_data->sampleRate * t);
+		//_data->sampleRate = sampleRate;
+		//_data->initialized = true;
+		//this->_dataSet(nullptr);
 
 		vector<float> tempData(samplesToTake);
 
 		for (unsigned int i = 0; i < samplesToTake; i++) {
-			tempData[i] = ofClamp((float)input->getNextSample(), -1, 1);
+			tempData[i] = ofClamp((float)_inputs.front()->getNextSample(), -1, 1);
 		}
 
-		so.setFromVector(tempData, 1, sampleRate);
+		if (so.getTotalSampleCount() == 0) {
+			so.setFromVector(tempData, 1, _data->sampleRate);
+		} else {
+			for (unsigned int i = 0; i < tempData.size(); i++) {
+				so.getRawDataReference().push_back(tempData[i]);
+			}
+		}
+		
 	}
 
 	CX::CX_SoundObject so;
-
-private:
-
 
 };
 
@@ -259,7 +299,7 @@ public:
 
 	double getNextSample(void);
 
-	void gate(void);
+	void attack(void);
 	void release(void);
 
 	int stage;
@@ -274,12 +314,12 @@ private:
 	double _lastP;
 	double _levelAtRelease;
 
-	double _timePerSample;
+	//double _timePerSample;
 	double _timeSinceLastStage;
 
-	void _dataSetEvent(void) {
-		_timePerSample = 1 / data->sampleRate;
-	}
+	//void _dataSetEvent(void) {
+	//	_timePerSample = 1 / _data->sampleRate;
+	//}
 
 };
 
@@ -303,12 +343,12 @@ private:
 
 	std::function<double(double)> _generatorFunction;
 
-	float _sampleRate;
+	//float _sampleRate;
 	double _waveformPos;
 
-	void _dataSetEvent(void) {
-		_sampleRate = data->sampleRate;
-	}
+	//void _dataSetEvent(void) {
+	//	_sampleRate = _data->sampleRate;
+	//}
 
 };
 
@@ -321,11 +361,11 @@ public:
 	{}
 
 	double getNextSample(void) override {
-		if (input == nullptr) {
+		if (_inputs.front() == nullptr) {
 			return 0;
 		}
 
-		return _update(input->getNextSample());
+		return _update(_inputs.front()->getNextSample());
 	}
 
 	void setBreakpoint(double freq) {
@@ -381,56 +421,48 @@ class RCFilter : public ModuleBase {
 public:
 
 	RCFilter(void) :
-		v0(0)
+		_v0(0),
+		_cutoffFrequency(2000)
 	{}
 
 	double getNextSample(void) override {
-		if (input == nullptr) {
+		if (_inputs.front() == nullptr) {
 			return 0;
 		}
 
-		return _update(input->getNextSample());
+		return _update(_inputs.front()->getNextSample());
 	}
 
 	void setBreakpoint(double freq) {
-		rc = 1 / (2 * PI * freq);
-		multiplier = dt / rc;
+		_cutoffFrequency = freq;
 	}
-
-	double v0;
-
-	double rc; //Set based on cutoff frequency
-	double dt; //Set by sample rate
-
-	double multiplier; // = dt / rc;
 
 private:
 
-	void _dataSetEvent(void) override {
-		dt = 1 / (double)data->sampleRate;
-		multiplier = dt / rc;
-	}
+	double _v0;
+
+	double _cutoffFrequency;
 
 	double _update(double v1) {
-		v0 += (v1 - v0) * multiplier;
-		return v0;
+		_v0 += (v1 - _v0) * (2 * PI * _cutoffFrequency) / _data->sampleRate;
+		return _v0;
 	}
 };
 
-class Amplifier : public ModuleBase {
+class Multiplier : public ModuleBase {
 public:
 
-	Amplifier(void) :
-		amplitude(1)
+	Multiplier(void) :
+		amount(1)
 	{}
 
-	double amplitude;
+	double amount;
 
 	double getNextSample(void) override {
-		if (input == nullptr) {
+		if (_inputs.front() == nullptr) {
 			return 0;
 		}
-		return input->getNextSample() * amplitude;
+		return _inputs.front()->getNextSample() * amount;
 	}
 };
 

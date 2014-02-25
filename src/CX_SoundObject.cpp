@@ -281,6 +281,20 @@ float CX_SoundObject::getNegativePeak (void) {
 	return peak;
 }
 
+/*! Normalizes the contents of the sound object.
+\param amount Must be in the interval [0,1]. If 1, normalize will normalize in the standard way:
+The peak with the greatest magnitude will be set to +/-1 and everything else will be scaled relative to the peak.
+If amount is less than 1, the greatest peak will be set to that value.
+*/
+void CX_SoundObject::normalize(float amount) {
+	float peak = std::max(abs(getPositivePeak()), abs(getNegativePeak()));
+	float multiplier = amount / peak;
+
+	for (unsigned int i = 0; i < _soundData.size(); i++) {
+		_soundData[i] *= multiplier;
+	}
+}
+
 /*!
 Removes leading "silence" from the sound, where silence is defined by the given tolerance. It is unlikely that
 the beginning of a sound, even if perceived as silent relative to the rest of the sound, has an amplitude of 0.
@@ -572,6 +586,89 @@ bool CX_SoundObject::multiplyAmplitudeBy (float amount, int channel) {
 	}
 	return true;
 }
+
+/*! Clears all data stored in the sound object and returns it to an uninitialized state. */
+void CX_SoundObject::clear(void) {
+	_soundData.clear();
+	_successfullyLoaded = false;
+	_soundChannels = 0;
+	_soundSampleRate = 0;
+}
+
+
+/*! Writes the contents of the sound object to a file with the given file name. The data will
+be encoded as 16-bit PCM. The sample rate is determined by the sample rate of the sound object.
+\param filename The name of the file to save the sound data to. `filename` should have a .wav extension. If it does not,
+".wav" will be appended to the file name and a warning will be logged.
+\return False if there was an error while opening the file. If so, an error will be logged.
+*/
+bool CX_SoundObject::writeToFile(std::string filename) {
+	//Taken from the ofSoundFile additions suggested here: https://github.com/openframeworks/openFrameworks/pull/2626
+	//From this file: https://github.com/admsyn/openFrameworks/blob/feature-sound-objects/libs/openFrameworks/sound/ofSoundFile.cpp
+	//There were some modifications to get it to work with the data structure of CX_SoundObject.
+
+	// check that we're writing a wav and complain if the file extension is wrong.
+	ofFile f(filename);
+	if (ofToLower(f.getExtension()) != "wav") {
+		filename += ".wav";
+		CX::Instances::Log.warning("CX_SoundObject") << "writeToFile: Can only write wav files - will save file as " << filename;
+	}
+
+	fstream file(ofToDataPath(filename).c_str(), ios::out | ios::binary);
+	if (!file.is_open()) {
+		CX::Instances::Log.error("CX_SoundObject") << "writeToFile: Error opening sound file '" << filename << "' for writing.";
+		return false;
+	}
+
+	// write a wav header
+	short myFormat = 1; // for pcm
+	int mySubChunk1Size = 16;
+	int bitsPerSample = 16; // assume 16 bit pcm
+
+	int channels = this->getChannelCount();
+	int samplerate = this->getSampleRate();
+	unsigned int bufferSize = this->getTotalSampleCount();
+
+	int myByteRate = samplerate * channels * bitsPerSample / 8;
+	short myBlockAlign = channels * bitsPerSample / 8;
+	int myChunkSize = 36 + bufferSize*bitsPerSample / 8;
+	int myDataSize = bufferSize*bitsPerSample / 8;
+
+
+	file.seekp(0, ios::beg);
+	file.write("RIFF", 4);
+	file.write((char*)&myChunkSize, 4);
+	file.write("WAVE", 4);
+	file.write("fmt ", 4);
+	file.write((char*)&mySubChunk1Size, 4);
+	file.write((char*)&myFormat, 2); // should be 1 for PCM
+	file.write((char*)&channels, 2); // # channels (1 or 2)
+	file.write((char*)&samplerate, 4); // 44100
+	file.write((char*)&myByteRate, 4); //
+	file.write((char*)&myBlockAlign, 2);
+	file.write((char*)&bitsPerSample, 2); //16
+	file.write("data", 4);
+	file.write((char*)&myDataSize, 4);
+
+	// write the wav file per the wav file format, 4096 bytes of data at a time.
+#define WRITE_BUFF_SIZE 4096
+
+	short writeBuff[WRITE_BUFF_SIZE];
+	int pos = 0;
+	while (pos < bufferSize) {
+		int len = MIN(WRITE_BUFF_SIZE, bufferSize - pos);
+		for (int i = 0; i < len; i++) {
+			writeBuff[i] = (int)(this->_soundData[pos] * 32767.f);
+			pos++;
+		}
+		file.write((char*)writeBuff, len*bitsPerSample / 8);
+	}
+
+	file.close();
+	return true;
+}
+
+
 
 /*
 float CX_SoundObject::_readSample (int channel, unsigned int sample) {

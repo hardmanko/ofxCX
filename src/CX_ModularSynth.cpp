@@ -1,11 +1,20 @@
 #include "CX_ModularSynth.h"
 
+ModuleBase& operator>>(ModuleBase& l, ModuleBase& r) {
+	r._assignInput(&l);
+	l._assignOutput(&r);
+	return r;
+}
+
+
+
+
 double Envelope::getNextSample(void) {
 	if (stage > 3) {
 		return 0;
 	}
 
-	double val = input->getNextSample();
+	double val = _inputs.front()->getNextSample();
 
 	double p;
 
@@ -46,12 +55,12 @@ double Envelope::getNextSample(void) {
 
 	//val *= p;
 
-	_timeSinceLastStage += _timePerSample;
+	_timeSinceLastStage += (1 / _data->sampleRate);
 
 	return val * p;
 }
 
-void Envelope::gate(void) {
+void Envelope::attack(void) {
 	stage = 0;
 	_timeSinceLastStage = 0;
 }
@@ -69,14 +78,13 @@ void Envelope::release(void) {
 
 Oscillator::Oscillator(void) :
 	frequency(0),
-	_sampleRate(0),
 	_waveformPos(0)
 {
 	setGeneratorFunction(Oscillator::sine);
 }
 
 double Oscillator::getNextSample(void) {
-	double addAmount = frequency / _sampleRate;
+	double addAmount = frequency / _data->sampleRate;
 
 	_waveformPos += addAmount;
 	if (_waveformPos >= 1) {
@@ -130,12 +138,12 @@ void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
 
 void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
 
-	if (input == nullptr) {
+	if (_inputs.front() == nullptr) {
 		return;
 	}
 
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-		float value = ofClamp(input->getNextSample(), -1, 1);
+		float value = ofClamp(_inputs.front()->getNextSample(), -1, 1);
 		//cout << value << endl;
 		for (int ch = 0; ch < d.outputChannels; ch++) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
