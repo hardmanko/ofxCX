@@ -33,6 +33,7 @@ namespace CX {
 		bool loadFile (string fileName);
 		bool addSound (string fileName, CX_Micros timeOffset); //I'm really not sure I want to have this.
 		bool addSound (CX_SoundObject so, CX_Micros timeOffset);
+		bool setFromVector(const std::vector<float>& data, int channels, float sampleRate);
 
 		bool isReadyToPlay (void);
 		bool isLoadedSuccessfully (void) { return _successfullyLoaded; };

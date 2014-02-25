@@ -216,6 +216,24 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros timeOffset) {
 	return true;
 }
 
+/*! Set the contents of the sound object from a vector of float data. If there is more than once channel of data,
+the data must be interleaved. This means that if, for example, there are two channels, the ordering of the samples
+is 12121212... where 1 represents a sample for channel 1 and 2 represents a sample for channel 2. This requirement
+is not checked for.
+\param data A vector of sound samples. These values should go from -1 to 1. This requirement is not checked for.
+\param channels The number of channels worth of data is stored in the vector of data.
+\param sampleRate The sample rate of the samples. If `data` contains, for example, a sine wave, that wave was sampled
+at some rate (e.g. 48000 samples per second of waveform). `sampleRate` should be that rate.
+return True in all cases. No checking is done on any of the arguments.
+*/
+bool CX_SoundObject::setFromVector(const std::vector<float>& data, int channels, float sampleRate) {
+	_soundData = data;
+	_soundChannels = channels;
+	_soundSampleRate = sampleRate;
+	_successfullyLoaded = true; //Do no checking of the values.
+	return true;
+}
+
 bool CX_SoundObject::isReadyToPlay (void) {
 	return ((_soundChannels != 0) && (_soundData.size() != 0)); //_successfullyLoaded? _soundSampleRate? Remove _soundChannels?
 }
@@ -304,7 +322,7 @@ void CX_SoundObject::addSilence (CX_Micros duration, bool atBeginning) {
 
 /*! Deletes the specified amount of sound from the CX_SoundObject from either the beginning or end.
 
-\param duration Duration of removed sound in microseconds.
+\param duration Duration of removed sound in microseconds. If this is greater than the duration of the sound, the whole sound is deleted.
 \param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer.
 If false, the sound is deleted from the end, toward the beginning.
 */

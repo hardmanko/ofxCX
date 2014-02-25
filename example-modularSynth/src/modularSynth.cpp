@@ -17,13 +17,49 @@ void runExperiment(void) {
 	config.streamOptions.numberOfBuffers = 4;
 	ss.setup(config);
 
+	/*
+	Oscillator osc1;
+	Splitter split;
+	Amplifier a1;
+	Amplifier a2;
+	RCFilter filt1;
+	Mixer mix;
+	SoundObjectOutput soOut;
+
+	osc1.setGeneratorFunction(Oscillator::saw);
+	osc1.frequency = 200;
+	//g2.value = 3;
+	//g2.step = .2;
+
+	filt1.setBreakpoint(300);
+
+	a1.amplitude = .1;
+	a2.amplitude = .5;
+
+	split.setInput(&osc1);
+	split.addOutput(&a1);
+	split.addOutput(&a2);
+
+	filt1.setInput(&a2);
+
+	mix.addInput(&a1);
+	mix.addInput(&filt1);
+
+	soOut.setInput(&mix);
+
+	soOut.sampleData(.01, 48000);
+
+	for (int i = 0; i < 10; i++) {
+		cout << mix.getNextSample() << endl;
+	}
+	*/
 
 	Oscillator osc;
 	osc.frequency = 2000;
-	osc.setGeneratorFunction(Noisemaker::sine);
+	osc.setGeneratorFunction(Oscillator::sine);
 
 	RCFilter f;
-	f.setBreakpoint(1600);
+	f.setBreakpoint(1000);
 
 	Amplifier a;
 	a.amplitude = .01;
@@ -34,7 +70,7 @@ void runExperiment(void) {
 	en.s = .5;
 	en.r = 1;
 	
-	SoundOut output;
+	StreamOutput output;
 	output.setOuputStream(ss);
 
 	f.setInput(&osc);
@@ -88,10 +124,10 @@ void runExperiment(void) {
 					;
 
 				switch (ev.key) {
-				case 't': osc.setGeneratorFunction(Noisemaker::triangle); break;
-				case 'q': osc.setGeneratorFunction(Noisemaker::square); break;
-				case 'i': osc.setGeneratorFunction(Noisemaker::sine); break;
-				case 'w': osc.setGeneratorFunction(Noisemaker::saw); break;
+				case 't': osc.setGeneratorFunction(Oscillator::triangle); break;
+				case 'q': osc.setGeneratorFunction(Oscillator::square); break;
+				case 'i': osc.setGeneratorFunction(Oscillator::sine); break;
+				case 'w': osc.setGeneratorFunction(Oscillator::saw); break;
 				}
 			}
 

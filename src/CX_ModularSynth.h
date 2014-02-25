@@ -1,6 +1,8 @@
+#pragma once
+
 #include "ofEvents.h"
 #include "CX_SoundStream.h"
-
+#include "CX_SoundObject.h"
 
 
 struct ModuleControlData_t {
@@ -32,7 +34,21 @@ public:
 		//	newInput->data = data;
 		//} else {
 		//	data = newInput->data;
-		//}		
+		//}
+		if (newInput->output != this) {
+			newInput->setOutput(this);
+		}
+		_dataSet();
+	}
+
+	virtual void setOutput(ModuleBase* newOutput) {
+		output = newOutput;
+		//if (!output->data->initialized) {
+		//	output->setData(*data);
+		//}
+		if (newOutput->input != this) {
+			newOutput->setInput(this);
+		}
 		_dataSet();
 	}
 
@@ -43,10 +59,11 @@ public:
 	}
 
 	ModuleBase *input;
+	ModuleBase *output;
 
 	std::shared_ptr<ModuleControlData_t> data;
 
-private:
+protected:
 
 	virtual void _dataSetEvent(void) {
 		return;
@@ -64,6 +81,175 @@ private:
 
 };
 
+class Mixer : public ModuleBase {
+public:
+
+	double getNextSample(void) {
+		double d = 0;
+		for (int i = 0; i < inputs.size(); i++) {
+			d += inputs[i]->getNextSample();
+		}
+		return d;
+	}
+
+	void addInput(ModuleBase *m) {
+		if (std::find(inputs.begin(), inputs.end(), m) == inputs.end()) {
+			inputs.push_back(m);
+			m->setOutput(this);
+		}
+	}
+
+	void setInput(ModuleBase* newInput) {
+		input = newInput;
+		if (newInput->output != this) {
+			newInput->setOutput(this);
+		}
+		_dataSet();
+	}
+
+	void removeInput(ModuleBase *m) {
+		auto pos = std::find(inputs.begin(), inputs.end(), m);
+		if (pos != inputs.end()) {
+			inputs.erase(pos);
+		}
+	}
+
+private:
+
+	vector<ModuleBase*> inputs;
+
+};
+
+class Splitter : public ModuleBase {
+public:
+
+	Splitter(void) :
+		_allOutputsFed(false),
+		_currentSample(0.0),
+		_fedOutputs(0)
+	{}
+
+	void addOutput(ModuleBase* m) {
+		if (std::find(outputs.begin(), outputs.end(), m) == outputs.end()) {
+			outputs.push_back(m);
+			m->setInput(this);
+			_fedOutputs = outputs.size();
+		}
+	}
+
+	double getNextSample(void) {
+		if (_fedOutputs >= outputs.size()) {
+			_currentSample = input->getNextSample();
+			_fedOutputs = 0;
+		}
+		++_fedOutputs;
+		return _currentSample;
+	}
+
+private:
+
+	bool _allOutputsFed;
+	double _currentSample;
+	int _fedOutputs;
+
+	vector<ModuleBase*> outputs;
+};
+
+class TrivialGenerator : public ModuleBase {
+public:
+
+	TrivialGenerator(void) :
+		value(0),
+		step(0)
+	{}
+
+	double value;
+	double step;
+
+	double getNextSample(void) {
+		value += step;
+		return value - step;
+	}
+
+};
+
+class SoundObjectInput : public ModuleBase {
+public:
+
+	SoundObjectInput(void) :
+		_currentSample(0),
+		_so(nullptr)
+	{}
+
+	//Set the sound object to use and also the channel to use (you can only use one channel: strictly monophonic).
+	void setSoundObject(CX::CX_SoundObject *so, unsigned int channel = 0) {
+		_so = so;
+		_channel = channel;
+	}
+
+	void setTime(double t) {
+		if (data->initialized) {
+			unsigned int startSample = (unsigned int)(data->sampleRate * t);
+			startSample -= startSample % _so->getChannelCount();
+			_currentSample = startSample + _channel;
+		}
+		_currentSample = _channel;
+	}
+
+	double getNextSample(void) {
+		if (_so == nullptr || _currentSample >= _so->getTotalSampleCount()) {
+			return 0;
+		}
+		double value = _so->getRawDataReference().at(_currentSample);
+		_currentSample += _so->getChannelCount();
+		return value;
+	}
+
+	bool canPlay (void) {
+		return (_so != nullptr) && (_so->isReadyToPlay()) && (_currentSample < _so->getTotalSampleCount());
+	}
+
+private:
+
+	CX::CX_SoundObject *_so;
+	unsigned int _channel;
+
+	void _dataSetEvent(void) {
+		//_timePerSample = 1 / data->sampleRate;
+	}
+
+	unsigned int _currentSample;
+
+};
+
+class SoundObjectOutput : public ModuleBase {
+public:
+
+	//Sample t seconds of data at the given sample rate. The result is stored in so.
+	void sampleData(double t, float sampleRate) {
+		unsigned int samplesToTake = ceil(sampleRate * t);
+		data->sampleRate = sampleRate;
+		data->initialized = true;
+		this->_dataSet();
+
+		so.deleteAmount(so.getLength() + 1000000, true); //Delete all of the sound, plus an extra second to be sure
+
+		vector<float> tempData(samplesToTake);
+
+		for (unsigned int i = 0; i < samplesToTake; i++) {
+			tempData[i] = ofClamp((float)input->getNextSample(), -1, 1);
+		}
+
+		so.setFromVector(tempData, 1, sampleRate);
+	}
+
+	CX::CX_SoundObject so;
+
+private:
+
+
+};
+
 class Envelope : public ModuleBase {
 public:
 
@@ -71,64 +257,10 @@ public:
 		stage(4)
 	{}
 
-	double getNextSample(void) {
-		if (stage > 3) {
-			return 0;
-		}
+	double getNextSample(void);
 
-		double val = input->getNextSample();
-
-		double p;
-
-		switch (stage) {
-		case 0:
-			if (_timeSinceLastStage < a) {
-				p = _timeSinceLastStage / a;
-				break;
-			} else {
-				_timeSinceLastStage = 0;
-				stage++;
-			}
-		case 1:
-			if (_timeSinceLastStage < d) {
-				p = 1 - (_timeSinceLastStage / d) * (1 - s);
-				break;
-			} else {
-				_timeSinceLastStage = 0;
-				stage++;
-			}
-		case 2:
-			p = s;
-			break;
-		case 3:
-			if (_timeSinceLastStage < r) {
-				p = (1 - _timeSinceLastStage / r) * s;
-				break;
-			} else {
-				_timeSinceLastStage = 0;
-				stage++;
-				p = 0;
-			}
-		}
-
-		//cout << p << endl;
-
-		val *= p;
-
-		_timeSinceLastStage += _timePerSample;
-
-		return val;
-	}
-
-	void gate(void) {
-		stage = 0;
-		_timeSinceLastStage = 0;
-	}
-
-	void release(void) {
-		stage = 3;
-		_timeSinceLastStage = 0;
-	}
+	void gate(void);
+	void release(void);
 
 	int stage;
 
@@ -138,6 +270,9 @@ public:
 	double r; //Time
 
 private:
+
+	double _lastP;
+	double _levelAtRelease;
 
 	double _timePerSample;
 	double _timeSinceLastStage;
@@ -151,54 +286,18 @@ private:
 class Oscillator : public ModuleBase {
 public:
 
-	Oscillator(void) :
-		frequency(0),
-		_sampleRate(0),
-		_waveformPos(0)
-	{
-		setGeneratorFunction(Oscillator::sine);
-	}
+	Oscillator(void);
 
-	double getNextSample(void) override {
-		double addAmount = frequency / _sampleRate;
+	double getNextSample(void) override;
 
-		_waveformPos += addAmount;
-		if (_waveformPos >= 1) {
-			_waveformPos = fmod(_waveformPos, 1);
-		}
-
-		return _generatorFunction(_waveformPos);
-	}
-
-	void setGeneratorFunction(std::function<double(double)> f) {
-		_generatorFunction = f;
-	}
+	void setGeneratorFunction(std::function<double(double)> f);
 
 	double frequency;
 
-	static double sine(double wp) {
-		return sin(wp * 2 * PI);
-	}
-
-	static double triangle(double wp) {
-		if (wp < .5) {
-			return ((4 * wp) - 1);
-		} else {
-			return (3 - (4 * wp));
-		}
-	}
-
-	static double square(double wp) {
-		if (wp < .5) {
-			return 1;
-		} else {
-			return -1;
-		}
-	}
-
-	static double saw(double wp) {
-		return (2 * wp) - 1;
-	}
+	static double saw(double wp);
+	static double sine(double wp);
+	static double square(double wp);
+	static double triangle(double wp);
 
 private:
 
@@ -231,10 +330,8 @@ public:
 
 	void setBreakpoint(double freq) {
 		x = exp(-2 * PI * freq);
-		//x = pow(2.718282, -2 * PI * freq);
 
 		//x = 0.999;
-
 
 		//Low pass coefficients
 		a0 = 1 - x;
@@ -337,106 +434,11 @@ public:
 	}
 };
 
-class SoundOut : public ModuleBase {
+class StreamOutput : public ModuleBase {
 public:
-
-	void setOuputStream(CX::CX_SoundStream& stream) {
-		ofAddListener(stream.outputCallbackEvent, this, &SoundOut::_callback);
-		ModuleControlData_t data;
-		data.sampleRate = stream.getConfiguration().sampleRate;
-		this->setData(data);
-	}
+	void setOuputStream(CX::CX_SoundStream& stream);
 
 private:
-	void _callback(CX::CX_SSOutputCallback_t& d) {
-
-		if (input == nullptr) {
-			return;
-		}
-
-		for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-			float value = ofClamp(input->getNextSample(), -1, 1);
-			//cout << value << endl;
-			for (int ch = 0; ch < d.outputChannels; ch++) {
-				d.outputBuffer[(sample * d.outputChannels) + ch] = value;
-			}
-		}
-
-	}
+	void _callback(CX::CX_SSOutputCallback_t& d);
 };
 
-
-
-
-
-
-class Noisemaker {
-public:
-
-	Noisemaker(void) :
-		frequency(0),
-		maxAmplitude(0),
-		_waveformPos(0)
-	{
-		_generatorFunction = Noisemaker::sine;
-	}
-
-	void setOuputStream(CX_SoundStream& stream) {
-		ofAddListener(stream.outputCallbackEvent, this, &Noisemaker::_callback);
-	}
-
-	void setGeneratorFunction(std::function<double(double)> f) {
-		_generatorFunction = f;
-	}
-
-	double frequency;
-	float maxAmplitude;
-
-	static double sine(double wp) {
-		return sin(wp * 2 * PI);
-	}
-
-	static double triangle(double wp) {
-		if (wp < .5) {
-			return ((4 * wp) - 1);
-		} else {
-			return (3 - (4 * wp));
-		}
-	}
-
-	static double square(double wp) {
-		if (wp < .5) {
-			return 1;
-		} else {
-			return -1;
-		}
-	}
-
-	static double saw(double wp) {
-		return (2 * wp) - 1;
-	}
-
-private:
-
-	std::function<double(double)> _generatorFunction;
-
-	float _waveformPos;
-
-	void _callback(CX_SSOutputCallback_t& d) {
-
-		float addAmount = frequency / d.instance->getConfiguration().sampleRate;
-
-		for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-			_waveformPos += addAmount;
-			if (_waveformPos >= 1) {
-				_waveformPos = fmod(_waveformPos, 1);
-			}
-			double value = ofClamp(_generatorFunction(_waveformPos) * maxAmplitude, -1, 1);
-			for (int ch = 0; ch < d.outputChannels; ch++) {
-				d.outputBuffer[(sample * d.outputChannels) + ch] = value;
-			}
-		}
-
-	}
-
-};
