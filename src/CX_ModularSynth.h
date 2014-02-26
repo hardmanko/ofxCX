@@ -4,6 +4,7 @@
 #include "CX_SoundStream.h"
 #include "CX_SoundObject.h"
 
+#include "CX_RandomNumberGenerator.h" //For white noise generator
 
 struct ModuleControlData_t {
 	ModuleControlData_t(void) :
@@ -329,6 +330,7 @@ public:
 	static double sine(double wp);
 	static double square(double wp);
 	static double triangle(double wp);
+	static double whiteNoise(double wp);
 
 private:
 
