@@ -17,56 +17,58 @@ void runExperiment(void) {
 	config.streamOptions.numberOfBuffers = 4;
 	ss.setup(config);
 
-	TrivialGenerator triv;
-	Oscillator osc1;
-	Splitter split;
-	Multiplier a1;
-	Multiplier a2;
-	RCFilter filt1;
-	Adder mix;
-	SoundObjectOutput soOut;
-
-	osc1.setGeneratorFunction(Oscillator::saw);
-	osc1.frequency = 200;
-	//g2.value = 3;
-	//g2.step = .2;
-
-	filt1.setBreakpoint(300);
-
-	triv.step = 1;
-
-	a1.amount = .1;
-	a2.amount = .05;
-
-	//triv >> split;
-	//split >> a1 >> mix;
-	//split >> a2 >> mix;
-	//mix >> soOut;
-
-	//for (int i = 0; i < 10; i++) {
-	//	cout << mix.getNextSample() << endl;
-	//}
-
 	Oscillator osc;
 	osc.frequency = 1000;
 	osc.setGeneratorFunction(Oscillator::saw);
 
+	Oscillator lfo;
+	lfo.setGeneratorFunction(Oscillator::sine);
+	lfo.frequency = 1;
+
+	Adder add;
+
+	Oscillator sawnOsc;
+	sawnOsc.setGeneratorFunction(Oscillator::saw);
+	
+	Mixer oscMix;
+
+	Multiplier mult;
+	
+
 	RCFilter f;
-	f.setBreakpoint(4000);
 
 	Multiplier a;
+	Multiplier sawnOscGain;
 	a.amount = .01;
+	sawnOscGain.amount = .01;
 
 	Envelope en;
-	en.a = 1;
-	en.d = 1;
-	en.s = .5;
-	en.r = 1;
+	en.a = 0;
+	en.d = 0;
+	en.s = 1;
+	en.r = .2;
 	
 	StreamOutput output;
 	output.setOuputStream(ss);
-
 	
+	Envelope modEnv;
+	modEnv.a = .1;
+	modEnv.d = .1;
+	modEnv.s = 0;
+	modEnv.r = .01;
+
+	mult.amount = 3000;
+	add.amount = 100;
+	modEnv >> mult >> add >> f.breakpoint;
+
+	osc >> a >> oscMix;
+	sawnOsc >> sawnOscGain >> oscMix;
+
+	oscMix >> en >> output;
+
+
+
+	/*
 	osc >> f >> a >> soOut;
 
 	soOut.setup(44100);
@@ -94,7 +96,7 @@ void runExperiment(void) {
 
 	soOut.so.normalize(1);
 	soOut.so.writeToFile("beep.wav");
-
+	*/
 
 	
 	ss.start();
@@ -108,11 +110,13 @@ void runExperiment(void) {
 			while (Input.Mouse.availableEvents()) {
 				CX_MouseEvent_t ev = Input.Mouse.getNextEvent();
 				if (ev.eventType == CX_MouseEvent_t::MOVED || ev.eventType == CX_MouseEvent_t::DRAGGED) {
-					osc.frequency = ev.x * 8;
-					cout << "F = " << osc.frequency << endl;
+					osc.frequency = ev.x * 8 - 2;
+					sawnOsc.frequency = ev.x * 8 + 2;
+					cout << "F = " << osc.frequency.getValue() << endl;
 
 					a.amount = (pow(Display.getResolution().y - ev.y, 1.5)) / (Display.getResolution().y * 10);
-					cout << "A = " << a.amount << endl;
+					sawnOscGain.amount = a.amount;
+					cout << "A = " << a.amount.getValue() << endl;
 					
 					/*
 					float smax = 0;
@@ -128,10 +132,12 @@ void runExperiment(void) {
 
 				if (ev.eventType == CX_MouseEvent_t::PRESSED) {
 					en.attack();
+					modEnv.attack();
 				}
 
 				if (ev.eventType == CX_MouseEvent_t::RELEASED) {
 					en.release();
+					modEnv.release();
 				}
 			}
 

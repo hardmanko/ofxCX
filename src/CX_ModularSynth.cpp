@@ -6,6 +6,77 @@ ModuleBase& operator>>(ModuleBase& l, ModuleBase& r) {
 	return r;
 }
 
+void ModuleBase::_assignInput(ModuleBase* in) {
+	if (_maxInputs() == 0) {
+		return;
+	}
+
+	if (std::find(_inputs.begin(), _inputs.end(), in) == _inputs.end()) { //If it is not in the vector, try to add it.
+
+		if (_inputs.size() == _maxInputs()) { //If the vector is full, pop off an element before adding the new one.
+			_inputs.pop_back();
+		}
+
+		_inputs.push_back(in);
+		_setDataIfNotSet(in);
+		_inputAssignedEvent(in);
+	}
+}
+
+void ModuleBase::_assignOutput(ModuleBase* out) {
+	if (_maxOutputs() == 0) {
+		return;
+	}
+
+	if (std::find(_outputs.begin(), _outputs.end(), out) == _outputs.end()) {
+
+		if (_outputs.size() == _maxOutputs()) {
+			_outputs.pop_back();
+		}
+
+		_outputs.push_back(out);
+		_setDataIfNotSet(out);
+		_outputAssignedEvent(out);
+	}
+}
+
+void ModuleBase::_dataSet(ModuleBase* caller) {
+	this->_dataSetEvent();
+
+	for (unsigned int i = 0; i < _inputs.size(); i++) {
+		if (_inputs[i] != nullptr && _inputs[i] != caller) {
+			_setDataIfNotSet(_inputs[i]);
+		}
+	}
+
+	for (unsigned int i = 0; i < _outputs.size(); i++) {
+		if (_outputs[i] != nullptr && _outputs[i] != caller) {
+			_setDataIfNotSet(_outputs[i]);
+		}
+	}
+
+	for (unsigned int i = 0; i < _parameters.size(); i++) {
+		if (_parameters[i]->_input != nullptr) {
+			_setDataIfNotSet(_parameters[i]->_input);
+		}
+	}
+}
+
+void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
+	//Compare both pointers and contents. The pointer comparison is currently useless because the pointers will always be different.
+	if ((target->_data != this->_data) || (*target->_data != *this->_data)) {
+		*target->_data = *this->_data;
+		target->_dataSet(this);
+	}
+
+}
+
+void ModuleBase::_registerParameter(ModuleParameter* p) {
+	if (std::find(_parameters.begin(), _parameters.end(), p) == _parameters.end()) {
+		_parameters.push_back(p);
+		p->_owner = this;
+	}
+}
 
 
 
@@ -13,8 +84,6 @@ double Envelope::getNextSample(void) {
 	if (stage > 3) {
 		return 0;
 	}
-
-	double val = _inputs.front()->getNextSample();
 
 	double p;
 
@@ -51,11 +120,14 @@ double Envelope::getNextSample(void) {
 
 	_lastP = p;
 
-	//cout << p << endl;
+	_timeSinceLastStage += _timePerSample;
 
-	//val *= p;
-
-	_timeSinceLastStage += (1 / _data->sampleRate);
+	double val;
+	if (_inputs.size() > 0) {
+		val = _inputs.front()->getNextSample();
+	} else {
+		val = 1;
+	}
 
 	return val * p;
 }
@@ -71,6 +143,10 @@ void Envelope::release(void) {
 	_levelAtRelease = _lastP;
 }
 
+void Envelope::_dataSetEvent(void) {
+	_timePerSample = 1 / _data->sampleRate;
+}
+
 
 ////////////////
 // Oscillator //
@@ -80,11 +156,13 @@ Oscillator::Oscillator(void) :
 	frequency(0),
 	_waveformPos(0)
 {
+	this->_registerParameter(&frequency);
 	setGeneratorFunction(Oscillator::sine);
 }
 
 double Oscillator::getNextSample(void) {
-	double addAmount = frequency / _data->sampleRate;
+	frequency.updateValue();
+	double addAmount = frequency.getValue() / _sampleRate;
 
 	_waveformPos += addAmount;
 	if (_waveformPos >= 1) {
@@ -98,6 +176,9 @@ void Oscillator::setGeneratorFunction(std::function<double(double)> f) {
 	_generatorFunction = f;
 }
 
+void Oscillator::_dataSetEvent(void) {
+	_sampleRate = _data->sampleRate;
+}
 
 double Oscillator::saw(double wp) {
 	return (2 * wp) - 1;
@@ -151,8 +232,78 @@ void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
 	}
 }
 
+//////////////////////
+// SoundObjectInput //
+//////////////////////
+SoundObjectInput::SoundObjectInput(void) :
+	_currentSample(0),
+	_so(nullptr)
+{}
+
+//Set the sound object to use and also the channel to use (you can only use one channel: strictly monophonic).
+void SoundObjectInput::setSoundObject(CX::CX_SoundObject *so, unsigned int channel) {
+	_so = so;
+	_channel = channel;
+
+	_data->sampleRate = _so->getSampleRate();
+	_data->initialized = true;
+	_dataSet(nullptr);
+}
+
+//Set where in the sound you are
+void SoundObjectInput::setTime(double t) {
+	if (_so != nullptr) {
+		unsigned int startSample = _so->getChannelCount() * (unsigned int)(_so->getSampleRate() * t);
+		_currentSample = startSample + _channel;
+	} else {
+		_currentSample = _channel;
+	}
+
+}
+
+double SoundObjectInput::getNextSample(void) {
+	if (_so == nullptr || _currentSample >= _so->getTotalSampleCount()) {
+		return 0;
+	}
+	double value = _so->getRawDataReference().at(_currentSample);
+	_currentSample += _so->getChannelCount();
+	return value;
+}
+
+bool SoundObjectInput::canPlay(void) {
+	return (_so != nullptr) && (_so->isReadyToPlay()) && (_currentSample < _so->getTotalSampleCount());
+}
 
 
+///////////////////////
+// SoundObjectOutput //
+///////////////////////
+void SoundObjectOutput::setup(float sampleRate) {
+	_data->sampleRate = sampleRate;
+	_data->initialized = true;
+	_dataSet(nullptr);
+}
+
+//Sample t seconds of data at the given sample rate (see setup). The result is stored in so.
+//If so is not empty, the data is appended.
+void SoundObjectOutput::sampleData(double t) {
+
+	unsigned int samplesToTake = ceil(_data->sampleRate * t);
+
+	vector<float> tempData(samplesToTake);
+
+	for (unsigned int i = 0; i < samplesToTake; i++) {
+		tempData[i] = ofClamp((float)_inputs.front()->getNextSample(), -1, 1);
+	}
+
+	if (so.getTotalSampleCount() == 0) {
+		so.setFromVector(tempData, 1, _data->sampleRate);
+	} else {
+		for (unsigned int i = 0; i < tempData.size(); i++) {
+			so.getRawDataReference().push_back(tempData[i]);
+		}
+	}
+}
 
 
 
