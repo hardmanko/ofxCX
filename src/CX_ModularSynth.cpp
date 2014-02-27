@@ -458,7 +458,129 @@ void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
 	}
 }
 
+///////////////////
+// AdditiveSynth //
+///////////////////
+void AdditiveSynth::_initializeAmplitudes (void) {
 
+	_squareWaveAmplitudes.resize(_harmonics.size());
+	_sawWaveAmplitudes.resize(_harmonics.size());
+	_triangleWaveAmplitudes.resize(_harmonics.size());
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		int currentHarmonic = i + 1; //The 1th (first) harmonic is at index 0.
+		
+		//For odd harmonics...
+		if ((currentHarmonic % 2) == 1) {
+			_squareWaveAmplitudes[i] = 0.5 / currentHarmonic;
+			_sawWaveAmplitudes[i] = 0.5 / currentHarmonic;
+			
+			//For every other wave, triangle is negative. 1+, 3-, 5+, etc.
+			if ( (((currentHarmonic - 1)/2) % 2) == 1 ) {
+				_triangleWaveAmplitudes[i] = -0.5/(currentHarmonic*currentHarmonic);
+			} else {
+				_triangleWaveAmplitudes[i] = 0.5/(currentHarmonic*currentHarmonic);
+			}								
+			
+			//I don't appear to have used these anywhere.
+			//evenHarmonicSteadySlopeAmplitudes[i] = 0; //The fundamental amplitude as specified by this is ignored later.
+		} else { //For even waves...
+			_squareWaveAmplitudes[i] = 0;
+			//sawWaveAmplitudes[i] = -1L * (MAXIMUM_AMPLITUDE / currentHarmonic) * TWO_OVER_PI;
+			_sawWaveAmplitudes[i] = -0.5 / currentHarmonic;
+			_triangleWaveAmplitudes[i] = 0;
+			
+			//evenHarmonicSteadySlopeAmplitudes[i] = MAXIMUM_AMPLITUDE/(2*currentHarmonic);
+		}
+	}
+}
+
+void AdditiveSynth::_setFundamentalFrequency (double fundamental) {
+		
+	//generalWaveData.baseFrequency = fundamental;
+
+	wavePos_t firstHarmonicPos = _harmonics[0].waveformPosition;
+	
+	/*
+	if (_harmonicSeries == HS_STANDARD) {
+		//When using the normal harmonic series you can do just add the same distance to the previous.
+		wavePos_t fundamentalPositionChangePerSample = fundamental / _data->sampleRate;
+		wavePos_t nextValue = fundamentalPositionChangePerSample;
+		for (unsigned int i = 0; i < _harmonics.size(); ++i) {
+			_harmonics[i].positionChangePerSample = nextValue;
+			nextValue += fundamentalPositionChangePerSample;
+					
+			//Restart all waves at 0 so they are in phase. It would be smarter to make all harmonic positions a 
+			//function of the fundamental harmonic position at time of function call.
+			_harmonics[i].waveformPosition = 0;
+		}
+	} else */
+	{
+		double normalizedFrequency = fundamental / _data->sampleRate;
+	
+		for (unsigned int i = 0; i < _harmonics.size(); ++i) {
+			_harmonics[i].positionChangePerSample = normalizedFrequency * _relativeFrequenciesOfHarmonics[i];
+
+			//_harmonics[i].waveformPosition = firstHarmonicPos * _relativeFrequenciesOfHarmonics[i];
+			_harmonics[i].waveformPosition = 0;
+		}
+	}
+}
+
+double AdditiveSynth::_update(void) {
+	double rval = 0;
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		_harmonics[i].waveformPosition += _harmonics[i].positionChangePerSample;
+		if (_harmonics[i].waveformPosition >= 1) {
+			_harmonics[i].waveformPosition = fmod(_harmonics[i].waveformPosition, 1);
+		}
+
+		rval += Oscillator::sine(_harmonics[i].waveformPosition) * _harmonics[i].amplitude;
+	}
+	return rval;
+}
+
+
+/*
+\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE.
+\param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the fundamental gives the value 1 for i.
+If type == HS_SEMITONE, the frequency for harmonic i will be pow(2, (i - 1) * controlParameter/12), where the fundamental gives the value 1 for i.
+
+\note If type == HS_MULTIPLE and controlParameter == 1, then the standard harmonic series will be generated.
+*/
+void AdditiveSynth::setHarmonicSeries(HarmonicSeriesType type, double controlParameter) {
+	_harmonicSeriesControlParameter = controlParameter;
+	_harmonicSeriesType = type;
+	_calculateRelativeFrequenciesOfHarmonics();
+}
+
+//The user function takes an integer representing the harmonic number, where the fundamental has the value 1 and returns
+//the frequency that should be used for that harmonic.
+void AdditiveSynth::setHarmonicSeries (std::function<double(unsigned int)> userFunction) {
+	_harmonicSeriesType = HS_USER_FUNCTION;
+	_harmonicSeriesUserFunction = userFunction;
+	_calculateRelativeFrequenciesOfHarmonics();
+}
+
+void AdditiveSynth::_calculateRelativeFrequenciesOfHarmonics (void) {
+	_relativeFrequenciesOfHarmonics.resize(_harmonics.size());
+
+	if (_harmonicSeriesType == HS_MULTIPLE) {
+		for (unsigned int i = 0; i < _harmonics.size(); i++) {
+			_relativeFrequenciesOfHarmonics[i] = (i + 1) * _harmonicSeriesControlParameter;
+		}
+
+	} else if (_harmonicSeriesType == HS_SEMITONE) {
+		for (unsigned int i = 0; i < _harmonics.size(); i++) {
+			_relativeFrequenciesOfHarmonics[i] = pow(2.0, i * _harmonicSeriesControlParameter/12);
+		}
+	} else if (_harmonicSeriesType == HS_USER_FUNCTION) {
+		for (unsigned int i = 0; i < _harmonics.size(); i++) {
+			_relativeFrequenciesOfHarmonics[i] = _harmonicSeriesUserFunction(i + 1);
+		}
+	}
+}
 
 /*
 class Noisemaker {

@@ -140,6 +140,62 @@ namespace Synth {
 		double _data;
 	};
 
+	/*! This class is an implementation of an additive synthesizer. Additive synthesizers are essentially an
+	inverse fourier transform. This implementation allows you to specify the frequencies you want to observe
+	and the amplitudes for those frequencies.
+
+	The frequencies are refered to as harmonics, due to the fact that typical audio applications of additive
+	synths use the standard harmonic series (f(i) = f_fundamental * i).
+
+	*/
+	class AdditiveSynth : public ModuleBase {
+	public:
+
+		typedef float wavePos_t;
+		typedef float amplitude_t;
+
+		enum HarmonicSeriesType {
+			HS_MULTIPLE, //Includes the standard harmonic series
+			HS_SEMITONE, //Includes all of the strange thirds, fourths, tritones, etc.
+			HS_USER_FUNCTION
+		};
+
+		void setHarmonicSeries (HarmonicSeriesType type, double controlParameter);
+		void setHarmonicSeries (std::function<double(unsigned int)> userFunction);
+
+	private:
+
+		void _configure (std::vector<double> frequencies, std::vector<double> amplitudes);
+
+		struct HarmonicInfo {
+			wavePos_t waveformPosition;
+			wavePos_t positionChangePerSample;
+			amplitude_t amplitude;
+		};
+
+		std::vector<HarmonicInfo> _harmonics;
+
+		double _update(void);
+
+		void _setFundamentalFrequency (double fundamental);
+
+		void _initializeAmplitudes (void);
+
+		vector<amplitude_t> _squareWaveAmplitudes;
+		vector<amplitude_t> _sawWaveAmplitudes;
+		vector<amplitude_t> _triangleWaveAmplitudes;
+
+
+		//Harmonic series stuff
+		HarmonicSeriesType _harmonicSeriesType;
+		double _harmonicSeriesMultiple;
+		double _harmonicSeriesControlParameter;
+		std::function<double(unsigned int)> _harmonicSeriesUserFunction;
+		vector<float> _relativeFrequenciesOfHarmonics;
+		void _calculateRelativeFrequenciesOfHarmonics (void);
+
+
+	};
 
 	//For testing purposes mostly
 	class TrivialGenerator : public ModuleBase {
