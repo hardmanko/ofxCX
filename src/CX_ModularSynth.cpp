@@ -1,6 +1,13 @@
 #include "CX_ModularSynth.h"
 
-ModuleBase& operator>>(ModuleBase& l, ModuleBase& r) {
+using namespace CX::Synth;
+
+double CX::Synth::sinc(double x) {
+	return sin(x) / x;
+}
+
+//Used to connect modules together. l is set as the input for r.
+ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	r._assignInput(&l);
 	l._assignOutput(&r);
 	return r;
@@ -63,8 +70,15 @@ void ModuleBase::_dataSet(ModuleBase* caller) {
 }
 
 void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
+	if (!this->_data->initialized) {
+		return;
+	}
+
 	//Compare both pointers and contents. The pointer comparison is currently useless because the pointers will always be different.
 	if ((target->_data != this->_data) || (*target->_data != *this->_data)) {
+		//if (!target->_data->initialized) {
+		//}
+
 		*target->_data = *this->_data;
 		target->_dataSet(this);
 	}
@@ -78,23 +92,43 @@ void ModuleBase::_registerParameter(ModuleParameter* p) {
 	}
 }
 
+///////////
+// Adder //
+///////////
 
+Adder::Adder(void) :
+amount(0)
+{
+	this->_registerParameter(&amount);
+}
+
+double Adder::getNextSample(void) {
+	amount.updateValue();
+	if (_inputs.size() > 0) {
+		return amount.getValue() + _inputs.front()->getNextSample();
+	}
+	return amount.getValue();
+}
+
+//////////////
+// Envelope //
+//////////////
 
 double Envelope::getNextSample(void) {
-	if (stage > 3) {
+	if (_stage > 3) {
 		return 0;
 	}
 
 	double p;
 
-	switch (stage) {
+	switch (_stage) {
 	case 0:
 		if (_timeSinceLastStage < a && a != 0) {
 			p = _timeSinceLastStage / a;
 			break;
 		} else {
 			_timeSinceLastStage = 0;
-			stage++;
+			_stage++;
 		}
 	case 1:
 		if (_timeSinceLastStage < d && d != 0) {
@@ -102,7 +136,7 @@ double Envelope::getNextSample(void) {
 			break;
 		} else {
 			_timeSinceLastStage = 0;
-			stage++;
+			_stage++;
 		}
 	case 2:
 		p = s;
@@ -113,7 +147,7 @@ double Envelope::getNextSample(void) {
 			break;
 		} else {
 			//_timeSinceLastStage = 0;
-			stage++;
+			_stage++;
 			p = 0;
 		}
 	}
@@ -133,12 +167,12 @@ double Envelope::getNextSample(void) {
 }
 
 void Envelope::attack(void) {
-	stage = 0;
+	_stage = 0;
 	_timeSinceLastStage = 0;
 }
 
 void Envelope::release(void) {
-	stage = 3;
+	_stage = 3;
 	_timeSinceLastStage = 0;
 	_levelAtRelease = _lastP;
 }
@@ -147,6 +181,35 @@ void Envelope::_dataSetEvent(void) {
 	_timePerSample = 1 / _data->sampleRate;
 }
 
+double Mixer::getNextSample(void) {
+	double d = 0;
+	for (int i = 0; i < _inputs.size(); i++) {
+		d += _inputs[i]->getNextSample();
+	}
+	return d;
+}
+
+int Mixer::_maxInputs(void) {
+	return 32;
+}
+
+////////////////
+// Multiplier //
+////////////////
+
+Multiplier::Multiplier(void) :
+amount(1)
+{
+	this->_registerParameter(&amount);
+}
+
+double Multiplier::getNextSample(void) {
+	if (_inputs.front() == nullptr) {
+		return 0;
+	}
+	amount.updateValue();
+	return _inputs.front()->getNextSample() * amount.getValue();
+}
 
 ////////////////
 // Oscillator //
@@ -211,30 +274,91 @@ double Oscillator::whiteNoise(double wp) {
 }
 
 
-//////////////////
-// StreamOutput //
-//////////////////
-void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
-	ofAddListener(stream.outputCallbackEvent, this, &StreamOutput::_callback);
-	ModuleControlData_t data;
-	data.sampleRate = stream.getConfiguration().sampleRate;
-	this->setData(data);
+/////////////////////
+// RecursiveFilter //
+/////////////////////
+
+double RecursiveFilter::getNextSample(void) {
+	if (_inputs.size() == 0) {
+		return 0;
+	}
+
+	double x0 = _inputs.front()->getNextSample();
+
+	double y0 = a0*x0 + a1*x1 + a2*x2 + b1*y1 + b2*y2;
+
+	y2 = y1;
+	y1 = y0;
+	x2 = x1;
+	x1 = x0;
+	return y0;
 }
 
-void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
-
-	if (_inputs.front() == nullptr) {
+void RecursiveFilter::_calcCoefs(void) {
+	if (!_data->initialized) {
 		return;
 	}
 
-	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-		float value = ofClamp(_inputs.front()->getNextSample(), -1, 1);
-		//cout << value << endl;
-		for (int ch = 0; ch < d.outputChannels; ch++) {
-			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
+	double f_angular = 2 * PI * _breakpoint / _data->sampleRate; //Normalized angular frequency
+
+	if (_filterType == LOW_PASS || _filterType == HIGH_PASS) {
+		double x = exp(-f_angular);
+
+		a2 = 0;
+		b2 = 0;
+
+		if (_filterType == LOW_PASS) {
+			a0 = 1 - x;
+			a1 = 0;
+			b1 = x;
+		} else if (_filterType == HIGH_PASS) {
+			a0 = (1 + x) / 2;
+			a1 = -(1 + x) / 2;
+			b1 = x;
+		}
+
+	} else if (_filterType == BAND_PASS || _filterType == NOTCH) {
+		double R = 1 - (3 * _bandwidth / _data->sampleRate); //Bandwidth is normalized
+		double K = (1 - 2 * R*cos(f_angular) + (R*R)) / (2 - 2 * cos(f_angular));
+
+		b1 = 2 * R * cos(f_angular);
+		b2 = -(R*R);
+
+		if (_filterType == BAND_PASS) {
+			a0 = 1 - K;
+			a1 = 2 * (K - R) * cos(f_angular);
+			a2 = (R*R) - K;
+		} else if (_filterType == NOTCH) {
+			a0 = K;
+			a1 = -2 * K * cos(f_angular);
+			a2 = K;
 		}
 	}
 }
+
+//////////////
+// Splitter //
+//////////////
+
+Splitter::Splitter(void) :
+_currentSample(0.0),
+_fedOutputs(0)
+{}
+
+
+double Splitter::getNextSample(void) {
+	if (_fedOutputs >= _outputs.size()) {
+		_currentSample = _inputs.front()->getNextSample();
+		_fedOutputs = 0;
+	}
+	++_fedOutputs;
+	return _currentSample;
+}
+
+void Splitter::_outputAssignedEvent(ModuleBase* out) {
+	_fedOutputs = _outputs.size();
+}
+
 
 //////////////////////
 // SoundObjectInput //
@@ -309,7 +433,30 @@ void SoundObjectOutput::sampleData(double t) {
 	}
 }
 
+//////////////////
+// StreamOutput //
+//////////////////
+void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
+	ofAddListener(stream.outputCallbackEvent, this, &StreamOutput::_callback);
+	ModuleControlData_t data;
+	data.sampleRate = stream.getConfiguration().sampleRate;
+	this->setData(data);
+}
 
+void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
+
+	if (_inputs.front() == nullptr) {
+		return;
+	}
+
+	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
+		float value = ofClamp(_inputs.front()->getNextSample(), -1, 1);
+		//cout << value << endl;
+		for (int ch = 0; ch < d.outputChannels; ch++) {
+			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
+		}
+	}
+}
 
 
 

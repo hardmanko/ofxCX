@@ -2,7 +2,11 @@
 
 #include "CX_ModularSynth.h"
 
+using namespace CX::Synth;
+
 CX_SoundStream ss;
+
+
 
 
 void drawInformation(void);
@@ -114,8 +118,50 @@ void runExperiment(void) {
 	ampEnv.s = .6;
 	ampEnv.r = .2;
 
+
+
 	//After the mixer, filter, attach the amp envelope, and route into the output.
-	oscMix >> filter >> ampEnv >> output;
+	mainOsc >> filter >> ampEnv >> output;
+
+
+	FIRFilter fir;
+	fir.setup(FIRFilter::LOW_PASS, 21);
+	
+	ModuleControlData_t dat;
+	dat.sampleRate = 1000;
+	fir.setData(dat);
+	fir.setCutoff(125);
+
+
+
+	RecursiveFilter rec;
+	rec.setBreakpoint(1000);
+	rec.setBandwidth(100);
+	rec.setup(RecursiveFilter::FilterType::BAND_PASS);
+
+	RCFilter rc;
+	rc.breakpoint = 1000;
+
+	SoundObjectOutput filterOut;
+	filterOut.setup(44100);
+
+	mainOsc.frequency = 500;
+	mainOsc.setGeneratorFunction(Oscillator::square);
+
+	mainOsc >> rec >> filterOut;
+	filterOut.sampleData(2);
+	filterOut.so.normalize();
+
+	rec.setBandwidth(300);
+	rec.setup(RecursiveFilter::FilterType::BAND_PASS);
+	filterOut.sampleData(2);
+
+	//mainOsc >> rc >> filterOut;
+	//filterOut.sampleData(3);
+
+	filterOut.so.writeToFile("Recursive types.wav");
+
+
 
 
 
@@ -135,8 +181,8 @@ void runExperiment(void) {
 
 	//Now that you're done sampling, you can use the sound object that you made!
 	soOut.so; // <-- This is the sound object. See the soundObject example for to see how to use it in detail.
-	soOut.so.normalize(); //Its a good idea to normalize before saving to a file to get the level up.
-	soOut.so.writeToFile("Short sample.wav"); //You can save it to file, like in this example, or put it into a CX_SoundObjectPlayer.
+	soOut.so.normalize(); //Its a good idea to normalize before saving to a file to get the levels up.
+	soOut.so.writeToFile("Short sample.wav"); //You can save it to file, like in this example, or play it using a CX_SoundObjectPlayer.
 
 
 
