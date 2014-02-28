@@ -133,7 +133,7 @@ void runExperiment(void) {
 	fir.setCutoff(125);
 
 
-
+	/*
 	RecursiveFilter rec;
 	rec.setBreakpoint(1000);
 	rec.setBandwidth(100);
@@ -160,8 +160,55 @@ void runExperiment(void) {
 	//filterOut.sampleData(3);
 
 	filterOut.so.writeToFile("Recursive types.wav");
+	*/
 
 
+	AdditiveSynth as;
+	as.setHarmonicSeries(101, AdditiveSynth::HarmonicSeriesType::HS_MULTIPLE, 1);
+	as.setAmplitudes(AdditiveSynth::HarmonicAmplitudeType::SAW);
+	as.setFundamentalFrequency(300);
+	as.pruneLowAmplitudeHarmonics(0.05);
+
+	Splitter ts;
+	Multiplier lm;
+	Multiplier rm;
+
+	lm.amount = 0.1;
+	rm.amount = 0.01;
+
+	as >> ts >> lm;
+	ts >> rm;
+
+	StereoSoundObjectOutput stereo;
+	stereo.setup(48000);
+
+	lm >> stereo.left;
+	rm >> stereo.right;
+
+	stereo.sampleData(3);
+
+	lm.amount = .01;
+	rm.amount = .1;
+
+	stereo.sampleData(3);
+
+	stereo.so.writeToFile("stereo.wav");
+
+
+	SoundObjectOutput asOut;
+	asOut.setup(48000);
+
+	Multiplier mm;
+	mm.amount = .5;
+
+	as >> mm >> asOut;
+
+	asOut.sampleData(1);
+
+	cout << "Peaks: " << asOut.so.getPositivePeak() << " " << asOut.so.getNegativePeak() << endl;
+
+	asOut.so.normalize();
+	asOut.so.writeToFile("add synth.wav");
 
 
 

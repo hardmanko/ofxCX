@@ -51,6 +51,11 @@ namespace CX {
 
 		double round(double d, int roundingPower, CX_RoundingConfiguration c);
 
+		template <typename T>
+		T clamp(T val, T minimum, T maximum) {
+			return std::min(std::max(val, minimum), maximum);
+		}
+
 	}
 }
 

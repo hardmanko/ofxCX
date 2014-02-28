@@ -110,6 +110,233 @@ double Adder::getNextSample(void) {
 	return amount.getValue();
 }
 
+
+///////////////////
+// AdditiveSynth //
+///////////////////
+
+double AdditiveSynth::getNextSample(void) {
+	double rval = 0;
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		_harmonics[i].waveformPosition += _harmonics[i].positionChangePerSample;
+		if (_harmonics[i].waveformPosition >= 1) {
+			_harmonics[i].waveformPosition = fmod(_harmonics[i].waveformPosition, 1);
+		}
+
+		rval += Oscillator::sine(_harmonics[i].waveformPosition) * _harmonics[i].amplitude;
+	}
+	return rval;
+
+}
+
+void AdditiveSynth::setFundamentalFrequency(double f) {
+	_fundamental = f;
+
+	_recalculateWaveformPositions();
+}
+
+void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType type) {
+	vector<AdditiveSynth::amplitude_t> amps = calculateAmplitudes(type, _harmonics.size());
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		_harmonics[i].amplitude = amps[i];
+	}
+}
+
+void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType t1, HarmonicAmplitudeType t2, double mixture) {
+	vector<AdditiveSynth::amplitude_t> amps1 = calculateAmplitudes(t1, _harmonics.size());
+	vector<AdditiveSynth::amplitude_t> amps2 = calculateAmplitudes(t2, _harmonics.size());
+
+	mixture = CX::Util::clamp<double>(mixture, 0, 1);
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		_harmonics[i].amplitude = (amps1[i] * mixture) + (amps2[i] * (1 - mixture));
+	}
+}
+
+std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(HarmonicAmplitudeType type, unsigned int count) {
+	std::vector<amplitude_t> rval(count);
+
+	if (type == AdditiveSynth::HarmonicAmplitudeType::SAW) {
+		for (unsigned int i = 0; i < count; i++) {
+			rval[i] = 2 / (PI * (i + 1));
+			if ((i % 2) == 1) { //Is even harmonic
+				rval[i] *= -1;
+			}
+		}
+	} else if (type == AdditiveSynth::HarmonicAmplitudeType::SQUARE) {
+		for (unsigned int i = 0; i < count; i++) {
+			if ((i % 2) == 1) { //Is even harmonic
+				rval[i] = 0;
+			} else {
+				//rval[i] = 2 / (PI * (i + 1));
+				rval[i] = 4 / (PI * (i + 1));
+			}
+		}
+	} else if (type == AdditiveSynth::HarmonicAmplitudeType::TRIANGLE) {
+		for (unsigned int i = 0; i < count; i++) {
+			if ((i % 2) == 1) { //Is even harmonic
+				rval[i] = 0; 
+			} else {
+				rval[i] = 8 / ((PI * PI) * pow(i + 1, 2));
+				if (((i / 2) % 2) == 1) {
+					rval[i] *= -1;
+				}
+			}
+		}
+	}
+
+	return rval;
+}
+
+/*! This function removes all harmonics that have an amplitude that is less than or equal to a tolerance 
+times the amplitude of the frequency with the greatest absolute amplitude. 
+
+The result of this pruning is that the synthesizer will be more computationally efficient but provide a possibly worse 
+approximation of the desired waveform.
+
+\param tol `tol` is interpreted differently depending on its value. If `tol` is greater than or equal to 0, it is treated
+as a proportion of the amplitude of the frequency with the greatest amplitude. If `tol` is less than 0, it is treated as
+the difference in decibels between the frequency with the greatest amplitude and the tolerance.
+
+\note Because harmonics with an amplitude equal to the tolerance times an amplitude, setting `tol` to 0 will remove 
+harmonics with 0 amplitude, but no others. */
+void AdditiveSynth::pruneLowAmplitudeHarmonics(double tol) {
+
+	double maxAmplitude = 0;
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		if (abs(_harmonics[i].amplitude) > maxAmplitude) {
+			maxAmplitude = abs(_harmonics[i].amplitude);
+		}
+	}
+
+	if (tol < 0) {
+		tol = sqrt(pow(10.0f, tol / 10.0f));
+	}
+
+	double cutoffAmplitude = maxAmplitude * tol;
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		if (abs(_harmonics[i].amplitude) < cutoffAmplitude) {
+			_harmonics.erase(_harmonics.begin() + i);
+			i--;
+		}
+	}
+}
+
+
+void AdditiveSynth::_recalculateWaveformPositions(void) {
+
+	//generalWaveData.baseFrequency = fundamental;
+
+	wavePos_t firstHarmonicPos = _harmonics[0].waveformPosition;
+
+	/*
+	if (_harmonicSeries == HS_STANDARD) {
+	//When using the normal harmonic series you can do just add the same distance to the previous.
+	wavePos_t fundamentalPositionChangePerSample = fundamental / _data->sampleRate;
+	wavePos_t nextValue = fundamentalPositionChangePerSample;
+	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
+	_harmonics[i].positionChangePerSample = nextValue;
+	nextValue += fundamentalPositionChangePerSample;
+
+	//Restart all waves at 0 so they are in phase. It would be smarter to make all harmonic positions a
+	//function of the fundamental harmonic position at time of function call.
+	_harmonics[i].waveformPosition = 0;
+	}
+	} else */
+	{
+		double normalizedFrequency = _fundamental / _data->sampleRate;
+
+		for (unsigned int i = 0; i < _harmonics.size(); ++i) {
+			_harmonics[i].positionChangePerSample = normalizedFrequency * _relativeFrequenciesOfHarmonics[i];
+
+			_harmonics[i].waveformPosition = firstHarmonicPos * _relativeFrequenciesOfHarmonics[i];
+			//_harmonics[i].waveformPosition = 0;
+		}
+	}
+}
+
+void AdditiveSynth::_dataSetEvent(void) {
+	_recalculateWaveformPositions();
+}
+
+/*
+\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE.
+\param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the fundamental gives the value 1 for i.
+If type == HS_SEMITONE, the frequency for harmonic i will be pow(2, (i - 1) * controlParameter/12), where the fundamental gives the value 1 for i.
+
+\note If type == HS_MULTIPLE and controlParameter == 1, then the standard harmonic series will be generated.
+*/
+void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter) {
+	_harmonics.resize(harmonicCount);
+	_harmonicSeriesControlParameter = controlParameter;
+	_harmonicSeriesType = type;
+	_calculateRelativeFrequenciesOfHarmonics();
+
+	_recalculateWaveformPositions();
+}
+
+//The user function takes an integer representing the harmonic number, where the fundamental has the value 1 and returns
+//the frequency that should be used for that harmonic.
+void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, std::function<double(unsigned int)> userFunction) {
+	_harmonics.resize(harmonicCount);
+	_harmonicSeriesType = HS_USER_FUNCTION;
+	_harmonicSeriesUserFunction = userFunction;
+	_calculateRelativeFrequenciesOfHarmonics();
+
+	_recalculateWaveformPositions();
+}
+
+void AdditiveSynth::_calculateRelativeFrequenciesOfHarmonics(void) {
+	_relativeFrequenciesOfHarmonics.resize(_harmonics.size());
+
+	if (_harmonicSeriesType == HS_MULTIPLE) {
+		for (unsigned int i = 0; i < _harmonics.size(); i++) {
+			_relativeFrequenciesOfHarmonics[i] = (i + 1) * _harmonicSeriesControlParameter;
+		}
+
+	} else if (_harmonicSeriesType == HS_SEMITONE) {
+		for (unsigned int i = 0; i < _harmonics.size(); i++) {
+			_relativeFrequenciesOfHarmonics[i] = pow(2.0, i * _harmonicSeriesControlParameter / 12);
+		}
+	} else if (_harmonicSeriesType == HS_USER_FUNCTION) {
+		for (unsigned int i = 0; i < _harmonics.size(); i++) {
+			_relativeFrequenciesOfHarmonics[i] = _harmonicSeriesUserFunction(i + 1);
+		}
+	}
+}
+
+
+/////////////
+// Clamper //
+/////////////
+
+Clamper::Clamper(void) :
+low(-1),
+high(1)
+{
+	this->_registerParameter(&low);
+	this->_registerParameter(&high);
+}
+
+double Clamper::getNextSample(void) {
+	if (_inputs.size() == 0) {
+		return 0;
+	}
+
+	double temp = this->_inputs.front()->getNextSample();
+
+	high.updateValue();
+	low.updateValue();
+
+	temp = std::min(temp, high.getValue());
+	temp = std::max(temp, low.getValue());
+	return temp;
+}
+
+
 //////////////
 // Envelope //
 //////////////
@@ -211,6 +438,14 @@ double Multiplier::getNextSample(void) {
 	return _inputs.front()->getNextSample() * amount.getValue();
 }
 
+/*! Sets the `amount` of the multiplier based on gain in decibels.
+\param decibels The gain to apply. If greater than 0, `amount` will be greater than 1. If less than 0, `amount` will be less than 1.
+After calling this function, `amount` will never be negative.
+*/
+void Multiplier::setGain(double decibels) {
+	amount = sqrt(pow(10.0, decibels / 10.0));
+}
+
 ////////////////
 // Oscillator //
 ////////////////
@@ -284,13 +519,21 @@ double RecursiveFilter::getNextSample(void) {
 	}
 
 	double x0 = _inputs.front()->getNextSample();
+	double y0;
 
-	double y0 = a0*x0 + a1*x1 + a2*x2 + b1*y1 + b2*y2;
+	if (_filterType == FilterType::LOW_PASS || _filterType == FilterType::HIGH_PASS) {
+		//a2 and b2 are always 0 for LOW_PASS and HIGH_PASS, so they are omitted from the calculation.
+		y0 = a0*x0 + a1*x1 + b1*y1;
+		y1 = y0;
+		x1 = x0;
+	} else {
+		y0 = a0*x0 + a1*x1 + a2*x2 + b1*y1 + b2*y2;
+		y2 = y1;
+		y1 = y0;
+		x2 = x1;
+		x1 = x0;
+	}
 
-	y2 = y1;
-	y1 = y0;
-	x2 = x1;
-	x1 = x0;
 	return y0;
 }
 
@@ -334,6 +577,17 @@ void RecursiveFilter::_calcCoefs(void) {
 			a2 = K;
 		}
 	}
+}
+
+/*! Only used for BAND_PASS and NOTCH filters. Sets the width (in frequency domain) of the stop or pass band
+at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies
+100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set bw to 100.
+Of course, past those frequencies the attenuation continues.
+Larger values result in a less pointy band.
+\param bw The bandwidth.
+*/
+void RecursiveFilter::setBandwidth(double bw) {
+	_bandwidth = bw;
 }
 
 //////////////
@@ -421,7 +675,7 @@ void SoundObjectOutput::sampleData(double t) {
 	vector<float> tempData(samplesToTake);
 
 	for (unsigned int i = 0; i < samplesToTake; i++) {
-		tempData[i] = ofClamp((float)_inputs.front()->getNextSample(), -1, 1);
+		tempData[i] = CX::Util::clamp<float>((float)_inputs.front()->getNextSample(), -1, 1);
 	}
 
 	if (so.getTotalSampleCount() == 0) {
@@ -432,6 +686,75 @@ void SoundObjectOutput::sampleData(double t) {
 		}
 	}
 }
+
+//class StereoSoundObjectOutput {
+//public:
+	//void setup(float sampleRate);
+	//void sampleData(double t);
+
+	//GenericOutput left;
+	//GenericOutput right;
+
+	//CX::CX_SoundObject so;
+
+//};
+
+/////////////////////////////
+// StereoSoundObjectOutput //
+/////////////////////////////
+void StereoSoundObjectOutput::setup(float sampleRate) {
+	ModuleControlData_t data;
+	data.sampleRate = sampleRate;
+	data.initialized = true;
+	left.setData(data);
+	right.setData(data);
+}
+
+void StereoSoundObjectOutput::sampleData(double t) {
+	unsigned int samplesToTake = ceil(left.getData().sampleRate * t);
+
+	unsigned int channels = 2; //Stereo
+
+	vector<float> tempData(samplesToTake * channels);
+
+	for (unsigned int i = 0; i < samplesToTake; i++) {
+		tempData[(i * channels) + 0] = CX::Util::clamp<float>((float)left.getNextSample(), -1, 1);
+		tempData[(i * channels) + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
+	}
+
+	if (so.getTotalSampleCount() == 0) {
+		so.setFromVector(tempData, channels, left.getData().sampleRate);
+	} else {
+		for (unsigned int i = 0; i < tempData.size(); i++) {
+			so.getRawDataReference().push_back(tempData[i]);
+		}
+	}
+}
+
+////////////////////////
+// StereoStreamOutput //
+////////////////////////
+void StereoStreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
+	ofAddListener(stream.outputCallbackEvent, this, &StereoStreamOutput::_callback);
+	ModuleControlData_t data;
+	data.sampleRate = stream.getConfiguration().sampleRate;
+	left.setData(data);
+	right.setData(data);
+}
+
+void StereoStreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
+	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
+
+		d.outputBuffer[(sample * d.outputChannels) + 0] = CX::Util::clamp<float>(right.getNextSample(), -1, 1);
+
+		d.outputBuffer[(sample * d.outputChannels) + 1] = CX::Util::clamp<float>(left.getNextSample(), -1, 1);
+
+		//for (int ch = 2; ch < d.outputChannels; ch++) {
+		//	d.outputBuffer[(sample * d.outputChannels) + ch] = value;
+		//}
+	}
+}
+
 
 //////////////////
 // StreamOutput //
@@ -450,134 +773,10 @@ void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
 	}
 
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-		float value = ofClamp(_inputs.front()->getNextSample(), -1, 1);
+		float value = CX::Util::clamp<float>(_inputs.front()->getNextSample(), -1, 1);
 		//cout << value << endl;
 		for (int ch = 0; ch < d.outputChannels; ch++) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
-		}
-	}
-}
-
-///////////////////
-// AdditiveSynth //
-///////////////////
-void AdditiveSynth::_initializeAmplitudes (void) {
-
-	_squareWaveAmplitudes.resize(_harmonics.size());
-	_sawWaveAmplitudes.resize(_harmonics.size());
-	_triangleWaveAmplitudes.resize(_harmonics.size());
-
-	for (unsigned int i = 0; i < _harmonics.size(); i++) {
-		int currentHarmonic = i + 1; //The 1th (first) harmonic is at index 0.
-		
-		//For odd harmonics...
-		if ((currentHarmonic % 2) == 1) {
-			_squareWaveAmplitudes[i] = 0.5 / currentHarmonic;
-			_sawWaveAmplitudes[i] = 0.5 / currentHarmonic;
-			
-			//For every other wave, triangle is negative. 1+, 3-, 5+, etc.
-			if ( (((currentHarmonic - 1)/2) % 2) == 1 ) {
-				_triangleWaveAmplitudes[i] = -0.5/(currentHarmonic*currentHarmonic);
-			} else {
-				_triangleWaveAmplitudes[i] = 0.5/(currentHarmonic*currentHarmonic);
-			}								
-			
-			//I don't appear to have used these anywhere.
-			//evenHarmonicSteadySlopeAmplitudes[i] = 0; //The fundamental amplitude as specified by this is ignored later.
-		} else { //For even waves...
-			_squareWaveAmplitudes[i] = 0;
-			//sawWaveAmplitudes[i] = -1L * (MAXIMUM_AMPLITUDE / currentHarmonic) * TWO_OVER_PI;
-			_sawWaveAmplitudes[i] = -0.5 / currentHarmonic;
-			_triangleWaveAmplitudes[i] = 0;
-			
-			//evenHarmonicSteadySlopeAmplitudes[i] = MAXIMUM_AMPLITUDE/(2*currentHarmonic);
-		}
-	}
-}
-
-void AdditiveSynth::_setFundamentalFrequency (double fundamental) {
-		
-	//generalWaveData.baseFrequency = fundamental;
-
-	wavePos_t firstHarmonicPos = _harmonics[0].waveformPosition;
-	
-	/*
-	if (_harmonicSeries == HS_STANDARD) {
-		//When using the normal harmonic series you can do just add the same distance to the previous.
-		wavePos_t fundamentalPositionChangePerSample = fundamental / _data->sampleRate;
-		wavePos_t nextValue = fundamentalPositionChangePerSample;
-		for (unsigned int i = 0; i < _harmonics.size(); ++i) {
-			_harmonics[i].positionChangePerSample = nextValue;
-			nextValue += fundamentalPositionChangePerSample;
-					
-			//Restart all waves at 0 so they are in phase. It would be smarter to make all harmonic positions a 
-			//function of the fundamental harmonic position at time of function call.
-			_harmonics[i].waveformPosition = 0;
-		}
-	} else */
-	{
-		double normalizedFrequency = fundamental / _data->sampleRate;
-	
-		for (unsigned int i = 0; i < _harmonics.size(); ++i) {
-			_harmonics[i].positionChangePerSample = normalizedFrequency * _relativeFrequenciesOfHarmonics[i];
-
-			//_harmonics[i].waveformPosition = firstHarmonicPos * _relativeFrequenciesOfHarmonics[i];
-			_harmonics[i].waveformPosition = 0;
-		}
-	}
-}
-
-double AdditiveSynth::_update(void) {
-	double rval = 0;
-
-	for (unsigned int i = 0; i < _harmonics.size(); i++) {
-		_harmonics[i].waveformPosition += _harmonics[i].positionChangePerSample;
-		if (_harmonics[i].waveformPosition >= 1) {
-			_harmonics[i].waveformPosition = fmod(_harmonics[i].waveformPosition, 1);
-		}
-
-		rval += Oscillator::sine(_harmonics[i].waveformPosition) * _harmonics[i].amplitude;
-	}
-	return rval;
-}
-
-
-/*
-\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE.
-\param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the fundamental gives the value 1 for i.
-If type == HS_SEMITONE, the frequency for harmonic i will be pow(2, (i - 1) * controlParameter/12), where the fundamental gives the value 1 for i.
-
-\note If type == HS_MULTIPLE and controlParameter == 1, then the standard harmonic series will be generated.
-*/
-void AdditiveSynth::setHarmonicSeries(HarmonicSeriesType type, double controlParameter) {
-	_harmonicSeriesControlParameter = controlParameter;
-	_harmonicSeriesType = type;
-	_calculateRelativeFrequenciesOfHarmonics();
-}
-
-//The user function takes an integer representing the harmonic number, where the fundamental has the value 1 and returns
-//the frequency that should be used for that harmonic.
-void AdditiveSynth::setHarmonicSeries (std::function<double(unsigned int)> userFunction) {
-	_harmonicSeriesType = HS_USER_FUNCTION;
-	_harmonicSeriesUserFunction = userFunction;
-	_calculateRelativeFrequenciesOfHarmonics();
-}
-
-void AdditiveSynth::_calculateRelativeFrequenciesOfHarmonics (void) {
-	_relativeFrequenciesOfHarmonics.resize(_harmonics.size());
-
-	if (_harmonicSeriesType == HS_MULTIPLE) {
-		for (unsigned int i = 0; i < _harmonics.size(); i++) {
-			_relativeFrequenciesOfHarmonics[i] = (i + 1) * _harmonicSeriesControlParameter;
-		}
-
-	} else if (_harmonicSeriesType == HS_SEMITONE) {
-		for (unsigned int i = 0; i < _harmonics.size(); i++) {
-			_relativeFrequenciesOfHarmonics[i] = pow(2.0, i * _harmonicSeriesControlParameter/12);
-		}
-	} else if (_harmonicSeriesType == HS_USER_FUNCTION) {
-		for (unsigned int i = 0; i < _harmonics.size(); i++) {
-			_relativeFrequenciesOfHarmonics[i] = _harmonicSeriesUserFunction(i + 1);
 		}
 	}
 }
@@ -644,7 +843,7 @@ private:
 			if (_waveformPos >= 1) {
 				_waveformPos = fmod(_waveformPos, 1);
 			}
-			double value = ofClamp(_generatorFunction(_waveformPos) * maxAmplitude, -1, 1);
+			double value = CX::Util::clamp<float>(_generatorFunction(_waveformPos) * maxAmplitude, -1, 1);
 			for (int ch = 0; ch < d.outputChannels; ch++) {
 				d.outputBuffer[(sample * d.outputChannels) + ch] = value;
 			}

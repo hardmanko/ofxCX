@@ -192,7 +192,7 @@ ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
 				intensity *= (1 - pow(p.distance(ofPoint(0, 0)) / radius, properties.fallOffPower));
 			}
 
-			intensity = ofClamp(intensity, 0, 1);
+			intensity = CX::Util::clamp<double>(intensity, 0, 1);
 
 			pix.setColor(j, i, ofColor((properties.maxValue - properties.minValue) * intensity + properties.minValue));
 

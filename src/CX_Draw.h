@@ -5,6 +5,8 @@
 #include "ofTrueTypeFont.h"
 #include "ofGraphics.h"
 
+#include "CX_Utilities.h"
+
 namespace CX {
 
 	/*! This namespace contains functions for drawing certain complex stimuli.
