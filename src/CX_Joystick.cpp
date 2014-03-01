@@ -69,9 +69,9 @@ bool CX_Joystick::pollEvents (void) {
 	if (axisCount == _axisPositions.size()) {
 		for (unsigned int i = 0; i < axisCount; i++) {
 			if (_axisPositions[i] != axes[i]) {
-				CX_JoystickEvent_t ev;
+				CX_Joystick::Event ev;
 
-				ev.eventType = CX_JoystickEvent_t::AXIS_POSITION_CHANGE;
+				ev.eventType = CX_Joystick::Event::AXIS_POSITION_CHANGE;
 				ev.axisIndex = i;
 				ev.axisPosition = axes[i];
 
@@ -89,13 +89,13 @@ bool CX_Joystick::pollEvents (void) {
 	if (buttonCount == _buttonStates.size()) {
 		for (unsigned int i = 0; i < buttonCount; i++) {
 			if (_buttonStates[i] != buttons[i]) {
-				CX_JoystickEvent_t ev;
+				CX_Joystick::Event ev;
 
 				//I'm just guessing about button state here. 1 might be PRESSED, but it could also be UNDEFINED_BUTTON.
 				if (buttons[i] == 1) {
-					ev.eventType = CX_JoystickEvent_t::BUTTON_PRESS;
+					ev.eventType = CX_Joystick::Event::BUTTON_PRESS;
 				} else {
-					ev.eventType = CX_JoystickEvent_t::BUTTON_RELEASE;
+					ev.eventType = CX_Joystick::Event::BUTTON_RELEASE;
 				}
 
 				ev.buttonIndex = i;
@@ -127,8 +127,8 @@ int CX_Joystick::availableEvents (void) {
 
 /*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
 from the input device. */
-CX_JoystickEvent_t CX_Joystick::getNextEvent (void) {
-	CX_JoystickEvent_t front = _joystickEvents.front();
+CX_Joystick::Event CX_Joystick::getNextEvent (void) {
+	CX_Joystick::Event front = _joystickEvents.front();
 	_joystickEvents.pop();
 	return front;
 }
@@ -141,7 +141,7 @@ void CX_Joystick::clearEvents (void) {
 }
 
 /*! This function is to be used for direct access to the axis positions of the joystick. It does not 
-generate events (i.e. CX_JoystickEvent_t), nor does it do any timestamping. If timestamps and 
+generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and 
 uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
 vector<float> CX_Joystick::getAxisPositions (void) {
 	vector<float> pos;
@@ -159,7 +159,7 @@ vector<float> CX_Joystick::getAxisPositions (void) {
 }
 
 /*! This function is to be used for direct access to the button states of the joystick. It does not 
-generate events (i.e. CX_JoystickEvent_t), nor does it do any timestamping. If timestamps and 
+generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and 
 uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
 vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	vector<unsigned char> but;
@@ -176,14 +176,14 @@ vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	return but;
 }
 
-std::ostream& CX::operator<< (std::ostream& os, const CX_JoystickEvent_t& ev) {
+std::ostream& CX::operator<< (std::ostream& os, const CX_Joystick::Event& ev) {
 	string dlm = ", ";
 	os << ev.buttonIndex << dlm << ev.buttonState << dlm << ev.axisIndex << dlm << ev.axisPosition << dlm <<
 		ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
 	return os;
 }
 
-std::istream& CX::operator>> (std::istream& is, CX_JoystickEvent_t& ev) {
+std::istream& CX::operator>> (std::istream& is, CX_Joystick::Event& ev) {
 	is >> ev.buttonIndex;
 	is.ignore(2);
 	is >> ev.buttonState;
@@ -200,9 +200,9 @@ std::istream& CX::operator>> (std::istream& is, CX_JoystickEvent_t& ev) {
 	int eventType;
 	is >> eventType;
 	switch (eventType) {
-	case CX_JoystickEvent_t::BUTTON_PRESS: ev.eventType = CX_JoystickEvent_t::BUTTON_PRESS; break;
-	case CX_JoystickEvent_t::BUTTON_RELEASE: ev.eventType = CX_JoystickEvent_t::BUTTON_RELEASE; break;
-	case CX_JoystickEvent_t::AXIS_POSITION_CHANGE: ev.eventType = CX_JoystickEvent_t::AXIS_POSITION_CHANGE; break;
+	case CX_Joystick::Event::BUTTON_PRESS: ev.eventType = CX_Joystick::Event::BUTTON_PRESS; break;
+	case CX_Joystick::Event::BUTTON_RELEASE: ev.eventType = CX_Joystick::Event::BUTTON_RELEASE; break;
+	case CX_Joystick::Event::AXIS_POSITION_CHANGE: ev.eventType = CX_Joystick::Event::AXIS_POSITION_CHANGE; break;
 	}
 
 	return is;

@@ -11,7 +11,7 @@ For this N-Back task, the presentation of stimuli will follow the pattern stimul
 etc. The idea is that you will load up the SP with the first few stimuli and blanks. The SP will be started
 and will present the first few stimuli. When it runs out of stimuli, the last slide user function will be 
 called. In this function, we will check for any responses that have been made since the last time the 
-function was called and draw the next stimulus-blank pair. See the definition of lastSlideFunction and
+function was called and draw the next stimulus-blank pair. See the definition of finalSlideFunction and
 setupExperiment for the implementation of these ideas.
 */
 
@@ -34,7 +34,7 @@ CX_Millis stimulusPresentationDuration = 1000.0;
 CX_Millis interStimulusInterval = 1000.0;
 
 CX_SlidePresenter SlidePresenter;
-void lastSlideFunction (CX_FinalSlideFunctionInfo_t& info);
+void finalSlideFunction (CX_SlidePresenter::FinalSlideFunctionArgs& info);
 void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
 
@@ -49,13 +49,13 @@ void runExperiment (void) {
 	generateTrials(10);
 
 	//Configure the SlidePresenter:
-	CX_SP_Configuration config;
+	CX_SlidePresenter::Configuration config;
 	config.display = &Display; //Set the SlidePresenter to use Display for the display.
 
 	//Set a function that you want to be called every time the SlidePresenter has started to present the last
 	//slide you put in. In your function, you can add more slides to the SlidePresenter. Every time it reaches 
-	//the last slide, it will called lastSlideFunction again.
-	config.finalSlideCallback = &lastSlideFunction;
+	//the last slide, it will called finalSlideFunction again.
+	config.finalSlideCallback = &finalSlideFunction;
 
 	config.deallocateCompletedSlides = true; //We know that for this experiment we will never want to present the
 		//same slide twice, so we set the SlidePresenter to deallocate the memory used for slides that have already been presented.
@@ -120,19 +120,19 @@ void runExperiment (void) {
 	//Just past this point, runExperiment will implicitly return and the program will exit.
 }
 
-void lastSlideFunction(CX_FinalSlideFunctionInfo_t& info) {
+void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 
 	//At this point in time, the last slide has just been put on screen. The last slide is a blank, which means that the slide before it
 	//was a stimulus that should have been responded to. We'll check for keyboard events.
 	bool validResponseMade = false;
 	if (Input.Keyboard.availableEvents() > 0) {
 		//We don't want any responses made before the stimulus was presented, so let's find out when it was presented.
-		CX_Slide_t &lastStimulusSlide = SlidePresenter.getSlides().at( info.currentSlideIndex - 1 );
+		CX_SlidePresenter::Slide &lastStimulusSlide = SlidePresenter.getSlides().at( info.currentSlideIndex - 1 );
 		CX_Micros stimulusOnset = lastStimulusSlide.actual.startTime;
 
 		while (Input.Keyboard.availableEvents() > 0) {
-			CX_KeyEvent_t kev = Input.Keyboard.getNextEvent();
-			if ((kev.eventTime >= stimulusOnset) && (kev.eventType == CX_KeyEvent_t::PRESSED) && (kev.key == targetKey || kev.key == nonTargetKey)) {
+			CX_Keyboard::Event kev = Input.Keyboard.getNextEvent();
+			if ((kev.eventTime >= stimulusOnset) && (kev.eventType == CX_Keyboard::Event::PRESSED) && (kev.key == targetKey || kev.key == nonTargetKey)) {
 
 				if (kev.key == targetKey) {
 					df(trialNumber, "responseType") = "target";

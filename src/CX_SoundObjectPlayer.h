@@ -4,7 +4,7 @@
 /*! \defgroup sound Sound */
 
 /*! \class CX::CX_SoundObjectPlayer
-This class is used for playing CX_SoundObjects.
+This class is used for playing CX_SoundObjects. See the soundObject example for an example of how to use this class.
 
 \ingroup sound
 */
@@ -18,7 +18,7 @@ This class is used for playing CX_SoundObjects.
 
 namespace CX  {
 
-	typedef CX_SoundStreamConfiguration_t CX_SoundObjectPlayerConfiguration_t;
+	typedef CX_SoundStream::Configuration CX_SoundObjectPlayerConfiguration_t;
 
 	class CX_SoundObjectPlayer {
 	public:
@@ -42,7 +42,7 @@ namespace CX  {
 
 	private:
 
-		bool _outputEventHandler (CX_SSOutputCallback_t &outputData);
+		bool _outputEventHandler (CX_SoundStream::OutputEventArgs &outputData);
 
 		CX_SoundStream _soundStream;
 		CX_SoundObject *_activeSoundObject;

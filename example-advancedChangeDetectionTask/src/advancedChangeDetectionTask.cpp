@@ -118,9 +118,9 @@ int getResponse (void) {
 
 	while (Input.Keyboard.availableEvents() > 0) {
 
-		CX_KeyEvent_t keyEvent = Input.Keyboard.getNextEvent();
+		CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent();
 
-		if (keyEvent.eventType == CX_KeyEvent_t::PRESSED) {
+		if (keyEvent.eventType == CX_Keyboard::Event::PRESSED) {
 
 			if (keyEvent.key == 's' || keyEvent.key == 'd') {
 

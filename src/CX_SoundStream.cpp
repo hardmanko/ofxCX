@@ -21,7 +21,7 @@ so some of the values that are used may differ from the values that are chosen. 
 based on the actually used settings. You can check the configuration later using getConfiguration().
 \return True if configuration appeared to be successful, false otherwise. 
 \note Opening the stream does not start it. See \ref start(). */
-bool CX_SoundStream::setup (CX_SoundStreamConfiguration_t &config) {
+bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	if (_rtAudio != NULL) {
 		closeStream();
 	}
@@ -410,7 +410,7 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 	}
 
 	if (_config.inputChannels > 0) {
-		CX_SSInputCallback_t callbackData;
+		CX_SoundStream::InputEventArgs callbackData;
 		callbackData.inputBuffer = (float*)inputBuffer;
 		callbackData.bufferSize = bufferSize;
 		callbackData.inputChannels = _config.inputChannels;
@@ -421,7 +421,7 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 			callbackData.bufferOverflow = true;
 		}
 
-		ofNotifyEvent( this->inputCallbackEvent, callbackData );
+		ofNotifyEvent( this->inputEvent, callbackData );
 	}
 
 	if (_config.outputChannels > 0) {
@@ -429,7 +429,7 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 		//Set the output to 0 so that if the event listener(s) do(es) nothing, this passes silence. This is wasteful if the event listeners do stuff.
 		memset(outputBuffer, 0, bufferSize * _config.outputChannels * sizeof(float));
 
-		CX_SSOutputCallback_t callbackData;
+		CX_SoundStream::OutputEventArgs callbackData;
 		callbackData.outputBuffer = (float*)outputBuffer;
 		callbackData.bufferSize = bufferSize;
 		callbackData.outputChannels = _config.outputChannels;
@@ -440,7 +440,7 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 			callbackData.bufferUnderflow = true;
 		}
 
-		ofNotifyEvent(this->outputCallbackEvent, callbackData);
+		ofNotifyEvent(this->outputEvent, callbackData);
 	}
 
 	_lastSampleNumber += bufferSize;

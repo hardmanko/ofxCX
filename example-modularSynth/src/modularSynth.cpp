@@ -164,35 +164,42 @@ void runExperiment(void) {
 
 
 	AdditiveSynth as;
-	as.setHarmonicSeries(101, AdditiveSynth::HarmonicSeriesType::HS_MULTIPLE, 1);
+	as.setHarmonicSeries(31, AdditiveSynth::HarmonicSeriesType::HS_SEMITONE, 7);
 	as.setAmplitudes(AdditiveSynth::HarmonicAmplitudeType::SAW);
 	as.setFundamentalFrequency(300);
-	as.pruneLowAmplitudeHarmonics(0.05);
+	as.pruneLowAmplitudeHarmonics(0.01);
 
 	Splitter ts;
 	Multiplier lm;
 	Multiplier rm;
 
-	lm.amount = 0.1;
+	lm.amount = 0.5;
 	rm.amount = 0.01;
+
+	as >> lm >> output;
+
+	ss.start();
+
+	while (1)
+		;
 
 	as >> ts >> lm;
 	ts >> rm;
 
-	StereoSoundObjectOutput stereo;
-	stereo.setup(48000);
+	//StereoSoundObjectOutput stereo;
+	//stereo.setup(48000);
 
-	lm >> stereo.left;
-	rm >> stereo.right;
+	//lm >> stereo.left;
+	//rm >> stereo.right;
 
-	stereo.sampleData(3);
+	//stereo.sampleData(3);
 
 	lm.amount = .01;
 	rm.amount = .1;
 
-	stereo.sampleData(3);
+	//stereo.sampleData(3);
 
-	stereo.so.writeToFile("stereo.wav");
+	//stereo.so.writeToFile("stereo.wav");
 
 
 	SoundObjectOutput asOut;
@@ -245,8 +252,8 @@ void runExperiment(void) {
 	while (1) {
 		if (Input.pollEvents()) {
 			while (Input.Mouse.availableEvents()) {
-				CX_MouseEvent_t ev = Input.Mouse.getNextEvent();
-				if (ev.eventType == CX_MouseEvent_t::MOVED || ev.eventType == CX_MouseEvent_t::DRAGGED) {
+				CX_Mouse::Event ev = Input.Mouse.getNextEvent();
+				if (ev.eventType == CX_Mouse::Event::MOVED || ev.eventType == CX_Mouse::Event::DRAGGED) {
 					mainOsc.frequency = ev.x * 8;
 					//doublingOsc.frequency = mainOsc.frequency + 2;
 					lfoOffset.amount = mainOsc.frequency; //We don't set the frequency of the doubling osc directly,
@@ -270,19 +277,19 @@ void runExperiment(void) {
 					*/
 				}
 
-				if (ev.eventType == CX_MouseEvent_t::PRESSED) {
+				if (ev.eventType == CX_Mouse::Event::PRESSED) {
 					ampEnv.attack();
 					modEnv.attack();
 				}
 
-				if (ev.eventType == CX_MouseEvent_t::RELEASED) {
+				if (ev.eventType == CX_Mouse::Event::RELEASED) {
 					ampEnv.release();
 					modEnv.release();
 				}
 			}
 
 			while (Input.Keyboard.availableEvents()) {
-				CX_KeyEvent_t ev = Input.Keyboard.getNextEvent();
+				CX_Keyboard::Event ev = Input.Keyboard.getNextEvent();
 
 				ss.hasSwappedSinceLastCheck();
 				while (!ss.hasSwappedSinceLastCheck())

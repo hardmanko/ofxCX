@@ -7,18 +7,18 @@ CX_SoundObjectPlayer::CX_SoundObjectPlayer (void) :
 	_startTime(numeric_limits<uint64_t>::max())
 {
 	ofAddListener( ofEvents().exit, this, &CX_SoundObjectPlayer::_exitHandler );
-	ofAddListener( _soundStream.outputCallbackEvent, this, &CX_SoundObjectPlayer::_outputEventHandler );
+	ofAddListener(_soundStream.outputEvent, this, &CX_SoundObjectPlayer::_outputEventHandler);
 
 }
 
 CX_SoundObjectPlayer::~CX_SoundObjectPlayer (void) {
 	ofRemoveListener( ofEvents().exit, this, &CX_SoundObjectPlayer::_exitHandler );
-	ofRemoveListener( _soundStream.outputCallbackEvent, this, &CX_SoundObjectPlayer::_outputEventHandler );
+	ofRemoveListener(_soundStream.outputEvent, this, &CX_SoundObjectPlayer::_outputEventHandler);
 }
 
 /*! Configures the CX_SoundObjectPlayer with the given configuration. */
 bool CX_SoundObjectPlayer::setup (CX_SoundObjectPlayerConfiguration_t config) {
-	bool openedSuccessfully = _soundStream.setup( (CX_SoundStreamConfiguration_t&)config );
+	bool openedSuccessfully = _soundStream.setup( (CX_SoundStream::Configuration&)config );
 	
 	bool startedSuccessfully = _soundStream.start();
 
@@ -92,7 +92,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 	}
 
 
-	const CX_SoundStreamConfiguration_t &streamConfig = this->_soundStream.getConfiguration();
+	const CX_SoundStream::Configuration &streamConfig = this->_soundStream.getConfiguration();
 
 	if (streamConfig.outputChannels != sound->getChannelCount()) {
 		if (!sound->setChannelCount(streamConfig.outputChannels)) {
@@ -128,7 +128,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 
 
 
-bool CX_SoundObjectPlayer::_outputEventHandler (CX_SSOutputCallback_t &outputData) {
+bool CX_SoundObjectPlayer::_outputEventHandler (CX_SoundStream::OutputEventArgs &outputData) {
 	if (!_playing || (_playbackStartConcurrentSample == numeric_limits<uint64_t>::max()) || (_activeSoundObject == NULL)) {
 		return false;
 	}
@@ -142,7 +142,7 @@ bool CX_SoundObjectPlayer::_outputEventHandler (CX_SSOutputCallback_t &outputDat
 	vector<float> &soundData = _activeSoundObject->getRawDataReference();
 	//int soundChannelCount = _activeSoundObject->getChannelCount();
 
-	const CX_SoundStreamConfiguration_t &config = _soundStream.getConfiguration();
+	const CX_SoundStream::Configuration &config = _soundStream.getConfiguration();
 
 	uint64_t concurrentSamplesToOutput = outputData.bufferSize;
 

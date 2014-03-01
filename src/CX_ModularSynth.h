@@ -353,7 +353,11 @@ namespace Synth {
 		int _fedOutputs;
 	};
 
-
+	/*! This class allows you to use a CX_SoundObject as the input for the modular synth.
+	It is strictly monophonic, so when you associate a CX_SoundObject with this class,
+	you must pick one channel of the sound to use.
+	\ingroup modSynth
+	*/
 	class SoundObjectInput : public ModuleBase {
 	public:
 
@@ -418,11 +422,11 @@ namespace Synth {
 		void setOuputStream(CX::CX_SoundStream& stream);
 
 	private:
-		void _callback(CX::CX_SSOutputCallback_t& d);
+		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
 		int _maxOutputs(void) override { return 0; };
 	};
 
-
+	
 	class GenericOutput : public ModuleBase {
 	public:
 		double getNextSample(void) override {
@@ -435,6 +439,9 @@ namespace Synth {
 		int _maxOutputs(void) override { return 0; };
 	};
 
+	/*! This class is much like StreamOutput except in stereo.
+	\ingroup modSynth
+	*/
 	class StereoStreamOutput {
 	public:
 		void setOuputStream(CX::CX_SoundStream& stream);
@@ -443,7 +450,7 @@ namespace Synth {
 		GenericOutput right;
 
 	private:
-		void _callback(CX::CX_SSOutputCallback_t& d);
+		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
 	};
 
 	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundObject

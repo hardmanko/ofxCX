@@ -18,8 +18,8 @@ int CX_Keyboard::availableEvents (void) {
 
 /*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
 from the input device. */
-CX_KeyEvent_t CX_Keyboard::getNextEvent (void) {
-	CX_KeyEvent_t front = _keyEvents.front();
+CX_Keyboard::Event CX_Keyboard::getNextEvent (void) {
+	CX_Keyboard::Event front = _keyEvents.front();
 	_keyEvents.pop();
 	return front;
 }
@@ -48,27 +48,27 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 }
 
 void CX_Keyboard::_keyPressHandler (ofKeyEventArgs &a) {
-	CX_KeyEvent_t ev;
-	ev.eventType = CX_KeyEvent_t::PRESSED;
+	CX_Keyboard::Event ev;
+	ev.eventType = CX_Keyboard::Event::PRESSED;
 	ev.key = a.key;
 	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyReleaseHandler (ofKeyEventArgs &a) {
-	CX_KeyEvent_t ev;
-	ev.eventType = CX_KeyEvent_t::RELEASED;
+	CX_Keyboard::Event ev;
+	ev.eventType = CX_Keyboard::Event::RELEASED;
 	ev.key = a.key;
 	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
-	CX_KeyEvent_t ev;
-	ev.eventType = CX_KeyEvent_t::REPEAT;
+	CX_Keyboard::Event ev;
+	ev.eventType = CX_Keyboard::Event::REPEAT;
 	ev.key = a.key;
 	_keyEventHandler(ev);
 }
 
-void CX_Keyboard::_keyEventHandler(CX_KeyEvent_t &ev) {
+void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 	switch (ev.key) {
 	case OF_KEY_CONTROL:
 	case OF_KEY_ALT:
@@ -81,13 +81,13 @@ void CX_Keyboard::_keyEventHandler(CX_KeyEvent_t &ev) {
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
 	switch (ev.eventType) {
-	case CX_KeyEvent_t::PRESSED:
+	case CX_Keyboard::Event::PRESSED:
 		_heldKeys.insert(ev.key);
 		break;
-	case CX_KeyEvent_t::RELEASED:
+	case CX_Keyboard::Event::RELEASED:
 		_heldKeys.erase(ev.key);
 		break;
-	case CX_KeyEvent_t::REPEAT:
+	case CX_Keyboard::Event::REPEAT:
 
 		break;
 	}
@@ -96,13 +96,13 @@ void CX_Keyboard::_keyEventHandler(CX_KeyEvent_t &ev) {
 }
 
 
-std::ostream& CX::operator<< (std::ostream& os, const CX_KeyEvent_t& ev) {
+std::ostream& CX::operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
 	string dlm = ", ";
 	os << ev.key << dlm << ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
 	return os;
 }
 
-std::istream& CX::operator>> (std::istream& is, CX_KeyEvent_t& ev) {
+std::istream& CX::operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	is >> ev.key;
 	is.ignore(2);
 	is >> ev.eventTime;
@@ -113,9 +113,9 @@ std::istream& CX::operator>> (std::istream& is, CX_KeyEvent_t& ev) {
 	int eventType;
 	is >> eventType;
 	switch (eventType) {
-	case CX_KeyEvent_t::PRESSED: ev.eventType = CX_KeyEvent_t::PRESSED; break;
-	case CX_KeyEvent_t::RELEASED: ev.eventType = CX_KeyEvent_t::RELEASED; break;
-	case CX_KeyEvent_t::REPEAT: ev.eventType = CX_KeyEvent_t::REPEAT; break;
+	case CX_Keyboard::Event::PRESSED: ev.eventType = CX_Keyboard::Event::PRESSED; break;
+	case CX_Keyboard::Event::RELEASED: ev.eventType = CX_Keyboard::Event::RELEASED; break;
+	case CX_Keyboard::Event::REPEAT: ev.eventType = CX_Keyboard::Event::REPEAT; break;
 	}
 	return is;
 }

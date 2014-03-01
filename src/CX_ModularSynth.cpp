@@ -644,7 +644,7 @@ void SoundObjectInput::setTime(double t) {
 }
 
 double SoundObjectInput::getNextSample(void) {
-	if (_so == nullptr || _currentSample >= _so->getTotalSampleCount()) {
+	if (!this->canPlay()) {
 		return 0;
 	}
 	double value = _so->getRawDataReference().at(_currentSample);
@@ -652,6 +652,8 @@ double SoundObjectInput::getNextSample(void) {
 	return value;
 }
 
+/*! Checks to see if the sound object that is associated with this SoundObjectInput is able to play. 
+It is unable to play if CX_SoundObject::isReadyToPlay() is false or if the whole sound has been played.*/
 bool SoundObjectInput::canPlay(void) {
 	return (_so != nullptr) && (_so->isReadyToPlay()) && (_currentSample < _so->getTotalSampleCount());
 }
@@ -735,14 +737,14 @@ void StereoSoundObjectOutput::sampleData(double t) {
 // StereoStreamOutput //
 ////////////////////////
 void StereoStreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
-	ofAddListener(stream.outputCallbackEvent, this, &StereoStreamOutput::_callback);
+	ofAddListener(stream.outputEvent, this, &StereoStreamOutput::_callback);
 	ModuleControlData_t data;
 	data.sampleRate = stream.getConfiguration().sampleRate;
 	left.setData(data);
 	right.setData(data);
 }
 
-void StereoStreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
+void StereoStreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
 
 		d.outputBuffer[(sample * d.outputChannels) + 0] = CX::Util::clamp<float>(right.getNextSample(), -1, 1);
@@ -760,13 +762,13 @@ void StereoStreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
 // StreamOutput //
 //////////////////
 void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
-	ofAddListener(stream.outputCallbackEvent, this, &StreamOutput::_callback);
+	ofAddListener(stream.outputEvent, this, &StreamOutput::_callback);
 	ModuleControlData_t data;
 	data.sampleRate = stream.getConfiguration().sampleRate;
 	this->setData(data);
 }
 
-void StreamOutput::_callback(CX::CX_SSOutputCallback_t& d) {
+void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 
 	if (_inputs.front() == nullptr) {
 		return;
@@ -794,7 +796,7 @@ public:
 	}
 
 	void setOuputStream(CX_SoundStream& stream) {
-		ofAddListener(stream.outputCallbackEvent, this, &Noisemaker::_callback);
+		ofAddListener(stream.outputEvent, this, &Noisemaker::_callback);
 	}
 
 	void setGeneratorFunction(std::function<double(double)> f) {
@@ -834,7 +836,7 @@ private:
 
 	float _waveformPos;
 
-	void _callback(CX_SSOutputCallback_t& d) {
+	void _callback(CX_SoundStream::OutputEventArgs& d) {
 
 		float addAmount = frequency / d.instance->getConfiguration().sampleRate;
 

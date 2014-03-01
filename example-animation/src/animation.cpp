@@ -69,12 +69,12 @@ void updateAnimation (void) {
 	//Do a little bit of stuff to get the state of the mouse.
 	Input.pollEvents();
 	while (Input.Mouse.availableEvents() > 0) {
-		CX_MouseEvent_t mev = Input.Mouse.getNextEvent();
-		if (mev.eventType == CX_MouseEvent_t::MOVED) {
+		CX_Mouse::Event mev = Input.Mouse.getNextEvent();
+		if (mev.eventType == CX_Mouse::Event::MOVED) {
 			mouseX = mev.x;
 		}
 
-		if (mev.eventType == CX_MouseEvent_t::PRESSED) {
+		if (mev.eventType == CX_Mouse::Event::PRESSED) {
 			for (int i = 0; i < 3; i++) {
 				ofPoint circleCenter = calculateCircleCenter(angles[i], distancesFromCenter[i]);
 				if (circleCenter.distance(ofPoint(mev.x, mev.y)) <= circleRadius) {
@@ -83,7 +83,7 @@ void updateAnimation (void) {
 			}
 		}
 
-		if (mev.eventType == CX_MouseEvent_t::SCROLLED) {
+		if (mev.eventType == CX_Mouse::Event::SCROLLED) {
 			distanceMultiplier += mev.y * .02; //The y component of the scroll wheel is the typical scroll wheel on most mice
 			if (distanceMultiplier > 1.5) {
 				distanceMultiplier = 1.5;

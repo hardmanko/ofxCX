@@ -22,8 +22,8 @@ int CX_Mouse::availableEvents (void) {
 
 /*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
 from the input device. */
-CX_MouseEvent_t CX_Mouse::getNextEvent (void) {
-	CX_MouseEvent_t front = _mouseEvents.front();
+CX_Mouse::Event CX_Mouse::getNextEvent(void) {
+	CX_Mouse::Event front = _mouseEvents.front();
 	_mouseEvents.pop();
 	return front;
 }
@@ -84,8 +84,8 @@ void CX_Mouse::_mouseDraggedEventHandler (ofMouseEventArgs &a) {
 }
 
 void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
-	CX_MouseEvent_t ev;
-	ev.eventType = CX_MouseEvent_t::SCROLLED;
+	CX_Mouse::Event ev;
+	ev.eventType = CX_Mouse::Event::SCROLLED;
 
 	ev.eventTime = CX::Instances::Clock.getTime();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
@@ -98,7 +98,7 @@ void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 }
 
 void CX_Mouse::_mouseEventHandler (ofMouseEventArgs &a) {
-	CX_MouseEvent_t ev;
+	CX_Mouse::Event ev;
 	ev.eventTime = CX::Instances::Clock.getTime();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
@@ -108,19 +108,19 @@ void CX_Mouse::_mouseEventHandler (ofMouseEventArgs &a) {
 
 	
 	if (a.type == ofMouseEventArgs::Pressed) {
-		ev.eventType = CX_MouseEvent_t::PRESSED;
+		ev.eventType = CX_Mouse::Event::PRESSED;
 		_heldMouseButtons.insert( a.button );
 
 	} else if (a.type == ofMouseEventArgs::Released) {
-		ev.eventType = CX_MouseEvent_t::RELEASED;
+		ev.eventType = CX_Mouse::Event::RELEASED;
 		_heldMouseButtons.erase( a.button );
 
 	} else if (a.type == ofMouseEventArgs::Moved) {
-		ev.eventType = CX_MouseEvent_t::MOVED;
+		ev.eventType = CX_Mouse::Event::MOVED;
 		ev.button = -1; //To be obvious that the button data is garbage.
 
 	} else if (a.type == ofMouseEventArgs::Dragged) {
-		ev.eventType = CX_MouseEvent_t::DRAGGED;
+		ev.eventType = CX_Mouse::Event::DRAGGED;
 		//It isn't clear what the button data should be set to in this case. The last mouse button pressed?
 		//The last mouse button pressed before the drag started? User code just needs to check which mouse buttons are held, I guess.
 		//GLFW sets it to something called "buttonInUse", which is the last mouse button pressed. This means that drags can start with one
@@ -158,13 +158,13 @@ void CX_Mouse::_listenForEvents (bool listen) {
 	_listeningForEvents = listen;
 }
 
-std::ostream& CX::operator<< (std::ostream& os, const CX_MouseEvent_t& ev) {
+std::ostream& CX::operator<< (std::ostream& os, const CX_Mouse::Event& ev) {
 	string dlm = ", ";
 	os << ev.button << dlm << ev.x << dlm << ev.y << dlm << ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
 	return os;
 }
 
-std::istream& CX::operator>> (std::istream& is, CX_MouseEvent_t& ev) {
+std::istream& CX::operator>> (std::istream& is, CX_Mouse::Event& ev) {
 	is >> ev.button;
 	is.ignore(2);
 	is >> ev.x;
@@ -179,11 +179,11 @@ std::istream& CX::operator>> (std::istream& is, CX_MouseEvent_t& ev) {
 	int eventType;
 	is >> eventType;
 	switch (eventType) {
-	case CX_MouseEvent_t::MOVED: ev.eventType = CX_MouseEvent_t::MOVED; break;
-	case CX_MouseEvent_t::DRAGGED: ev.eventType = CX_MouseEvent_t::DRAGGED; break;
-	case CX_MouseEvent_t::PRESSED: ev.eventType = CX_MouseEvent_t::PRESSED; break;
-	case CX_MouseEvent_t::RELEASED: ev.eventType = CX_MouseEvent_t::RELEASED; break;
-	case CX_MouseEvent_t::SCROLLED: ev.eventType = CX_MouseEvent_t::SCROLLED; break;
+	case CX_Mouse::Event::MOVED: ev.eventType = CX_Mouse::Event::MOVED; break;
+	case CX_Mouse::Event::DRAGGED: ev.eventType = CX_Mouse::Event::DRAGGED; break;
+	case CX_Mouse::Event::PRESSED: ev.eventType = CX_Mouse::Event::PRESSED; break;
+	case CX_Mouse::Event::RELEASED: ev.eventType = CX_Mouse::Event::RELEASED; break;
+	case CX_Mouse::Event::SCROLLED: ev.eventType = CX_Mouse::Event::SCROLLED; break;
 	}
 
 	return is;

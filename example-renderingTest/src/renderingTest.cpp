@@ -118,15 +118,15 @@ void updateDrawings (void) {
 
 	if (Input.pollEvents()) {
 		while (Input.Keyboard.availableEvents()) {
-			CX_KeyEvent_t ev = Input.Keyboard.getNextEvent();
-			if (ev.eventType == CX_KeyEvent_t::PRESSED) {
+			CX_Keyboard::Event ev = Input.Keyboard.getNextEvent();
+			if (ev.eventType == CX_Keyboard::Event::PRESSED) {
 				drawingToFboFirst = !drawingToFboFirst;
 			}			
 		}
 
 		while (Input.Mouse.availableEvents()) {
-			CX_MouseEvent_t ev = Input.Mouse.getNextEvent();
-			if (ev.eventType == CX_MouseEvent_t::SCROLLED) {
+			CX_Mouse::Event ev = Input.Mouse.getNextEvent();
+			if (ev.eventType == CX_Mouse::Event::SCROLLED) {
 				starSize += .05 * ev.y;
 			}
 		}

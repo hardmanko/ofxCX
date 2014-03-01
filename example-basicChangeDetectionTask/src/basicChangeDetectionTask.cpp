@@ -19,7 +19,7 @@ struct TrialData_t {
 	int changedObjectIndex;
 	ofColor newColor;
 
-	//CX_KeyEvent_t response;
+	//CX_Keyboard::Event response;
 	int64_t responseTime;
 	bool responseCorrect;
 };
@@ -122,11 +122,11 @@ void updateExperiment (void) {
 
 		while (Input.Keyboard.availableEvents() > 0) { //While there are available events, 
 
-			CX_KeyEvent_t keyEvent = Input.Keyboard.getNextEvent(); //get the next event for processing.
+			CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent(); //get the next event for processing.
 
 			//Only examine key presses (as opposed to key releases or repeats). Everything would probably work 
 			//just fine without this check for this experiment, but it is generally a good idea to filter your input.
-			if (keyEvent.eventType == CX_KeyEvent_t::PRESSED) {
+			if (keyEvent.eventType == CX_Keyboard::Event::PRESSED) {
 
 				//Ignore all responses that are not s or d.
 				if (keyEvent.key == 's' || keyEvent.key == 'd') {
@@ -143,7 +143,7 @@ void updateExperiment (void) {
 					//of the response, giving the "response time" (better known as response latency).
 					trials.at( trialIndex ).responseTime = keyEvent.eventTime - testArrayOnset;
 
-					//Code the response. For a lot of keys, you can compare the CX_KeyEvent_t::key to a character literal.
+					//Code the response. For a lot of keys, you can compare the CX_Keyboard::Event::key to a character literal.
 					if ((trials.at( trialIndex ).changeTrial && keyEvent.key == 'd') || (!trials.at( trialIndex ).changeTrial && keyEvent.key == 's')) {
 						trials.at(trialIndex).responseCorrect = true;
 						Log.notice() << "Response correct!";
