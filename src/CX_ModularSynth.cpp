@@ -13,6 +13,10 @@ ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	return r;
 }
 
+////////////////
+// ModuleBase //
+////////////////
+
 void ModuleBase::_assignInput(ModuleBase* in) {
 	if (_maxInputs() == 0) {
 		return;
@@ -76,9 +80,6 @@ void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
 
 	//Compare both pointers and contents. The pointer comparison is currently useless because the pointers will always be different.
 	if ((target->_data != this->_data) || (*target->_data != *this->_data)) {
-		//if (!target->_data->initialized) {
-		//}
-
 		*target->_data = *this->_data;
 		target->_dataSet(this);
 	}
@@ -502,8 +503,6 @@ double Oscillator::triangle(double wp) {
 	}
 }
 
-
-
 double Oscillator::whiteNoise(double wp) {
 	return CX::Instances::RNG.uniformDeviate(-1, 1);
 }
@@ -688,18 +687,6 @@ void SoundObjectOutput::sampleData(double t) {
 		}
 	}
 }
-
-//class StereoSoundObjectOutput {
-//public:
-	//void setup(float sampleRate);
-	//void sampleData(double t);
-
-	//GenericOutput left;
-	//GenericOutput right;
-
-	//CX::CX_SoundObject so;
-
-//};
 
 /////////////////////////////
 // StereoSoundObjectOutput //
