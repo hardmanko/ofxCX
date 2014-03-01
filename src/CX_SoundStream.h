@@ -122,7 +122,7 @@ public:
 	const CX_SoundStream::Configuration& getConfiguration (void) { return _config; };
 	
 	uint64_t getLastSampleNumber (void) { return _lastSampleNumber; };
-	void setLastSampleNumber (uint64_t sampleNumber) { _lastSampleNumber = sampleNumber; };
+	//void setLastSampleNumber (uint64_t sampleNumber) { _lastSampleNumber = sampleNumber; };
 
 		
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.

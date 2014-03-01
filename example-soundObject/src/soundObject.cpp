@@ -67,6 +67,13 @@ void runExperiment (void) {
 	duck.resample( config.sampleRate );
 
 
+	cout << "Playing duck in 5 seconds" << endl;
+	player.BLOCKING_setSound(&duck);
+	player.startPlayingAt(Clock.getTime() + 5000000, 0);
+	while (1)
+		;
+
+
 	//You can use a CX_SoundObjectPlayer to play CX_SoundObjects (duh).
 	//If you want to just play single sounds like this, you are possibly better off
 	//just using ofSoundPlayer. More interesting uses of CX_SoundObjects can be found below.

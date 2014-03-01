@@ -137,7 +137,7 @@ bool CX_SoundStream::start (void) {
 	}
 
 	_lastSampleNumber = 0;
-	_lastSwapTime = Clock.getTime();
+	//_lastSwapTime = Clock.getTime();
 	_sampleNumberAtLastCheck = 0;
 
 	return true;
@@ -189,6 +189,9 @@ bool CX_SoundStream::closeStream(void) {
 	return rval;
 }
 
+/*! This function gets an estimate of the stream latency. However, it should not be relied on as
+it is based on what the sound card driver reports, which is often false. 
+\return The stream latency in microseconds. */
 CX_Micros CX_SoundStream::getStreamLatency (void) {
 	long latencySamples = _rtAudio->getStreamLatency();
 	CX_Micros latency = (CX_Micros)(((CX_Micros)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());

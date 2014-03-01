@@ -6,6 +6,10 @@ double CX::Synth::sinc(double x) {
 	return sin(x) / x;
 }
 
+double CX::Synth::relativeFrequency(double f, double semitoneDifference) {
+	return f * pow(2.0, semitoneDifference / 12);
+}
+
 //Used to connect modules together. l is set as the input for r.
 ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	r._assignInput(&l);
@@ -137,6 +141,10 @@ void AdditiveSynth::setFundamentalFrequency(double f) {
 	_recalculateWaveformPositions();
 }
 
+/*! This function sets the amplitudes of the harmonics based on the chosen type. The resulting waveform
+will only be correct if the harmonic series is the standard harmonic series (see setStandardHarmonicSeries()).
+\param type The type of wave calculate amplitudes for.
+*/
 void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType type) {
 	vector<AdditiveSynth::amplitude_t> amps = calculateAmplitudes(type, _harmonics.size());
 
@@ -145,6 +153,10 @@ void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType type) {
 	}
 }
 
+/*! This function sets the amplitudes of the harmonics based on a mixture of the chosen types. The resulting waveform
+will only be correct if the harmonic series is the standard harmonic series (see setStandardHarmonicSeries()).
+This is a convenient way to morph between waveforms.
+*/
 void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType t1, HarmonicAmplitudeType t2, double mixture) {
 	vector<AdditiveSynth::amplitude_t> amps1 = calculateAmplitudes(t1, _harmonics.size());
 	vector<AdditiveSynth::amplitude_t> amps2 = calculateAmplitudes(t2, _harmonics.size());
@@ -156,36 +168,50 @@ void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType t1, HarmonicAmplitudeTyp
 	}
 }
 
+/*! This function sets the amplitudes of the harmonics to arbitrary values as specified in `amps`.
+\param amps The amplitudes of the harmonics. If this vector does not contain as many values as
+there are harmonics, the unspecified amplitudes will be set to 0.
+*/
+void AdditiveSynth::setAmplitudes(std::vector<amplitude_t> amps) {
+	while (amps.size() < _harmonics.size()) {
+		amps.push_back(0.0);
+	}
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		_harmonics[i].amplitude = amps[i];
+	}
+}
+
 std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(HarmonicAmplitudeType type, unsigned int count) {
-	std::vector<amplitude_t> rval(count);
+	std::vector<amplitude_t> rval(count, 0.0);
 
 	if (type == AdditiveSynth::HarmonicAmplitudeType::SAW) {
 		for (unsigned int i = 0; i < count; i++) {
 			rval[i] = 2 / (PI * (i + 1));
-			if ((i % 2) == 1) { //Is even harmonic
+			if ((i % 2) == 1) { //Is even-numbered harmonic
 				rval[i] *= -1;
 			}
 		}
 	} else if (type == AdditiveSynth::HarmonicAmplitudeType::SQUARE) {
 		for (unsigned int i = 0; i < count; i++) {
-			if ((i % 2) == 1) { //Is even harmonic
-				rval[i] = 0;
-			} else {
+			if ((i % 2) == 0) { //Is odd-numbered harmonic
 				//rval[i] = 2 / (PI * (i + 1));
 				rval[i] = 4 / (PI * (i + 1));
 			}
+			//Do nothing for even harmonics: they remain at 0.
 		}
 	} else if (type == AdditiveSynth::HarmonicAmplitudeType::TRIANGLE) {
 		for (unsigned int i = 0; i < count; i++) {
-			if ((i % 2) == 1) { //Is even harmonic
-				rval[i] = 0; 
-			} else {
+			if ((i % 2) == 0) { //Is odd-numbered harmonic
 				rval[i] = 8 / ((PI * PI) * pow(i + 1, 2));
 				if (((i / 2) % 2) == 1) {
 					rval[i] *= -1;
 				}
 			}
+			//Do nothing for even harmonics: they remain at 0.
 		}
+	} else if (type == AdditiveSynth::HarmonicAmplitudeType::SINE) {
+		rval[0] = 1;
 	}
 
 	return rval;
@@ -233,29 +259,13 @@ void AdditiveSynth::_recalculateWaveformPositions(void) {
 
 	wavePos_t firstHarmonicPos = _harmonics[0].waveformPosition;
 
-	/*
-	if (_harmonicSeries == HS_STANDARD) {
-	//When using the normal harmonic series you can do just add the same distance to the previous.
-	wavePos_t fundamentalPositionChangePerSample = fundamental / _data->sampleRate;
-	wavePos_t nextValue = fundamentalPositionChangePerSample;
+	double normalizedFrequency = _fundamental / _data->sampleRate;
+
 	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
-	_harmonics[i].positionChangePerSample = nextValue;
-	nextValue += fundamentalPositionChangePerSample;
+		_harmonics[i].positionChangePerSample = normalizedFrequency * _relativeFrequenciesOfHarmonics[i];
 
-	//Restart all waves at 0 so they are in phase. It would be smarter to make all harmonic positions a
-	//function of the fundamental harmonic position at time of function call.
-	_harmonics[i].waveformPosition = 0;
-	}
-	} else */
-	{
-		double normalizedFrequency = _fundamental / _data->sampleRate;
-
-		for (unsigned int i = 0; i < _harmonics.size(); ++i) {
-			_harmonics[i].positionChangePerSample = normalizedFrequency * _relativeFrequenciesOfHarmonics[i];
-
-			_harmonics[i].waveformPosition = firstHarmonicPos * _relativeFrequenciesOfHarmonics[i];
-			//_harmonics[i].waveformPosition = 0;
-		}
+		_harmonics[i].waveformPosition = firstHarmonicPos * _relativeFrequenciesOfHarmonics[i];
+		//_harmonics[i].waveformPosition = 0;
 	}
 }
 
@@ -263,12 +273,21 @@ void AdditiveSynth::_dataSetEvent(void) {
 	_recalculateWaveformPositions();
 }
 
-/*
+/*! The standard harmonic series begins with the fundamental frequency f1 and each seccuessive
+harmonic has a frequency equal to f1 * n, where n is the harmonic number for the harmonic.
+This is the natural harmonic series, one that occurs, e.g., in a vibrating string.
+*/
+void AdditiveSynth::setStandardHarmonicSeries(unsigned int harmonicCount) {
+	this->setHarmonicSeries(harmonicCount, HarmonicSeriesType::HS_MULTIPLE, 1.0);
+}
+
+/*!
 \param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE.
 \param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the fundamental gives the value 1 for i.
 If type == HS_SEMITONE, the frequency for harmonic i will be pow(2, (i - 1) * controlParameter/12), where the fundamental gives the value 1 for i.
 
-\note If type == HS_MULTIPLE and controlParameter == 1, then the standard harmonic series will be generated.
+\note If `type == HS_MULTIPLE` and `controlParameter == 1`, then the standard harmonic series will be generated.
+\note If `type == HS_SEMITONE`, `controlParameter` does not need to be an integer.
 */
 void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter) {
 	_harmonics.resize(harmonicCount);
@@ -279,8 +298,11 @@ void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, HarmonicSeries
 	_recalculateWaveformPositions();
 }
 
-//The user function takes an integer representing the harmonic number, where the fundamental has the value 1 and returns
-//the frequency that should be used for that harmonic.
+/*! This function calculates the harmonic series from a function supplied by the user.
+\param harmonicCount The number of harmonics to generate.
+\param userFunction The user function takes an integer representing the harmonic number, where the fundamental has the value 1, and returns
+the frequency that should be used for that harmonic.
+*/
 void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, std::function<double(unsigned int)> userFunction) {
 	_harmonics.resize(harmonicCount);
 	_harmonicSeriesType = HS_USER_FUNCTION;
@@ -297,7 +319,6 @@ void AdditiveSynth::_calculateRelativeFrequenciesOfHarmonics(void) {
 		for (unsigned int i = 0; i < _harmonics.size(); i++) {
 			_relativeFrequenciesOfHarmonics[i] = (i + 1) * _harmonicSeriesControlParameter;
 		}
-
 	} else if (_harmonicSeriesType == HS_SEMITONE) {
 		for (unsigned int i = 0; i < _harmonics.size(); i++) {
 			_relativeFrequenciesOfHarmonics[i] = pow(2.0, i * _harmonicSeriesControlParameter / 12);

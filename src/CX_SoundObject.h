@@ -56,7 +56,8 @@ namespace CX {
 		void addSilence (CX_Micros duration, bool atBeginning);
 		void deleteAmount (CX_Micros duration, bool fromBeginning);
 
-		//setSpeed?
+		void reverse(void);
+
 		void multiplySpeed (float speedMultiplier);
 		void resample (float newSampleRate);
 		float getSampleRate (void) { return _soundSampleRate; };
@@ -64,8 +65,12 @@ namespace CX {
 		bool setChannelCount (int channels);
 		int getChannelCount (void) { return _soundChannels; };
 		
+		/*! This function returns the total number of samples in the sound data held by the CX_SoundObject, 
+		which is equal to the number of sample frames times the number of channels. */
 		uint64_t getTotalSampleCount (void) { return _soundData.size(); };
-		uint64_t getConcurrentSampleCount (void) { return _soundData.size()/_soundChannels; };
+		/*! This function returns the number of sample frames in the sound data held by the CX_SoundObject,
+		which is equal to the total number of samples divided by the number of channels. */
+		uint64_t getSampleFrameCount (void) { return _soundData.size()/_soundChannels; };
 
 		//vector<float> getRawData (void) { return _soundData; };
 

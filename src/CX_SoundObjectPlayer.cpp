@@ -4,15 +4,18 @@ using namespace CX;
 using namespace CX::Instances;
 
 CX_SoundObjectPlayer::CX_SoundObjectPlayer (void) :
-	_startTime(numeric_limits<uint64_t>::max())
+	_playing(false),
+	_playbackStartQueued(false),
+	_activeSoundObject(nullptr),
+	_playbackStartSampleFrame(std::numeric_limits<uint64_t>::max()),
+	_currentSampleFrame(0)
 {
-	ofAddListener( ofEvents().exit, this, &CX_SoundObjectPlayer::_exitHandler );
 	ofAddListener(_soundStream.outputEvent, this, &CX_SoundObjectPlayer::_outputEventHandler);
-
 }
 
 CX_SoundObjectPlayer::~CX_SoundObjectPlayer (void) {
-	ofRemoveListener( ofEvents().exit, this, &CX_SoundObjectPlayer::_exitHandler );
+	this->stop();
+	_soundStream.closeStream();
 	ofRemoveListener(_soundStream.outputEvent, this, &CX_SoundObjectPlayer::_outputEventHandler);
 }
 
@@ -25,11 +28,6 @@ bool CX_SoundObjectPlayer::setup (CX_SoundObjectPlayerConfiguration_t config) {
 	return startedSuccessfully && openedSuccessfully;
 }
 
-void CX_SoundObjectPlayer::_exitHandler (ofEventArgs &a) {
-	this->stop();
-	_soundStream.closeStream();
-}
-
 /*!
 Attempts to start playing the current CX_SoundObject associated with the player.
 
@@ -38,7 +36,7 @@ Attempts to start playing the current CX_SoundObject associated with the player.
 bool CX_SoundObjectPlayer::play (void) {
 	if (_activeSoundObject != NULL && _activeSoundObject->isReadyToPlay()) {
 		_playing = true;
-		_currentConcurrentSample = 0;
+		_soundPlaybackSampleFrame = 0;
 		return true;
 	}
 	return false;
@@ -49,27 +47,48 @@ bool CX_SoundObjectPlayer::play (void) {
 */
 bool CX_SoundObjectPlayer::stop (void) {
 	_playing = false;
-	_startTime = std::numeric_limits<CX_Micros>::max();
+	//_startTime = std::numeric_limits<CX_Micros>::max();
 	return true;
 }
 
-bool CX_SoundObjectPlayer::startPlayingAt (CX_Micros experimentTime) {
-	//_startTime = time - (_sampleOffset * 1000000) / _soundStream.getConfiguration().sampleRate;
-	_startTime = experimentTime - _startTimeOffset; //_startTimeOffset is always negative.
+/*! Queue the start time of the sound in experiment time with an offset to account for latency. 
 
-	CX_Micros lastSwap = _soundStream.getLastSwapTime();
-	CX_Micros timeFromLastSwap = _startTime - lastSwap;
-	uint64_t samplesFromLastSwap = (timeFromLastSwap * _soundStream.getConfiguration().sampleRate)/1000000;
+\param experimentTime The desired experiment time at which the sound should start playing. This time
+plus the offset should be in the future. If it is not, the sound will start playing immediately.
+\param latencyOffset An offset that accounts for latency. If, for example, you called this function with
+an offset of 0 and discovered that the sound played 200 ms later than you were expecting it to,
+you would set offset to -200 * 1000 in order to queue the start time 200 ms earlier than the
+desired experiment time.
+\return False if the start time plus the offset is in the past. True otherwise.
+\note See setTime() for a way to choose the current time point within the sound.
+*/
+bool CX_SoundObjectPlayer::startPlayingAt(CX_Micros experimentTime, CX_Micros latencyOffset) {
+	CX_Micros adjustedStartTime = experimentTime + latencyOffset;
+
+	if (adjustedStartTime <= Clock.getTime()) {
+		Log.warning("CX_SoundObjectPlayer") << "startPlayingAt: Desired start time has already passed. Starting immediately.";
+		play();
+		return false;
+	}
+
+	CX_Micros lastSwapTime = _soundStream.getLastSwapTime(); //This is the time at which the last swap started (i.e. as soon as the fill buffer callback was called).
+	uint64_t samplesFramesSinceLastSwap = ((adjustedStartTime - lastSwapTime) * _soundStream.getConfiguration().sampleRate) / 1000000;
 	
-	uint64_t lastSampleNumber = _soundStream.getLastSampleNumber(); //This is the next sample that will be sent.
+	uint64_t lastSwapStartSFNumber = _soundStream.getLastSampleNumber() - _soundStream.getConfiguration().bufferSize; //Go back to the previous buffer start SF
 
-	lastSampleNumber = lastSampleNumber + samplesFromLastSwap - _soundStream.getConfiguration().bufferSize; //lastSampleNumber is at the end of the last buffer.
-
-	//This is incomplete.
-	return false;
+	_playbackStartSampleFrame = lastSwapStartSFNumber + samplesFramesSinceLastSwap;
+	_playbackStartQueued = true;
+	return true;
 }
 
-
+/*! Set the current time in the active sound. When playback starts, it will begin from that 
+time in the sound. If the sound object is currently playing, this will jump to that point
+in the sound.
+\param time The time in the sound to seek to.
+*/
+void CX_SoundObjectPlayer::setTime(CX_Micros time) {
+	_soundPlaybackSampleFrame = (time * _soundStream.getConfiguration().sampleRate) / 1000000;
+}
 
 
 /*!
@@ -81,7 +100,7 @@ the CX_SoundObjectPlayer is configured to use, this function call fails and an e
 \return True if sound was successfully set to be the current sound, false otherwise.
 */
 bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
-	if (sound == NULL) {
+	if (sound == nullptr) {
 		return false;
 	}
 
@@ -91,6 +110,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 		return false;
 	}
 
+	_playing = false; //Stop playback of the current sound.
 
 	const CX_SoundStream::Configuration &streamConfig = this->_soundStream.getConfiguration();
 
@@ -108,28 +128,16 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 	}
 
 	_activeSoundObject = sound;
+
+	//_currentSampleFrame = 0;
 	return true;
 
 }
 
 
-//void CX_SoundObjectPlayer::update (void) {
-	//What goes in this function?
-
-	/*
-	static uint64_t lastKnownSwap = 0;
-	if (cxPlayer._soundStream.hasSwappedSinceLastCheck()) {
-		uint64_t thisSwapTime = cxPlayer._soundStream.getLastSwapTime();
-		cout << thisSwapTime - lastKnownSwap << endl;
-		lastKnownSwap = thisSwapTime;
-	}
-	*/
-//}
-
-
-
 bool CX_SoundObjectPlayer::_outputEventHandler (CX_SoundStream::OutputEventArgs &outputData) {
-	if (!_playing || (_playbackStartConcurrentSample == numeric_limits<uint64_t>::max()) || (_activeSoundObject == NULL)) {
+	//This check is a bit strange, but if !_playing and _playbackStartQueued, then we are checking for playback start and not returning false.
+	if ((!_playing && !_playbackStartQueued) || (_activeSoundObject == nullptr)) {
 		return false;
 	}
 
@@ -139,44 +147,38 @@ bool CX_SoundObjectPlayer::_outputEventHandler (CX_SoundStream::OutputEventArgs 
 
 	//cout << "Playing sample " << _currentSample << endl;
 
+	uint64_t sampleFramesToOutput = outputData.bufferSize;
+	uint64_t outputBufferOffset = 0;
 	vector<float> &soundData = _activeSoundObject->getRawDataReference();
-	//int soundChannelCount = _activeSoundObject->getChannelCount();
-
 	const CX_SoundStream::Configuration &config = _soundStream.getConfiguration();
 
-	uint64_t concurrentSamplesToOutput = outputData.bufferSize;
+	if (_playbackStartQueued) {
+		if (_playbackStartSampleFrame < (_currentSampleFrame + outputData.bufferSize)) {
+			_playing = true;
+			_playbackStartQueued = false;
 
-	if (soundData.size() < ((_currentConcurrentSample + outputData.bufferSize) * config.outputChannels)) {
-		concurrentSamplesToOutput = (soundData.size()/config.outputChannels) - _currentConcurrentSample;
+			outputBufferOffset = _playbackStartSampleFrame - _currentSampleFrame;
+			sampleFramesToOutput = outputData.bufferSize - outputBufferOffset;
+			_soundPlaybackSampleFrame = 0;
+		} else {
+			sampleFramesToOutput = 0;
+		}
+	}
+
+	if (soundData.size() < ((_soundPlaybackSampleFrame + outputData.bufferSize - outputBufferOffset) * config.outputChannels)) {
+		//If there is not enough data to completely fill the sound buffer, only use some of it.
+		sampleFramesToOutput = (soundData.size() / config.outputChannels) - _soundPlaybackSampleFrame - outputBufferOffset;
 		_playing = false;
 	}
 
-	//Elsewhere, we force the number of sound channels and output channels to be the same, so we can just memcpy here (POFL: Principle Of FrontLoading).
-	memcpy( outputData.outputBuffer, 
-		soundData.data() + (_currentConcurrentSample * config.outputChannels), 
-		(size_t)(concurrentSamplesToOutput * config.outputChannels * sizeof(float)) );
+	//Elsewhere, we force the number of sound channels and output channels to be the same, so we can just memcpy here.
+	memcpy(outputData.outputBuffer + outputBufferOffset,
+		soundData.data() + (_soundPlaybackSampleFrame * config.outputChannels),
+		(size_t)(sampleFramesToOutput * config.outputChannels * sizeof(float)));
 	
-	_currentConcurrentSample += concurrentSamplesToOutput;
+	_currentSampleFrame += outputData.bufferSize;
+
+	_soundPlaybackSampleFrame += sampleFramesToOutput;
 
 	return true;
-
-	/*
-	if (config.outputChannels == soundChannelCount) {
-		//If the sound and output channel counts are the same, then just copy out the data.
-		memcpy( outputData.outputBuffer, soundData.data() + _currentSample, totalSampleCount * sizeof(float) );
-		_currentSample += totalSampleCount;
-		//We're assuming that output has been zeroed before entering this function, so we don't need to fill out the non-written samples with zeroes.
-
-	} else if (soundChannelCount == 1) {
-		//Mono to anything else: Just copy the data to each output channel.
-		for (unsigned int i = 0; i < concurrentSamples; i++) {
-			for (unsigned int j = 0; j < config.outputChannels; j++) {
-				outputData.outputBuffer[(i * config.outputChannels) + j] = soundData[i];
-			}
-		}
-	}
-	*/
-	//Other cases are more complicated and should be rejected outright. They should not be processed in this function.
-	//When the sound is assigned, check for those cases that should be rejected. How? The number of output channels must
-	//be known in order to do the comparison.
 }

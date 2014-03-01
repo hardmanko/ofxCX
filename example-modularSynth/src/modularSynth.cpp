@@ -47,7 +47,12 @@ void runExperiment(void) {
 
 	simpleTest();
 
-	CX_SoundStreamConfiguration_t config;
+	CX_SoundObject tso;
+	vector<float> t = sequence<float>(1, 6, 1);
+	tso.setFromVector(t, 2, 50);
+	tso.reverse();
+
+	CX_SoundStream::Configuration config;
 	config.api = RtAudio::Api::WINDOWS_DS;
 	config.outputChannels = 2;
 	config.sampleRate = 48000;

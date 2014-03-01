@@ -66,13 +66,15 @@ namespace CX {
 			no presentation errors, but that there were no presentation error checking errors. */
 			bool presentationErrorsSuccessfullyChecked;
 
-			unsigned int incorrectFrameCounts; //!< The number of slides for which the actual and intended frame counts did not match.
+			/*! The number of slides for which the actual and intended frame counts did not match,
+			indicating that the slide was presented for too many or too few frames.	*/
+			unsigned int incorrectFrameCounts; 
 
 			/*! \brief The number of slides for which the time at which the slide finished being copied
 			to the back buffer was after the actual start time of the slide. */
 			unsigned int lateCopiesToBackBuffer;
 
-			/*! \brief Sums up all of the different types of errors that are measured. */
+			/*! \brief Returns the sum of the different types of errors that are measured. */
 			unsigned int totalErrors(void) {
 				return incorrectFrameCounts + lateCopiesToBackBuffer;
 			}

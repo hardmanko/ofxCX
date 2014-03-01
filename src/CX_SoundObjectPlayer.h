@@ -27,18 +27,22 @@ namespace CX  {
 		~CX_SoundObjectPlayer (void);
 
 		bool setup (CX_SoundObjectPlayerConfiguration_t config);
-		//void update (void);
 
 		bool play (void);
-		bool startPlayingAt (CX_Micros experimentTime);
+		bool startPlayingAt (CX_Micros experimentTime, CX_Micros offset);
 		bool stop (void);
 
+		//! Check if the sound is currently playing.
 		bool isPlaying (void) { return _playing; };
+
+		//! Check if the sound is queued to play.
+		bool isQueuedToStart(void) { return _playbackStartQueued; }; 
 
 		CX_SoundObjectPlayerConfiguration_t getConfiguration (void) { return (CX_SoundObjectPlayerConfiguration_t)_soundStream.getConfiguration(); };
 		
-
 		bool BLOCKING_setSound (CX_SoundObject *sound);
+
+		void setTime(CX_Micros time);
 
 	private:
 
@@ -48,14 +52,11 @@ namespace CX  {
 		CX_SoundObject *_activeSoundObject;
 
 		bool _playing;
-		uint64_t _playbackStartConcurrentSample;
-		uint64_t _currentConcurrentSample;
 
-		CX_Micros _startTime;
-		CX_Micros _startTimeOffset;
-
-		void _exitHandler (ofEventArgs &a);
-	
+		bool _playbackStartQueued;
+		uint64_t _playbackStartSampleFrame;
+		uint64_t _currentSampleFrame; //This is an absolute: It is never reset. At a sample rate of 48000 Hz, this will overflow every 12186300 years.
+		uint64_t _soundPlaybackSampleFrame;	
 	};
 
 }

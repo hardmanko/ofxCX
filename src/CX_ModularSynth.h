@@ -16,6 +16,8 @@ namespace Synth {
 
 	double sinc(double x);
 
+	double relativeFrequency(double f, double semitoneDifference);
+
 	struct ModuleControlData_t {
 		ModuleControlData_t(void) :
 			initialized(false),
@@ -123,13 +125,12 @@ namespace Synth {
 
 		ModuleParameter& operator=(double d) {
 			_data = d;
-			_input = nullptr; //Disconnect the input?
+			_input = nullptr; //Disconnect the input
 			return *this;
 		}
 
 		friend void operator>>(ModuleBase& l, ModuleParameter& r) {
 			r._input = &l;
-			//l.setData(r._owner->getData());
 		}
 
 	private:
@@ -146,7 +147,8 @@ namespace Synth {
 	of those waves, and they are combined together into a single waveform.
 
 	The frequencies are refered to as harmonics, due to the fact that typical audio applications of additive
-	synths use the standard harmonic series (f(i) = f_fundamental * i).
+	synths use the standard harmonic series (f(i) = f_fundamental * i). However, setting the harmonics to
+	values not found in the standard harmonic series can result in really unusual and interesting sounds.
 	\ingroup modSynth
 	*/
 	class AdditiveSynth : public ModuleBase {
@@ -162,20 +164,32 @@ namespace Synth {
 		};
 
 		enum HarmonicAmplitudeType {
+			SINE,
 			SQUARE,
 			SAW,
 			TRIANGLE
+		};
+
+		struct Configuration {
+			unsigned int desiredHarmonicCount;
+
+			HarmonicSeriesType hsType;
+
+
+			double harmonicPruningTol;
 		};
 
 		void configure(unsigned int harmonicCount, HarmonicSeriesType hs, HarmonicAmplitudeType aType);
 
 		void setFundamentalFrequency(double f);
 
+		void setStandardHarmonicSeries(unsigned int harmonicCount);
 		void setHarmonicSeries (unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter);
 		void setHarmonicSeries(unsigned int harmonicCount, std::function<double(unsigned int)> userFunction);
 
 		void setAmplitudes (HarmonicAmplitudeType type);
 		void setAmplitudes(HarmonicAmplitudeType t1, HarmonicAmplitudeType t2, double mixture);
+		void setAmplitudes(std::vector<amplitude_t> amps);
 		std::vector<amplitude_t> calculateAmplitudes(HarmonicAmplitudeType type, unsigned int count);
 		void pruneLowAmplitudeHarmonics(double tol);
 
@@ -517,6 +531,12 @@ namespace Synth {
 			USER_DEFINED
 		};
 
+		enum WindowType {
+			RECTANGULAR,
+			HANNING,
+			BLACKMAN
+		};
+
 		FIRFilter(void) :
 			_filterType(LOW_PASS),
 			_coefCount(-1)
@@ -560,7 +580,22 @@ namespace Synth {
 				for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
 					_coefficients[i] *= pow(-1, i);
 				}
-			} 
+			}
+
+			if (_windowType == WindowType::HANNING) {
+				for (int i = 0; i < _coefCount; i++) {
+					_coefficients[i] *= 0.5*(1 - cos(2*PI*i / (_coefCount - 1)));
+				}
+			} else if (_windowType == WindowType::BLACKMAN) {
+				for (int i = 0; i < _coefCount; i++) {
+					double a0 = 7938 / 18608;
+					double a1 = 9240 / 18608;
+					double a2 = 1430 / 18608;
+
+					_coefficients[i] *= a0 - a1 * cos(2*PI*i / (_coefCount - 1)) + a2*cos(4*PI*i / (_coefCount - 1));
+				}
+			}
+
 			//else if (_filterType == FilterType::BAND_PASS) {
 			//	for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
 			//		_convolutionCoefficients[i] *= 2 * cos(i * PI / 2);
@@ -585,6 +620,7 @@ namespace Synth {
 	private:
 
 		FilterType _filterType;
+		WindowType _windowType;
 
 		int _coefCount;
 

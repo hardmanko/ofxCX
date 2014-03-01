@@ -216,17 +216,24 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros timeOffset) {
 	return true;
 }
 
-/*! Set the contents of the sound object from a vector of float data. If there is more than once channel of data,
-the data must be interleaved. This means that if, for example, there are two channels, the ordering of the samples
-is 12121212... where 1 represents a sample for channel 1 and 2 represents a sample for channel 2. This requirement
-is not checked for.
-\param data A vector of sound samples. These values should go from -1 to 1. This requirement is not checked for.
-\param channels The number of channels worth of data is stored in the vector of data.
+/*! Set the contents of the sound object from a vector of float data. 
+\param data A vector of sound samples. These values should go from -1 to 1. This requirement is not checked for. 
+If there is more than once channel of data, the data must be interleaved. This means that if, for example, 
+there are two channels, the ordering of the samples is 12121212... where 1 represents a sample for channel 
+1 and 2 represents a sample for channel 2. This requirement is not checked for. The number of samples in this
+vector must be evenly divisible by the number of channels set with the `channels` argument.
+\param channels The number of channels worth of data that is stored in `data`.
 \param sampleRate The sample rate of the samples. If `data` contains, for example, a sine wave, that wave was sampled
 at some rate (e.g. 48000 samples per second of waveform). `sampleRate` should be that rate.
 return True in all cases. No checking is done on any of the arguments.
 */
 bool CX_SoundObject::setFromVector(const std::vector<float>& data, int channels, float sampleRate) {
+	if ((data.size() % channels) != 0) {
+		Log.error("CX_SoundObject") << "setFromVector: The size of the sample data was not evenly divisible by the number of channels.";
+		return false;
+	}
+
+
 	_soundData = data;
 	_soundChannels = channels;
 	_soundSampleRate = sampleRate;
@@ -234,14 +241,14 @@ bool CX_SoundObject::setFromVector(const std::vector<float>& data, int channels,
 	return true;
 }
 
+/*! Checks to see if the CX_SoundObject is ready to play. It basically just checks if there is sound data
+available and that the number of channels is set to a sane value. */
 bool CX_SoundObject::isReadyToPlay (void) {
-	return ((_soundChannels != 0) && (_soundData.size() != 0)); //_successfullyLoaded? _soundSampleRate? Remove _soundChannels?
+	return ((_soundChannels > 0) && (_soundData.size() != 0)); //_successfullyLoaded? _soundSampleRate? Remove _soundChannels?
 }
 
-/*!
-Set the length of the sound to the specified length in microseconds. If the new length is longer than the old length,
-the new data is zeroed (i.e. set to silence).
-*/
+/*! Set the length of the sound to the specified length in microseconds. If the new length is longer than the old length,
+the new data is zeroed (i.e. set to silence). */
 void CX_SoundObject::setLength (CX_Micros length) {
 	unsigned int endOfDurationSample = _soundChannels * (unsigned int)(getSampleRate() * ((double)length / 1000000));
 
@@ -305,12 +312,12 @@ help to give a reference amplitude of which some small fraction is perceived as 
 with an absolute value greater than or equal to tolerance is removed from the sound.
 */
 void CX_SoundObject::stripLeadingSilence (float tolerance) {
-	for (unsigned int concurrentSample = 0; concurrentSample < _soundData.size()/_soundChannels; concurrentSample++) {
+	for (unsigned int sampleFrame = 0; sampleFrame < this->getSampleFrameCount(); sampleFrame++) {
 		for (int channel = 0; channel < _soundChannels; channel++) {
-			unsigned int index = (concurrentSample * _soundChannels) + channel;
+			unsigned int index = (sampleFrame * _soundChannels) + channel;
 
 			if (abs(_soundData.at(index)) >= tolerance) {
-				_soundData.erase(_soundData.begin(), _soundData.begin() + (concurrentSample * _soundChannels));
+				_soundData.erase(_soundData.begin(), _soundData.begin() + (sampleFrame * _soundChannels));
 				return;
 			}
 		}
@@ -418,7 +425,7 @@ bool CX_SoundObject::setChannelCount (int newChannelCount) {
 		//Silence
 		/*
 		vector<float> newSoundData( (_soundData.size()/_soundChannels) * newChannelCount );
-		for (unsigned int sample = 0; sample < getConcurrentSampleCount(); sample++) {
+		for (unsigned int sample = 0; sample < getSampleFrameCount(); sample++) {
 			for (int oldChannel = 0; oldChannel < _soundChannels; oldChannel++) {
 				newSoundData[ (sample * newChannelCount) + oldChannel ] = _soundData[ (sample * _soundChannels) + oldChannel ];
 			}
@@ -431,7 +438,7 @@ bool CX_SoundObject::setChannelCount (int newChannelCount) {
 
 		//Average
 		vector<float> newSoundData( (_soundData.size()/_soundChannels) * newChannelCount );
-		for (unsigned int sample = 0; sample < getConcurrentSampleCount(); sample++) {
+		for (unsigned int sample = 0; sample < getSampleFrameCount(); sample++) {
 			float average = 0;
 			for (int oldChannel = 0; oldChannel < _soundChannels; oldChannel++) {
 				float samp = _soundData[ (sample * _soundChannels) + oldChannel ];
@@ -474,7 +481,7 @@ void CX_SoundObject::resample (float newSampleRate) {
 	SRC_DATA data;
 	data.src_ratio = (double)newSampleRate/_soundSampleRate;
 
-	long requiredSamples = (long)(getConcurrentSampleCount() * ((double)newSampleRate/_soundSampleRate));
+	long requiredSamples = (long)(getSampleFrameCount() * ((double)newSampleRate/_soundSampleRate));
 	data.output_frames = requiredSamples;
 	data.data_out = new float(data.output_frames);
 	
@@ -500,8 +507,8 @@ void CX_SoundObject::resample (float newSampleRate) {
 
 	
 	
-	uint64_t oldSampleCount = getConcurrentSampleCount();
-	uint64_t newSampleCount = (uint64_t)(getConcurrentSampleCount() * ((double)newSampleRate/_soundSampleRate));
+	uint64_t oldSampleCount = getSampleFrameCount();
+	uint64_t newSampleCount = (uint64_t)(getSampleFrameCount() * ((double)newSampleRate / _soundSampleRate));
 
 	vector<float> completeNewData((unsigned int)newSampleCount * _soundChannels);
 
@@ -536,7 +543,29 @@ void CX_SoundObject::resample (float newSampleRate) {
 
 }
 
+
+void CX_SoundObject::reverse(void) {
+	vector<float> copy = _soundData;
+	unsigned int sampleFrameCount = getSampleFrameCount();
+	for (unsigned int sf = 0; sf < sampleFrameCount; sf++) {
+		unsigned int targetSampleFrame = sf*_soundChannels;
+		unsigned int sourceSampleFrame = (sampleFrameCount - 1 - sf) * _soundChannels;
+
+		for (unsigned int ch = 0; ch < _soundChannels; ch++) {
+			_soundData[targetSampleFrame + ch] = copy[sourceSampleFrame + ch];
+		}
+	}
+}
+
+/*! This function changes the speed of the sound by some multiple.
+\param speedMultiplier Amount to multiply the speed by. Must be greater than 0.
+\note If you would like to use a negative value to reverse the direction of playback, see reverse().
+*/
 void CX_SoundObject::multiplySpeed (float speedMultiplier) {
+	if (speedMultiplier <= 0) {
+		return;
+	}
+
 	float sampleRate = this->_soundSampleRate;
 	this->resample( this->getSampleRate() / speedMultiplier );
 	this->_soundSampleRate = sampleRate;
@@ -575,8 +604,8 @@ bool CX_SoundObject::multiplyAmplitudeBy (float amount, int channel) {
 
 	} else {
 		//Apply gain to the given channel
-		for (unsigned int i = 0; i < (unsigned int)getConcurrentSampleCount(); i++) {
-			unsigned int index = (i * _soundChannels) + channel;
+		for (unsigned int sf = 0; sf < (unsigned int)getSampleFrameCount(); sf++) {
+			unsigned int index = (sf * _soundChannels) + channel;
 			float newVal = _soundData[index] * amount;
 			newVal = std::max(newVal, -1.0f);
 			newVal = std::min(newVal, 1.0f);
@@ -677,7 +706,7 @@ float CX_SoundObject::_readSample (int channel, unsigned int sample) {
 }
 
 vector<float> CX_SoundObject::_getChannelData (int channel) {
-	vector<float> rval( (unsigned int)getConcurrentSampleCount() );
+	vector<float> rval( (unsigned int)getSampleFrameCount() );
 
 	for (unsigned int sample = 0; sample < rval.size(); sample++) {
 		rval[sample] = _soundData.at( (sample * _soundChannels) + channel );
