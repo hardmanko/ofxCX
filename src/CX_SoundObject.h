@@ -39,7 +39,7 @@ namespace CX {
 
 		bool isReadyToPlay (void);
 
-		//!< Checks to see if sound data has been successfully loaded into this CX_SoundObject from a file.
+		//! Checks to see if sound data has been successfully loaded into this CX_SoundObject from a file.
 		bool isLoadedSuccessfully (void) { return _successfullyLoaded; }; 
 
 		bool applyGain (float gain, int channel = -1);

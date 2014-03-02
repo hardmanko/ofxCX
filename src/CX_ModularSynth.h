@@ -24,6 +24,11 @@ namespace Synth {
 			sampleRate(666)
 		{}
 
+		ModuleControlData_t(float sampleRate_) :
+			initialized(true),
+			sampleRate(sampleRate_)
+		{}
+
 		bool initialized;
 		float sampleRate;
 
@@ -38,6 +43,7 @@ namespace Synth {
 
 	class ModuleParameter;
 
+	/*! All modules of the modular synth inherit from this class. */
 	class ModuleBase {
 	public:
 
@@ -49,13 +55,21 @@ namespace Synth {
 			delete _data;
 		}
 
-		//This function should be overloaded for any derived class that produces values (outputs do not 
-		//produce values, they produce sound via sound hardware).
+		/*! This function should be overloaded for any derived class that produces values (outputs do not 
+		produce values, they produce sound via sound hardware). */
 		virtual double getNextSample(void) {
 			return 0;
 		}
 
-		//This function is not usually needed. If an appropriate input or output is connected, the data will be set from that module.
+		/*! This function sets the data needed by this module in order to function properly. Many modules need this data,
+		specifically the sample rate that the synth using. If several modules are connected together, you will only need
+		to set the data for one module and the change will propagate to the other connected modules automatically.
+
+		This function does not usually need to be called driectly by the user. If an appropriate input or output is 
+		connected, the data will be set from that module. 
+		
+		\param d The data to set.
+		*/
 		void setData(ModuleControlData_t d) {
 			*_data = d;
 			_data->initialized = true;
@@ -74,6 +88,13 @@ namespace Synth {
 		//std::shared_ptr<ModuleControlData_t> _data;
 		ModuleControlData_t *_data;
 
+		/*! This operator is used to connect modules together. `l` is set as the input for `r`. 
+		\code{.cpp}
+		Oscillator osc;
+		StreamOutput out;
+		osc >> out; //Connect osc as the input for out.
+		\endcode
+		*/
 		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
 
 		virtual void _dataSetEvent(void) { return; }
@@ -129,6 +150,18 @@ namespace Synth {
 			return *this;
 		}
 
+		/*! This operator connects a module to the module parameter. It is not possible to connect a module
+		parameter as an input for anything. They are dead ends.
+		
+		\code{.cpp}
+		Oscillator osc;
+		Envelope fenv;
+		Adder add;
+		add.amount = 500;
+		fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator.
+		//with an offset of 500 Hz.
+		\endcode
+		*/
 		friend void operator>>(ModuleBase& l, ModuleParameter& r) {
 			r._input = &l;
 		}

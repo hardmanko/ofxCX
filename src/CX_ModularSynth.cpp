@@ -10,7 +10,7 @@ double CX::Synth::relativeFrequency(double f, double semitoneDifference) {
 	return f * pow(2.0, semitoneDifference / 12);
 }
 
-//Used to connect modules together. l is set as the input for r.
+/*! This operator is used to connect modules together. l is set as the input for r. */
 ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	r._assignInput(&l);
 	l._assignOutput(&r);
@@ -282,9 +282,13 @@ void AdditiveSynth::setStandardHarmonicSeries(unsigned int harmonicCount) {
 }
 
 /*!
-\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE.
-\param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the fundamental gives the value 1 for i.
-If type == HS_SEMITONE, the frequency for harmonic i will be pow(2, (i - 1) * controlParameter/12), where the fundamental gives the value 1 for i.
+\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE. For HS_MULTIPLE, each 
+harmonic's frequency will be some multiple of the fundamental frequency, depending on the harmonic number and 
+controlParameter. For HS_SEMITONE, each harmonic's frequency will be some number of semitones above the previous frequency,
+based on controlParameter (specifying the number of semitones).
+\param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the 
+fundamental gives the value 1 for i. If type == HS_SEMITONE, the frequency for harmonic i will be 
+`pow(2, (i - 1) * controlParameter/12)`, where the fundamental gives the value 1 for i.
 
 \note If `type == HS_MULTIPLE` and `controlParameter == 1`, then the standard harmonic series will be generated.
 \note If `type == HS_SEMITONE`, `controlParameter` does not need to be an integer.

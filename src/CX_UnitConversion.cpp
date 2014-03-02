@@ -3,9 +3,9 @@
 namespace CX {
 	namespace Util {
 
-		/* Returns the number of pixels needed to subtend deg degrees of visual angle. You might want to round this
-		because you want to align to pixel boundaries. However, if you are antialiasing your stimuli you
-		might want to use this to get precise subpixel rendering.
+		/*! Returns the number of pixels needed to subtend deg degrees of visual angle. You might want to round this
+		if you want to align to pixel boundaries. However, if you are antialiasing your stimuli you
+		might want to use floating point values to get precise subpixel rendering.
 		\param deg Number of degrees.
 		\return The number of pixels needed. */
 		float degreesToPixels(float degrees, float pixelsPerUnit, float viewingDistance) {

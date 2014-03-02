@@ -14,6 +14,11 @@ CX_Clock::CX_Clock (void) {
 	_resetExperimentStartTime();
 }
 
+/*! This function tests the precision of the clock used by CX. The results are computer-specific. 
+If the precision of the clock is worse than microsecond accuracy, a warning is logged including 
+information about the actual precision of the clock.
+\param iterations Number of time duration samples to take. More iterations should give a better
+estimate. */
 void CX_Clock::precisionTest (unsigned int iterations) {
 	std::vector<long long> durations(iterations);
 

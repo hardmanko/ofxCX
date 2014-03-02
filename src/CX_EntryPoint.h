@@ -5,16 +5,8 @@
 This namespace contains all of the symbols related to CX.
 */
 
-/*! \namespace CX::Draw
-This namespace contains a variety of CX drawing functions.
-*/
-
 /*! \namespace CX::Instances
 This namespace contains instances of some classes that are fundamental to the functioning of CX.
-*/
-
-/*! \namespace CX::Private
-This namespace contains symbols that may be visible in user code but which should not be used by user code.
 */
 
 #include "ofMain.h" //Include all of the oF stuff.
@@ -67,14 +59,14 @@ using namespace CX::Instances;
 using namespace CX::Util;
 
 /*! \defgroup entryPoint Entry Point
-The entry point provides access to a number of instances of classes that can be used by user code.
-It also provides declarations (but not definitions) of two functions which the user should define
-(\ref setupExperiment() and \ref updateExperiment()).
+The entry point provides access to a few instances of classes that can be used by user code.
+It also provides declarations (but not definitions) of a function which the user should define
+(see \ref runExperiment()).
 */
 
 /*! \fn runExperiment 
 The user code should define a function with this name and type signature (takes no arguments and returns nothing). 
-The user function will be called once setup is done for CX. When runExperiment returns, the program will exit.
+This function will be called once setup is done for CX. When runExperiment returns, the program will exit.
 
 \code{.cpp}
 void runExperiment (void) {

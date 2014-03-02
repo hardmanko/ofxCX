@@ -11,6 +11,9 @@
 #include "CX_AppWindow.h"
 
 namespace CX {
+
+	/*! This namespace contains symbols that may be visible in user code but which should not be used by user code.
+	*/
 	namespace Private {
 		extern GLFWwindow *glfwContext;
 

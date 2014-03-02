@@ -51,11 +51,7 @@ namespace CX {
 
 		double round(double d, int roundingPower, CX_RoundingConfiguration c);
 
-		template <typename T>
-		T clamp(T val, T minimum, T maximum) {
-			return std::min(std::max(val, minimum), maximum);
-		}
-
+		template <typename T> T clamp(T val, T minimum, T maximum);
 	}
 }
 
@@ -121,6 +117,12 @@ std::vector<T> CX::Util::repeat(std::vector<T> values, std::vector<unsigned int>
 	return rval;
 }
 
+/*! This function converts a vector of values to a string representation of the values.
+\param values The vector of values to convert.
+\param delimiter A string that is used to separate the elements of `value` in the final string.
+\param significantDigits Only for floating point types. The number of significant digits in the value.
+\return A string containing a representation of the vector of values.
+*/
 template <typename T>
 std::string CX::Util::vectorToString(std::vector<T> values, std::string delimiter, int significantDigits) {
 	std::stringstream s;
@@ -149,11 +151,12 @@ template <typename T> std::string vectorToString (std::vector<T> value, std::str
 Creates a sequence of numbers from start to end by steps of size stepSize. start may be geater than end, but only if
 stepSize is less than 0. If start is less than end, stepSize must be greater than 0.
 
-Example call: sequence<double>(1, 3.3, 2) results in {1, 3}
+Example call: `sequence<double>(1, 3.3, 2)` results in a vector containing {1, 3}
 
 \param start The start of the sequence. You are guaranteed to get this value in the sequence.
 \param end The number past which the sequence should end. You are not guaranteed to get this value.
 \param stepSize A nonzero number.
+\return A vector containing the sequence.
 */
 template <typename T> 
 std::vector<T> CX::Util::sequence(T start, T end, T stepSize) {
@@ -241,6 +244,17 @@ template <typename T> std::vector<T> CX::Util::arrayToVector(T arr[], unsigned i
 		rval[i] = arr[i];
 	}
 	return rval;
+}
+
+/*! Clamps a value (i.e. forces the value to be between two bounds). If the value is
+outside of the bounds, it is set to be equal to the nearest bound.
+\param val The value to clamp.
+\param minimum The lower bound. Must be less than or equal to maximum.
+\param maximum The upper bound. Must be greater than or equal to minimum.
+\return The clamped value. */
+template <typename T>
+T CX::Util::clamp(T val, T minimum, T maximum) {
+	return std::min(std::max(val, minimum), maximum);
 }
 
 #endif //_CX_UTILITIES_H_
