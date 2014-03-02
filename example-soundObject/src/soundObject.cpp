@@ -23,12 +23,12 @@ void runExperiment (void) {
 	//Because of this, configuring the CX_SoundObjectPlayer is more or less directly configuring
 	//RtAudio. Most of the configuration settings in the CX_SoundObjectPlayerConfiguration_t structure
 	//can be left at default values and things will generally work out. However, it is usually a good
-	//idea to set a number of the values. Most of the major ones are manually set with comments describing
-	//a little bit about them.
+	//idea to set a number of the values. In this example, most of the major ones are manually set with 
+	//comments describing a little bit about them.
 	CX_SoundObjectPlayerConfiguration_t config;
 
 	config.api = RtAudio::Api::WINDOWS_DS; //Use Windows Direct Sound (more likely to do work at all than ASIO).
-		//However, ASIO is preferred. If your sound card supports ASIO, use it, period.
+		//However, ASIO is preferred. If your sound card supports ASIO, use it.
 		//Of course, if you are not on Windows, use one of the APIs for your OS. You can see
 		//which APIs are available for your OS by using:
 		//cout << CX_SoundStream::convertApisToString( CX_SoundStream::getCompiledApis() ) << endl;
@@ -65,13 +65,6 @@ void runExperiment (void) {
 	//to the player, it will do it for you, but with a warning. By doing it here, we avoid the warning.
 	cow.resample( config.sampleRate );
 	duck.resample( config.sampleRate );
-
-
-	cout << "Playing duck in 5 seconds" << endl;
-	player.BLOCKING_setSound(&duck);
-	player.startPlayingAt(Clock.getTime() + 5000000, 0);
-	while (1)
-		;
 
 
 	//You can use a CX_SoundObjectPlayer to play CX_SoundObjects (duh).

@@ -18,7 +18,7 @@ This class is used for playing CX_SoundObjects. See the soundObject example for 
 
 namespace CX  {
 
-	typedef CX_SoundStream::Configuration CX_SoundObjectPlayerConfiguration_t;
+	typedef CX_SoundStream::Configuration CX_SoundObjectPlayerConfiguration_t; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
 
 	class CX_SoundObjectPlayer {
 	public:
@@ -38,6 +38,7 @@ namespace CX  {
 		//! Check if the sound is queued to play.
 		bool isQueuedToStart(void) { return _playbackStartQueued; }; 
 
+		//! Returns the configuration used for this CX_SoundObjectPlayer.
 		CX_SoundObjectPlayerConfiguration_t getConfiguration (void) { return (CX_SoundObjectPlayerConfiguration_t)_soundStream.getConfiguration(); };
 		
 		bool BLOCKING_setSound (CX_SoundObject *sound);

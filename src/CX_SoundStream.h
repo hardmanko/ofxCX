@@ -16,6 +16,14 @@
 namespace CX {
 
 /*! \class CX::CX_SoundStream
+This class provides a method for directly accessing and manipulating sound data that is sent/received from
+sound hardware. To use this class, you should set up the stream (see setup()), set a user function that will
+be called when either the outputEvent or inputEvent is triggered, and start the stream with start().
+
+If the stream in configured for output, the output event will be triggered whenever the sound card needs 
+more sound data. If the stream is configured for input, the input event will be triggered whenever some
+amount of sound data has been recorded.
+
 CX_SoundStream uses RtAudio internally, so you are having problems, you might be able to figure out what is
 going wrong by checking out the page for RtAudio: http://www.music.mcgill.ca/~gary/rtaudio/index.html
 \ingroup sound
@@ -29,7 +37,7 @@ public:
 		Configuration(void) :
 			inputChannels(0),
 			outputChannels(0),
-			sampleRate(48000),
+			sampleRate(44100),
 			bufferSize(4096),
 
 			api(RtAudio::UNSPECIFIED),
@@ -44,7 +52,7 @@ public:
 		}
 
 		int inputChannels; //!< The number of input (e.g. microphone) channels to use. If 0, no input will be used.
-		int outputChannels; //!< The number of output channels to use. Currently only stereo and mono are well-supported.
+		int outputChannels; //!< The number of output channels to use. Currently only stereo and mono are well-supported. If 0, no output will be used.
 		int sampleRate; /*!< The requested sample rate for the input and output channels. If, for the selected device(s), this sample
 						cannot be used, the nearest greater sample rate will be chosen. If there is no greater sample rate, the next
 						lower sample rate will be used. */
@@ -67,7 +75,7 @@ public:
 
 		/*! See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1StreamOptions.html for more information.
 
-		flags must not include RTAUDIO_NONINTERLEAVED: The audio data used by CX is interleaved.
+		`flags` must not include RTAUDIO_NONINTERLEAVED: The audio data used by CX is interleaved.
 		*/
 		RtAudio::StreamOptions streamOptions;
 
@@ -121,10 +129,10 @@ public:
 	\return A const reference to the configuration struct. */
 	const CX_SoundStream::Configuration& getConfiguration (void) { return _config; };
 	
-	uint64_t getLastSampleNumber (void) { return _lastSampleNumber; };
+	/*! Returns the number of the sample frame that  */
+	uint64_t getSampleFrameNumber (void) { return _lastSampleNumber; };
 	//void setLastSampleNumber (uint64_t sampleNumber) { _lastSampleNumber = sampleNumber; };
 
-		
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
 
@@ -134,6 +142,9 @@ public:
 	/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::Instances::Clock.getTime(). */
 	CX_Micros getLastSwapTime (void) { return _lastSwapTime; };
 	CX_Micros estimateNextSwapTime (void);
+
+	RtAudio* getRtAudio(void);
+
 
 	static std::vector<RtAudio::Api> getCompiledApis (void);
 	static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);

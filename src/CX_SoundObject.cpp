@@ -161,10 +161,10 @@ bool CX_SoundObject::addSound (string fileName, CX_Micros timeOffset) {
 }
 
 /*!
-Adds the sound data in nso at the time offset. If the sample rates of the sounds differ, nso will be resampled to the sample rate of this CX_SoundObject.
+Adds the sound data in `nso` at the time offset. If the sample rates of the sounds differ, nso will be resampled to the sample rate of this CX_SoundObject.
 If the number of channels of nso does not equal the number of channels of this, an attempt will be made to set the number of channels of
 nso equal to the number of channels of this CX_SoundObject.
-The data from nso and this CX_SoundObject are merged by adding the amplitudes of the sounds. The result of the addition is clamped between -1 and 1.
+The data from `nso` and this CX_SoundObject are merged by adding the amplitudes of the sounds. The result of the addition is clamped between -1 and 1.
 
 \param nso A sound object. Must be successfully loaded.
 \param timeOffset Time at which to add the new sound data in microseconds. Dependent on sample rate.
@@ -177,6 +177,7 @@ bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros timeOffset) {
 		return false;
 	}
 
+	//This condition really should have a warning message associated with it.
 	if (!this->_successfullyLoaded) {
 		*this = nso;
 		this->addSilence(timeOffset, true);
@@ -382,6 +383,7 @@ bool CX_SoundObject::setChannelCount (int newChannelCount) {
 	}
 
 	if (_soundChannels == 0) {
+		//0 to anything is easy
 		_soundChannels = newChannelCount;
 		return true;
 	}
@@ -543,7 +545,8 @@ void CX_SoundObject::resample (float newSampleRate) {
 
 }
 
-
+/*! This function reverses the sound data stored in the CX_SoundObject so that if it is played, it will
+play in reverse. */
 void CX_SoundObject::reverse(void) {
 	vector<float> copy = _soundData;
 	unsigned int sampleFrameCount = getSampleFrameCount();

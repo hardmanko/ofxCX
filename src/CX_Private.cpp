@@ -130,3 +130,4 @@ int CX::Private::glCompareVersions(CX_GLVersion a, CX_GLVersion b) {
 
 	return 0;
 }
+

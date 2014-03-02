@@ -4,7 +4,7 @@ using namespace CX;
 using namespace CX::Instances;
 
 CX_SoundStream::CX_SoundStream (void) :
-	_rtAudio(NULL),
+	_rtAudio(nullptr),
 	_lastSwapTime(0),
 	_lastSampleNumber(0),
 	_sampleNumberAtLastCheck(0)
@@ -22,7 +22,7 @@ based on the actually used settings. You can check the configuration later using
 \return True if configuration appeared to be successful, false otherwise. 
 \note Opening the stream does not start it. See \ref start(). */
 bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
-	if (_rtAudio != NULL) {
+	if (_rtAudio != nullptr) {
 		closeStream();
 	}
 
@@ -30,7 +30,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 		_rtAudio = new RtAudio( config.api );
 	} catch (RtError err) {
 		Log.error("CX_SoundStream") << err.getMessage();
-		_rtAudio = NULL;
+		_rtAudio = nullptr;
 		return false;
 	}
 
@@ -61,8 +61,10 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	unsigned int closestGreaterSampleRate = numeric_limits<unsigned int>::max();
 	unsigned int closestLesserSampleRate = 0;
 
-	for (int i = 0; i < devices.at( config.outputDeviceId ).sampleRates.size(); i++) {
-		unsigned int thisSampleRate = devices.at( config.outputDeviceId ).sampleRates[i];
+	int searchDeviceId = (config.outputDeviceId >= 0) ? config.outputDeviceId : config.inputDeviceId;
+
+	for (int i = 0; i < devices.at(searchDeviceId).sampleRates.size(); i++) {
+		unsigned int thisSampleRate = devices.at(searchDeviceId).sampleRates[i];
 		if (thisSampleRate == config.sampleRate) {
 			closestGreaterSampleRate = numeric_limits<unsigned int>::max();
 			closestLesserSampleRate = 0;
@@ -114,7 +116,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 \return False if the stream was not started, true if the stream was started or if it was already running. */
 bool CX_SoundStream::start (void) {
 
-	if(_rtAudio == NULL) {
+	if(_rtAudio == nullptr) {
 		Log.error("CX_SoundStream") << "start: Stream not started because instance pointer was NULL. Have you remembered to call open()?";
 		return false;
 	}
@@ -146,7 +148,7 @@ bool CX_SoundStream::start (void) {
 /*! Stop the stream, if is running. If there is an error, a message will be logged.
 \return False if there was an error, true otherwise. */
 bool CX_SoundStream::stop (void) {
-	if(_rtAudio == NULL) {
+	if(_rtAudio == nullptr) {
 		Log.error("CX_SoundStream") << "stop: Stream not stopped because instance pointer was NULL. Have you remembered to call open()?";
 		return false;
 	}
@@ -167,7 +169,7 @@ bool CX_SoundStream::stop (void) {
 /*! Closes the sound stream.
 \return False if an error was encountered while closing the stream, true otherwise. */
 bool CX_SoundStream::closeStream(void) {
-	if(_rtAudio == NULL) {
+	if(_rtAudio == nullptr) {
 		return false;
 	}
 
@@ -185,7 +187,7 @@ bool CX_SoundStream::closeStream(void) {
  	}
 
 	delete _rtAudio;
-	_rtAudio = NULL;
+	_rtAudio = nullptr;
 	return rval;
 }
 
@@ -214,6 +216,14 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 CX_Micros CX_SoundStream::estimateNextSwapTime (void) {
 	CX_Micros bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
 	return _lastSwapTime + bufferSwapInterval;
+}
+
+/*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using. 
+This should not be needed most of the time, but there may be cases in which you need to directly 
+access RtAudio. Here is the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
+*/
+RtAudio* CX_SoundStream::getRtAudio(void) {
+	return _rtAudio;
 }
 
 /*! Get a vector containing a list of all of the APIs for which the RtAudio driver
@@ -375,6 +385,7 @@ std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 
 			rval << endl << "---------------------------------------" << endl;
 
+			rval << "Index: " << i << endl;
 			rval << "Name: " << dev.name << endl;
 			rval << "Supported sample rates: ";
 			for (int i = 0; i < dev.sampleRates.size(); i++) {

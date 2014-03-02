@@ -260,20 +260,18 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 
 	windowMode = requestedMode;
 
+	glfwMakeContextCurrent(windowP);
+
+
 	setVerticalSync(false);
-	// Set window title
-//	glfwSetWindowTitle( " " );
 
 //	glfwEnable( windowP, GLFW_KEY_REPEAT );
 
 	requestedHeight = requestedHeight < 1 ? 1 : requestedHeight;
 	glfwGetWindowSize( windowP, &requestedWidth, &requestedHeight );
 
-
 	nonFullScreenW = w;
 	nonFullScreenH = h;
-
-    glfwMakeContextCurrent(windowP);
 
     glfwGetWindowSize(windowP, &windowW, &windowH );
 	CompatGLReadyCallback(glslVersionMajor > 0 ? true : false);

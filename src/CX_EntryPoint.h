@@ -31,7 +31,11 @@ This namespace contains symbols that may be visible in user code but which shoul
 //Do not instantiate these, just include the header.
 #include "CX_TrialController.h" 
 #include "CX_TrialController_Class.h"
-#include "CX_SoundObjectPlayer.h" //All of the sound stuff comes with this header
+
+#include "CX_SoundObjectPlayer.h"
+#include "CX_SoundObjectRecorder.h"
+#include "CX_ModularSynth.h"
+
 #include "CX_DataFrame.h"
 
 #include "CX_Utilities.h"

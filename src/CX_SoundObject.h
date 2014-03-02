@@ -38,21 +38,21 @@ namespace CX {
 		void clear(void);
 
 		bool isReadyToPlay (void);
-		bool isLoadedSuccessfully (void) { return _successfullyLoaded; };
+
+		//!< Checks to see if sound data has been successfully loaded into this CX_SoundObject from a file.
+		bool isLoadedSuccessfully (void) { return _successfullyLoaded; }; 
 
 		bool applyGain (float gain, int channel = -1);
 		bool multiplyAmplitudeBy (float amount, int channel = -1);
+		void normalize(float amount = 1.0);
 
-		//void normalize (void); //This would just be multiplyAmplitudeBy( 1/max( getPositivePeak(), abs(getNegativePeak) ) );
 		float getPositivePeak (void);
 		float getNegativePeak (void);
-		void normalize(float amount = 1.0);
 
 		void setLength (CX_Micros length);
 		CX_Micros getLength (void);
 
 		void stripLeadingSilence (float tolerance);
-
 		void addSilence (CX_Micros duration, bool atBeginning);
 		void deleteAmount (CX_Micros duration, bool fromBeginning);
 
@@ -60,19 +60,21 @@ namespace CX {
 
 		void multiplySpeed (float speedMultiplier);
 		void resample (float newSampleRate);
+		//! Returns the sample rate of the sound data stored in this CX_SoundObject.
 		float getSampleRate (void) { return _soundSampleRate; };
 
 		bool setChannelCount (int channels);
+
+		//! Returns the number of channels in the sound data stored in this CX_SoundObject.
 		int getChannelCount (void) { return _soundChannels; };
 		
 		/*! This function returns the total number of samples in the sound data held by the CX_SoundObject, 
 		which is equal to the number of sample frames times the number of channels. */
 		uint64_t getTotalSampleCount (void) { return _soundData.size(); };
+
 		/*! This function returns the number of sample frames in the sound data held by the CX_SoundObject,
 		which is equal to the total number of samples divided by the number of channels. */
 		uint64_t getSampleFrameCount (void) { return _soundData.size()/_soundChannels; };
-
-		//vector<float> getRawData (void) { return _soundData; };
 
 		/*! This function returns a reference to the raw data underlying the sound object.
 		\return A reference to the data. Modify at your own risk! */
@@ -80,7 +82,8 @@ namespace CX {
 
 		bool writeToFile(std::string path);
 
-		string name; //!< This stores the name of the file from which data was read, if any. It can be set by the user with no side effects.
+		//! This stores the name of the file from which data was read, if any. It can be set by the user with no side effects.
+		string name; 
 
 	private:
 		//Should there be a name string for the sound? Defaulting to the file that was loaded, maybe.
