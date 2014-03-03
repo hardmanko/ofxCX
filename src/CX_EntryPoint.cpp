@@ -74,7 +74,6 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
 	
 	//Now that the GL version is known, initialize the real window
-//	ofPtr<CX_AppWindow> window(new CX_AppWindow);
 	CX::Private::window = ofPtr<CX_AppWindow>(new CX_AppWindow);
 	window->setOpenGLVersion(glver.major, glver.minor);
 	window->setNumSamples(CX::Util::getSampleCount());

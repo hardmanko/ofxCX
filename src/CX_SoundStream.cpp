@@ -222,7 +222,7 @@ CX_Micros CX_SoundStream::estimateNextSwapTime (void) {
 This should not be needed most of the time, but there may be cases in which you need to directly 
 access RtAudio. Here is the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
 */
-RtAudio* CX_SoundStream::getRtAudio(void) {
+RtAudio* CX_SoundStream::getRtAudioInstance(void) {
 	return _rtAudio;
 }
 

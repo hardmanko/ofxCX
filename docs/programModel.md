@@ -28,7 +28,7 @@ Pre-experiment Setup
 
 There is very little that CX does without you asking for it. The one major exception is pre-experiment setup, in which a number of basic operations are performed in order to set up a platform on which the rest of the experiment can run.
 
-The most significant step is to open a window and set up the video rendering environment.
+The most significant step is to open a window and set up the OpenGL rendering environment.
 
 Input
 -----

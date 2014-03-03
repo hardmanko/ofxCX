@@ -143,7 +143,7 @@ public:
 	CX_Micros getLastSwapTime (void) { return _lastSwapTime; };
 	CX_Micros estimateNextSwapTime (void);
 
-	RtAudio* getRtAudio(void);
+	RtAudio* getRtAudioInstance(void);
 
 
 	static std::vector<RtAudio::Api> getCompiledApis (void);

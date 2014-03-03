@@ -50,7 +50,7 @@ namespace CX  {
 		bool _outputEventHandler (CX_SoundStream::OutputEventArgs &outputData);
 
 		CX_SoundStream _soundStream;
-		CX_SoundObject *_activeSoundObject;
+		CX_SoundObject *_soundObject;
 
 		bool _playing;
 

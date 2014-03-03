@@ -90,7 +90,7 @@ namespace CX {
 		/*! Sets whether each axis within the user-defined system is inverted from the standard coordinate system. 
 		\param invertX Invert the x-axis from the default, which is that x increases to the right.
 		\param invertY Invert the y-axis from the default, which is that y increases downward.
-		\param invertZ Invert the z-axis from the default, which is that z increases toward the user
+		\param invertZ Invert the z-axis from the default, which is that z increases toward the viewer
 		(i.e. pointing out of the front of the screen).
 		*/
 		void CX_CoordinateConverter::setAxisInversion(bool invertX, bool invertY, bool invertZ) {
@@ -147,17 +147,18 @@ namespace CX {
 
 		/*! Sets the unit converter that will be used when converting the coordinate system.
 		In this way you can convert both the coordinate system in use and the units used by
-		the coordinate system. See CX_DegreeToPixelConverter and CX_LengthToPixelConverter
-		for examples of the converters that can be used.
+		the coordinate system in one step. See CX_DegreeToPixelConverter and 
+		CX_LengthToPixelConverter for examples of the converters that can be used.
 
 		Example use:
 
 		\code{.cpp}
 		//At global scope:
-		CX_CoordinateConverter conv(Display.getCenterOfDisplay(), false, true);
+		CX_CoordinateConverter conv(ofPoint(0,0), false, true); //The origin will be set to a proper value later.
 		CX_DegreeToPixelConverter d2p(35, 70);
 
 		//During setup:
+		conv.setOrigin(Display.getCenterOfDisplay());
 		conv.setUnitConverter(&d2p); //Use degrees of visual angle as the units of the user coordinate system.
 
 		//Draw a blue circle 2 degrees of visual angle to the left of the origin and 3 degrees above the origin (inverted y-axis).

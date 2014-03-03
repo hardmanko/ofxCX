@@ -6,7 +6,7 @@ using namespace CX::Instances;
 CX_SoundObjectPlayer::CX_SoundObjectPlayer (void) :
 	_playing(false),
 	_playbackStartQueued(false),
-	_activeSoundObject(nullptr),
+	_soundObject(nullptr),
 	_playbackStartSampleFrame(std::numeric_limits<uint64_t>::max()),
 	_currentSampleFrame(0)
 {
@@ -34,11 +34,12 @@ Attempts to start playing the current CX_SoundObject associated with the player.
 \return True if the sound object associated with the player isReadyToPlay(), false otherwise.
 */
 bool CX_SoundObjectPlayer::play (void) {
-	if (_activeSoundObject != NULL && _activeSoundObject->isReadyToPlay()) {
+	if (_soundObject != nullptr && _soundObject->isReadyToPlay()) {
 		_playing = true;
 		_soundPlaybackSampleFrame = 0;
 		return true;
 	}
+	Log.error("CX_SoundObjectPlayer") << "Could not start sound playback. There was a problem with the sound object associated with the player.";
 	return false;
 }
 
@@ -100,7 +101,7 @@ the CX_SoundObjectPlayer is configured to use, this function call fails and an e
 \return True if sound was successfully set to be the current sound, false otherwise.
 */
 bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
-	if (sound == nullptr) {
+	if (sound == nullptr) { //This check is redundant, in that nullptr is checked for in play().
 		return false;
 	}
 
@@ -127,7 +128,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 		sound->resample( (float)streamConfig.sampleRate );
 	}
 
-	_activeSoundObject = sound;
+	_soundObject = sound;
 
 	//_currentSampleFrame = 0;
 	return true;
@@ -137,7 +138,7 @@ bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {
 
 bool CX_SoundObjectPlayer::_outputEventHandler (CX_SoundStream::OutputEventArgs &outputData) {
 	//This check is a bit strange, but if !_playing and _playbackStartQueued, then we are checking for playback start and not returning false.
-	if ((!_playing && !_playbackStartQueued) || (_activeSoundObject == nullptr)) {
+	if ((!_playing && !_playbackStartQueued) || (_soundObject == nullptr)) {
 		return false;
 	}
 
@@ -149,7 +150,7 @@ bool CX_SoundObjectPlayer::_outputEventHandler (CX_SoundStream::OutputEventArgs 
 
 	uint64_t sampleFramesToOutput = outputData.bufferSize;
 	uint64_t outputBufferOffset = 0;
-	vector<float> &soundData = _activeSoundObject->getRawDataReference();
+	vector<float> &soundData = _soundObject->getRawDataReference();
 	const CX_SoundStream::Configuration &config = _soundStream.getConfiguration();
 
 	if (_playbackStartQueued) {

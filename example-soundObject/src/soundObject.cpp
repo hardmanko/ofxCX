@@ -82,6 +82,9 @@ void runExperiment (void) {
 	player.play();
 	while (player.isPlaying())
 		;
+
+	//Slow the duck down again
+	duck.multiplySpeed(.5);
 	
 	//Here a compound sound composed of a cow followed by a duck (after 6 seconds).
 	//If you want to present several auditory stimuli one after the other
@@ -107,11 +110,11 @@ void runExperiment (void) {
 
 	CX_SoundObject rightCow = cow;
 	rightCow.setChannelCount(2);
-	rightCow.multiplyAmplitudeBy(0, 0);
+	rightCow.multiplyAmplitudeBy(0, 0); //Mute channel 0
 
 	CX_SoundObject leftDuck = duck;
 	leftDuck.setChannelCount(2);
-	leftDuck.multiplyAmplitudeBy(0, 1);
+	leftDuck.multiplyAmplitudeBy(0, 1); //Mute channel 1
 
 	compoundSound = rightCow; //Set the compound sound equal to the rightCow sound (a copy operation).
 	compoundSound.addSound(leftDuck, 0);
@@ -121,8 +124,8 @@ void runExperiment (void) {
 	
 	//Notice at no time is a local variable given to BLOCKING_setSound(). BLOCKING_setSound()
 	//takes the address of a CX_SoundObject and does not copy that object, it only uses the
-	//address of that object. Because of this, if you use a local variable that falls out of 
-	//scope, you will get errors when you try to play that sound later.
+	//address of that object. Because of this, if you give it the address of a local variable 
+	//that falls out of scope, you will get errors when you try to play that sound later.
 	player.BLOCKING_setSound( &compoundSound );
 	player.play();
 	while (player.isPlaying())
