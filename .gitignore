@@ -16,6 +16,7 @@ Release*/
 *.pyc
 .svn/
 docs/doxygen/
+junk/
 
 # IDE-specific ignore patterns (e.g. user-specific files)
 

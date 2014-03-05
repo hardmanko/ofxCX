@@ -33,6 +33,10 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 		return false;
 	}
 
+	//_updateThread = new CX_SlidePresenterUpdateThread;
+	//_updateThread->setup(this);
+
+
 	_config = config;
 
 	if (!CX::Private::glFenceSyncSupported()) {
@@ -72,6 +76,11 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 		return false;
 	}
 
+	if (_slides.size() == 0) {
+		Log.warning("CX_SlidePresenter") << "startSlidePresentation was called without any slides to present.";
+		return false;
+	}
+
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
 		if (!_config.display->isAutomaticallySwapping()) {
 			_config.display->BLOCKING_setAutoSwapping(true); //This class requires that the monitor be swapping constantly while presenting slides.
@@ -79,36 +88,40 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 		}
 	}
 
-	if (_slides.size() == 0) {
-		Log.warning("CX_SlidePresenter") << "startSlidePresentation was called without any slides to present.";
-		return false;
-	} else {
-
-		if (_lastFramebufferActive) {
-			Log.warning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
-			endDrawingCurrentSlide();
-		}
-
-		//CX_Micros framePeriod = _config.display->getFramePeriod();
-
-		for (unsigned int i = 0; i < _slides.size(); i++) {
-			//This doesn't need to be done here any more, it's done as slides are added
-			//_slides.at(i).intended.frameCount = _calculateFrameCount(_slides.at(i).intended.duration);
-
-			_slides.at(i).slideStatus = CX_SlidePresenter::Slide::NOT_STARTED;
-		}
-
-		_synchronizing = true;
-		_presentingSlides = false;
-
-		//Wait for any ongoing operations to complete before starting frame presentation.
-		_config.display->BLOCKING_waitForOpenGL();
-		if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
-			_config.display->hasSwappedSinceLastCheck(); //Throw away any very recent swaps.
-		}
+	if (_lastFramebufferActive) {
+		Log.warning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
+		endDrawingCurrentSlide();
 	}
+
+	for (unsigned int i = 0; i < _slides.size(); i++) {
+		_slides.at(i).slideStatus = CX_SlidePresenter::Slide::NOT_STARTED;
+	}
+
+	_synchronizing = true;
+	_presentingSlides = false;
+
+	//Wait for any ongoing operations to complete before starting frame presentation.
+	_config.display->BLOCKING_waitForOpenGL();
+	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
+		_config.display->hasSwappedSinceLastCheck(); //Throw away any very recent swaps.
+	}
+
 	return true;
 }
+
+/*
+bool CX_SlidePresenter::startThreadedSlidePresentation(void) {
+	_config.swappingMode = Configuration::SINGLE_CORE_BLOCKING_SWAPS;
+
+	bool rval = startSlidePresentation();
+
+	//_useFenceSync = false;
+
+	_updateThread->start();
+
+	return rval;
+}
+*/
 
 /*! \brief Stops slide presentation. */
 void CX_SlidePresenter::stopSlidePresentation(void) {
@@ -321,7 +334,7 @@ slide, which would indicate the potential for vertical tearing.
 \note If this function is called during slide presentation, the returned struct will have the presentationErrorsSuccessfullyChecked
 member set to false and an error will be logged.
 */
-CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentationErrors(void) {
+CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentationErrors(void) const {
 
 	CX_SlidePresenter::PresentationErrorInfo errors;
 
@@ -333,7 +346,7 @@ CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentation
 	}
 
 	for (unsigned int i = 0; i < _slides.size(); i++) {
-		CX_SlidePresenter::Slide &sl = _slides.at(i);
+		const CX_SlidePresenter::Slide &sl = _slides.at(i);
 
 		if (sl.intended.frameCount != sl.actual.frameCount) {
 			//This error does not apply to the last slide because the duration of the last slide is undefined.
@@ -655,7 +668,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 
 
 void CX_SlidePresenter::_waitSyncCheck(void) {
-	if (!_useFenceSync) {
+	if (!_useFenceSync || _config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
 		return;
 	}
 
@@ -692,7 +705,7 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 
 	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started";
 
-	if (_useFenceSync) {
+	if (_useFenceSync && _config.swappingMode != Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
 		_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		glFlush();
 		_awaitingFenceSync = true;
@@ -705,9 +718,61 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 
 }
 
-
 unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Micros duration) {
 	double framesInDuration = (double)duration / _config.display->getFramePeriod();
 	framesInDuration = CX::Util::round(framesInDuration, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 	return (uint32_t)framesInDuration;
 }
+
+
+
+
+///////////////////////////////////
+// CX_SlidePresenterUpdateThread //
+///////////////////////////////////
+/*
+CX_SlidePresenterUpdateThread::CX_SlidePresenterUpdateThread(void) :
+_sp(nullptr)
+{}
+
+void CX_SlidePresenterUpdateThread::setup(CX_SlidePresenter* owner) {
+	_sp = owner;
+}
+
+void CX_SlidePresenterUpdateThread::start(void) {
+	if (_sp == nullptr) {
+		//error
+		return;
+	}
+
+	//Assume that startSlidePresentation has been called.
+
+	this->stop(); //Make sure the thread is not running
+
+	this->startThread(true, false);
+}
+
+void CX_SlidePresenterUpdateThread::stop(void) {
+	if (this->isThreadRunning()) {
+		this->stopThread();
+		this->waitForThread(false);
+	}
+}
+
+void CX_SlidePresenterUpdateThread::threadedFunction(void) {
+
+	while (this->isThreadRunning()) {
+		if (_sp->isPresentingSlides()) {
+			_sp->update();
+			//yield();
+		} else {
+			break;
+		}
+	}
+
+}
+
+bool CX_SlidePresenterUpdateThread::isUpdating(void) {
+	return this->isThreadRunning();
+}
+*/

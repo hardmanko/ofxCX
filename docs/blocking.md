@@ -22,10 +22,13 @@ vector<double> d = CX::Util::sequence<double>(0, 1000000, .033);
 which requires the allocation of about 300 MB of RAM. This code doesn't wait for anything to happen, it
 just takes a long time to execute.
 
-Blocking code is bad because it prevents some parts of CX from working in some situations. It is not a cardinal
-sin and there are times when using blocking code is acceptable. However, blocking code should
-not be used when trying to present stimuli or when responses are being made. There is of course an exception to
-the responses rule, which is when your blocking code is explicitly polling for user input, e.g.:
+Blocking code is potentially harmful because it prevents some parts of CX from working in some situations. 
+It is not a cardinal sin and there are times when using blocking code is acceptable. However, blocking code should
+not be used when trying to present stimuli or when responses are being made. The reason for this is that CX expects
+to be able to repeatedly check information related to stimulus presentation and input at very short intervals (at
+least every millisecond), but that cannot happen if a piece of code is blocking. There is of course an exception to
+the "no blocking while waiting for responses" rule, which is when your blocking code is doing nothing but waiting 
+for a response and constantly polling for user input. For example, the following code waits until any response is made:
 
 \code{.cpp}
 while(!Input.pollEvents())

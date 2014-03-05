@@ -12,8 +12,56 @@
 
 namespace CX {
 
-	/*! This class is a very useful abstraction that presents slides (a full display's worth) of visual stimuli for fixed durations.
+	/*
+	class CX_SlidePresenter;
+
+	class CX_SlidePresenterUpdateThread : public ofThread {
+	public:
+
+		CX_SlidePresenterUpdateThread(void);
+
+		void setup(CX_SlidePresenter* owner);
+
+		void start(void);
+		void stop(void);
+		void threadedFunction(void) override;
+
+		bool isUpdating(void);
+	private:
+		CX_SlidePresenter *_sp;
+	};
+	*/
+
+	/*! This class is a very useful abstraction that presents slides (typically a full display) of visual stimuli for fixed durations.
 	See the basicChangeDetectionTask.cpp, advancedChangeDetectionTask.cpp, and nBack.cpp examples for the usage of this class.
+
+	A brief example:
+
+	\code{.cpp}
+	CX_SlidePresenter slidePresenter;
+	slidePresenter.setup(&Display);
+
+	slidePresenter.beginDrawingNextSlide(2000 * 1000, "circle");
+	ofBackground(50);
+	ofSetColor(ofColor::red);
+	ofCircle(Display.getCenterOfDisplay(), 40);
+
+	slidePresenter.beginDrawingNextSlide(1000 * 1000, "rectangle");
+	ofBackground(50);
+	ofSetColor(ofColor::green);
+	ofRect(Display.getCenterOfDisplay() - ofPoint(100, 100), 200, 200);
+
+	slidePresenter.beginDrawingNextSlide(1, "off");
+	ofBackground(50);
+	slidePresenter.endDrawingCurrentSlide();
+
+	slidePresenter.startSlidePresentation();
+
+	//Update the slide presenter while waiting for slide presentation to complete
+	while (slidePresenter.isPresentingSlides()) {
+		slidePresenter.update(); //You must remember to call update() regularly while slides are being presented!
+	}
+	\endcode
 
 	\ingroup video
 	*/
@@ -168,10 +216,11 @@ namespace CX {
 		void endDrawingCurrentSlide (void);
 
 		bool startSlidePresentation (void);
+		//bool startThreadedSlidePresentation(void);
 		void stopSlidePresentation (void);
 
 		//! Returns true if slide presentation is in progress, even if the first slide has not yet been presented.
-		bool isPresentingSlides (void) { return _presentingSlides || _synchronizing; };
+		bool isPresentingSlides (void) const { return _presentingSlides || _synchronizing; };
 
 		void clearSlides (void);
 
@@ -180,7 +229,7 @@ namespace CX {
 		std::vector<CX_Micros> getActualPresentationDurations(void);
 		std::vector<unsigned int> getActualFrameCounts(void);
 
-		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void);
+		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
 
 
 		// Returns the index of the slide that is currently being presented.
@@ -219,6 +268,9 @@ namespace CX {
 		void _finishPreviousSlide(void);
 		void _handleFinalSlide(void);
 		void _prepareNextSlide(void);
+
+
+		//CX_SlidePresenterUpdateThread *_updateThread;
 	};
 }
 

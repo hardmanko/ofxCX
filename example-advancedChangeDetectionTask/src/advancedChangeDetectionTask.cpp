@@ -3,12 +3,13 @@
 /*! \file
 This example is a more advanced version of the change detection task presented in
 the basicChangeDetectionTask example. It is not "advanced" because it is more complex,
-but because it uses more features of CX. It actually ends up being more simple
-because of how it uses features of CX.
+but because it uses more features of CX. It actually ends up being simpler because 
+of how it uses features of CX.
 
 Items that are commented are new, although not all new stuff will neccessarily be 
 commented. The two main features that are demonstrated are CX_DataFrame and
-CX_TrialController.
+CX_TrialController. Using custom units and a custom coordinate system is shown 
+with CX_CoordinateConverter and CX_DegreeToPixelConverter.
 */
 
 /*
@@ -34,8 +35,10 @@ void drawTestArray (void);
 CX_DataFrame trialDf;
 int trialIndex = 0;
 
-int circleRadius = 30;
+int circleRadius = 0; //We will set this later
 ofColor backgroundColor(50);
+
+
 
 void runExperiment (void) {
 

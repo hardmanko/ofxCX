@@ -28,10 +28,10 @@ void CX_Display::setup (void) {
 
 	_renderer = ofGetGLProgrammableRenderer();
 	if (!_renderer) {
-		Log.warning("CX_Display") << "Programmable renderer not available.";
+		Log.warning("CX_Display") << "Programmable renderer not available. Standard renderer will be used instead.";
 	}
 
-	_swapThread = new CX_ConstantlySwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
+	_swapThread = new CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
 		//what too early means) or else there will be a crash.
 

@@ -22,7 +22,7 @@ http://www.openframeworks.cc/documentation/.
 
 #include "CX_Clock.h"
 #include "CX_Logger.h"
-#include "CX_SwappingThread.h"
+#include "CX_VideoBufferSwappingThread.h"
 
 namespace CX {
 
@@ -69,7 +69,7 @@ namespace CX {
 	private:
 		ofPtr<ofGLProgrammableRenderer> _renderer;
 
-		CX_ConstantlySwappingThread *_swapThread;
+		CX_VideoBufferSwappingThread *_swapThread;
 
 		CX_Micros _framePeriod;
 
