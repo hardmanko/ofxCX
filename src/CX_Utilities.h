@@ -11,6 +11,8 @@
 
 #include "ofUtils.h"
 #include "ofTrueTypeFont.h"
+#include "ofFbo.h"
+#include "ofImage.h"
 
 #include "CX_Logger.h"
 
@@ -52,6 +54,8 @@ namespace CX {
 		double round(double d, int roundingPower, CX_RoundingConfiguration c);
 
 		template <typename T> T clamp(T val, T minimum, T maximum);
+
+		void saveFboToFile(ofFbo& fbo, std::string filename);
 	}
 }
 

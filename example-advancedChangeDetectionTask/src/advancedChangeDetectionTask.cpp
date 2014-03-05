@@ -38,8 +38,6 @@ int trialIndex = 0;
 int circleRadius = 0; //We will set this later
 ofColor backgroundColor(50);
 
-
-
 void runExperiment (void) {
 
 	generateTrials(8);

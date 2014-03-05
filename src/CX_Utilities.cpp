@@ -90,6 +90,19 @@ double CX::Util::round(double d, int roundingPower, CX::Util::CX_RoundingConfigu
 	return d;
 }
 
+/*! Saves the contents of an ofFbo to a file. The file type is hinted by the file extension you provide
+as part of the file name.
+\param fbo The framebuffer to save.
+\param filename The path of the file to save. The file extension determines the type of file that is saved.
+Many standard file types are supported: png, bmp, jpg, gif, etc. However, if the fbo has an alpha channel,
+only png works properly (at least of those I have tested).
+*/
+void CX::Util::saveFboToFile(ofFbo& fbo, std::string filename) {
+	ofPixels pix;
+	fbo.readToPixels(pix);
+	ofSaveImage(pix, filename, OF_IMAGE_QUALITY_BEST);
+}
+
 
 
 /*! This class is used very much like ofLog. You use the constructor without assigning the

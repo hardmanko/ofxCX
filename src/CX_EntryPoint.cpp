@@ -34,7 +34,7 @@ namespace CX {
 			void setupWindow(CX_WindowConfiguration_t config);
 		};
 		
-		//Apparently oF has added this, so expect to remove it when oF version 0.9.0 is supported.
+		//Apparently oF has added this, so plan to remove it when oF version 0.9.0 is supported.
 		void glfwErrorCallback(int code, const char* message) {
 			CX::Instances::Log.error("GLFW") << "Error code: " << code << " " << message;
 		}
@@ -71,7 +71,6 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 
 	glfwSetErrorCallback(&glfwErrorCallback);
 
-	
 	
 	//Find out what version of openGL the graphics card supports, which requires the creation 
 	//of a GLFW window (or other initialization of openGL).

@@ -10,7 +10,7 @@
 #define CX_RT_USE_TTF
 
 #ifdef CX_RT_USE_FBO
-ofFbo fbo;
+ofFbo mainFbo;
 ofFbo transparency;
 ofFbo trivialFbo;
 #endif
@@ -47,12 +47,18 @@ void runExperiment(void) {
 
 
 #ifdef CX_RT_USE_FBO
-	fbo.allocate( Display.getResolution().x, Display.getResolution().y, GL_RGB, CX::Util::getSampleCount() );
+	//This is the most simple way to use an ofFbo.
+	trivialFbo.allocate(100, 100, GL_RGB); //You must allocate the fbo before you use it. 
+		//Make it 100 X 100 pixels. GL_RGB means that is should be in color (red, green, and blue channels).
+	trivialFbo.begin(); //All drawing that happens between begin() and end() causes the drawing to be rendered to the ofFbo.
+	ofBackground(0, 255, 0); //Draw a green background.
+	trivialFbo.end(); //Finish drawing to the fbo.
+
 
 	//Here is an example of both 1) storing drawn data in a framebuffer and then drawing that framebuffer at multiple places
 	//and 2) drawing with transparency.
 	//transparency is an ofFbo. You can allocate and draw to it once, then draw the contents of it later into other framebuffers.
-	transparency.allocate(200, 200); //Allocate a 200x200 pixel framebuffer. You must allocate it before you use it.
+	transparency.allocate(200, 200, GL_RGBA); //Allocate a 200x200 pixel framebuffer with an alpha channel. The default is GL_RGBA.
 
 	transparency.begin(); //Begin rendering to the framebuffer. This means that all rendering commands that are used before
 		//transparency.end() is called go into this framebuffer.
@@ -75,11 +81,8 @@ void runExperiment(void) {
 
 	transparency.end(); //Stop drawing to the fbo
 
-	trivialFbo.allocate(100, 100, GL_RGB );
-	trivialFbo.begin();
-	ofBackground(0, 255, 0);
-	trivialFbo.end();
 
+	mainFbo.allocate(Display.getResolution().x, Display.getResolution().y, GL_RGB, CX::Util::getSampleCount());
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -134,19 +137,19 @@ void updateDrawings (void) {
 
 #ifdef CX_RT_USE_FBO
 	if (drawingToFboFirst) {
-		fbo.begin();
+		mainFbo.begin();
 		drawStuff();
 		ofSetColor(255);
 		ofDrawBitmapString("FBO", 20, 20);
-		fbo.end();
-		Display.drawFboToBackBuffer(fbo);
+		mainFbo.end();
+		Display.drawFboToBackBuffer(mainFbo);
 	} else 
 #endif
 	{
 		Display.beginDrawingToBackBuffer();
 		drawStuff();
 		ofSetColor(255);
-		ofDrawBitmapString("Direct", 20, 20);
+		ofDrawBitmapString("Back buffer", 20, 20);
 		Display.endDrawingToBackBuffer();
 	}
 	Display.BLOCKING_swapFrontAndBackBuffers();

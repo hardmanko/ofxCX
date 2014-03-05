@@ -182,6 +182,13 @@ namespace Synth {
 	The frequencies are refered to as harmonics, due to the fact that typical audio applications of additive
 	synths use the standard harmonic series (f(i) = f_fundamental * i). However, setting the harmonics to
 	values not found in the standard harmonic series can result in really unusual and interesting sounds.
+
+	The output of the additive synth is not easily bounded between -1 and 1 due to various oddities of
+	additive synthesis. For example, although in the limit as the number of harmonics goes to infinity
+	square and sawtooth waves made with additive synthesis are bounded between -1 and 1, with smaller
+	numbers of harmonics the amplitudes actually overshoot these bounds slightly. Of course, if an unusual
+	harmonic series is used with arbitrary amplitudes, it can be hard to know if the output of the synth
+	will be within the bounds. A Synth::Multiplier can help deal with this.
 	\ingroup modSynth
 	*/
 	class AdditiveSynth : public ModuleBase {
@@ -205,10 +212,7 @@ namespace Synth {
 
 		struct Configuration {
 			unsigned int desiredHarmonicCount;
-
 			HarmonicSeriesType hsType;
-
-
 			double harmonicPruningTol;
 		};
 
