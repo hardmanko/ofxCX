@@ -12,6 +12,7 @@ approximation of a squircle, but different amounts can give different sorts of s
 */
 ofPath CX::Draw::squircleToPath(double radius, double amount) {
 	ofPath sq;
+	sq.setFilled(false);
 
 	ofPoint start, p1, p2, end;
 
@@ -26,7 +27,6 @@ ofPath CX::Draw::squircleToPath(double radius, double amount) {
 
 		sq.moveTo(start);
 		sq.bezierTo(p1, p2, end);
-		sq.setFilled(false);
 	}
 
 	return sq;
@@ -100,15 +100,7 @@ void CX::Draw::star(ofPoint center, int numberOfPoints, float innerRadius, float
 	star.draw(center.x, center.y);
 }
 
-/*! Draws a string centered on a given location using the given font. Strings are normally
-drawn such that the x coordinate gives the left edge of the string and the y coordinate
-gives a line on which the letters will be drawn, where some characters (like y or g) can descend
-below the line.
-\param x The x coordinate of the center of the string.
-\param y The y coordinate of the center of the string.
-\param s The string to draw.
-\param font A font that has already been prepared for use.
-*/
+/*! Equivalent to a call to CX::Draw::centeredString(ofPoint(x, y), s, font). */
 void CX::Draw::centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
@@ -116,6 +108,14 @@ void CX::Draw::centeredString(int x, int y, std::string s, ofTrueTypeFont &font)
 	font.drawString(s, x, y);
 }
 
+/*! Draws a string centered on a given location using the given font. Strings are normally
+drawn such that the x coordinate gives the left edge of the string and the y coordinate
+gives the line above which the letters will be drawn, where some characters (like y or g) 
+can descend below the line.
+\param center The coordinates of the center of the string.
+\param s The string to draw.
+\param font A font that has already been prepared for use.
+*/
 void CX::Draw::centeredString(ofPoint center, std::string s, ofTrueTypeFont &font) {
 	Draw::centeredString(center.x, center.y, s, font);
 }

@@ -41,7 +41,8 @@ void CX_Display::setup (void) {
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
-\param autoSwap If true, the front and back buffer will swap automatically every frame. */
+\param autoSwap If true, the front and back buffer will swap automatically every frame. 
+\see \ref blockingCode */
 void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
@@ -155,7 +156,8 @@ void CX_Display::endDrawingToBackBuffer (void) {
 }
 
 /*! This function queues up a swap of the front and back buffers then
-blocks until the swap occurs. It does nothing if isAutomaticallySwapping() == true. */
+blocks until the swap occurs. It does nothing if isAutomaticallySwapping() == true.
+\see \ref blockingCode */
 void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 	if (!isAutomaticallySwapping()) {
 		glfwSwapBuffers( CX::Private::glfwContext );
@@ -171,9 +173,9 @@ void CX_Display::swapFrontAndBackBuffers (void) {
 }
 
 /*!
-Wait until all OpenGL instructions that were given before
-this was called to complete. Any commands put into the pipeline
-after this is called (from other threads) are not waited for. 
+Wait until all OpenGL instructions that were given before this was called to complete. 
+Any commands put into the pipeline from other threads after this is called are not waited for. 
+\see \ref blockingCode
 */
 void CX_Display::BLOCKING_waitForOpenGL (void) {
 	if (CX::Private::glFenceSyncSupported()) {
@@ -185,10 +187,10 @@ void CX_Display::BLOCKING_waitForOpenGL (void) {
 	}
 }
 
-/*!
-Returns the resolution of the current window, not the resolution of the monitor
-(unless you are in full screen mode). You can use either x and y or width and height.
-*/
+/*! Returns the resolution of the current window, not the resolution of the monitor (unless you are in full screen mode).
+\return An ofRectangle containing the resolution. The width in pixels is stored in both the width
+and x members and the height in pixles is stored in both the height and y members, so you can
+use whichever makes the most sense to you. */
 ofRectangle CX_Display::getResolution (void) {
 	return ofRectangle( ofGetWidth(), ofGetHeight(), ofGetWidth(), ofGetHeight() );
 }
@@ -226,6 +228,7 @@ This function is called with an argument of 300 ms during construction of this c
 there will always be some information about the frame period. If more precision of the estimate
 is desired, this function can be called again with a longer wait duration.
 \param estimationInterval The length of time to spend estimating the frame period.
+\see \ref blockingCode
 */
 void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();

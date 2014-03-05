@@ -145,56 +145,6 @@ void runExperiment (void) {
 	columns.push_back("ints");
 	CX_DataFrame cols = df.copyColumns(columns);
 
-	/*
-	There is another kind of data frame for those who believe themselves to be error prone (i.e. self-aware
-	people). The normal CX_DataFrame allows	you to make a number of errors having to do with indexing 
-	(mispelled column name, invalid row index, thinking that a CX_DataFrameRow is a copy and not linked 
-	to the data, etc.). CX_SafeDataFrame is much safer to use, but has somewhat restricted functionality.
-	*/
-	CX_SafeDataFrame sdf;
-
-	CX_DataFrameRow row; //This is not linked to sdf. In order for data added to this row to get into sdf, you have to use appendRow().
-	row["str"] = "nylon";
-	row["int"] = 4;
-	sdf.appendRow(row); //One good way to add data to a CX_SafeDataFrame is CX_SafeDataFrame::appendRow().
-
-	//If you want to make more space in the data frame, you have to do it manually.
-	sdf.setRowCount(2);
-	sdf("int", 1) = 7; //Now you can store information in the new row.
-	sdf("str", 1) = "steel";
-
-	//You can also add new columns, but again, you must do it manually.
-	sdf.addColumn("new");
-	sdf("new", 0) = "newdata1";
-	sdf("new", 1) = "newdata2";
-
-	//The print function is still available. You can also print to files in the same way.
-	cout << endl << "CX_SafeDataFrame contents: " << endl << sdf.print() << endl; 
-
-	//You can read out data just like with a standard CX_DataFrame.
-	string nylon = sdf("str", 0).toString(); 
-	int seven = sdf("int", 1);
-
-	//If you try to access any data that is out of bounds, you will get errors logged to Log.
-	//operator() will return an empty string if out of bounds. It will not automatically resize a CX_SafeDataFrame.
-	string outOfBounds = sdf("int", 2).toString();
-	sdf("undefined", 1) = "error";
-	Log.flush(); //If you check the logs, there should be an error about the out of bounds accesses.
-
-	//You can also use CX_SafeDataFrame::at(), which throws an exception on out of bounds access. at() does not log errors, you have to catch the exception
-	try {
-		sdf.at("undefined", 4) = 5;
-	} catch (std::exception& e) {
-		cout << endl << "Exception caught: " << e.what() << endl;
-	}
-
-	vector<int> intColumn = sdf.copyColumn<int>("int"); //You can still copy out vectors of converted data.
-
-	//sdf["str"] //Both operator[] overloads are gone.
-
-	sdf.getRowCount(); //These are both still avalable.
-	sdf.columnNames();
-
 	Log.flush(); //Check to see if any errors occured during the running of this example.
 
 	Display.setWindowResolution(500, 100);

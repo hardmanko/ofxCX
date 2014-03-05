@@ -1,6 +1,6 @@
 #include "CX_InputManager.h"
 
-#include "ofAppGLFWWindow.h" //glfwPollEvents()
+#include "CX_AppWindow.h" //glfwPollEvents()
 
 using namespace CX;
 
@@ -48,17 +48,17 @@ bool CX_InputManager::setup (bool useKeyboard, bool useMouse, int joystickIndex)
 It is not typically neccessary for the user to call this function directly, although there is no harm in doing so.
 This function polls for new events on all of the configured input devices (see setup()). After a call to this function,
 new events for the input devices can be found by checking the availableEvents() function for each device.
-\return True if there are any new events, false otherwise.
+\return True if there are any events available for enabled devices, false otherwise. The events do not neccessarily 
+need to be new events. If there are events that were already stored in Mouse, Keyboard, or Joystick but had not been 
+processed by user code, this function will return true.
 */
 bool CX_InputManager::pollEvents (void) {
 
 	glfwPollEvents();
 	CX_Micros pollCompleteTime = CX::Instances::Clock.getTime();
 
-	if (_usingKeyboard) {
-		Keyboard._lastEventPollTime = pollCompleteTime;
-	} else {
-		Keyboard.clearEvents();
+	if (_usingJoystick) {
+		Joystick.pollEvents();
 	}
 
 	if (_usingMouse) {
@@ -67,8 +67,10 @@ bool CX_InputManager::pollEvents (void) {
 		Mouse.clearEvents();
 	}
 
-	if (_usingJoystick) {
-		Joystick.pollEvents();
+	if (_usingKeyboard) {
+		Keyboard._lastEventPollTime = pollCompleteTime;
+	} else {
+		Keyboard.clearEvents();
 	}
 
 	if (Mouse.availableEvents() > 0 || Keyboard.availableEvents() > 0 || Joystick.availableEvents() > 0) {

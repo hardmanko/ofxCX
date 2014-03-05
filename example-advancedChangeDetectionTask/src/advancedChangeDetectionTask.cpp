@@ -7,7 +7,7 @@ but because it uses more features of CX. It actually ends up being more simple
 because of how it uses features of CX.
 
 Items that are commented are new, although not all new stuff will neccessarily be 
-commented. The two main features that are demonstrated are CX_SafeDataFrame and
+commented. The two main features that are demonstrated are CX_DataFrame and
 CX_TrialController.
 */
 
@@ -31,7 +31,7 @@ void drawBlank (void);
 void drawSampleArray (void);
 void drawTestArray (void);
 
-CX_SafeDataFrame trialDf;
+CX_DataFrame trialDf;
 int trialIndex = 0;
 
 int circleRadius = 30;
@@ -69,7 +69,7 @@ indicates that to the trial controller by returning 1, and then the trialControl
 on to the next stage of the trial, calling the next function on the next call to update().
 
 This makes updateExperiment trivial, with all of the processing offloaded into 
-sub-functions.
+sub-functions called by the trialController.
 */
 void updateExperiment (void) {
 	trialController.update();
@@ -159,9 +159,6 @@ int getResponse (void) {
 void generateTrials (int trialCount) {
 
 	vector<ofColor> objectColors;
-	vector<ofPoint> objectLocations;
-
-	//Set up a vector of colors that will be sampled to make the objects.
 	objectColors.push_back( ofColor::red );
 	objectColors.push_back( ofColor::orange );
 	objectColors.push_back( ofColor::yellow );
@@ -169,17 +166,34 @@ void generateTrials (int trialCount) {
 	objectColors.push_back( ofColor::blue );
 	objectColors.push_back( ofColor::purple );
 
-	//Make a 3x3 grid of object locations around the center of the screen.
-	for (int i = 0; i < 9; i++) {
-		int col = i % 3;
-		int row = i / 3;
+	//Make a 3x3 grid of object locations around the center of the screen. This time
+	//we do it in units of degrees of visual angle by using a CX_CoordinateConverter
+	//and a CX_DegreeToPixelConverter.
+	CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Set the origin to be at the center of the display
+		//and invert the y-axis.
+	CX_DegreeToPixelConverter d2p(35, 60); //Assume 35 pixels per cm on the monitor (this is fairly close to correct 
+		//for many monitors) and viewer sitting 60 cm from screen.
+	cc.setUnitConverter(&d2p); //Set the units of the coordinate converter to be in degrees of visual angle, as calculated by
+		//the CX_DegreeToPixelConverter.
 
-		ofPoint p;
-		p.x = Display.getCenterOfDisplay().x - 100 + (row * 100);
-		p.y = Display.getCenterOfDisplay().y - 100 + (col * 100);
+	vector<float> xDegrees;
+	xDegrees.push_back(-3); //Make the objects be 3 degrees of visual angle apart
+	xDegrees.push_back(0); //Centered at the origin.
+	xDegrees.push_back(3);
 
-		objectLocations.push_back( p );
+	vector<float> yDegrees = xDegrees;
+
+	vector<ofPoint> objectLocations;
+	for (auto x : xDegrees) {
+		for (auto y : yDegrees) {
+			ofPoint pixelLocation = cc(x, y); //Convert values in degrees to pixels, also
+			objectLocations.push_back(pixelLocation);
+		}
 	}
+
+	//We'll also use the degree to pixel converter to make our circles have a diameter of 1.5 degrees of visual angle:
+	circleRadius = d2p(1.5/2); //Radius being half the diameter.
+
 
 	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
 
@@ -214,15 +228,15 @@ void generateTrials (int trialCount) {
 		trialDf.appendRow( tr );
 	}
 
-	trialDf.shuffleRows();
+	trialDf.shuffleRows(); //Shuffle all of the rows of the data frame so that the trials come in random order.
 
-	//After generating the trials, the column names for all of those trials will be in the data frame, 
-	//but we still need to add two more columns for response data and a column to track presentation errors:
+	//After generating the trials, the column names for all of the parameters that control those trials will be 
+	//in the data frame, but we still need to add two more columns for response data and a column to track presentation errors:
 	trialDf.addColumn("responseCorrect");
 	trialDf.addColumn("responseTime");
 	trialDf.addColumn("presentationErrors");
 
-	Log.flush();
+	Log.flush(); //Check for errors that might have occurred during trial generation
 
 }
 
@@ -230,9 +244,9 @@ void drawFixation (void) {
 	ofBackground(backgroundColor);
 
 	ofSetColor( ofColor( 255 ) );
-	ofSetLineWidth( 3 );
+	ofSetLineWidth( 5 );
 
-	ofPoint centerpoint( Display.getResolution().x/2, Display.getResolution().y/2 );
+	ofPoint centerpoint = Display.getCenterOfDisplay();
 
 	ofLine( centerpoint.x - 10, centerpoint.y, centerpoint.x + 10, centerpoint.y );
 	ofLine( centerpoint.x, centerpoint.y - 10, centerpoint.x, centerpoint.y + 10 );

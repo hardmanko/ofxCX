@@ -30,6 +30,7 @@ This namespace contains instances of some classes that are fundamental to the fu
 
 #include "CX_DataFrame.h"
 
+#include "CX_Algorithm.h"
 #include "CX_Utilities.h"
 #include "CX_UnitConversion.h"
 #include "CX_Draw.h"
@@ -39,19 +40,6 @@ namespace CX {
 		extern CX_Display Display;
 		extern CX_InputManager Input;
 	}
-
-	struct CX_WindowConfiguration_t {
-		CX_WindowConfiguration_t(void) :
-		width(800),
-		height(600),
-		mode(ofWindowMode::OF_WINDOW)
-		{}
-
-		int width;
-		int height;
-
-		ofWindowMode mode;
-	};
 }
 
 using namespace CX;

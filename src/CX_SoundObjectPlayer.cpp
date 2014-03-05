@@ -98,6 +98,10 @@ This function is blocking because the sample rate and number of channels of soun
 reasons why the sound could fail to be set as the current sound for the player. If sound was not loaded successfully, this function
 call fails and an error is logged. If it is not possible to convert the number of channels of sound to the number of channels that
 the CX_SoundObjectPlayer is configured to use, this function call fails and an error is logged.
+
+This function call is not blocking if the same rate and channel count of the CX_SoundObject are the same as those in use by
+the CX_SoundObjectPlayer. See \ref blockingCode for more information.
+
 \return True if sound was successfully set to be the current sound, false otherwise.
 */
 bool CX_SoundObjectPlayer::BLOCKING_setSound (CX_SoundObject *sound) {

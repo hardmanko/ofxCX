@@ -9,7 +9,8 @@ CX_DataFrame::CX_DataFrame(void) :
 	_rowCount(0)
 {}
 
-/*! Copy the contents of another CX_DataFrame.
+/*! Copy the contents of another CX_DataFrame to this data frame. Because this is a copy operation,
+this may be \ref blockingCode if the copied data frame is large enough.
 \param df The data frame to copy.
 \return A reference to this data frame.
 \note The contents of this data frame are deleted during the copy.
@@ -36,8 +37,8 @@ CX_DataFrameCell CX_DataFrame::operator() (rowIndex_t row, std::string column) {
 	return this->operator()(column, row);
 }
 
-/*! Access the cell at the given row and column with bounds checking. Throws a std::exception
-and logs an error if either the row or column is out of bounds.
+/*! Access the cell at the given row and column with bounds checking. Throws a std::out_of_range
+exception and logs an error if either the row or column is out of bounds.
 \param row The row number.
 \param column The column name.
 \return A CX_DataFrameCell that can be read from or written to.
@@ -106,6 +107,8 @@ vectors.
 \param printRowNumbers If true, a column will be printed with the header "rowNumber" with the contents of the column
 being the selected row indices. If false, no row numbers will be printed.
 \return A string containing the printed version of the data frame.
+
+\note This function may be \ref blockingCode if the data frame is large enough.
 */
 std::string CX_DataFrame::print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
 	if (getRowCount() == 0) {
@@ -206,6 +209,7 @@ if it finds a delimiter within the quotes, it should not split there, but wait u
 \note The contents of the data frame will be deleted before attempting to read in the file.
 \note If the data is read in from a file written with a row numbers column, that column will be read into the data frame. You can remove it using
 deleteColumn("rowNumber").
+\note This function may be \ref blockingCode if the read in data frame is large enough.
 */
 bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter, std::string vectorEncloser) {
 
@@ -367,6 +371,8 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 The indices in rowOrder may be in any order: They don't need to be ascending. Additionally, the same row to be
 copied may be specified multiple times.
 \return A CX_DataFrame containing the rows specified in rowOrder.
+
+\note This function may be \ref blockingCode if the amount of copied data is large.
 */
 CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) {
 	unsigned int outOfRangeCount = 0;
@@ -403,6 +409,7 @@ Copies the specified columns into a new data frame.
 \param columns A vector of column names to copy out. If a requested column is not found, a warning will be logged,
 but the function will otherwise complete successfully.
 \return A CX_DataFrame containing the specified columns.
+\note This function may be \ref blockingCode if the amount of copied data is large.
 */
 CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 	std::set<std::string> columnSet;
@@ -427,14 +434,17 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 }
 
 /*! Randomly re-orders the rows of the data frame.
-\param rng Reference to a CX_RandomNumberGenerator to be used for the shuffling. */
+\param rng Reference to a CX_RandomNumberGenerator to be used for the shuffling. 
+\note This function may be \ref blockingCode if the data frame is large.
+*/
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
 	vector<CX_DataFrame::rowIndex_t> newOrder = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, _rowCount - 1);
 	rng.shuffleVector(&newOrder);
 	reorderRows(newOrder);
 }
 
-/*! Randomly re-orders the rows of the data frame using CX::Instances::RNG as the random number generator for the shuffling. */
+/*! Randomly re-orders the rows of the data frame using CX::Instances::RNG as the random number generator for the shuffling.
+\note This function may be \ref blockingCode if the data frame is large. */
 void CX_DataFrame::shuffleRows(void) {
 	shuffleRows(CX::Instances::RNG);
 }
@@ -574,25 +584,6 @@ void CX_DataFrameRow::clear(void) {
 	} else {
 		_data.clear();
 	}
-}
-
-
-//////////////////////
-// CX_SafeDataFrame //
-//////////////////////
-
-CX_DataFrameCell CX_SafeDataFrame::operator() (std::string column, rowIndex_t row) {
-	try {
-		return _data.at(column).at(row);
-	}
-	catch (...) {
-		CX::Instances::Log.error("CX_SafeDataFrame") << "Out of bounds access with operator() on indices (\"" << column << "\", " << row << ")";
-	}
-	return CX_DataFrameCell();
-}
-
-CX_DataFrameCell CX_SafeDataFrame::operator() (rowIndex_t row, std::string column) {
-	return this->operator()(column, row);
 }
 
 

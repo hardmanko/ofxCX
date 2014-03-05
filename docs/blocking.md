@@ -28,5 +28,6 @@ not be used when trying to present stimuli or when responses are being made. The
 the responses rule, which is when your blocking code is explicitly polling for user input, e.g.:
 
 \code{.cpp}
-while(!Input.pollEvents());
+while(!Input.pollEvents())
+	;
 \endcode

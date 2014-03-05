@@ -14,6 +14,19 @@ CX::CX_InputManager CX::Instances::Input;
 
 namespace CX {
 	namespace Private {
+
+		struct CX_WindowConfiguration_t {
+			CX_WindowConfiguration_t(void) :
+				width(800),
+				height(600),
+				mode(ofWindowMode::OF_WINDOW)
+			{}
+
+			int width;
+			int height;
+
+			ofWindowMode mode;
+		};
 		
 		class App {
 		public:
@@ -38,7 +51,7 @@ void CX::Private::App::setup (void) {
 
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
 
-	setupWindow(CX::CX_WindowConfiguration_t());
+	setupWindow(CX::Private::CX_WindowConfiguration_t());
 
 	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
 		//This must happen after the window is configured because it relies on GLFW.

@@ -47,6 +47,9 @@ When an experimental session is complete, the data can be written to a file usin
 
 See the example dataFrame.cpp for thorough examples of how to use a CX_DataFrame.
 
+Several of the member functions of this class could be blocking if the amount of data in the data frame
+is large enough.
+
 \ingroup dataManagement
 */
 class CX_DataFrame {
@@ -160,30 +163,6 @@ private:
 	std::map<std::string, CX_DataFrameCell> _data;
 	CX_DataFrame::rowIndex_t _rowNumber;
 };
-
-/*! \ingroup dataManagement */
-class CX_SafeDataFrame : protected CX_DataFrame {
-public:
-
-	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
-	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
-
-	using CX_DataFrame::at;
-
-	using CX_DataFrame::appendRow;
-	using CX_DataFrame::print;
-	using CX_DataFrame::printToFile;
-	using CX_DataFrame::copyColumn;
-	using CX_DataFrame::copyRows;
-	using CX_DataFrame::columnNames;
-	using CX_DataFrame::getRowCount;
-	using CX_DataFrame::shuffleRows;
-
-	using CX_DataFrame::addColumn;
-	using CX_DataFrame::setRowCount;
-
-};
-
 
 }
 

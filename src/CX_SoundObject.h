@@ -11,9 +11,9 @@ In order to play a CX_SoundObject, you use a \ref CX::CX_SoundObjectPlayer.
 See the soundObject example for an introduction on how to use this class along with
 a CX_SoundObjectPlayer.
 
-\note Nearly all functions of this class should be considered \ref blocking. Many of
+\note Nearly all functions of this class should be considered \ref blockingCode. Many of
 the operations take quite a while to complete because they are performed on
-a fairly large vector of sound samples.
+a potentially large vector of sound samples.
 
 \ingroup sound
 */

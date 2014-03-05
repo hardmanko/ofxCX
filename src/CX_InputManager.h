@@ -45,16 +45,15 @@ namespace CX {
 
 		bool pollEvents (void);
 
-		CX_Keyboard Keyboard; //!< An instance of CX::CX_Keyboard. Configured using CX::CX_InputManager::setup().
-		CX_Mouse Mouse; //!< An instance of CX::CX_Mouse. Configured using CX::CX_InputManager::setup().
-		CX_Joystick Joystick; //!< An instance of CX::CX_Joystick. Configured using CX::CX_InputManager::setup().
+		CX_Keyboard Keyboard; //!< An instance of CX::CX_Keyboard. Enabled or disabled with CX::CX_InputManager::setup().
+		CX_Mouse Mouse; //!< An instance of CX::CX_Mouse. Enabled or disabled with CX::CX_InputManager::setup().
+		CX_Joystick Joystick; //!< An instance of CX::CX_Joystick. Enabled or disabled with CX::CX_InputManager::setup().
 
 	private:
 		bool _usingKeyboard;
 		bool _usingMouse;
 		bool _usingJoystick;
 	};
-
 }
 
 #endif //_CX_INPUT_MANAGER_H_

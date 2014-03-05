@@ -25,7 +25,7 @@ namespace CX {
 		CX_DegreeToPixelConverter d2p(34, 60); //34 pixels per unit length (e.g. cm) on the target monitor, user is 60 length units from monitor.
 		ofLine( 200, 100, 200 + d2p(1), 100 + d2p(2) ); //Draw a line from (200, 100) (in pixel coordinates) to 1 degree
 		//to the right and 2 degrees below that point.
-		\endcode
+		\endcode		
 
 		\ingroup utility */
 		class CX_DegreeToPixelConverter : public CX_BaseUnitConverter {
@@ -85,6 +85,8 @@ namespace CX {
 		ofCircle(conv(0, 100), 20);
 		\endcode
 
+		Another example can be found in the advancedChangeDetectionTask example experiment.
+
 		\ingroup utility */
 		class CX_CoordinateConverter {
 		public:
@@ -96,6 +98,7 @@ namespace CX {
 
 			void setAxisInversion(bool invertX, bool invertY, bool invertZ = false);
 			void setOrigin(ofPoint newOrigin);
+			void setMultiplier(float multiplier);
 
 			void setUnitConverter(CX_BaseUnitConverter *converter);
 
@@ -105,7 +108,7 @@ namespace CX {
 			bool _invertY;
 			bool _invertZ;
 
-			//ofPoint _orientations;
+			float _multiplier;
 
 			CX_BaseUnitConverter *_conv;
 		};

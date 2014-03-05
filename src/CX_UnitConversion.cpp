@@ -84,7 +84,8 @@ namespace CX {
 			_invertX(invertX),
 			_invertY(invertY),
 			_invertZ(invertZ),
-			_conv(nullptr)
+			_conv(nullptr),
+			_multiplier(1.0)
 		{}
 
 		/*! Sets whether each axis within the user-defined system is inverted from the standard coordinate system. 
@@ -110,10 +111,18 @@ namespace CX {
 			_origin = newOrigin;
 		}
 
-		/*! The primary method of conversion between coordinate systems.
-		\param p The point in user coordinates that should be converted to standard coordinates.
-		\return The point in standard coordinates.
+		/*! This function sets the amount by which user coordinates are multiplied
+		before they are converted to standard coordinates. This allows you to easily
+		scale stimuli. The multiplier is 1 by default.
+		\param multiplier The amount to multiply user coordinates by.
+		*/
+		void CX_CoordinateConverter::setMultiplier(float multiplier) {
+			_multiplier = multiplier;
+		}
 
+		/*! The primary method of conversion between coordinate systems. You supply a point in
+		user coordinates and get in return a point in standard coordinates.
+		
 		Example use:
 
 		\code{.cpp}
@@ -122,10 +131,13 @@ namespace CX {
 		ofPoint res = cc(p); //Use operator() to convert from the user system to the standard system.
 		//res should contain (150, 100) due to the inverted y axis.
 		\endcode
+
+		\param p The point in user coordinates that should be converted to standard coordinates.
+		\return The point in standard coordinates.
 		*/
 		ofPoint CX_CoordinateConverter::operator() (ofPoint p) {
 
-			//p *= _orientations;
+			p *= _multiplier;
 
 			if (_conv != nullptr) {
 				p.x = _origin.x + (*_conv)((_invertX ? -1 : 1) * p.x);
@@ -161,7 +173,7 @@ namespace CX {
 		conv.setOrigin(Display.getCenterOfDisplay());
 		conv.setUnitConverter(&d2p); //Use degrees of visual angle as the units of the user coordinate system.
 
-		//Draw a blue circle 2 degrees of visual angle to the left of the origin and 3 degrees above the origin (inverted y-axis).
+		//Draw a blue circle 2 degrees of visual angle to the left of the origin and 3 degrees above (inverted y-axis) the origin.
 		ofSetColor(0, 0, 255); 
 		ofCircle(conv(-2, 3), 20);
 		\endcode
