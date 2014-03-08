@@ -5,50 +5,18 @@
 #include "Windows.h"
 
 /*
+Calculate the overflow characteristics of this implementation as follows:
 
-The overflow characteristics of this clock implementation can be calculated as follows:
+uint64_t_max = 2^64 #although this uses long long, it still holds 2^64 values
+den = 1e9
 
-Get the frequency of the underlying clock (as reported by QueryPerformanceFrequency).
+secPerOvf = uint64_t_max/den
 
-Calculate multiplier from the denominator of the tick period times some adjustment that allows the division by 
-frequency to result in sub-microsecond error. multiplier = ((1e9 * 1e5)/frequency)
-
-Divide the largest value that can be held by a 64 bit unsigned integer by multiplier (2^64/multiplier). This results
-in the number of underlying clock ticks (as reported by QueryPerformanceCounter) that will be observed before an overflow
-occurs.
-
-Take this value and divide it by frequency in order to get the number of seconds between overflows.
-
-See this R code:
-freq = 4236547897 #Assume near 4 GHz tick rate. It could be lower, not likely to be faster
-uint64_t_max = 2^64
-tickPeriodDen = 1e9
-adjust = 1e6
-
-ticksPerOvf = uint64_t_max/((tickPeriodDen * adjust)/freq)
-secPerOvf = ticksPerOvf/freq
-
-hoursPerOvf = secPerOvf/60/60 #These settings result in slightly over 5 hours before an overflow occurs
-
-
-The error characteristics of the clock can be calculated using this R code using the same variables from above:
-multiplier = (tickPeriodDen * adjust)/freq
-multiplierRound = round(multiplier, 0)
-ticks = 1 * freq
-nonRoundedValue = ticks * multiplier / adjust
-roundedValue = ticks * multiplierRound / adjust
-
-print(roundedValue/nonRoundedValue, digits=12)
-
-if (abs(roundedValue/nonRoundedValue - 1) < 1e-6) {
-print("Microsecond accuracy")
-} else {
-print("Worse than microseconds accuracy: ")
-print(abs(roundedValue/nonRoundedValue - 1), digits=12)
-}
+hoursPerOvf = secPerOvf/60/60
+yearsPerOvf = hoursPerOvf / 24 / 365
 
 */
-CX::Private::CX_HighResClockImplementation::time_point CX::Private::CX_HighResClockImplementation::now() {
+CX::CX_WIN32_HRC::time_point CX::CX_WIN32_HRC::now() {
 	static long long freq = []() -> long long
 	{
 		LARGE_INTEGER frequency;
@@ -66,11 +34,33 @@ CX::Private::CX_HighResClockImplementation::time_point CX::Private::CX_HighResCl
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
 
-	uint64_t relative = count.QuadPart - start;
-	uint64_t multiplier = ((uint64_t)period::den * 1000000) / freq;
-	return time_point(duration((relative * multiplier) / 1000000));
+	return time_point( duration((count.QuadPart - start) * static_cast<rep>(period::den) / freq) );
+}
 
-	//return time_point(duration(((count.QuadPart - start) * (static_cast<rep>(period::den * 100000) / freq)) / 100000));
+
+
+CX::CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
+	LARGE_INTEGER li;
+
+	QueryPerformanceFrequency(&li);
+	_frequency = li.QuadPart;
+
+	QueryPerformanceCounter(&li);
+	_startTime = li.QuadPart;
+}
+
+long long CX::CX_WIN32_PerformanceCounterClock::micros(void) {
+	LARGE_INTEGER count;
+	QueryPerformanceCounter(&count);
+
+	return (count.QuadPart - _startTime) * 1000000LL / _frequency;
+}
+
+long long CX::CX_WIN32_PerformanceCounterClock::nanos(void) {
+	LARGE_INTEGER count;
+	QueryPerformanceCounter(&count);
+
+	return ((count.QuadPart - _startTime) * 1000000000LL) / _frequency;
 }
 
 #endif //TARGET_WIN32

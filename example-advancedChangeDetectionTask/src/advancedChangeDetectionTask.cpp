@@ -125,8 +125,8 @@ int getResponse (void) {
 
 			if (keyEvent.key == 's' || keyEvent.key == 'd') {
 
-				uint64_t testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
-				trialDf(trialIndex, "responseTime") = keyEvent.eventTime - testArrayOnset;
+				CX_Micros testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
+				trialDf(trialIndex, "responseLatency") = keyEvent.eventTime - testArrayOnset;
 
 				bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();
 
@@ -139,6 +139,8 @@ int getResponse (void) {
 				}
 
 				trialDf(trialIndex, "presentationErrors") = SlidePresenter.checkForPresentationErrors().totalErrors();
+
+				cout << SlidePresenter.printLastPresentationInformation() << endl;
 
 				Log.flush();
 
@@ -234,8 +236,10 @@ void generateTrials (int trialCount) {
 	//After generating the trials, the column names for all of the parameters that control those trials will be 
 	//in the data frame, but we still need to add two more columns for response data and a column to track presentation errors:
 	trialDf.addColumn("responseCorrect");
-	trialDf.addColumn("responseTime");
+	trialDf.addColumn("responseLatency");
 	trialDf.addColumn("presentationErrors");
+
+	//cout << trialDf.print();
 
 	Log.flush(); //Check for errors that might have occurred during trial generation
 

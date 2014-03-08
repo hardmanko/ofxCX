@@ -10,7 +10,7 @@ CX_SlidePresenter::CX_SlidePresenter(void) :
 	_synchronizing(false),
 	_currentSlide(0),
 	_lastFramebufferActive(false),
-	_useFenceSync(true),
+	//_useFenceSync(true),
 	_awaitingFenceSync(false)
 {}
 
@@ -40,7 +40,8 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	_config = config;
 
 	if (!CX::Private::glFenceSyncSupported()) {
-		_useFenceSync = false;
+		_config.useFenceSync = false; //Override the setting
+		//_useFenceSync = false;
 		Log.warning("CX_SlidePresenter") << "OpenGL fence sync not supported by the video card in this computer. This means that the slide"
 			" presenter will be unable to determine when rendering commands are complete. Normally, the slide presenter uses a fence sync"
 			" to verify that all drawing operations have completed by a certain point of time. Typically, that they have completed by the"
@@ -151,7 +152,7 @@ void CX_SlidePresenter::beginDrawingNextSlide (CX_Micros slideDuration, string s
 		return;
 	}
 
-	if (slideDuration <= 0) {
+	if (slideDuration <= CX_Micros(0)) {
 		Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration <= 0 ignored.";
 		return;
 	}
@@ -191,7 +192,7 @@ drawing function is set or the framebuffer is allocated and an error is logged i
 \param slide The slide to append.
 */
 void CX_SlidePresenter::appendSlide (CX_SlidePresenter::Slide slide) {
-	if (slide.intended.duration <= 0) {
+	if (slide.intended.duration <= CX_Micros(0)) {
 		Log.warning("CX_SlidePresenter") << "Slide named \"" << slide.slideName << "\" with duration <= 0 ignored.";
 		return;
 	}
@@ -224,7 +225,7 @@ to the desired color.
 */
 void CX_SlidePresenter::appendSlideFunction (void (*drawingFunction) (void), CX_Micros slideDuration, string slideName) {
 
-	if (slideDuration <= 0) {
+	if (slideDuration <= CX_Micros(0)) {
 		Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration <= 0 ignored.";
 		return;
 	}
@@ -326,9 +327,10 @@ std::vector<unsigned int> CX_SlidePresenter::getActualFrameCounts (void) {
 }
 
 /*! Checks the timing data from the last presentation of slides for presentation errors. Currently it checks to
-see if the intended frame count matches the actual frame count of each slide, which indicates if the furation was
+see if the intended frame count matches the actual frame count of each slide, which indicates if the duration was
 correct. It also checks to make sure that the framebuffer was copied to the back buffer before the onset of the
-slide, which would indicate the potential for vertical tearing.
+slide. If not, vertical tearing might have occurred when the back buffer, containing a partially copied slide, was
+swapped in.
 \return A struct with information about the errors that occurred on the last presentation of slides.
 \note If clearSlides() has been called since the end of the presentation, this does nothing as its data has been cleared.
 \note If this function is called during slide presentation, the returned struct will have the presentationErrorsSuccessfullyChecked
@@ -362,6 +364,51 @@ CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentation
 
 	errors.presentationErrorsSuccessfullyChecked = true;
 	return errors;
+}
+
+
+std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
+	PresentationErrorInfo errors = checkForPresentationErrors();
+
+	std::stringstream s;
+
+	s << "Errors: " << errors.totalErrors() << endl;
+	if (errors.totalErrors() > 0) {
+		s << "Incorrect frame counts: " << errors.incorrectFrameCounts << endl;
+		s << "Late copies to back buffer: " << errors.lateCopiesToBackBuffer << endl;
+	}
+	s << endl;
+
+	for (unsigned int i = 0; i < _slides.size(); i++) {
+
+		const Slide& slide = _slides[i];
+
+		s << "-----------------------------------" << endl;
+		s << "Index: " << i << endl;
+		s << "Name: " << slide.slideName << endl;
+
+		s << "Measure:\tIntended,\tActual" << endl;
+		s << "Start time: \t" << slide.intended.startTime << ",\t" << slide.actual.startTime << endl;
+		s << "Duration:   \t" << slide.intended.duration << ",\t" << slide.actual.duration << endl;
+		s << "Start frame:\t" << slide.intended.startFrame << ",\t" << slide.actual.startFrame << endl;
+		s << "Frame count:\t" << slide.intended.frameCount << ",\t" << slide.actual.frameCount;
+		if (slide.intended.frameCount != slide.actual.frameCount) {
+			s << "***"; //Mark the error
+		}
+		s << endl;
+
+		s << "Copy to back buffer complete time: " << slide.copyToBackBufferCompleteTime;
+		if (slide.copyToBackBufferCompleteTime > slide.actual.startTime) {
+			s << "***"; //Mark the error
+		}
+		
+		s << endl;
+		
+		s << endl;
+	}
+
+	return s.str();
+
 }
 
 
@@ -504,7 +551,9 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 			uint64_t currentFrameNumber = _config.display->getFrameNumber();
 
 			//Was the current frame just swapped in? If so, store information about the swap time.
-			if (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) {
+			if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) || 
+				(!_config.waitUntilFenceSyncComplete && (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)))
+			{
 
 				CX_Micros currentSlideOnset = _config.display->getLastSwapTime();
 
@@ -668,7 +717,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 
 
 void CX_SlidePresenter::_waitSyncCheck(void) {
-	if (!_useFenceSync || _config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
+	if (!_config.useFenceSync || _config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
 		return;
 	}
 
@@ -687,6 +736,7 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 
 				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " copied to back buffer";
 			} else {
+				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.getTime();
 				Log.error("CX_SlidePresenter") << "Slide #" << _currentSlide << " fence sync completed when active slide was not waiting for copy to back buffer.";
 				_awaitingFenceSync = false;
 			}
@@ -705,7 +755,7 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 
 	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started";
 
-	if (_useFenceSync && _config.swappingMode != Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
+	if (_config.useFenceSync && _config.swappingMode != Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
 		_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		glFlush();
 		_awaitingFenceSync = true;
@@ -719,7 +769,7 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 }
 
 unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Micros duration) {
-	double framesInDuration = (double)duration / _config.display->getFramePeriod();
+	double framesInDuration = duration / _config.display->getFramePeriod();
 	framesInDuration = CX::Util::round(framesInDuration, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 	return (uint32_t)framesInDuration;
 }

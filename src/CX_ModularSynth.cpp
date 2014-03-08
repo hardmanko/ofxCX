@@ -21,6 +21,30 @@ ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 // ModuleBase //
 ////////////////
 
+/*! This is a reciprocal operation: This module's input is removed and in's output to this module
+is removed. */
+void ModuleBase::disconnectInput(ModuleBase* in) {
+	for (unsigned int i = 0; i < _inputs.size(); i++) {
+		if (_inputs[i] == in) {
+			ModuleBase* inputModule = _inputs[i];
+			_inputs.erase(_inputs.begin() + i);
+			inputModule->disconnectOutput(this);
+			return;
+		}
+	}
+}
+
+void ModuleBase::disconnectOutput(ModuleBase* out) {
+	for (unsigned int i = 0; i < _outputs.size(); i++) {
+		if (_outputs[i] == out) {
+			ModuleBase* outputModule = _outputs[i];
+			_outputs.erase(_outputs.begin() + i);
+			outputModule->disconnectOutput(this);
+			return;
+		}
+	}
+}
+
 void ModuleBase::_assignInput(ModuleBase* in) {
 	if (_maxInputs() == 0) {
 		return;
@@ -542,6 +566,13 @@ double RecursiveFilter::getNextSample(void) {
 		return 0;
 	}
 
+	frequency.updateValue();
+	bandwidth.updateValue();
+
+	if (frequency.valueUpdated() || bandwidth.valueUpdated()) {
+		_recalculateCoefficients();
+	}
+
 	double x0 = _inputs.front()->getNextSample();
 	double y0;
 
@@ -561,12 +592,12 @@ double RecursiveFilter::getNextSample(void) {
 	return y0;
 }
 
-void RecursiveFilter::_calcCoefs(void) {
+void RecursiveFilter::_recalculateCoefficients(void) {
 	if (!_data->initialized) {
 		return;
 	}
 
-	double f_angular = 2 * PI * _breakpoint / _data->sampleRate; //Normalized angular frequency
+	double f_angular = 2 * PI * frequency.getValue() / _data->sampleRate; //Normalized angular frequency
 
 	if (_filterType == LOW_PASS || _filterType == HIGH_PASS) {
 		double x = exp(-f_angular);
@@ -585,7 +616,7 @@ void RecursiveFilter::_calcCoefs(void) {
 		}
 
 	} else if (_filterType == BAND_PASS || _filterType == NOTCH) {
-		double R = 1 - (3 * _bandwidth / _data->sampleRate); //Bandwidth is normalized
+		double R = 1 - (3 * bandwidth.getValue() / _data->sampleRate); //Bandwidth is normalized
 		double K = (1 - 2 * R*cos(f_angular) + (R*R)) / (2 - 2 * cos(f_angular));
 
 		b1 = 2 * R * cos(f_angular);
@@ -610,9 +641,10 @@ Of course, past those frequencies the attenuation continues.
 Larger values result in a less pointy band.
 \param bw The bandwidth.
 */
-void RecursiveFilter::setBandwidth(double bw) {
-	_bandwidth = bw;
-}
+//void RecursiveFilter::setBandwidth(double bw) {
+	//_bandwidth = bw;
+	//bandwidth = bw;
+//}
 
 //////////////
 // Splitter //

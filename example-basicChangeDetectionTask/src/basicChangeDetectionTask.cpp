@@ -20,7 +20,7 @@ struct TrialData_t {
 	ofColor newColor;
 
 	//CX_Keyboard::Event response;
-	int64_t responseTime;
+	CX_Millis responseLatency;
 	bool responseCorrect;
 };
 
@@ -138,10 +138,10 @@ void updateExperiment (void) {
 					//this case, that is easy to do because the SlidePresenter tracks that information for us.
 					//The last slide (given by getSlides().back()) has the slide presentation time stored in
 					//the actualSlideOnset member.
-					uint64_t testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
+					CX_Micros testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 					//One you have the onset time of the test array, you can subtract that from the time
 					//of the response, giving the "response time" (better known as response latency).
-					trials.at( trialIndex ).responseTime = keyEvent.eventTime - testArrayOnset;
+					trials.at( trialIndex ).responseLatency = keyEvent.eventTime - testArrayOnset;
 
 					//Code the response. For a lot of keys, you can compare the CX_Keyboard::Event::key to a character literal.
 					if ((trials.at( trialIndex ).changeTrial && keyEvent.key == 'd') || (!trials.at( trialIndex ).changeTrial && keyEvent.key == 's')) {
@@ -268,7 +268,7 @@ void outputData(void) {
 
 	for (vector<TrialData_t>::iterator it = trials.begin(); it != trials.end(); it++) {
 		out << it->arraySize << t << it->changedObjectIndex << t << it->changeTrial << t << it->responseCorrect << t << 
-			it->responseTime << t << it->newColor;
+			it->responseLatency << t << it->newColor;
 
 		//Enclose the vectors in quotes so that they are not split on a delimiter when reading into a spreadsheet.
 		out << "\"";

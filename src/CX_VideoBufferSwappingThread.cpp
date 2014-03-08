@@ -80,7 +80,7 @@ CX_Micros CX_VideoBufferSwappingThread::getTypicalSwapPeriod (void) {
 			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
 				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
 			}
-			typicalSwapPeriod = swapPeriodSum/(_recentSwapTimes.size() - 1);
+			typicalSwapPeriod = swapPeriodSum.value()/(_recentSwapTimes.size() - 1);
 		}
 		_unlockMutex();
 	}

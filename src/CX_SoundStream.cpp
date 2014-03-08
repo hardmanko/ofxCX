@@ -196,7 +196,7 @@ it is based on what the sound card driver reports, which is often false.
 \return The stream latency in microseconds. */
 CX_Micros CX_SoundStream::getStreamLatency (void) {
 	long latencySamples = _rtAudio->getStreamLatency();
-	CX_Micros latency = (CX_Micros)(((CX_Micros)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
+	CX_Micros latency = (CX_Micros)(((long long)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
 	return latency;
 }
 
@@ -214,7 +214,7 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 /*! Estimate the time at which the next buffer swap will occur.
 \return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.getTime(). */
 CX_Micros CX_SoundStream::estimateNextSwapTime (void) {
-	CX_Micros bufferSwapInterval = (_config.bufferSize * 1000000)/_config.sampleRate;
+	CX_Micros bufferSwapInterval = ((long long)_config.bufferSize * 1000000)/_config.sampleRate;
 	return _lastSwapTime + bufferSwapInterval;
 }
 

@@ -2,13 +2,12 @@
 #define _CX_DISPLAY_H_
 
 /*! \defgroup video Video
-This module is related to creating and presenting visual stimuli. Mostly, it is responsible for controlling
-presentation timing of stimuli rather than actually creating the stimuli.
+This module is related to creating and presenting visual stimuli.
 
-Almost all of the actual drawing of stimuli is done using openFrameworks functions. A lot of the common
-functions can be found in ofGraphics.h (http://www.openframeworks.cc/documentation/graphics/ofGraphics.html),
-but there are a lot of other ways to draw stimuli: see the graphics and 3d sections if this page: 
-http://www.openframeworks.cc/documentation/.
+The CX::Draw namespace contains some more complex drawing functions. However, almost all of the drawing of 
+stimuli is done using openFrameworks functions. A lot of the common functions can be found in ofGraphics.h 
+(http://www.openframeworks.cc/documentation/graphics/ofGraphics.html), but there are a lot of other ways to 
+draw stimuli: see the graphics and 3d sections if this page: http://www.openframeworks.cc/documentation/.
 */
 
 #include <deque>

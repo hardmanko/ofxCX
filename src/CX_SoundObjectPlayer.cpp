@@ -73,7 +73,7 @@ bool CX_SoundObjectPlayer::startPlayingAt(CX_Micros experimentTime, CX_Micros la
 	}
 
 	CX_Micros lastSwapTime = _soundStream.getLastSwapTime(); //This is the time at which the last swap started (i.e. as soon as the fill buffer callback was called).
-	uint64_t samplesFramesSinceLastSwap = ((adjustedStartTime - lastSwapTime) * _soundStream.getConfiguration().sampleRate) / 1000000;
+	uint64_t samplesFramesSinceLastSwap = (adjustedStartTime - lastSwapTime).seconds() * _soundStream.getConfiguration().sampleRate;
 	
 	uint64_t lastSwapStartSFNumber = _soundStream.getSampleFrameNumber() - _soundStream.getConfiguration().bufferSize; //Go back to the previous buffer start SF
 
@@ -88,7 +88,7 @@ in the sound.
 \param time The time in the sound to seek to.
 */
 void CX_SoundObjectPlayer::setTime(CX_Micros time) {
-	_soundPlaybackSampleFrame = (time * _soundStream.getConfiguration().sampleRate) / 1000000;
+	_soundPlaybackSampleFrame = time.seconds() * _soundStream.getConfiguration().sampleRate;
 }
 
 

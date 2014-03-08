@@ -30,8 +30,8 @@ ofColor textColor(255);
 char targetKey = 'f';
 char nonTargetKey = 'j';
 
-CX_Millis stimulusPresentationDuration = 1000.0;
-CX_Millis interStimulusInterval = 1000.0;
+CX_Millis stimulusPresentationDuration = 1000;
+CX_Millis interStimulusInterval = 1000;
 
 CX_SlidePresenter SlidePresenter;
 void finalSlideFunction (CX_SlidePresenter::FinalSlideFunctionArgs& info);
@@ -39,6 +39,8 @@ void drawStimulusForTrial (unsigned int trial, bool showInstructions);
 void generateTrials (int numberOfTrials);
 
 void runExperiment (void) {
+
+	//Display.setFullScreen(true);
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
@@ -51,6 +53,11 @@ void runExperiment (void) {
 	//Configure the SlidePresenter:
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display; //Set the SlidePresenter to use Display for the display.
+
+	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
+
+	config.useFenceSync = true;
+	config.waitUntilFenceSyncComplete = false;
 
 	//Set a function that you want to be called every time the SlidePresenter has started to present the last
 	//slide you put in. In your function, you can add more slides to the SlidePresenter. Every time it reaches 
@@ -105,15 +112,19 @@ void runExperiment (void) {
 	//When the slide presenter is done presenting slides, that means we are done with this mini-experiment.
 	df.printToFile("N-Back output.txt"); //Output the data.
 
+	cout << SlidePresenter.printLastPresentationInformation() << endl;
+
+	Display.setFullScreen(false);
+
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
 	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!\nPress any key to exit.", letterFont);
 	Display.endDrawingToBackBuffer();
 	Display.BLOCKING_swapFrontAndBackBuffers();
 
-	Log.flush();
+	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. 
+		//You could do it in each interstimulus blank, but there is more potential for timing problems there.
 
-	//ofSleepMillis(3000); //Wait for three seconds before returning.
 	while (!Input.pollEvents())
 		;
 
@@ -156,7 +167,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 	if (++trialNumber == trialCount) {
 		info.instance->stopSlidePresentation(); //You can explicitly stop presentation using this function. 
 			//You can also stop presentation by simply not adding any more slides to the SlidePresenter. 
-			//Because it has no more slides to present, it will just stop.
+			//If it has no more slides to present, it will just stop.
 
 	} else {
 		//Draw the next letter and the following blank.
@@ -164,11 +175,9 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 		drawStimulusForTrial(trialNumber, true);
 
 		info.instance->beginDrawingNextSlide(interStimulusInterval, "blank");
-		ofBackground(backgroundColor);
+		//ofBackground(backgroundColor);
+		ofBackground(255);
 		info.instance->endDrawingCurrentSlide();
-
-		Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. You could simply wait until
-		//the experiment is finished or the end of a trial block to flush.
 	}
 
 }

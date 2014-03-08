@@ -35,22 +35,19 @@ void simpleTest(void) {
 A waveform generating function takes a value that represents the location in the waveform at
 the current point in time. These values are in the interval [0,1).
 
-The waveform generating function should return a double representing the emplitude of the
-wave at the given time point.
+The waveform generating function should return a double representing the amplitude of the
+wave at the given waveform position.
 
 To put this all together, a sine wave generator looks like this: */
 double sineWaveGeneratorFunction(double waveformPosition) {
-	return sin(2 * PI * waveformPosition); //The argument for sin is in radians. 1 cycle is 2*PI radians.
+	return sin(2 * PI * waveformPosition); //The argument for sin() is in radians. 1 cycle is 2*PI radians.
 }
 
 void runExperiment(void) {
 
 	simpleTest();
 
-	CX_SoundObject tso;
-	vector<float> t = sequence<float>(1, 6, 1);
-	tso.setFromVector(t, 2, 50);
-	tso.reverse();
+
 
 	CX_SoundStream::Configuration config;
 	config.api = RtAudio::Api::WINDOWS_DS;
@@ -65,7 +62,6 @@ void runExperiment(void) {
 
 
 	Mixer oscMix;
-
 
 	Oscillator mainOsc;
 	mainOsc.frequency = 1000;
@@ -124,103 +120,8 @@ void runExperiment(void) {
 	ampEnv.r = .2;
 
 
-
 	//After the mixer, filter, attach the amp envelope, and route into the output.
 	mainOsc >> filter >> ampEnv >> output;
-
-
-	FIRFilter fir;
-	fir.setup(FIRFilter::LOW_PASS, 21);
-	
-	ModuleControlData_t dat;
-	dat.sampleRate = 1000;
-	fir.setData(dat);
-	fir.setCutoff(125);
-
-
-	/*
-	RecursiveFilter rec;
-	rec.setBreakpoint(1000);
-	rec.setBandwidth(100);
-	rec.setup(RecursiveFilter::FilterType::BAND_PASS);
-
-	RCFilter rc;
-	rc.breakpoint = 1000;
-
-	SoundObjectOutput filterOut;
-	filterOut.setup(44100);
-
-	mainOsc.frequency = 500;
-	mainOsc.setGeneratorFunction(Oscillator::square);
-
-	mainOsc >> rec >> filterOut;
-	filterOut.sampleData(2);
-	filterOut.so.normalize();
-
-	rec.setBandwidth(300);
-	rec.setup(RecursiveFilter::FilterType::BAND_PASS);
-	filterOut.sampleData(2);
-
-	//mainOsc >> rc >> filterOut;
-	//filterOut.sampleData(3);
-
-	filterOut.so.writeToFile("Recursive types.wav");
-	*/
-
-
-	AdditiveSynth as;
-	as.setHarmonicSeries(31, AdditiveSynth::HarmonicSeriesType::HS_SEMITONE, 7);
-	as.setAmplitudes(AdditiveSynth::HarmonicAmplitudeType::SAW);
-	as.setFundamentalFrequency(300);
-	as.pruneLowAmplitudeHarmonics(0.01);
-
-	Splitter ts;
-	Multiplier lm;
-	Multiplier rm;
-
-	lm.amount = 0.5;
-	rm.amount = 0.01;
-
-	as >> lm >> output;
-
-	ss.start();
-
-	while (1)
-		;
-
-	as >> ts >> lm;
-	ts >> rm;
-
-	//StereoSoundObjectOutput stereo;
-	//stereo.setup(48000);
-
-	//lm >> stereo.left;
-	//rm >> stereo.right;
-
-	//stereo.sampleData(3);
-
-	lm.amount = .01;
-	rm.amount = .1;
-
-	//stereo.sampleData(3);
-
-	//stereo.so.writeToFile("stereo.wav");
-
-
-	SoundObjectOutput asOut;
-	asOut.setup(48000);
-
-	Multiplier mm;
-	mm.amount = .5;
-
-	as >> mm >> asOut;
-
-	asOut.sampleData(1);
-
-	cout << "Peaks: " << asOut.so.getPositivePeak() << " " << asOut.so.getNegativePeak() << endl;
-
-	asOut.so.normalize();
-	asOut.so.writeToFile("add synth.wav");
 
 
 

@@ -9,6 +9,8 @@
 /*! \namespace CX::Synth
 This namespace contains a number of classes that can be combined together to form a modular
 synth that can be used to generate sound stimuli.
+
+\ingroup sound
 */
 
 namespace CX {
@@ -80,6 +82,10 @@ namespace Synth {
 			return *_data;
 		}
 
+		
+		void disconnectInput(ModuleBase* in);
+		void disconnectOutput(ModuleBase* out);
+
 	protected:
 
 		vector<ModuleBase*> _inputs;
@@ -119,33 +125,49 @@ namespace Synth {
 	public:
 
 		ModuleParameter(void) :
-			_data(0),
+			_value(0),
+			_updated(true),
 			_input(nullptr),
 			_owner(nullptr)
 		{}
 
 		ModuleParameter(double d) :
-			_data(d),
+			_value(d),
+			_updated(true),
 			_input(nullptr),
 			_owner(nullptr)
 		{}
 
-		virtual void updateValue(void) {
+		/*! Returns true if the value has been updated. */
+		void updateValue(void) {
 			if (_input != nullptr) { //If there is no input connected, just keep the same value.
-				_data = _input->getNextSample();
+				double temp = _input->getNextSample();
+				if (temp != _value) {
+					_value = temp;
+					_updated = true;
+				}
 			}
 		}
 
+		bool valueUpdated(void) {
+			if (_updated) {
+				_updated = false;
+				return true;
+			}
+			return false;
+		}
+
 		double& getValue(void) {
-			return _data;
+			return _value;
 		}
 
 		operator double(void) {
-			return _data;
+			return _value;
 		}
 
 		ModuleParameter& operator=(double d) {
-			_data = d;
+			_value = d;
+			_updated = true;
 			_input = nullptr; //Disconnect the input
 			return *this;
 		}
@@ -172,7 +194,8 @@ namespace Synth {
 		ModuleBase* _owner;
 		ModuleBase* _input; //Parameters have one input and no outputs.
 
-		double _data;
+		bool _updated;
+		double _value;
 	};
 
 	/*! This class is an implementation of an additive synthesizer. Additive synthesizers are essentially an
@@ -680,6 +703,7 @@ namespace Synth {
 	class RecursiveFilter : public ModuleBase {
 	public:
 
+		/*! The type of filter to use. */
 		enum FilterType {
 			LOW_PASS,
 			HIGH_PASS,
@@ -692,35 +716,47 @@ namespace Synth {
 			x1(0),
 			x2(0),
 			y1(0),
-			y2(0)
-		{}
+			y2(0),
+			frequency(1000),
+			bandwidth(50)
+		{
+			this->_registerParameter(&frequency);
+			this->_registerParameter(&bandwidth);
+		}
 
 		void setup(RecursiveFilter::FilterType type) {
 			_filterType = type;
-			_calcCoefs();
+			_recalculateCoefficients();
 		}
 
 		double getNextSample(void) override;
 
-		void setBreakpoint(double freq) {
-			_breakpoint = freq;
-			_calcCoefs();
-		}
+		//void setBreakpoint(double freq) {
+		//	_breakpoint = freq;
+		//	_calcCoefs();
+		//}
 
-		void setBandwidth(double bw);
+		//void setBandwidth(double bw);
+
+		/*! The cutoff frequency of the filter. */
+		ModuleParameter frequency;
+
+		/*! Only used for BAND_PASS and NOTCH filters. Sets the width (in frequency domain) of the stop or pass band
+		at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies
+		100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set bw to 100.
+		Of course, past those frequencies the attenuation continues.
+		Larger values result in a less pointy band.	*/
+		ModuleParameter bandwidth;
 
 	private:
 
 		RecursiveFilter::FilterType _filterType;
 
 		void _dataSetEvent(void) override {
-			_calcCoefs();
+			_recalculateCoefficients();
 		}
 
-		void _calcCoefs(void);
-
-		double _breakpoint;
-		double _bandwidth;
+		void _recalculateCoefficients(void);
 
 		double a0;
 		double a1;

@@ -35,7 +35,13 @@ void CX_Display::setup (void) {
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
 		//what too early means) or else there will be a crash.
 
-	BLOCKING_estimateFramePeriod( 300 * 1000 ); //Estimate for 300 ms.
+	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast.
+	//So swap a few times to clear out the "bad" initial swaps.
+	for (int i = 0; i < 5; i++) {
+		glfwSwapBuffers(CX::Private::glfwContext);
+	}
+
+	BLOCKING_estimateFramePeriod( CX_Millis(500) );
 }
 
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
@@ -242,13 +248,45 @@ void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
 		swapTimes.push_back( CX::Instances::Clock.getTime() );
 	}
 
+	/*
+	if (swapTimes.size() < 2) {
+		//warning?
+		return;
+	}
+
+	vector<CX_Micros> swapDurations(swapTimes.size() - 1);
+	CX_Micros swapSum = 0;
+	for (unsigned int i = 1; i < swapTimes.size(); i++) {
+		CX_Micros duration = swapTimes[i] - swapTimes[i - 1];
+		swapSum += duration;
+		swapDurations[i - 1] = duration;
+	}
+
+	CX_Micros mean = swapSum.micros() / swapDurations.size();
+	CX_Micros cleanedSum = 0;
+
+	//Clean durations that seem to be wrong
+	for (unsigned int i = 0; i < swapDurations.size(); i++) {
+		cleanedSum += swapDurations[i];
+		if (swapDurations[i] < (mean / 2)) {
+			cleanedSum -= swapDurations[i];
+			swapDurations.erase(swapDurations.begin() + i);
+			i--;
+		}	
+	}
+	
+
+	_framePeriod = cleanedSum / swapDurations.size();
+	*/
+
+	
 	if (swapTimes.size() > 1) {
 		CX_Micros swapSum = 0;
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			swapSum += swapTimes[i] - swapTimes[i - 1];
 		}
 
-		_framePeriod = swapSum/(swapTimes.size() - 1);
+		_framePeriod = swapSum / (swapTimes.size() - 1);
 	}
 	
 	BLOCKING_setAutoSwapping(wasSwapping);

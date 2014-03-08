@@ -137,7 +137,9 @@ namespace CX {
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
 				deallocateCompletedSlides(true),
 				swappingMode(SwappingMode::MULTI_CORE),
-				preSwapCPUHoggingDuration(5000)
+				preSwapCPUHoggingDuration(5000),
+				useFenceSync(true),
+				waitUntilFenceSyncComplete(false)
 			{}
 
 			CX_Display *display; //!< A pointer to the display to use.
@@ -155,6 +157,9 @@ namespace CX {
 				SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED
 				MULTI_CORE //could be FRAME_COUNTED_THREADED
 			} swappingMode;
+
+			bool useFenceSync;
+			bool waitUntilFenceSyncComplete;
 		};
 
 		/*! Contains information about the presentation timing of the slide. */
@@ -230,6 +235,7 @@ namespace CX {
 		std::vector<unsigned int> getActualFrameCounts(void);
 
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
+		std::string printLastPresentationInformation(void) const;
 
 
 		// Returns the index of the slide that is currently being presented.
