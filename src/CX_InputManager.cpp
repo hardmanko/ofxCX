@@ -55,7 +55,7 @@ processed by user code, this function will return true.
 bool CX_InputManager::pollEvents (void) {
 
 	glfwPollEvents();
-	CX_Micros pollCompleteTime = CX::Instances::Clock.getTime();
+	CX_Millis pollCompleteTime = CX::Instances::Clock.getTime();
 
 	if (_usingJoystick) {
 		Joystick.pollEvents();

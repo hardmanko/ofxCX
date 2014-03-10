@@ -58,13 +58,13 @@ bool CX_SoundObjectPlayer::stop (void) {
 plus the offset should be in the future. If it is not, the sound will start playing immediately.
 \param latencyOffset An offset that accounts for latency. If, for example, you called this function with
 an offset of 0 and discovered that the sound played 200 ms later than you were expecting it to,
-you would set offset to -200 * 1000 in order to queue the start time 200 ms earlier than the
+you would set offset to -200 in order to queue the start time 200 ms earlier than the
 desired experiment time.
 \return False if the start time plus the offset is in the past. True otherwise.
 \note See setTime() for a way to choose the current time point within the sound.
 */
-bool CX_SoundObjectPlayer::startPlayingAt(CX_Micros experimentTime, CX_Micros latencyOffset) {
-	CX_Micros adjustedStartTime = experimentTime + latencyOffset;
+bool CX_SoundObjectPlayer::startPlayingAt(CX_Millis experimentTime, CX_Millis latencyOffset) {
+	CX_Millis adjustedStartTime = experimentTime + latencyOffset;
 
 	if (adjustedStartTime <= Clock.getTime()) {
 		Log.warning("CX_SoundObjectPlayer") << "startPlayingAt: Desired start time has already passed. Starting immediately.";
@@ -72,7 +72,7 @@ bool CX_SoundObjectPlayer::startPlayingAt(CX_Micros experimentTime, CX_Micros la
 		return false;
 	}
 
-	CX_Micros lastSwapTime = _soundStream.getLastSwapTime(); //This is the time at which the last swap started (i.e. as soon as the fill buffer callback was called).
+	CX_Millis lastSwapTime = _soundStream.getLastSwapTime(); //This is the time at which the last swap started (i.e. as soon as the fill buffer callback was called).
 	uint64_t samplesFramesSinceLastSwap = (adjustedStartTime - lastSwapTime).seconds() * _soundStream.getConfiguration().sampleRate;
 	
 	uint64_t lastSwapStartSFNumber = _soundStream.getSampleFrameNumber() - _soundStream.getConfiguration().bufferSize; //Go back to the previous buffer start SF
@@ -87,7 +87,7 @@ time in the sound. If the sound object is currently playing, this will jump to t
 in the sound.
 \param time The time in the sound to seek to.
 */
-void CX_SoundObjectPlayer::setTime(CX_Micros time) {
+void CX_SoundObjectPlayer::setTime(CX_Millis time) {
 	_soundPlaybackSampleFrame = time.seconds() * _soundStream.getConfiguration().sampleRate;
 }
 

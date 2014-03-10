@@ -29,6 +29,7 @@ ofColor textColor(255);
 
 char targetKey = 'f';
 char nonTargetKey = 'j';
+string keyReminderInstructions;
 
 CX_Millis stimulusPresentationDuration = 1000;
 CX_Millis interStimulusInterval = 1000;
@@ -40,8 +41,6 @@ void generateTrials (int numberOfTrials);
 
 void runExperiment (void) {
 
-	//Display.setFullScreen(true);
-	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
 	letterFont.loadFont(OF_TTF_SANS, 26); //The easiest way to pick fonts is to use the constants OF_TTF_SANS,
@@ -54,11 +53,6 @@ void runExperiment (void) {
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display; //Set the SlidePresenter to use Display for the display.
 
-	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
-
-	config.useFenceSync = true;
-	config.waitUntilFenceSyncComplete = false;
-
 	//Set a function that you want to be called every time the SlidePresenter has started to present the last
 	//slide you put in. In your function, you can add more slides to the SlidePresenter. Every time it reaches 
 	//the last slide, it will called finalSlideFunction again.
@@ -66,19 +60,23 @@ void runExperiment (void) {
 
 	config.deallocateCompletedSlides = true; //We know that for this experiment we will never want to present the
 		//same slide twice, so we set the SlidePresenter to deallocate the memory used for slides that have already been presented.
-		//This help to prevent out-of-memory issues with the video card.
+		//This can help to prevent out-of-memory issues with the video card (although that should be next to impossible to do).
 
 	SlidePresenter.setup(config);
+
+	stringstream s;
+	s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
+	keyReminderInstructions = s.str();
 
 
 	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
 	for (int i = 3; i > 0; i--) {
-		SlidePresenter.beginDrawingNextSlide(1000000, "fixation");
+		SlidePresenter.beginDrawingNextSlide(1000, "fixation");
 		ofBackground(backgroundColor);
 		ofSetColor(textColor);
 		stringstream s;
 		s << nBack << "-back task" << endl;
-		s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets" << endl;
+		s << keyReminderInstructions << endl;
 		s << "Starting in " << i;
 
 		Draw::centeredString(Display.getCenterOfDisplay(), s.str(), letterFont);
@@ -88,12 +86,13 @@ void runExperiment (void) {
 	for (unsigned int i = 0; i <= nBack; i++) {
 		SlidePresenter.beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
 		drawStimulusForTrial(i, (i == nBack)); //The i == nBack thing is just to draw the on screen instructions only for
-			//trials on which the participant should respond (no on the first nBack trials, but on the nBack-th trial they should).
+			//trials on which the participant should respond (not on the first nBack trials, but on the nBack-th trial they should).
 		SlidePresenter.endDrawingCurrentSlide();
 
 		SlidePresenter.beginDrawingNextSlide(interStimulusInterval, "blank");
 		ofBackground(backgroundColor);
 		SlidePresenter.endDrawingCurrentSlide();
+
 	}
 	trialNumber = nBack; //This will be the stimulus number that was just presented the first time the user function is called.
 
@@ -112,7 +111,8 @@ void runExperiment (void) {
 	//When the slide presenter is done presenting slides, that means we are done with this mini-experiment.
 	df.printToFile("N-Back output.txt"); //Output the data.
 
-	cout << SlidePresenter.printLastPresentationInformation() << endl;
+	//Calling this function can give us a lot of information about the last presentation of slides.
+	Log.notice() << "Slide presentation information: " << endl << SlidePresenter.printLastPresentationInformation();
 
 	Display.setFullScreen(false);
 
@@ -139,7 +139,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 	if (Input.Keyboard.availableEvents() > 0) {
 		//We don't want any responses made before the stimulus was presented, so let's find out when it was presented.
 		CX_SlidePresenter::Slide &lastStimulusSlide = SlidePresenter.getSlides().at( info.currentSlideIndex - 1 );
-		CX_Micros stimulusOnset = lastStimulusSlide.actual.startTime;
+		CX_Millis stimulusOnset = lastStimulusSlide.actual.startTime;
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_Keyboard::Event kev = Input.Keyboard.getNextEvent();
@@ -175,11 +175,9 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 		drawStimulusForTrial(trialNumber, true);
 
 		info.instance->beginDrawingNextSlide(interStimulusInterval, "blank");
-		//ofBackground(backgroundColor);
-		ofBackground(255);
+		ofBackground(backgroundColor);
 		info.instance->endDrawingCurrentSlide();
 	}
-
 }
 
 void generateTrials(int numberOfTrials) {
@@ -188,7 +186,7 @@ void generateTrials(int numberOfTrials) {
 
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
 	vector<string> letters = arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
-		//to use an initializer list for vectors as well as arrays. Until then, arrayToVector is useful.
+	//to use an initializer list for vectors as well as arrays. Until then, arrayToVector is useful.
 
 	//Draw trialCount deviates from a binomial distribution with 1 trial and 40% probability of a success (i.e. trialCount slightly unfair coin flips).
 	//For a real N-Back task, you would probably use a more complicated way of determining the trial sequence.
@@ -223,8 +221,6 @@ void drawStimulusForTrial(unsigned int trial, bool showInstructions) {
 	Draw::centeredString(Display.getCenterOfDisplay(), letter, letterFont);
 
 	if (showInstructions) {
-		stringstream s;
-		s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
-		instructionFont.drawString(s.str(), 30, Display.getResolution().y - 30);
+		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);
 	}
 }

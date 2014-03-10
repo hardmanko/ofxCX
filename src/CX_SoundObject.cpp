@@ -142,7 +142,7 @@ See those functions for more information.
 
 \return Returns true if the new sound was added sucessfully, false otherwise.
 */
-bool CX_SoundObject::addSound (string fileName, CX_Micros timeOffset) {
+bool CX_SoundObject::addSound(string fileName, CX_Millis timeOffset) {
 	if (_soundData.size() == 0 || !this->_successfullyLoaded) {
 		bool loadSuccess = this->loadFile(fileName);
 		if (loadSuccess) {
@@ -171,7 +171,7 @@ The data from `nso` and this CX_SoundObject are merged by adding the amplitudes 
 
 \return True if nso was successfully added to this CX_SoundObject, false otherwise.
 */
-bool CX_SoundObject::addSound (CX_SoundObject nso, CX_Micros timeOffset) {
+bool CX_SoundObject::addSound(CX_SoundObject nso, CX_Millis timeOffset) {
 	if (!nso._successfullyLoaded) {
 		Log.error("CX_SoundObject") << "addSound: Added sound object not successfully loaded. It will not be added.";
 		return false;
@@ -250,7 +250,7 @@ bool CX_SoundObject::isReadyToPlay (void) {
 
 /*! Set the length of the sound to the specified length in microseconds. If the new length is longer than the old length,
 the new data is zeroed (i.e. set to silence). */
-void CX_SoundObject::setLength (CX_Micros length) {
+void CX_SoundObject::setLength(CX_Millis length) {
 	unsigned int endOfDurationSample = _soundChannels * (unsigned int)(getSampleRate() * length.seconds());
 
 	_soundData.resize( endOfDurationSample, 0 );
@@ -258,7 +258,7 @@ void CX_SoundObject::setLength (CX_Micros length) {
 
 /*! Gets the length, in time, of the sound object.
 \return The length. */
-CX_Micros CX_SoundObject::getLength (void) {
+CX_Millis CX_SoundObject::getLength(void) {
 	return CX_Seconds((double)_soundData.size() / (getChannelCount() * (double)getSampleRate()));
 	//return (long long)(((uint64_t)_soundData.size() * 1000000)/(getChannelCount() * (uint64_t)getSampleRate()));
 }
@@ -332,7 +332,7 @@ void CX_SoundObject::stripLeadingSilence (float tolerance) {
 so does the duration of silence.
 \param atBeginning If true, silence is added at the beginning of the CX_SoundObject. If false, the silence is added at the end.
 */
-void CX_SoundObject::addSilence (CX_Micros duration, bool atBeginning) {
+void CX_SoundObject::addSilence(CX_Millis duration, bool atBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count for the new silence.
 	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * duration.seconds());
 
@@ -349,7 +349,7 @@ void CX_SoundObject::addSilence (CX_Micros duration, bool atBeginning) {
 \param fromBeginning If true, sound is deleted from the beginning of the CX_SoundObject's buffer.
 If false, the sound is deleted from the end, toward the beginning.
 */
-void CX_SoundObject::deleteAmount (CX_Micros duration, bool fromBeginning) {
+void CX_SoundObject::deleteAmount(CX_Millis duration, bool fromBeginning) {
 	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count to delete.
 	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * duration.seconds());
 

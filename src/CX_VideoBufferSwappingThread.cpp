@@ -17,7 +17,7 @@ void CX_VideoBufferSwappingThread::threadedFunction (void) {
 		//yield(); //??
 		glfwSwapBuffers( CX::Private::glfwContext );
 
-		CX_Micros swapTime = CX::Instances::Clock.getTime();
+		CX_Millis swapTime = CX::Instances::Clock.getTime();
 
 		if (lock()) {
 			++_frameCount;
@@ -72,23 +72,23 @@ bool CX_VideoBufferSwappingThread::swappedSinceLastCheck (void) {
 	return rval;
 }
 
-CX_Micros CX_VideoBufferSwappingThread::getTypicalSwapPeriod (void) {
-	CX_Micros typicalSwapPeriod = 0;
+CX_Millis CX_VideoBufferSwappingThread::getTypicalSwapPeriod(void) {
+	CX_Millis typicalSwapPeriod = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
-			CX_Micros swapPeriodSum = 0;
+			CX_Millis swapPeriodSum = 0;
 			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
 				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
 			}
-			typicalSwapPeriod = swapPeriodSum.value()/(_recentSwapTimes.size() - 1);
+			typicalSwapPeriod = swapPeriodSum/(_recentSwapTimes.size() - 1);
 		}
 		_unlockMutex();
 	}
 	return typicalSwapPeriod;
 }
 
-CX_Micros CX_VideoBufferSwappingThread::estimateNextSwapTime (void) {
-	CX_Micros nextSwapTime = 0;
+CX_Millis CX_VideoBufferSwappingThread::estimateNextSwapTime(void) {
+	CX_Millis nextSwapTime = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
 			nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
@@ -98,8 +98,8 @@ CX_Micros CX_VideoBufferSwappingThread::estimateNextSwapTime (void) {
 	return nextSwapTime;
 }
 
-CX_Micros CX_VideoBufferSwappingThread::getLastSwapTime (void) {
-	CX_Micros lastSwapTime = 0;
+CX_Millis CX_VideoBufferSwappingThread::getLastSwapTime(void) {
+	CX_Millis lastSwapTime = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() > 0) {
 			lastSwapTime = _recentSwapTimes.back();
@@ -109,8 +109,8 @@ CX_Micros CX_VideoBufferSwappingThread::getLastSwapTime (void) {
 	return lastSwapTime;
 }
 
-CX_Micros CX_VideoBufferSwappingThread::getLastSwapPeriod (void) {
-	CX_Micros lastSwapPeriod = 0;
+CX_Millis CX_VideoBufferSwappingThread::getLastSwapPeriod(void) {
+	CX_Millis lastSwapPeriod = 0;
 	if (_lockMutex()) {
 		if (_recentSwapTimes.size() >= 2) {
 			lastSwapPeriod = _recentSwapTimes.at( _recentSwapTimes.size() - 1 ) - _recentSwapTimes.at( _recentSwapTimes.size() - 2 );

@@ -35,11 +35,32 @@ This namespace contains instances of some classes that are fundamental to the fu
 #include "CX_UnitConversion.h"
 #include "CX_Draw.h"
 
+#include "CX_Private.h"
+
 namespace CX {
 	namespace Instances {
 		extern CX_Display Display;
 		extern CX_InputManager Input;
 	}
+
+	struct CX_WindowConfiguration_t {
+		CX_WindowConfiguration_t(void) :
+			mode(ofWindowMode::OF_WINDOW),
+			width(800),
+			height(600)
+		{}
+
+		ofWindowMode mode;
+
+		int width;
+		int height;
+
+		ofPtr<ofBaseGLRenderer> desiredRenderer;
+		Private::CX_GLVersion desiredOpenGLVersion;
+	};
+
+	void relaunchWindow(CX_WindowConfiguration_t config);
+
 }
 
 using namespace CX;

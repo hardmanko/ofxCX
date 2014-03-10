@@ -136,12 +136,12 @@ public:
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
 
-	CX_Micros getStreamLatency (void);
+	CX_Millis getStreamLatency (void);
 
 	bool hasSwappedSinceLastCheck (void);
 	/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::Instances::Clock.getTime(). */
-	CX_Micros getLastSwapTime (void) { return _lastSwapTime; };
-	CX_Micros estimateNextSwapTime (void);
+	CX_Millis getLastSwapTime(void) { return _lastSwapTime; };
+	CX_Millis estimateNextSwapTime(void);
 
 	RtAudio* getRtAudioInstance(void);
 
@@ -166,7 +166,7 @@ private:
 	RtAudio *_rtAudio;
 	CX_SoundStream::Configuration _config;
 
-	CX_Micros _lastSwapTime;
+	CX_Millis _lastSwapTime;
 	uint64_t _lastSampleNumber;
 	uint64_t _sampleNumberAtLastCheck;
 };

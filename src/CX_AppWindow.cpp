@@ -179,6 +179,8 @@ void CX_AppWindow::setGLSLVersion(int major, int minor) {
 //------------------------------------------------------------
 void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 
+	glfwSetErrorCallback(&error_cb); //Set up error callback here so that errors during initialization can be detected.
+
 	requestedWidth = w;
 	requestedHeight = h;
 
@@ -210,12 +212,22 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 
 	if(glVersionMinor!=-1 && glVersionMajor!=-1){
 		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersionMajor);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);
-		if(glVersionMajor>=3){
-			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+		if (glVersionMajor >= 3 && glVersionMinor >= 2) {
+			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE); //GLFW_OPENGL_COMPAT_PROFILE, GLFW_OPENGL_CORE_PROFILE
+		} else {
+			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
 		}
+
+		if (glVersionMajor >= 3) {
+			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+		} else {
+			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
+		}
+
 		#ifdef TARGET_OPENGLES
 		glfwWindowHint(GLFW_CLIENT_API,GLFW_OPENGL_ES_API);
 		#endif
@@ -945,6 +957,11 @@ void CX_AppWindow::drop_cb(GLFWwindow* windowP_, const char* dropString) {
 	}
 #endif
 	ofNotifyDragEvent(drag);
+}
+
+//------------------------------------------------------------
+void CX_AppWindow::error_cb(int code, const char* message) {
+	ofLogError("GLFW") << "Error code: " << code << " " << message;
 }
 
 //------------------------------------------------------------

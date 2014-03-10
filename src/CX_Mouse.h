@@ -39,8 +39,8 @@ namespace CX {
 			//	double y;
 			//} scroll;
 
-			CX_Micros eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
-			CX_Micros uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
+			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
 			enum MouseEventType {
 				MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
@@ -67,7 +67,7 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
-		CX_Micros _lastEventPollTime;
+		CX_Millis _lastEventPollTime;
 
 		std::set<int> _heldMouseButtons;
 		std::queue<CX_Mouse::Event> _mouseEvents;

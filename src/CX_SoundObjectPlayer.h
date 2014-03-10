@@ -29,7 +29,7 @@ namespace CX  {
 		bool setup (CX_SoundObjectPlayerConfiguration_t config);
 
 		bool play (void);
-		bool startPlayingAt (CX_Micros experimentTime, CX_Micros offset);
+		bool startPlayingAt(CX_Millis experimentTime, CX_Millis offset);
 		bool stop (void);
 
 		//! Check if the sound is currently playing.
@@ -43,7 +43,7 @@ namespace CX  {
 		
 		bool BLOCKING_setSound (CX_SoundObject *sound);
 
-		void setTime(CX_Micros time);
+		void setTime(CX_Millis time);
 
 	private:
 

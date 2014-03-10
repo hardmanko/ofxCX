@@ -125,7 +125,7 @@ int getResponse (void) {
 
 			if (keyEvent.key == 's' || keyEvent.key == 'd') {
 
-				CX_Micros testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
+				CX_Millis testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 				trialDf(trialIndex, "responseLatency") = keyEvent.eventTime - testArrayOnset;
 
 				bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();

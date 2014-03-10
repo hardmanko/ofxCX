@@ -30,9 +30,9 @@ namespace CX {
 	class CX_SoundObject {
 	public:
 
-		bool loadFile (string fileName);
-		bool addSound (string fileName, CX_Micros timeOffset); //I'm really not sure I want to have this.
-		bool addSound (CX_SoundObject so, CX_Micros timeOffset);
+		bool loadFile (std::string fileName);
+		bool addSound(std::string fileName, CX_Millis timeOffset); //I'm really not sure I want to have this.
+		bool addSound(CX_SoundObject so, CX_Millis timeOffset);
 		bool setFromVector(const std::vector<float>& data, int channels, float sampleRate);
 
 		void clear(void);
@@ -49,12 +49,12 @@ namespace CX {
 		float getPositivePeak (void);
 		float getNegativePeak (void);
 
-		void setLength (CX_Micros length);
-		CX_Micros getLength (void);
+		void setLength(CX_Millis length);
+		CX_Millis getLength(void);
 
 		void stripLeadingSilence (float tolerance);
-		void addSilence (CX_Micros duration, bool atBeginning);
-		void deleteAmount (CX_Micros duration, bool fromBeginning);
+		void addSilence(CX_Millis duration, bool atBeginning);
+		void deleteAmount (CX_Millis duration, bool fromBeginning);
 
 		void reverse(void);
 
@@ -83,7 +83,7 @@ namespace CX {
 		bool writeToFile(std::string path);
 
 		//! This stores the name of the file from which data was read, if any. It can be set by the user with no side effects.
-		string name; 
+		std::string name; 
 
 	private:
 		//Should there be a name string for the sound? Defaulting to the file that was loaded, maybe.

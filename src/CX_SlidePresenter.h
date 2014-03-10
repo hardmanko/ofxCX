@@ -12,26 +12,6 @@
 
 namespace CX {
 
-	/*
-	class CX_SlidePresenter;
-
-	class CX_SlidePresenterUpdateThread : public ofThread {
-	public:
-
-		CX_SlidePresenterUpdateThread(void);
-
-		void setup(CX_SlidePresenter* owner);
-
-		void start(void);
-		void stop(void);
-		void threadedFunction(void) override;
-
-		bool isUpdating(void);
-	private:
-		CX_SlidePresenter *_sp;
-	};
-	*/
-
 	/*! This class is a very useful abstraction that presents slides (typically a full display) of visual stimuli for fixed durations.
 	See the basicChangeDetectionTask.cpp, advancedChangeDetectionTask.cpp, and nBack.cpp examples for the usage of this class.
 
@@ -150,7 +130,7 @@ namespace CX {
 
 			/*! \brief Only used if swappingMode is a single core mode. The amount of time, before a slide is swapped from
 			the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */
-			CX_Micros preSwapCPUHoggingDuration;
+			CX_Millis preSwapCPUHoggingDuration;
 
 			enum SwappingMode {
 				SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
@@ -158,7 +138,12 @@ namespace CX {
 				MULTI_CORE //could be FRAME_COUNTED_THREADED
 			} swappingMode;
 
+			/*! \brief Hint that fence sync should be used to check that slides are fully copied to the back buffer
+			before they are swapped in. */
 			bool useFenceSync;
+
+			/*! If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until
+			there is confirmation that the slide has been fully copied into the back buffer. This prevents vertical tearing. */
 			bool waitUntilFenceSyncComplete;
 		};
 
@@ -166,8 +151,8 @@ namespace CX {
 		struct SlideTimingInfo {
 			uint32_t startFrame; /*!< The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
 			uint32_t frameCount; /*!< The number of frames the slide was/should be presented for. */
-			CX_Micros startTime; /*!< The time at which the slide was/should have been started. Can be compared with values from Clock.getTime(). */
-			CX_Micros duration; /*!< Time amount of time the slide was/should have been presented for. */
+			CX_Millis startTime; /*!< The time at which the slide was/should have been started. Can be compared with values from Clock.getTime(). */
+			CX_Millis duration; /*!< Time amount of time the slide was/should have been presented for. */
 		};
 
 		/*! This struct contains information related to slide presentation using CX_SlidePresenter. */
@@ -175,7 +160,7 @@ namespace CX {
 
 			Slide() :
 				slideName("unnamed"),
-				drawingFunction(NULL),
+				drawingFunction(nullptr),
 				slideStatus(NOT_STARTED)
 			{}
 
@@ -183,7 +168,7 @@ namespace CX {
 
 			ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
 							   If drawingFunction points to a user function, framebuffer will not be drawn. */
-			void(*drawingFunction) (void); /*!< \brief Pointer to a user function that will be called to draw the slide.
+			std::function<void(void)> drawingFunction; /*!< \brief Pointer to a user function that will be called to draw the slide.
 										   If this points to a user function, it overrides `framebuffer`. The drawing function is
 										   not required to call ofBackground() or otherwise clear the display before drawing, which
 										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer. 
@@ -201,7 +186,7 @@ namespace CX {
 			SlideTimingInfo intended; //!< The intended timing parameters (i.e. what should have happened if there were no presentation errors).
 			SlideTimingInfo actual; //!< The actual timing parameters.
 
-			CX_Micros copyToBackBufferCompleteTime; /*!< \brief The time at which the drawing operations for this slide finished.
+			CX_Millis copyToBackBufferCompleteTime; /*!< \brief The time at which the drawing operations for this slide finished.
 													This is pretty useful to determine if there was an error on the trial (e.g. framebuffer was copied late).
 													If this is greater than actual.startTime, the slide may not have been fully drawn at the time the
 													front and back buffers swapped. */
@@ -216,12 +201,11 @@ namespace CX {
 		virtual void update (void);
 		
 		void appendSlide (CX_SlidePresenter::Slide slide);
-		void appendSlideFunction (void (*drawingFunction)(void), CX_Micros slideDuration, std::string slideName = "");
-		void beginDrawingNextSlide (CX_Micros slideDuration, std::string slideName = "");
+		void appendSlideFunction (std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
+		void beginDrawingNextSlide(CX_Millis slideDuration, std::string slideName = "");
 		void endDrawingCurrentSlide (void);
 
 		bool startSlidePresentation (void);
-		//bool startThreadedSlidePresentation(void);
 		void stopSlidePresentation (void);
 
 		//! Returns true if slide presentation is in progress, even if the first slide has not yet been presented.
@@ -231,7 +215,7 @@ namespace CX {
 
 		std::vector<CX_SlidePresenter::Slide>& getSlides(void);
 
-		std::vector<CX_Micros> getActualPresentationDurations(void);
+		std::vector<CX_Millis> getActualPresentationDurations(void);
 		std::vector<unsigned int> getActualFrameCounts(void);
 
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
@@ -249,7 +233,7 @@ namespace CX {
 
 		CX_SlidePresenter::Configuration _config;
 
-		CX_Micros _hoggingStartTime;
+		CX_Millis _hoggingStartTime;
 
 		bool _presentingSlides;
 		bool _synchronizing;
@@ -258,7 +242,7 @@ namespace CX {
 
 		bool _lastFramebufferActive;
 
-		unsigned int _calculateFrameCount(CX_Micros duration);
+		unsigned int _calculateFrameCount(CX_Millis duration);
 
 		void _singleCoreBlockingUpdate (void);
 		void _singleCoreThreadedUpdate (void);
@@ -275,8 +259,6 @@ namespace CX {
 		void _handleFinalSlide(void);
 		void _prepareNextSlide(void);
 
-
-		//CX_SlidePresenterUpdateThread *_updateThread;
 	};
 }
 

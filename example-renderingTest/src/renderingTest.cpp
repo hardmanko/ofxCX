@@ -3,11 +3,11 @@
 //Because this example is in part a test of the rendering capabilities of your hardware, if you are
 //experiencing crashes, you can try commenting out these defines in order to eliminate certain types
 //of rendering in order to help localize the source of the problem.
-#define CX_RT_USE_FBO
-#define CX_RT_USE_PATH
-#define CX_RT_USE_TEXTURE
-#define CX_RT_USE_IMAGE
-#define CX_RT_USE_TTF
+#define CX_RT_USE_FBO //ofFbo
+#define CX_RT_USE_PATH //ofPath
+#define CX_RT_USE_TEXTURE //ofTexture
+#define CX_RT_USE_IMAGE //ofImage
+#define CX_RT_USE_TTF //ofTrueTypeFont
 
 #ifdef CX_RT_USE_FBO
 ofFbo mainFbo;
@@ -114,6 +114,7 @@ void runExperiment(void) {
 
 	while (true) {
 		updateDrawings();
+		Log.flush();
 	}
 }
 
@@ -142,7 +143,8 @@ void updateDrawings (void) {
 		ofSetColor(255);
 		ofDrawBitmapString("FBO", 20, 20);
 		mainFbo.end();
-		Display.drawFboToBackBuffer(mainFbo);
+				
+		Display.copyFboToBackBuffer(mainFbo);
 	} else 
 #endif
 	{
@@ -234,7 +236,7 @@ void drawStuff (void) {
 	patternProps.width = birds.width;
 	patternProps.height = birds.height;
 	patternProps.period = 40;
-	patternProps.phase = 360.0 * (double)(Clock.getTime() % 1000000) / 1000000.0;
+	patternProps.phase = 360.0 * fmod(Clock.getTime().seconds(), 1);
 	patternProps.apertureType = Draw::CX_PatternProperties_t::AP_RECTANGLE;
 	patternProps.angle = 15;
 	ofPixels birdPattern = CX::Draw::greyscalePattern(patternProps);

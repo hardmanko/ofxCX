@@ -86,10 +86,10 @@ void CX_Clock::setImplementation(CX::CX_BaseClock* impl) {
 //	return std::chrono::duration_cast<std::chrono::microseconds>(_experimentStart.time_since_epoch()).count();
 //}
 
-/*! This function returns the current time relative to the start of the experiment in microseconds.
+/*! This function returns the current time relative to the start of the experiment in milliseconds.
 The start of the experiment is defined by default as when the CX_Clock instance named Clock
 (instantiated in this file) is constructed (typically the beginning of program execution). */
-CX_Micros CX_Clock::getTime(void) {
+CX_Millis CX_Clock::getTime(void) {
 	/*
 	CX_InternalClockType::time_point t = CX_InternalClockType::now();
 
@@ -100,12 +100,12 @@ CX_Micros CX_Clock::getTime(void) {
 #endif
 	*/
 
-	return this->now();
-}
-
-CX_Micros CX_Clock::now(void) {
 	return CX_Nanos(_impl->nanos());
 }
+
+//CX_Micros CX_Clock::now(void) {
+//	return CX_Nanos(_impl->nanos());
+//}
 
 /*
 This function returns the current system time in microseconds.
@@ -170,7 +170,7 @@ void CX_LapTimer::reset(void) {
 	_sampleIndex = 0;
 }
 
-void CX_LapTimer::collectData(void) {
+void CX_LapTimer::takeSample(void) {
 
 	_timePoints[_sampleIndex] = _clock->getTime();
 
@@ -181,15 +181,15 @@ void CX_LapTimer::collectData(void) {
 }
 
 std::string CX_LapTimer::getStatString(void) {
-	CX_Micros differenceSum = 0;
-	CX_Micros maxDifference = 0;
-	CX_Micros minDifference = std::numeric_limits<CX_Micros>::max();
+	CX_Millis differenceSum = 0;
+	CX_Millis maxDifference = 0;
+	CX_Millis minDifference = CX_Nanos(std::numeric_limits<long long>::max());
 
-	vector<CX_Micros> differences(_timePoints.size() - 1);
+	vector<CX_Millis> differences(_timePoints.size() - 1);
 
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
 
-		CX_Micros difference = _timePoints[i] - _timePoints[i - 1];
+		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
 		differenceSum += difference;
 
 		if (difference > maxDifference) {
@@ -202,7 +202,7 @@ std::string CX_LapTimer::getStatString(void) {
 
 		differences[i - 1] = difference;
 	}
-	CX_Micros mean = differenceSum.micros() / differences.size();
+	CX_Millis mean = differenceSum.millis() / differences.size();
 
 	double absDifSum = 0;
 	for (unsigned int i = 0; i < differences.size(); i++) {
@@ -215,19 +215,19 @@ std::string CX_LapTimer::getStatString(void) {
 	return s.str();
 }
 
-CX_Micros CX_LapTimer::getAverage(void) {
-	CX_Micros differenceSum = 0;
+CX_Millis CX_LapTimer::getAverage(void) {
+	CX_Millis differenceSum = 0;
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
 		differenceSum += _timePoints[i] - _timePoints[i - 1];
 	}
-	return CX_Micros(differenceSum.micros() / (_timePoints.size() - 1));
+	return differenceSum.millis() / (_timePoints.size() - 1);
 }
 
-CX_Micros CX_LapTimer::getMaximum(void) {
-	CX_Micros maxDifference = 0;
+CX_Millis CX_LapTimer::getMaximum(void) {
+	CX_Millis maxDifference = 0;
 
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-		CX_Micros difference = _timePoints[i] - _timePoints[i - 1];
+		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
 		if (difference > maxDifference) {
 			maxDifference = difference;
 		}
@@ -236,10 +236,10 @@ CX_Micros CX_LapTimer::getMaximum(void) {
 	return maxDifference;
 }
 
-CX_Micros CX_LapTimer::getMinimum(void) {
-	CX_Micros minDifference = std::numeric_limits<CX_Micros>::max();
+CX_Millis CX_LapTimer::getMinimum(void) {
+	CX_Millis minDifference = CX_Nanos(std::numeric_limits<long long>::max());
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-		CX_Micros difference = _timePoints[i] - _timePoints[i - 1];
+		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
 		if (difference < minDifference) {
 			minDifference = difference;
 		}

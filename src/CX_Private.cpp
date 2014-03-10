@@ -9,7 +9,7 @@ CX::Private::CX_GLVersion CX::Private::getOpenGLVersion(void) {
 	static CX_GLVersion ver = []()->CX_GLVersion {
 		std::string s = (char*)glGetString(GL_VERSION);
 
-		vector<string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space.
+		vector<string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space, so split it off.
 		vector<string> version = ofSplitString(versionVendor[0], "."); //Version numbers
 
 		CX_GLVersion v;

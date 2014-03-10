@@ -112,6 +112,7 @@ private:
 	// callbacks
 	void			display(void);
 
+	static void     error_cb(int code, const char* message);
 	static void 	mouse_cb(GLFWwindow* windowP_, int button, int state, int mods);
 	static void 	motion_cb(GLFWwindow* windowP_, double x, double y);
 	static void 	keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods);

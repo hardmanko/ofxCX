@@ -11,18 +11,15 @@
 
 #include "CX_Utilities.h"
 #include "CX_Logger.h"
+#include "CX_ClockImplementations.h"
 
 /*! \defgroup timing Timing 
 This module provides methods for timestamping events in experiments.
 */
 
-#include "CX_ClockImplementations.h"
+
 
 namespace CX {
-
-	//typedef long long CX_Micros;
-
-
 
 	template <typename TimeUnit>
 	class CX_Time {
@@ -44,15 +41,16 @@ namespace CX {
 		}
 
 		template <typename tArg>
-		CX_Time<TimeUnit>& operator= (const CX_Time<tArg>& t) {
+		CX_Time(const CX_Time<tArg>& t) {
 			this->_nanos = t.nanos();
-			return *this;
 		}
-
-		template <typename tOut>
-		operator CX_Time<tOut>(void) const {
-			return CX_Time<tOut>(_convertCount<tOut, std::nano, double>(_nanos));
+		/*
+		template <typename tArg>
+		CX_Time<TimeUnit>& operator= (const CX_Time<tArg>& t) {
+		this->_nanos = t.nanos();
+		return *this;
 		}
+		*/
 
 		double value(void) const {
 			return _convertCount<TimeUnit, std::nano, double>(_nanos);
@@ -164,48 +162,39 @@ namespace CX {
 		long long _nanos;
 
 		template<typename tOut, typename tIn, typename resultT>
-		resultT _convertCount(resultT countIn) const {
+		static resultT _convertCount(resultT countIn) {
 			return countIn * (((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
 		}
 
-
+		template<>
+		static long long _convertCount<std::nano, std::nano, long long>(long long countIn) {
+			return countIn; // *(((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
+		}
 
 	};
-	/*
-	template <typename TimeUnit>
-	std::ostream& operator<<(std::ostream& os, const CX_Time<TimeUnit>& t);
 
-	template <typename TimeUnit>
-	std::istream& operator>>(std::istream& is, CX_Time<TimeUnit>& t);
-	*/
 
 	template <typename TimeUnit>
 	std::ostream& operator<< (std::ostream& os, const CX_Time<TimeUnit>& t) {
-		os << t.millis(); //Assume sufficient precision to encode without losing nanos?
+		os << t.value(); //Assume sufficient precision to encode without losing nanos?
 		return os;
 	}
 
 	template <typename TimeUnit>
 	std::istream& operator>> (std::istream& is, CX_Time<TimeUnit>& t) {
-		double ms;
-		is >> ms;
-		t = CX_Millis(ms);
+		double value;
+		is >> value;
+		t = CX_Time<TimeUnit>(value);
 		return is;
 	}
 
+	typedef CX_Time<std::ratio<3600, 1> > CX_Hours;
+	typedef CX_Time<std::ratio<60, 1> > CX_Minutes;
+	typedef CX_Time<std::ratio<1, 1> > CX_Seconds;
+	typedef CX_Time<std::ratio<1, 1000> > CX_Millis;
+	typedef CX_Time<std::ratio<1, 1000000> > CX_Micros;
+	typedef CX_Time<std::ratio<1, 1000000000> > CX_Nanos;
 
-	//namespace Time {
-		typedef CX_Time<std::ratio<3600, 1> > CX_Hours;
-		typedef CX_Time<std::ratio<60, 1> > CX_Minutes;
-		typedef CX_Time<std::ratio<1, 1> > CX_Seconds;
-		typedef CX_Time<std::ratio<1, 1000> > CX_Millis;
-		typedef CX_Time<std::ratio<1, 1000000> > CX_Micros;
-		typedef CX_Time<std::ratio<1, 1000000000> > CX_Nanos;
-	//}
-
-
-
-	
 	/*! This class is responsible for getting timestamps for anything requiring timestamps. The way to
 	get timing information is the function getTime(). It returns the current time relative to the start
 	of the experiment in microseconds (on most systems, see getTickPeriod() to check the actual precision).
@@ -215,42 +204,26 @@ namespace CX {
 	*/
 	class CX_Clock {
 	public:
-
-//#ifdef TARGET_WIN32
-//		typedef CX::Private::CX_WIN32_HRC CX_InternalClockType;
-//#else
-//		typedef std::chrono::high_resolution_clock CX_InternalClockType;
-//#endif
-
 		CX_Clock (void);
 
 		void setImplementation(CX::CX_BaseClock* impl);
 
 		void precisionTest(unsigned int iterations);
 
-		
+		CX_Millis getTime(void);
 
-		CX_Micros now(void);
-
-		CX_Micros getTime(void);
-		//CX_Micros getSystemTime(void);
-
-		//CX_Micros getExperimentStartTime(void);
 		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
-
 		static std::string getDateTimeString (std::string format = "%Y-%b-%e %h-%M-%S %a");
 
 	private:
-		//void _resetExperimentStartTime (void);
-
-		//CX_InternalClockType::time_point _experimentStart;
-
 		Poco::LocalDateTime _pocoExperimentStart;
 
 		CX::CX_BaseClock* _impl;
-		
-		
 	};
+
+	namespace Instances {
+		extern CX_Clock Clock;
+	}
 
 
 
@@ -264,7 +237,7 @@ namespace CX {
 	//In the loop:
 	while (whatever) {
 		//other code...
-		lt.collectData();
+		lt.takeSample();
 		//other code...
 	}
 	Log.flush(); //Check the results of the profiling.
@@ -273,32 +246,24 @@ namespace CX {
 	*/
 	class CX_LapTimer {
 	public:
-
 		void setup(CX_Clock *clock, unsigned int samples);
 
 		void reset(void);
 
-		void collectData(void);
+		void takeSample(void);
+
+		CX_Millis getAverage(void);
+		CX_Millis getMinimum(void);
+		CX_Millis getMaximum(void);
 
 		std::string getStatString(void);
 
-		CX_Micros getAverage(void);
-		CX_Micros getMinimum(void);
-		CX_Micros getMaximum(void);
-
 	private:
-
 		CX_Clock *_clock;
-		vector<CX_Micros> _timePoints;
+		vector<CX_Millis> _timePoints;
 		unsigned int _sampleIndex;
-
 	};
 
-
-
-	namespace Instances {
-		extern CX_Clock Clock;
-	}
 }
 
 #endif //_CX_CLOCK_H_

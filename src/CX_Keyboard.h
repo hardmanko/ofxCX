@@ -36,8 +36,8 @@ namespace CX {
 					 This works the same way for all of the modifier keys.
 					 */
 
-			CX_Micros eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
-			CX_Micros uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
+			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
 			enum KeyboardEventType {
 				PRESSED, //!< A key has been pressed.
@@ -65,7 +65,7 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
-		CX_Micros _lastEventPollTime;
+		CX_Millis _lastEventPollTime;
 
 		std::queue<CX_Keyboard::Event> _keyEvents;
 		std::set<int> _heldKeys;

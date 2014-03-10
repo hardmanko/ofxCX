@@ -41,8 +41,11 @@ namespace CX {
 
 		void setFullScreen (bool fullScreen);
 		
-		void drawFboToBackBuffer (ofFbo &fbo);
-		void drawFboToBackBuffer (ofFbo &fbo, ofRectangle placement);
+		void copyFboToBackBuffer (ofFbo &fbo);
+		void copyFboToBackBuffer (ofFbo &fbo, ofPoint destination);
+		void copyFboToBackBuffer (ofFbo &fbo, ofRectangle source, ofPoint destination);
+		//void copyFboToBackBuffer (ofFbo &fbo, ofRectangle source, ofRectangle destination);
+
 		void beginDrawingToBackBuffer (void);
 		void endDrawingToBackBuffer (void);
 		void BLOCKING_swapFrontAndBackBuffers (void);
@@ -51,17 +54,18 @@ namespace CX {
 		void BLOCKING_setAutoSwapping (bool autoSwap);
 		bool isAutomaticallySwapping (void);
 		bool hasSwappedSinceLastCheck (void);
-		CX_Micros getLastSwapTime (void);
+		CX_Millis getLastSwapTime(void);
+		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
+		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval); //Also estimate standard deviation. Return a struct with this info?
 
-		CX_Micros getFramePeriod (void);
+		CX_Millis getFramePeriod(void);
 		void setWindowResolution (int width, int height);
 		void setWindowTitle(std::string title);
 		ofRectangle getResolution (void);
 		ofPoint getCenterOfDisplay (void);
 		uint64_t getFrameNumber (void);
 
-		void BLOCKING_estimateFramePeriod (CX_Micros estimationInterval); //Also estimate standard deviation. Return a struct with this info?
-		CX_Micros estimateNextSwapTime (void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
+
 
 		void BLOCKING_waitForOpenGL (void);
 
@@ -70,12 +74,15 @@ namespace CX {
 
 		CX_VideoBufferSwappingThread *_swapThread;
 
-		CX_Micros _framePeriod;
+		CX_Millis _framePeriod;
 
 		uint64_t _manualBufferSwaps;
 		uint64_t _frameNumberOnLastSwapCheck;
 
 		void _exitHandler(void);
+
+		void _blitFboToBackBuffer(ofFbo& fbo, ofPoint destination);
+		void _blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates);
 
 	};
 

@@ -14,30 +14,21 @@ CX::CX_InputManager CX::Instances::Input;
 
 namespace CX {
 	namespace Private {
-
-		struct CX_WindowConfiguration_t {
-			CX_WindowConfiguration_t(void) :
-				width(800),
-				height(600),
-				mode(ofWindowMode::OF_WINDOW)
-			{}
-
-			int width;
-			int height;
-
-			ofWindowMode mode;
-		};
 		
 		class App {
 		public:
+
+			App(void) :
+				glVersionKnown(false)
+			{}
+
 			void setup(void);
 			void setupWindow(CX_WindowConfiguration_t config);
+
+			void learnOpenGLVersion(void);
+			bool glVersionKnown;
+			CX_GLVersion glVersion;
 		};
-		
-		//Apparently oF has added this, so plan to remove it when oF version 0.9.0 is supported.
-		void glfwErrorCallback(int code, const char* message) {
-			CX::Instances::Log.error("GLFW") << "Error code: " << code << " " << message;
-		}
 	}
 }
 
@@ -51,7 +42,7 @@ void CX::Private::App::setup (void) {
 
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
 
-	setupWindow(CX::Private::CX_WindowConfiguration_t());
+	setupWindow(CX::CX_WindowConfiguration_t());
 
 	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
 		//This must happen after the window is configured because it relies on GLFW.
@@ -69,36 +60,52 @@ void CX::Private::App::setup (void) {
 
 void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 
-	glfwSetErrorCallback(&glfwErrorCallback);
+	if (CX::Private::glfwContext == glfwGetCurrentContext()) {
+		glfwDestroyWindow(CX::Private::glfwContext);
+	}
 
-	
-	//Find out what version of openGL the graphics card supports, which requires the creation 
-	//of a GLFW window (or other initialization of openGL).
-	CX::Private::CX_GLVersion glver; //Variable to save the GL version in
+	CX_GLVersion tempGLVersion;
+	if (config.desiredOpenGLVersion.major != 0) {
+		tempGLVersion = config.desiredOpenGLVersion;
+	} else {
+		learnOpenGLVersion(); //Must come before setupWindow.
+		tempGLVersion = glVersion;
+	}
 
-	glfwInit();
-	GLFWwindow *windowP;
-	glfwWindowHint(GLFW_VISIBLE, GL_FALSE); //Make the window invisible
-	windowP = glfwCreateWindow(1, 1, "", NULL, NULL); //Create the window
-	glfwMakeContextCurrent(windowP);
-	glver = CX::Private::getOpenGLVersion(); //Once GL is initialized, get the version number
-	glfwDestroyWindow(windowP);
-	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
-	
-	//Now that the GL version is known, initialize the real window
 	CX::Private::window = ofPtr<CX_AppWindow>(new CX_AppWindow);
-	window->setOpenGLVersion(glver.major, glver.minor);
+	window->setOpenGLVersion(tempGLVersion.major, tempGLVersion.minor);
 	window->setNumSamples(CX::Util::getSampleCount());
 
-	//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
-	if (glver.major >= 3 && glver.minor >= 2) {
-		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
+	
+	if (config.desiredRenderer) {
+		if (config.desiredRenderer->getType() == ofGLProgrammableRenderer::TYPE) {
+			if (tempGLVersion.major >= 3 && tempGLVersion.minor >= 2) {
+				ofSetCurrentRenderer(config.desiredRenderer, true);
+			} else {
+				CX::Instances::Log.warning() << "Desired renderer could not be used: The required OpenGL version is not available. Falling back on ofGLRenderer.";
+				ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+			}
+		} else {
+			ofSetCurrentRenderer(config.desiredRenderer, true);
+		}
 	} else {
+		/*
+		//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
+		if (glver.major >= 3 && glver.minor >= 2) {
+			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
+		} else {
+			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+		}
+		*/
 		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 	}
+
+
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(window), config.width, config.height, config.mode);
 
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
+
+	Log.flush();
 
 	window->initializeWindow();
 	window->setWindowTitle("CX Experiment");
@@ -109,8 +116,35 @@ void CX::Private::App::setupWindow(CX_WindowConfiguration_t config) {
 	//ofSetOrientation(ofOrientation::OF_ORIENTATION_DEFAULT, true); 
 }
 
-int main (void) {	
-	CX::Private::App A;
+//This function should only be called once
+void CX::Private::App::learnOpenGLVersion(void) {
+
+	if (glVersionKnown) {
+		return;
+	}
+
+	//Find out what version of openGL the graphics card supports, which requires the creation 
+	//of a GLFW window (or other initialization of openGL).
+
+	glfwInit();
+	GLFWwindow *windowP;
+	glfwWindowHint(GLFW_VISIBLE, GL_FALSE); //Make the window invisible
+	windowP = glfwCreateWindow(1, 1, "", NULL, NULL); //Create the window
+	glfwMakeContextCurrent(windowP);
+	this->glVersion = CX::Private::getOpenGLVersion(); //Once GL is initialized, get the version number
+	glfwDestroyWindow(windowP);
+	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
+
+	glVersionKnown = true;
+}
+
+CX::Private::App A;
+
+void CX::relaunchWindow(CX_WindowConfiguration_t config) {
+	A.setupWindow(config);
+}
+
+int main (void) {
 	A.setup();
 	runExperiment();
 	return 0;

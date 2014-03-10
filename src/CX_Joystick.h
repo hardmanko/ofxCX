@@ -24,8 +24,8 @@ namespace CX {
 			int axisIndex; //!< If eventType is AXIS_POSITION_CHANGE, this contains the index of the axis which changed.
 			float axisPosition; //!< If eventType is AXIS_POSITION_CHANGE, this contains the amount by which the axis changed.
 
-			CX_Micros eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
-			CX_Micros uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
+			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
 			enum JoystickEventType {
 				BUTTON_PRESS, //!< A button on the joystick has been pressed. See \ref buttonIndex and \ref buttonState for the event data.
@@ -59,7 +59,7 @@ namespace CX {
 		std::vector<float> _axisPositions;
 		std::vector<unsigned char> _buttonStates;
 
-		CX_Micros _lastEventPollTime;
+		CX_Millis _lastEventPollTime;
 	};
 
 	std::ostream& operator<< (std::ostream& os, const CX_Joystick::Event& ev);

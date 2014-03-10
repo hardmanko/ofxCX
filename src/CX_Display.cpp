@@ -28,7 +28,7 @@ void CX_Display::setup (void) {
 
 	_renderer = ofGetGLProgrammableRenderer();
 	if (!_renderer) {
-		Log.warning("CX_Display") << "Programmable renderer not available. Standard renderer will be used instead.";
+		//Log.warning("CX_Display") << "Programmable renderer not available. Standard renderer will be used instead.";
 	}
 
 	_swapThread = new CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
@@ -72,7 +72,7 @@ bool CX_Display::isAutomaticallySwapping (void) {
 
 /*! Get the last time at which the front and back buffers were swapped. 
 \return A time value that can be compared with CX::Instances::Clock.getTime(). */
-CX_Micros CX_Display::getLastSwapTime (void) {
+CX_Millis CX_Display::getLastSwapTime(void) {
 	return _swapThread->getLastSwapTime();
 }
 
@@ -80,13 +80,13 @@ CX_Micros CX_Display::getLastSwapTime (void) {
 This function depends on the precision of the frame period as estimated using 
 BLOCKING_estimateFramePeriod().
 \return A time value that can be compared to CX::Instances::Clock.getTime(). */
-CX_Micros CX_Display::estimateNextSwapTime(void) {
+CX_Millis CX_Display::estimateNextSwapTime(void) {
 	return this->getLastSwapTime() + this->getFramePeriod();
 	//return _swapThread->estimateNextSwapTime();
 }
 
 /*! Gets the estimate of the frame period calculated with BLOCKING_estimateFramePeriod(). */
-CX_Micros CX_Display::getFramePeriod(void) {
+CX_Millis CX_Display::getFramePeriod(void) {
 	return _framePeriod;
 }
 
@@ -116,26 +116,116 @@ uint64_t CX_Display::getFrameNumber (void) {
 	return _swapThread->getFrameNumber() + _manualBufferSwaps;
 }
 
-/*! Draw the given ofFbo to the back buffer. It will be drawn starting from 0, 0 and will be drawn at
-the full dimensions of the ofFbo (whatever size was chosen at allocation of the fbo). */
-void CX_Display::drawFboToBackBuffer (ofFbo &fbo) {
-	drawFboToBackBuffer(fbo, ofRectangle(0, 0, fbo.getWidth(), fbo.getHeight() )); //ofGetWidth(), ofGetHeight()?
+/*! Copies an ofFbo to the back buffer using a highly efficient blitting operation. This copies
+over the contents of the back buffer, it does not draw over them. For this reason, transparaency
+is ignored.
+\param fbo The framebuffer to copy. It will be drawn starting from (0, 0) and will be drawn at
+the full dimensions of the fbo (whatever size was chosen at allocation of the fbo). 
+*/
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
+	_blitFboToBackBuffer(fbo, ofPoint(0,0));
 }
 
-/*! Draw the given ofFbo to the back buffer at the coordinates given by rect.
+/*! Copies an ofFbo to the back buffer using a highly efficient blitting operation.
+\param fbo The framebuffer to copy.
+\param destination The point on the back buffer where the fbo will be placed.
+*/
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
+	_blitFboToBackBuffer(fbo, destination);
+}
+
+/*! Copies an ofFbo to the back buffer using a highly efficient blitting operation.
+\param fbo The framebuffer to copy.
+\param source A rectangle giving an area of the fbo to copy.
+\param destination The point on the back buffer where the area of the fbo will be placed.
+
+If this function does not provide enough flexibility, you can always draw ofFbo's using the following
+technique:
+\code{.cpp}
+Display.beginDrawingToBackBuffer();
+ofSetColor( 255 );
+fbo.draw( x, y, width, height ); //Replace these variables with the destination location (x,y) and dimensions of the 
+Display.endDrawingToBackBuffer();
+\endcode
+*/
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination) {
+	ofRectangle dest(destination.x, destination.y, source.width, source.height);
+
+	_blitFboToBackBuffer(fbo, source, dest);
+}
+
+/* Draw the given ofFbo to the back buffer at the coordinates given by rect.
 \param fbo The fbo to draw.
-\param rect The rectangle in which to place to fbo. The x and y components specify location. 
+\param coordinates The rectangle in which to place the fbo within the back buffer. The x and y components specify location. 
 The width and height components specify the output width and height of the fbo. If these are
 not equal to the width and height of the fbo, the fbo will be scaled up or down to fit the
 width and height.
+
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofRectangle destination) {
+	//beginDrawingToBackBuffer();
+
+	//ofSetColor( 255 );
+	//fbo.draw( rect.x, rect.y, rect.width, rect.height );
+
+	//endDrawingToBackBuffer();
+
+	//rect.width = min(fbo.getWidth(), this->getResolution().width);
+	//rect.height = min(fbo.getHeight(), this->getResolution().height);
+
+	_blitFboToBackBuffer(fbo, source, destination);
+}
 */
-void CX_Display::drawFboToBackBuffer (ofFbo &fbo, ofRectangle rect) {
-	beginDrawingToBackBuffer();
 
-	ofSetColor( 255 );
-	fbo.draw( rect.x, rect.y, rect.width, rect.height );
+void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofPoint destination) {
+	ofRectangle res = this->getResolution();
 
-	endDrawingToBackBuffer();
+	GLint copyWidth = std::min(fbo.getWidth(), res.width); //Dimensions must be the same
+	GLint copyHeight = std::min(fbo.getHeight(), res.height);
+
+	ofRectangle source(0, 0, copyWidth, copyHeight);
+	ofRectangle dest( destination.x, destination.y, copyWidth, copyHeight );
+
+	_blitFboToBackBuffer(fbo, source, dest);
+}
+
+void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates) {
+
+	ofRectangle res = this->getResolution();
+
+	GLint sx0 = sourceCoordinates.x;
+	GLint sy0 = fbo.getHeight() - sourceCoordinates.y;
+	GLint sx1 = sourceCoordinates.x + sourceCoordinates.width;
+	GLint sy1 = fbo.getHeight() - sourceCoordinates.y - sourceCoordinates.height;
+
+	GLint dx0 = destinationCoordinates.x;
+	GLint dy0 = res.height - destinationCoordinates.y;
+	GLint dx1 = destinationCoordinates.x + destinationCoordinates.width;
+	GLint dy1 = res.height - destinationCoordinates.y - destinationCoordinates.height;
+
+	ofOrientation or = ofGetOrientation();
+
+	switch (or) {
+	case OF_ORIENTATION_DEFAULT:
+		std::swap(sy0, sy1);
+		break;
+	case OF_ORIENTATION_180:
+		std::swap(sx0, sx1);
+		//std::swap(sy0, sy1);
+		break;
+	case OF_ORIENTATION_90_LEFT:
+		//std::swap(y0, y1);
+		//break;
+	case OF_ORIENTATION_90_RIGHT:
+		//std::swap(y0, y1);
+		Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
+			" Supported orientations are OF_ORIENTATION_DEFAULT and OF_ORIENTATION_180.";
+		break;
+	}
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_BACK);
+
+	glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 /*! Prepares a rendering context for using drawing functions. Must be paired with
@@ -156,8 +246,6 @@ void CX_Display::endDrawingToBackBuffer (void) {
 	if(_renderer){
 		_renderer->finishRender();
 	}
-
-	//glFinish(); //Makes sure openGL is completely done before returning. Takes forever.
 	glFlush();
 }
 
@@ -180,10 +268,13 @@ void CX_Display::swapFrontAndBackBuffers (void) {
 
 /*!
 Wait until all OpenGL instructions that were given before this was called to complete. 
-Any commands put into the pipeline from other threads after this is called are not waited for. 
+This can be useful if you are trying to determine how long a set of rendering commands takes
+or need to make sure that all rendering is complete before moving on. 
 \see \ref blockingCode
 */
 void CX_Display::BLOCKING_waitForOpenGL (void) {
+	glFinish();
+	/*
 	if (CX::Private::glFenceSyncSupported()) {
 		GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		glFlush();
@@ -191,6 +282,7 @@ void CX_Display::BLOCKING_waitForOpenGL (void) {
 	} else {
 		glFinish(); //I don't see why not to just use glFinish()
 	}
+	*/
 }
 
 /*! Returns the resolution of the current window, not the resolution of the monitor (unless you are in full screen mode).
@@ -236,13 +328,13 @@ is desired, this function can be called again with a longer wait duration.
 \param estimationInterval The length of time to spend estimating the frame period.
 \see \ref blockingCode
 */
-void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
+void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();
 	BLOCKING_setAutoSwapping(false);
 
-	vector<CX_Micros> swapTimes;
+	vector<CX_Millis> swapTimes;
 
-	CX_Micros startTime = CX::Instances::Clock.getTime();
+	CX_Millis startTime = CX::Instances::Clock.getTime();
 	while (CX::Instances::Clock.getTime() - startTime < estimationInterval) {
 		BLOCKING_swapFrontAndBackBuffers();
 		swapTimes.push_back( CX::Instances::Clock.getTime() );
@@ -281,7 +373,7 @@ void CX_Display::BLOCKING_estimateFramePeriod (CX_Micros estimationInterval) {
 
 	
 	if (swapTimes.size() > 1) {
-		CX_Micros swapSum = 0;
+		CX_Millis swapSum = 0;
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			swapSum += swapTimes[i] - swapTimes[i - 1];
 		}
