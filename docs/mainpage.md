@@ -20,7 +20,7 @@ To learn about how CX logs errors and other runtime information, see the \ref er
 
 \section installationInstructions Installation
 In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
-There are installation guides for the different development environments on that page.
+On that page, you can algo find installation guides for some of the most popular development environments.
 Currently only version 0.8.0 of openFrameworks is supported by CX.
 
 Once you have installed openFrameworks, you can install CX by putting the contents of the CX repository into a subdirectory 

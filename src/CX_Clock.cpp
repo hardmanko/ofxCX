@@ -18,7 +18,7 @@ CX_Clock::CX_Clock (void) {
 	_impl = new CX::CX_StdClockWrapper<std::chrono::high_resolution_clock>();
 #endif
 
-	//_resetExperimentStartTime();
+	resetExperimentStartTime();
 }
 
 /*! This function tests the precision of the clock used by CX. The results are computer-specific. 
@@ -33,11 +33,6 @@ void CX_Clock::precisionTest (unsigned int iterations) {
 	std::vector<long long> durations(iterations);
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
-		//CX_InternalClockType::time_point t1 = CX_InternalClockType::now();
-		//CX_InternalClockType::time_point t2 = CX_InternalClockType::now();
-
-		//durations[i] = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
-
 		long long t1 = _impl->nanos();
 		long long t2 = _impl->nanos();
 
@@ -79,7 +74,12 @@ void CX_Clock::setImplementation(CX::CX_BaseClock* impl) {
 	_impl = impl;
 }
 
-
+void CX_Clock::resetExperimentStartTime(void) {
+	_pocoExperimentStart = Poco::LocalDateTime();
+	if (_impl) {
+		_impl->resetStartTime();
+	}
+}
 
 /* Get the start time of the experiment in system time. The returned value can be compared with the result of getSystemTime(). */
 //CX_Micros CX_Clock::getExperimentStartTime(void) {
@@ -88,24 +88,15 @@ void CX_Clock::setImplementation(CX::CX_BaseClock* impl) {
 
 /*! This function returns the current time relative to the start of the experiment in milliseconds.
 The start of the experiment is defined by default as when the CX_Clock instance named Clock
-(instantiated in this file) is constructed (typically the beginning of program execution). */
-CX_Millis CX_Clock::getTime(void) {
-	/*
-	CX_InternalClockType::time_point t = CX_InternalClockType::now();
+(instantiated in this file) is constructed (typically the beginning of program execution).
+\return A CX_Millis object containing the time.
 
-#ifndef CX_CLOCK_IMPLEMENTATION_COUNTS_FROM_ZERO
-	return std::chrono::duration_cast<std::chrono::microseconds>(t - _experimentStart).count();
-#else
-	return std::chrono::duration_cast<std::chrono::microseconds>(t.time_since_epoch()).count();
-#endif
-	*/
-
+\note This cannot be converted to time/day in any meaningful way. Use getDateTimeString() for that.*/
+CX_Millis CX_Clock::now(void) {
 	return CX_Nanos(_impl->nanos());
 }
 
-//CX_Micros CX_Clock::now(void) {
-//	return CX_Nanos(_impl->nanos());
-//}
+
 
 /*
 This function returns the current system time in microseconds.
@@ -172,7 +163,7 @@ void CX_LapTimer::reset(void) {
 
 void CX_LapTimer::takeSample(void) {
 
-	_timePoints[_sampleIndex] = _clock->getTime();
+	_timePoints[_sampleIndex] = _clock->now();
 
 	if (++_sampleIndex == _timePoints.size()) {
 		CX::Instances::Log.notice("CX_LapTimer") << "Data collected: " << getStatString();
@@ -183,7 +174,7 @@ void CX_LapTimer::takeSample(void) {
 std::string CX_LapTimer::getStatString(void) {
 	CX_Millis differenceSum = 0;
 	CX_Millis maxDifference = 0;
-	CX_Millis minDifference = CX_Nanos(std::numeric_limits<long long>::max());
+	CX_Millis minDifference = CX_Millis::max();
 
 	vector<CX_Millis> differences(_timePoints.size() - 1);
 
@@ -237,7 +228,7 @@ CX_Millis CX_LapTimer::getMaximum(void) {
 }
 
 CX_Millis CX_LapTimer::getMinimum(void) {
-	CX_Millis minDifference = CX_Nanos(std::numeric_limits<long long>::max());
+	CX_Millis minDifference = CX_Millis::max();
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
 		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
 		if (difference < minDifference) {

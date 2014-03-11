@@ -66,7 +66,7 @@ desired experiment time.
 bool CX_SoundObjectPlayer::startPlayingAt(CX_Millis experimentTime, CX_Millis latencyOffset) {
 	CX_Millis adjustedStartTime = experimentTime + latencyOffset;
 
-	if (adjustedStartTime <= Clock.getTime()) {
+	if (adjustedStartTime <= Clock.now()) {
 		Log.warning("CX_SoundObjectPlayer") << "startPlayingAt: Desired start time has already passed. Starting immediately.";
 		play();
 		return false;

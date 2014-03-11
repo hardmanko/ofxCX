@@ -188,9 +188,9 @@ void generateTrials(int numberOfTrials) {
 	vector<string> letters = arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
 	//to use an initializer list for vectors as well as arrays. Until then, arrayToVector is useful.
 
-	//Draw trialCount deviates from a binomial distribution with 1 trial and 40% probability of a success (i.e. trialCount slightly unfair coin flips).
+	//Draw trialCount deviates from a bernoulli distribution with 40% probability of a success (i.e. trialCount slightly unfair coin flips).
 	//For a real N-Back task, you would probably use a more complicated way of determining the trial sequence.
-	vector<int> targetTrial = RNG.binomialDeviates(trialCount, 1, .4);
+	vector<bool> targetTrial = RNG.sampleRealizations(trialCount, std::bernoulli_distribution(.4));
 
 	//For the first N trials, pick letters randomly
 	for (int i = 0; i < nBack; i++) {
@@ -199,7 +199,7 @@ void generateTrials(int numberOfTrials) {
 
 	//From N on, pick based on trial type
 	for (int i = nBack; i < trialCount; i++) {
-		if (targetTrial[i] == 1) {
+		if (targetTrial[i]) {
 			df(i, "trialType") = "target";
 			df(i, "letter") = df(i - nBack, "letter").toString();
 		} else {

@@ -412,7 +412,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 		{
 
 			//Check to see if we are within the CPU hogging phase of presentation
-			CX_Millis currentTime = CX::Instances::Clock.getTime();
+			CX_Millis currentTime = CX::Instances::Clock.now();
 			if (currentTime >= _hoggingStartTime) {
 				_config.display->swapFrontAndBackBuffers();
 			}
@@ -464,7 +464,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 		_synchronizing = false;
 		_presentingSlides = true;
 
-		_hoggingStartTime = CX::Instances::Clock.getTime();
+		_hoggingStartTime = CX::Instances::Clock.now();
 	}
 
 	_waitSyncCheck();
@@ -481,12 +481,12 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 		{
 
 			//Check to see if we are within the CPU hogging phase of presentation
-			CX_Millis currentTime = CX::Instances::Clock.getTime();
+			CX_Millis currentTime = CX::Instances::Clock.now();
 			if (currentTime >= _hoggingStartTime) {
 
 				_config.display->BLOCKING_swapFrontAndBackBuffers();
 
-				CX_Millis currentSlideOnset = CX::Instances::Clock.getTime();
+				CX_Millis currentSlideOnset = CX::Instances::Clock.now();
 
 				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " in progress. Started at " << currentSlideOnset;
 
@@ -531,7 +531,7 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 		_synchronizing = false;
 		_presentingSlides = true;
 
-		_hoggingStartTime = CX::Instances::Clock.getTime();
+		_hoggingStartTime = CX::Instances::Clock.now();
 	}
 
 	_waitSyncCheck();
@@ -651,7 +651,7 @@ void CX_SlidePresenter::_handleFinalSlide(void) {
 		_presentingSlides = false;
 
 		//The duration of the current slide is set to undefined (user may keep it on screen indefinitely).
-		_slides.at(_currentSlide).actual.duration = CX_Nanos(std::numeric_limits<long long>::max());
+		_slides.at(_currentSlide).actual.duration = CX_Millis::max();
 		_slides.at(_currentSlide).actual.frameCount = std::numeric_limits<uint32_t>::max();
 
 		//The durations of following slides (if any) are set to 0 (never presented).
@@ -725,16 +725,18 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
 			if (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING) {
 
-				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.getTime();
+				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.now();
 				_awaitingFenceSync = false;
-				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " copied to back buffer at " << _slides.at(_currentSlide).copyToBackBufferCompleteTime;
+				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " copied to back buffer at " << 
+					_slides.at(_currentSlide).copyToBackBufferCompleteTime;
 
 				_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::SWAP_PENDING;
 			} else {
-				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.getTime();
+				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.now();
 				_awaitingFenceSync = false;
-				Log.error("CX_SlidePresenter") << "Slide #" << _currentSlide << 
-					" fence sync completed when active slide was not waiting for copy to back buffer. At " << _slides.at(_currentSlide).copyToBackBufferCompleteTime;
+				Log.warning("CX_SlidePresenter") << "Slide #" << _currentSlide << 
+					" fence sync completed when active slide was not waiting for copy to back buffer. At " << 
+					_slides.at(_currentSlide).copyToBackBufferCompleteTime;
 			}
 		}
 	}

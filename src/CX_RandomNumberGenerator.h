@@ -50,19 +50,24 @@ namespace CX {
 		CX_RandomInt_t randomInt(void);
 		CX_RandomInt_t randomInt(CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper);
 
-		template <typename T> T randomExclusive(const std::vector<T> &values, const T& exclude);
-		template <typename T> T randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
+		double randomDouble (double lowerBound_closed, double upperBound_open);
 
-		double uniformDeviate (double lowerBound_closed, double upperBound_open);
-		std::vector<double> uniformDeviates (unsigned int count, double lowerBound_closed, double upperBound_open);
-		template <typename T> std::vector<T> binomialDeviates (unsigned int count, T trials, double probSuccess);
-		std::vector<double> normalDeviates (unsigned int count, double mean, double standardDeviation);
+		template <typename stdDist>	std::vector<typename stdDist::result_type> sampleRealizations(unsigned int count, stdDist dist);
+		std::vector<double> sampleUniformRealizations (unsigned int count, double lowerBound_closed, double upperBound_open);
+		std::vector<unsigned int> sampleBinomialRealizations (unsigned int count, unsigned int trials, double probSuccess);
+		std::vector<double> sampleNormalRealizations(unsigned int count, double mean, double standardDeviation);
 
 		template <typename T> void shuffleVector(std::vector<T> *v);
 		template <typename T> std::vector<T> shuffleVector(std::vector<T> v);
+
 		template <typename T> T sample(std::vector<T> values);
 		template <typename T> std::vector<T> sample(unsigned int count, const std::vector<T> &source, bool withReplacement);
 		std::vector<int> sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement);
+
+		template <typename T> T randomExclusive(const std::vector<T> &values, const T& exclude);
+		template <typename T> T randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
+
+		std::mt19937_64& getGenerator(void);
 
 	private:
 		unsigned long _seed;
@@ -176,21 +181,31 @@ namespace CX {
 		return attempt;
 	}
 
-	/*!	Samples count deviates from a binomial distribution with the given number of trials and probability of success on each trial.
-	\param count The number of deviates to generate.
-	\param trials The number of trials. Must be a non-negative integer.
-	\param probSuccess The probability of a success on a given trial, where a success is the value 1.
-	\return A vector of the deviates. */
-	template <typename T> std::vector<T> CX_RandomNumberGenerator::binomialDeviates (unsigned int count, T trials, double probSuccess) {
-		std::vector<T> samples(count);
-		std::binomial_distribution<T> binDist(trials, probSuccess);
-		for (uint64_t i = 0; i < count; i++) {
-			samples[i] = binDist(_mersenneTwister);
+	/*! Draws `count` samples from a distribution `dist` that is provided by the user.
+
+	\param count The number of samples to take.
+	\param dist A configured instance of a distribution class that has operator()(Generator& g),
+	where Generator is a random number generator that has operator() that returns a random value.
+	Basically, just look at this page: http://en.cppreference.com/w/cpp/numeric/random and
+	pick one of the random number distributions.
+	\return A vector of stdDist::result_type, where stdDist::result_type is the type of data
+	that is returned by the distribution (e.g. int, double, etc.). You can usually set this
+	when creating the distribution object.
+
+	\code{.cpp}
+	//Take 100 samples from a poisson distribution with lamda (mean result value) of 4.2.
+	//stdDist::result_type is unsigned int in this example.
+	vector<unsigned int> rpois = RNG.sampleFrom(100, std::poisson_distribution<unsigned int>(4.2));
+	\endcode
+	*/
+	template <typename stdDist>
+	std::vector<typename stdDist::result_type> CX_RandomNumberGenerator::sampleRealizations(unsigned int count, stdDist dist) {
+		std::vector<typename stdDist::result_type> rval(count);
+		for (unsigned int i = 0; i < count; i++) {
+			rval[i] = dist(_mersenneTwister);
 		}
-		return samples;
+		return rval;
 	}
-
-
 
 }
 

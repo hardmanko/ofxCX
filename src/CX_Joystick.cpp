@@ -64,7 +64,7 @@ bool CX_Joystick::pollEvents (void) {
 	int buttonCount = 0;
 	const unsigned char *buttons = glfwGetJoystickButtons(_joystickIndex, &buttonCount);
 
-	CX_Millis pollTime = CX::Instances::Clock.getTime();
+	CX_Millis pollTime = CX::Instances::Clock.now();
 
 	if (axisCount == _axisPositions.size()) {
 		for (unsigned int i = 0; i < axisCount; i++) {

@@ -71,7 +71,7 @@ bool CX_Display::isAutomaticallySwapping (void) {
 }
 
 /*! Get the last time at which the front and back buffers were swapped. 
-\return A time value that can be compared with CX::Instances::Clock.getTime(). */
+\return A time value that can be compared with CX::Instances::Clock.now(). */
 CX_Millis CX_Display::getLastSwapTime(void) {
 	return _swapThread->getLastSwapTime();
 }
@@ -79,7 +79,7 @@ CX_Millis CX_Display::getLastSwapTime(void) {
 /*! Get an estimate of the next time the front and back buffers will be swapped.
 This function depends on the precision of the frame period as estimated using 
 BLOCKING_estimateFramePeriod().
-\return A time value that can be compared to CX::Instances::Clock.getTime(). */
+\return A time value that can be compared to CX::Instances::Clock.now(). */
 CX_Millis CX_Display::estimateNextSwapTime(void) {
 	return this->getLastSwapTime() + this->getFramePeriod();
 	//return _swapThread->estimateNextSwapTime();
@@ -334,43 +334,11 @@ void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 
 	vector<CX_Millis> swapTimes;
 
-	CX_Millis startTime = CX::Instances::Clock.getTime();
-	while (CX::Instances::Clock.getTime() - startTime < estimationInterval) {
+	CX_Millis startTime = CX::Instances::Clock.now();
+	while (CX::Instances::Clock.now() - startTime < estimationInterval) {
 		BLOCKING_swapFrontAndBackBuffers();
-		swapTimes.push_back( CX::Instances::Clock.getTime() );
+		swapTimes.push_back(CX::Instances::Clock.now());
 	}
-
-	/*
-	if (swapTimes.size() < 2) {
-		//warning?
-		return;
-	}
-
-	vector<CX_Micros> swapDurations(swapTimes.size() - 1);
-	CX_Micros swapSum = 0;
-	for (unsigned int i = 1; i < swapTimes.size(); i++) {
-		CX_Micros duration = swapTimes[i] - swapTimes[i - 1];
-		swapSum += duration;
-		swapDurations[i - 1] = duration;
-	}
-
-	CX_Micros mean = swapSum.micros() / swapDurations.size();
-	CX_Micros cleanedSum = 0;
-
-	//Clean durations that seem to be wrong
-	for (unsigned int i = 0; i < swapDurations.size(); i++) {
-		cleanedSum += swapDurations[i];
-		if (swapDurations[i] < (mean / 2)) {
-			cleanedSum -= swapDurations[i];
-			swapDurations.erase(swapDurations.begin() + i);
-			i--;
-		}	
-	}
-	
-
-	_framePeriod = cleanedSum / swapDurations.size();
-	*/
-
 	
 	if (swapTimes.size() > 1) {
 		CX_Millis swapSum = 0;

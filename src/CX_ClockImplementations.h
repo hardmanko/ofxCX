@@ -7,13 +7,22 @@
 
 namespace CX {
 
+	/*! CX_Clock uses classes that are derived from this class for timing.
+
+	nanos() should return the current time in nanoseconds. If the implementation does not
+	have nanosecond precision, it should still return time in nanoseconds, which might just
+	involve a multiplication (clock ticks are in microseconds, so multiply by 1000 to make
+	each value equal to a nanosecond).
+
+	It is assumed that the implementation has some way to subtract off a start time so that
+	nanos() counts up from 0 and that resetStartTime can reset the start time.
+
+	\ingroup timing
+	*/
 	class CX_BaseClock {
 	public:
-		virtual long long micros(void) = 0;
-		virtual long long nanos(void) {
-			return micros() * 1000;
-		}
-
+		virtual long long nanos(void) = 0;
+		virtual void resetStartTime(void) = 0;
 		virtual std::string getName(void) {
 			return "CX_BaseClock";
 		}
@@ -25,15 +34,21 @@ namespace CX {
 	public:
 
 		CX_StdClockWrapper(void) {
-			_startTime = stdClock::now();
-		}
-
-		long long micros(void) override {
-			return std::chrono::duration_cast<std::chrono::microseconds>(stdClock::now() - _startTime).count();
+			resetStartTime();
 		}
 
 		long long nanos(void) override {
 			return std::chrono::duration_cast<std::chrono::nanoseconds>(stdClock::now() - _startTime).count();
+		}
+
+		void resetStartTime(void) override {
+			_startTime = stdClock::now();
+		}
+
+		std::string getName(void) override {
+			stringstream s;
+			s << "CX_StdClockWrapper<" << typeid(stdClock).name << ">";
+			return s.str();
 		}
 
 	private:
@@ -46,10 +61,17 @@ namespace CX {
 	class CX_WIN32_PerformanceCounterClock : public CX_BaseClock {
 	public:
 		CX_WIN32_PerformanceCounterClock(void);
-		long long micros(void) override;
+
 		long long nanos(void) override;
+		void resetStartTime(void) override;
+
+		std::string getName(void) override {
+			return "CX_WIN32_PerformanceCounterClock";
+		}
 
 	private:
+		void _resetFrequency(void);
+
 		long long _startTime;
 		long long _frequency;
 	};

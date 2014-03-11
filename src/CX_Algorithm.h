@@ -1,34 +1,37 @@
 #pragma once
 
+#include <exception>
 #include <vector>
 #include <functional>
 
 #include "CX_Logger.h"
+#include "CX_RandomNumberGenerator.h"
 
 namespace CX {
-	/*! This namespace contains a few complex algorithms that can be difficult to properly implement. */
+	/*! This namespace contains a few complex algorithms that can be difficult to properly implement
+	or are very experiment-specific. */
 	namespace Algo {
 		template <typename T> std::vector<T> generateSeparatedValues(int count, double minDistance, std::function<double(T, T)> distanceFunction, std::function<T(void)> randomDeviate, int maxSequentialFailures = 200);
 		template <typename T> std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors);
 
-
+		/*! This class provides a way to work with Latin squares in an easy way. */
 		class LatinSquare {
 		public:
 			LatinSquare(void);
+			LatinSquare(unsigned int dimensions);
 
 			void generate(unsigned int dimensions);
 
 			void reorderRight(void);
 			void reorderLeft(void);
-
-			//void reorderUp(void);
-			//void reorderDown(void);
+			void reorderUp(void);
+			void reorderDown(void);
 
 			void reverseColumns(void);
-			//void reverseRows(void);
+			void reverseRows(void);
 
 			void swapColumns(unsigned int c1, unsigned int c2);
-			//swapRows
+			void swapRows(unsigned int r1, unsigned int r2);
 
 			bool appendRight(const LatinSquare& ls);
 			bool appendBelow(const LatinSquare& ls);
@@ -45,21 +48,21 @@ namespace CX {
 			std::vector<unsigned int> getColumn(unsigned int col) const;
 			std::vector<unsigned int> getRow(unsigned int row) const;
 
+			std::vector< std::vector<unsigned int> > square;
 			
 		private:
-			std::vector< std::vector<unsigned int> > square;
-
 			unsigned int _columns;
 		};
 	}
 }
 
-/*! This poorly-named algorithm is designed to deal with the situation in which a number
+/*! This algorithm is designed to deal with the situation in which a number
 of random values must be generated that are each at least some distance from every other
 random value. This is a very generic implementation of this algorithm. It works by taking
 pointers to two functions that work on whatever type of data you are using. The first
 function is a distance function: it returns the distance between two values of the type.
-The second function generates random values of the type.
+You can define distance in whatever way you would like. The second function generates 
+random values of the type.
 \tparam <T> The type of data you are working with.
 \param count The number of values you want to be generated.
 \param minDistance The minimum distance between any two values. This will be compared to the result of distanceFunction.

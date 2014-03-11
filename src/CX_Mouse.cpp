@@ -87,7 +87,7 @@ void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 	CX_Mouse::Event ev;
 	ev.eventType = CX_Mouse::Event::SCROLLED;
 
-	ev.eventTime = CX::Instances::Clock.getTime();
+	ev.eventTime = CX::Instances::Clock.now();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
 	ev.button = -1;
@@ -99,7 +99,7 @@ void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 
 void CX_Mouse::_mouseEventHandler (ofMouseEventArgs &a) {
 	CX_Mouse::Event ev;
-	ev.eventTime = CX::Instances::Clock.getTime();
+	ev.eventTime = CX::Instances::Clock.now();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
 	ev.button = a.button;

@@ -139,7 +139,7 @@ bool CX_SoundStream::start (void) {
 	}
 
 	_lastSampleNumber = 0;
-	//_lastSwapTime = Clock.getTime();
+	//_lastSwapTime = Clock.now();
 	_sampleNumberAtLastCheck = 0;
 
 	return true;
@@ -212,7 +212,7 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 }
 
 /*! Estimate the time at which the next buffer swap will occur.
-\return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.getTime(). */
+\return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.now(). */
 CX_Millis CX_SoundStream::estimateNextSwapTime(void) {
 	CX_Millis bufferSwapInterval = ((long long)_config.bufferSize * 1000000) / _config.sampleRate;
 	return _lastSwapTime + bufferSwapInterval;
@@ -412,7 +412,7 @@ std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 
 int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
 
-	_lastSwapTime = CX::Instances::Clock.getTime();
+	_lastSwapTime = CX::Instances::Clock.now();
 
 	if (status != 0) {
 		Log.error("CX_SoundStream") << "Buffer underflow/overflow detected.";

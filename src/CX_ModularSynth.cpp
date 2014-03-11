@@ -553,7 +553,7 @@ double Oscillator::triangle(double wp) {
 }
 
 double Oscillator::whiteNoise(double wp) {
-	return CX::Instances::RNG.uniformDeviate(-1, 1);
+	return CX::Instances::RNG.randomDouble(-1, 1);
 }
 
 

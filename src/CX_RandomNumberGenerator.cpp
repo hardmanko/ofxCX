@@ -74,11 +74,11 @@ CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
 	return std::numeric_limits<CX_RandomInt_t>::max();
 }
 
-/*! Samples a deviate from a uniform distribution with the range [lowerBound_closed, upperBound_open).
-\param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
-\param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.
-\return The deviate. */
-double CX_RandomNumberGenerator::uniformDeviate (double lowerBound_closed, double upperBound_open) {
+/*! Samples a realization from a uniform distribution with the range [lowerBound_closed, upperBound_open).
+\param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe this value.
+\param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe this value.
+\return The realization. */
+double CX_RandomNumberGenerator::randomDouble(double lowerBound_closed, double upperBound_open) {
 	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
 }
 
@@ -96,26 +96,36 @@ std::vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerB
 \param count The number of deviates to generate.
 \param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
 \param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.
-\return A vector of the deviates. */
-std::vector<double> CX_RandomNumberGenerator::uniformDeviates (unsigned int count, double lowerBound_closed, double upperBound_open) {
-	std::vector<double> samples(count);
-	std::uniform_real_distribution<double> unifDist(lowerBound_closed, upperBound_open);
-	for (unsigned int i = 0; i < count; i++) {
-		samples[i] = unifDist(_mersenneTwister);
-	}
-	return samples;
+\return A vector of the realizations. */
+std::vector<double> CX_RandomNumberGenerator::sampleUniformRealizations(unsigned int count, double lowerBound_closed, double upperBound_open) {
+	return this->sampleRealizations(count, std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open));
 }
 
-/*! Samples count deviates from a normal distribution with the given mean and standard deviation.
+/*! Samples count realizations from a normal distribution with the given mean and standard deviation.
 \param count The number of deviates to generate.
 \param mean The mean of the distribution.
 \param standardDeviation The standard deviation of the distribution.
-\return A vector of the deviates. */
-std::vector<double> CX_RandomNumberGenerator::normalDeviates (unsigned int count, double mean, double standardDeviation) {
-	std::vector<double> samples(count);
-	std::normal_distribution<double> normDist(mean, standardDeviation);
-	for (unsigned int i = 0; i < count; i++) {
-		samples[i] = normDist(_mersenneTwister);
-	}
-	return samples;
+\return A vector of the realizations. */
+std::vector<double> CX_RandomNumberGenerator::sampleNormalRealizations (unsigned int count, double mean, double standardDeviation) {
+	return this->sampleRealizations(count, std::normal_distribution<double>(mean, standardDeviation));
+}
+
+/*!	Samples count realizations from a binomial distribution with the given number of trials and probability of success on each trial.
+\param count The number of deviates to generate.
+\param trials The number of trials. Must be a non-negative integer.
+\param probSuccess The probability of a success on a given trial, where a success is the value 1.
+\return A vector of the realizations. */
+std::vector<unsigned int> CX_RandomNumberGenerator::sampleBinomialRealizations(unsigned int count, unsigned int trials, double probSuccess) {
+	return this->sampleRealizations(count, std::binomial_distribution<unsigned int>(trials, probSuccess));
+}
+
+/*! This function returns a reference to the PRNG used by the CX_RandomNumberGenerator.
+This can be used for various things, including sampling from some of the other distributions
+provided by the standard library: http://en.cppreference.com/w/cpp/numeric/random
+\code{.cpp}
+std::poisson_distribution<int> pois(4);
+int deviate = pois(RNG.getGenerator());
+\endcode*/
+std::mt19937_64& CX_RandomNumberGenerator::getGenerator(void) { 
+	return _mersenneTwister; 
 }

@@ -111,6 +111,54 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
+	CX_Seconds t = CX_Hours(2) + CX_Minutes(16) + CX_Seconds(40) + CX_Millis(123) + CX_Micros(456) + CX_Nanos(1);
+	CX_Seconds::PartitionedTime parts = t.getPartitionedTime();
+
+	if (CX_Minutes(60) == CX_Hours(1)) {
+		cout << "eq" << endl;
+	}
+
+	if (CX_Millis(123.456) == CX_Micros(123456)) {
+		cout << "Fractional time works." << endl;
+	}
+
+	//If you want to be explicit about what time unit you want out, you can use these functions:
+	CX_Seconds sec(6);
+	cout << "In " << sec.seconds() << " seconds there are " << sec.millis() << " milliseconds and " << sec.minutes() << " minutes." << endl;
+
+	//You can alternately do a typecast:
+	cout << "In " << sec << " seconds there are " << (CX_Millis)sec << " milliseconds and " << (CX_Minutes)sec << " minutes." << endl;
+
+	//The difference between the above examples is the resulting type.
+	//double minutes = (CX_Minutes)sec; //This does not work: A CX_Minutes cannot be assigned to a double
+	double minutes = sec.minutes(); //minutes() returns a double.
+
+	CX_Micros mic1 = CX_Millis(2) / 200; //2 millis == 2000 micros. 2000 micros / 200 == 10 micros. Correct!
+	CX_Micros mic2 = CX_Millis(2).millis() / 200; //This is wrong: 2 / 200 == .01, yes, BUT .01 whats? 
+		//This is interpreted as .01 micros because that is what it is being assigned to.
+	CX_Micros mic3 = CX_Millis(2).micros() / 200; //This is correct. Calculations in micros are assigned to micros.
+
+
+	CX_Millis milMax = CX_Millis::max();
+	CX_Millis milMin = CX_Millis::min();
+
+	cout << milMin << " " << milMax << endl;
+
+	std::poisson_distribution<int> pois(4.2);
+	int deviate = pois(RNG.getGenerator());
+	deviate = pois(RNG.getGenerator());
+	deviate = pois(RNG.getGenerator());
+
+	Algo::LatinSquare ls;
+	ls.generate(4);
+	ls.swapColumns(0, 3);
+
+	cout << ls.print() << endl << endl;
+
+	ls.reverseRows();
+
+	cout << ls.print() << endl << endl;
+
 	//Display.setFullScreen(true);
 
 	Input.setup(true, false); //Use keyboard, not mouse.
@@ -240,14 +288,14 @@ void generateTrials(int numberOfTrials) {
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
 	vector<string> letters = arrayToVector(letterArray, 8);
 
-	vector<int> targetTrial = RNG.binomialDeviates(trialCount, 1, .4);
+	vector<bool> targetTrial = RNG.sampleRealizations(trialCount, std::bernoulli_distribution(.4));
 
 	for (int i = 0; i < nBack; i++) {
 		df(i, "letter") = RNG.sample(letters);
 	}
 
 	for (int i = nBack; i < trialCount; i++) {
-		if (targetTrial[i] == 1) {
+		if (targetTrial[i]) {
 			df(i, "trialType") = "target";
 			df(i, "letter") = df(i - nBack, "letter").toString();
 		} else {
@@ -274,7 +322,7 @@ void generateTrials(int numberOfTrials) {
 }
 
 void drawStimuliToFramebuffers(CX_SlidePresenter& sp, int trialIndex) {
-	CX_Millis startTime = Clock.getTime();
+	CX_Millis startTime = Clock.now();
 
 	sp.beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
 	string letter = df(trialIndex, "letter").toString();
@@ -285,12 +333,12 @@ void drawStimuliToFramebuffers(CX_SlidePresenter& sp, int trialIndex) {
 	drawBlank();
 	sp.endDrawingCurrentSlide();
 
-	CX_Millis renderingDuration = Clock.getTime() - startTime;
+	CX_Millis renderingDuration = Clock.now() - startTime;
 	Log.notice() << "framebuffer rendering duration: " << renderingDuration;
 }
 
 void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
-	CX_Millis startTime = Clock.getTime();
+	CX_Millis startTime = Clock.now();
 
 	//Because stimulusFunctors contains objects that can be called as functions, you can treat 
 	//an instance of the object as though it were a function.
@@ -298,6 +346,6 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 
 	sp.appendSlideFunction(drawBlank, interStimulusInterval, "blank");
 
-	CX_Millis appendingDuration = Clock.getTime() - startTime;
+	CX_Millis appendingDuration = Clock.now() - startTime;
 	Log.notice() << "Drawing function appending duration: " << appendingDuration;
 }

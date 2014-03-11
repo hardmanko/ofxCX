@@ -14,10 +14,10 @@ CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread (void) :
 
 void CX_VideoBufferSwappingThread::threadedFunction (void) {
 	while (isThreadRunning()) {
-		//yield(); //??
+		
 		glfwSwapBuffers( CX::Private::glfwContext );
 
-		CX_Millis swapTime = CX::Instances::Clock.getTime();
+		CX_Millis swapTime = CX::Instances::Clock.now();
 
 		if (lock()) {
 			++_frameCount;
@@ -40,6 +40,7 @@ void CX_VideoBufferSwappingThread::threadedFunction (void) {
 				this->stopThread();
 			}
 		}
+		//yield(); //??
 	}
 }
 

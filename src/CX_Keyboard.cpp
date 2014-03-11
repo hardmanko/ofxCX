@@ -77,7 +77,7 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		return; //These keys are reported by oF twice: once as OF_KEY_X and again as OF_KEY_RIGHT_X or OF_KEY_LEFT_X. We ignore the generic version.
 	}
 
-	ev.eventTime = CX::Instances::Clock.getTime();
+	ev.eventTime = CX::Instances::Clock.now();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
 	switch (ev.eventType) {
