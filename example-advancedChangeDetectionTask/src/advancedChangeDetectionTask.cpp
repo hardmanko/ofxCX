@@ -79,19 +79,19 @@ void updateExperiment (void) {
 int drawStimuli (void) {
 	SlidePresenter.clearSlides();
 
-	SlidePresenter.beginDrawingNextSlide(1000000, "fixation");
+	SlidePresenter.beginDrawingNextSlide(1000, "fixation");
 	drawFixation();
 	
-	SlidePresenter.beginDrawingNextSlide(250000, "blank");
+	SlidePresenter.beginDrawingNextSlide(250, "blank");
 	drawBlank();
 
-	SlidePresenter.beginDrawingNextSlide(500000, "sample");
+	SlidePresenter.beginDrawingNextSlide(500, "sample");
 	drawSampleArray();
 
-	SlidePresenter.beginDrawingNextSlide(1000000, "maintenance");
+	SlidePresenter.beginDrawingNextSlide(1000, "maintenance");
 	drawBlank();
 
-	SlidePresenter.beginDrawingNextSlide(1, "test");
+	SlidePresenter.beginDrawingNextSlide(.001, "test");
 	drawTestArray();
 	SlidePresenter.endDrawingCurrentSlide();
 

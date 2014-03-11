@@ -10,6 +10,47 @@ namespace CX {
 	namespace Algo {
 		template <typename T> std::vector<T> generateSeparatedValues(int count, double minDistance, std::function<double(T, T)> distanceFunction, std::function<T(void)> randomDeviate, int maxSequentialFailures = 200);
 		template <typename T> std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors);
+
+
+		class LatinSquare {
+		public:
+			LatinSquare(void);
+
+			void generate(unsigned int dimensions);
+
+			void reorderRight(void);
+			void reorderLeft(void);
+
+			//void reorderUp(void);
+			//void reorderDown(void);
+
+			void reverseColumns(void);
+			//void reverseRows(void);
+
+			void swapColumns(unsigned int c1, unsigned int c2);
+			//swapRows
+
+			bool appendRight(const LatinSquare& ls);
+			bool appendBelow(const LatinSquare& ls);
+
+			LatinSquare& operator+=(unsigned int value);
+
+			std::string print(std::string delim = ",");
+
+			bool validate(void) const;
+
+			unsigned int columns(void) const;
+			unsigned int rows(void) const;
+
+			std::vector<unsigned int> getColumn(unsigned int col) const;
+			std::vector<unsigned int> getRow(unsigned int row) const;
+
+			
+		private:
+			std::vector< std::vector<unsigned int> > square;
+
+			unsigned int _columns;
+		};
 	}
 }
 
@@ -73,7 +114,7 @@ std::vector<T> CX::Algo::generateSeparatedValues (int count, double minDistance,
 
 		if (failed) {
 			if (++sequentialFailures >= maxSequentialFailures) {
-				CX::Instances::Log.error("CX::Algo::getSepDist") << "Maximum number of sequential failures reached. Returning an empty vector.";
+				CX::Instances::Log.error("CX::Algo::generateSeparatedValues") << "Maximum number of sequential failures reached. Returning an empty vector.";
 				return std::vector<T>();
 			}
 			i--;
@@ -143,7 +184,7 @@ std::vector< std::vector<T> > CX::Algo::fullyCross (std::vector< std::vector<T> 
 		lback *= lcurrent;
 	}
 
-	//Now we have the data, but in wrong format.
+	//Now we have the data, but in wrong format, so transpose it.
 	std::vector< std::vector<T> > rval(crossedLevels);
 	for (unsigned int level = 0; level < crossedLevels; level++) {
 		rval[level].resize( factors.size() );
@@ -154,3 +195,4 @@ std::vector< std::vector<T> > CX::Algo::fullyCross (std::vector< std::vector<T> 
 
 	return rval;
 }
+

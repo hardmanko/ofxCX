@@ -8,14 +8,15 @@ easy to do, but it had a time cost, because allocating and copying all of the fr
 takes time. This example builds on the nBack example.
 
 In this example, we are going to contrast using the framebuffer approach with the slide
-presenter with the use of drawing functions (or to be specific, functors:
-http://www.cprogramming.com/tutorial/functors-function-objects-in-c++.html). The
-standard framebuffer approach has the following major steps:
+presenter with the use of drawing functions. The standard framebuffer approach has the 
+following major steps:
+
 1) Allocate the framebuffer
 2) Draw your stimuli to the famebuffer
 3) Copy the framebuffer to the back buffer
 4) Swap front and back buffers
-Using drawing functions/functors, we avoid steps 1 and 3, which are generally both
+
+Using drawing functions, we avoid steps 1 and 3, which are generally both
 very costly in terms of time. Step 2 becomes "Draw your stimuli to the back buffer directly".
 For an N-back task, there are no indefinitely-long pauses where you can prepare stimuli: you
 have to get the next sitmulus ready within a fixed interval, so using drawing functions may
@@ -32,7 +33,17 @@ We can compare the performance of the framebuffer and functor approaches by exam
 used for various processes. One thing to consider is the amount of time it takes to allocate the framebuffers
 and render your stimuli to the framebuffers.
 
-Another consideration
+Another consideration is the amount of time it takes to copy a framebuffer to the back buffer (step 3 above).
+This may take longer than drawing a small amount of stimuli directly to the back buffer. The framebuffer approach
+provides a nice security blanket: "I know that regardless of whatever is the the framebuffer, it will be copied
+in the same amount of time as any other framebuffer." However, if that copying time is longer than any of the
+stimulus drawing times, then using framebuffers is less efficient than drawing directly to the back buffer.
+
+We will be using a special kind of function object, known as a functor (http://www.cprogramming.com/tutorial/functors-function-objects-in-c++.html)
+to do our drawing. A functor is basically a structure that can be called like a function using operator().
+But unlike a normal function, a functor carries data along with it that can be used in the function call.
+Thus, a fuctor is a way to have a function without certain arguments for which you can still specify those
+arguments (in a sense) by setting data members of the functor.
 */
 
 CX_DataFrame df;
@@ -56,17 +67,18 @@ CX_Millis interStimulusInterval = 1000;
 
 CX_SlidePresenter SlidePresenter;
 void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info);
-//void drawStimulusForTrial(unsigned int trial, bool showInstructions);
 
+//Here are two new functions that draw the stimuli in different ways
 void drawStimuliToFramebuffers(CX_SlidePresenter& sp, int trialIndex);
 void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex);
 
 void drawStimulus(string letter, bool showInstructions);
 void drawBlank(void);
+
 void generateTrials(int numberOfTrials);
 
 
-bool useFramebuffersForStimuli = false; //If true, the standard framebuffer approach will be used. If 
+bool useFramebuffersForStimuli = true; //If true, the standard framebuffer approach will be used. If 
 //false, drawing functions will be used.
 
 //This is a "functor": an object that has data members (letter and showInstructions), but can be called
@@ -115,7 +127,7 @@ void runExperiment(void) {
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //If we aren't using framebuffers, then deallocating the framebuffers is meaningless.
 
 	config.useFenceSync = true;
-	config.waitUntilFenceSyncComplete = true;
+	config.waitUntilFenceSyncComplete = false;
 
 	SlidePresenter.setup(config);
 
@@ -125,7 +137,8 @@ void runExperiment(void) {
 
 
 	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
-	//We'll always use framebuffers for this because it isn't timing-critical.
+	//We'll always use framebuffers for this because it isn't timing-critical. The SlidePresenter
+	//is flexible about whether any given slide is drawn using the framebuffer or with a function.
 	for (int i = 3; i > 0; i--) {
 		SlidePresenter.beginDrawingNextSlide(1000, "fixation");
 		ofBackground(backgroundColor);
@@ -158,6 +171,14 @@ void runExperiment(void) {
 
 	//Calling this function can give us a lot of information about the last presentation of slides.
 	Log.notice() << "Slide presentation information: " << endl << SlidePresenter.printLastPresentationInformation();
+
+
+	vector<CX_SlidePresenter::Slide>& slides = SlidePresenter.getSlides();
+	CX_Millis startMinusCopySum = 0;
+	for (int i = 0; i < slides.size(); i++) {
+		startMinusCopySum += slides[i].actual.startTime - slides[i].copyToBackBufferCompleteTime;
+	}
+	cout << "Average difference between  back buffer copy completion and slide start: " << startMinusCopySum / slides.size() << endl;
 
 	//Display.setFullScreen(false);
 
@@ -253,7 +274,6 @@ void generateTrials(int numberOfTrials) {
 }
 
 void drawStimuliToFramebuffers(CX_SlidePresenter& sp, int trialIndex) {
-
 	CX_Millis startTime = Clock.getTime();
 
 	sp.beginDrawingNextSlide(stimulusPresentationDuration, "stimulus");
@@ -264,12 +284,20 @@ void drawStimuliToFramebuffers(CX_SlidePresenter& sp, int trialIndex) {
 	sp.beginDrawingNextSlide(interStimulusInterval, "blank");
 	drawBlank();
 	sp.endDrawingCurrentSlide();
+
+	CX_Millis renderingDuration = Clock.getTime() - startTime;
+	Log.notice() << "framebuffer rendering duration: " << renderingDuration;
 }
 
 void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
+	CX_Millis startTime = Clock.getTime();
+
 	//Because stimulusFunctors contains objects that can be called as functions, you can treat 
 	//an instance of the object as though it were a function.
 	sp.appendSlideFunction(stimulusFunctors[trialIndex], stimulusPresentationDuration, "stimulus");
 
-	sp.appendSlideFunction(drawBlank, stimulusPresentationDuration, "blank");
+	sp.appendSlideFunction(drawBlank, interStimulusInterval, "blank");
+
+	CX_Millis appendingDuration = Clock.getTime() - startTime;
+	Log.notice() << "Drawing function appending duration: " << appendingDuration;
 }

@@ -32,13 +32,10 @@ double distanceMultiplier = 1;
 
 void updateAnimation (void);
 void drawNextFrameOfAnimation (void);
-ofPoint calculateCircleCenter(double angleDeg, double distanceFromCenter);
+ofPoint calculateObjectCenter(double angleDeg, double distanceFromCenter);
 
-CX_LapTimer timer;
 
 void runExperiment (void) {
-	timer.setup(&Clock, 100000);
-
 	//Use mouse, but not keyboard.
 	Input.setup(false, true);
 
@@ -55,8 +52,6 @@ void runExperiment (void) {
 
 void updateAnimation (void) {
 
-	timer.collectData();
-
 	//See the main comment at the top of this file.
 	if (Display.hasSwappedSinceLastCheck()) {
 		Display.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.
@@ -64,6 +59,9 @@ void updateAnimation (void) {
 		drawNextFrameOfAnimation();
 
 		Display.endDrawingToBackBuffer(); //Make sure to call this to end the drawing.
+			//Because the front and back buffers are automatically swapping, you don't
+			//need to do anything else here: the new frame will be swapped to the front
+			//at some point in the near future.
 	}
 
 	//Do a little bit of stuff to get the state of the mouse.
@@ -74,9 +72,10 @@ void updateAnimation (void) {
 			mouseX = mev.x;
 		}
 
+		//Check to see if a circle was clicked on
 		if (mev.eventType == CX_Mouse::Event::PRESSED) {
 			for (int i = 0; i < 3; i++) {
-				ofPoint circleCenter = calculateCircleCenter(angles[i], distancesFromCenter[i]);
+				ofPoint circleCenter = calculateObjectCenter(angles[i], distancesFromCenter[i]);
 				if (circleCenter.distance(ofPoint(mev.x, mev.y)) <= circleRadius) {
 					directions[i] *= -1;
 				}
@@ -108,11 +107,11 @@ void drawNextFrameOfAnimation (void) {
 	for (int i = 0; i < 3; i++) {
 		angles[i] += 0.005 * mouseX * directions[i] * angleMultiplier[i];
 		ofSetColor(colors[i]);
-		ofCircle(calculateCircleCenter(angles[i], distancesFromCenter[i]), circleRadius);
+		ofCircle(calculateObjectCenter(angles[i], distancesFromCenter[i]), circleRadius);
 	}
 }
 
-ofPoint calculateCircleCenter(double angleDeg, double distanceFromCenter) {
+ofPoint calculateObjectCenter(double angleDeg, double distanceFromCenter) {
 	return ofPoint(Display.getCenterOfDisplay().x + cos(angleDeg * PI / 180) * distanceFromCenter * distanceMultiplier,
 				   Display.getCenterOfDisplay().y + sin(angleDeg * PI / 180) * distanceFromCenter * distanceMultiplier);
 }

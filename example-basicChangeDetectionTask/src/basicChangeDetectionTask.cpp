@@ -68,21 +68,20 @@ void updateExperiment (void) {
 		SlidePresenter.clearSlides(); //Start by clearing all slides (from the last trial).
 
 		//To draw to a slide, call beginDrawingNextSlide() with the name of the slide and the duration
-		//that you want the contents of the slide to be presented for. The time unit used in CX is
-		//microseconds (10^-6 seconds; 10^-3 milliseconds).
-		SlidePresenter.beginDrawingNextSlide(1000000, "fixation");
+		//that you want the contents of the slide to be presented for.
+		SlidePresenter.beginDrawingNextSlide(1000, "fixation");
 		//After calling beginDrawingNextSlide(), all drawing commands will be directed to the current
 		//slide until beginDrawingNextSlide() is called again or endDrawingCurrentSlide() is called.
 		drawFixation(); //See the definition of this function below for some examples of how to draw stuff.
 	
 		//Add some more slides.
-		SlidePresenter.beginDrawingNextSlide(250000, "blank");
+		SlidePresenter.beginDrawingNextSlide(250, "blank");
 		drawBlank();
 
-		SlidePresenter.beginDrawingNextSlide(500000, "sample");
+		SlidePresenter.beginDrawingNextSlide(500, "sample");
 		drawSampleArray( trials.at( trialIndex ) );
 
-		SlidePresenter.beginDrawingNextSlide(1000000, "maintenance");
+		SlidePresenter.beginDrawingNextSlide(1000, "maintenance");
 		drawBlank();
 
 		//The duration given for the last slide must be > 0, but is otherwise ignored.
@@ -91,7 +90,7 @@ void updateExperiment (void) {
 		//remove it from the screen after its duration is complete). If this is confusing
 		//to you, consider the question of what the slide presenter should replace the
 		//last slide with that will always be correct.
-		SlidePresenter.beginDrawingNextSlide(1, "test");
+		SlidePresenter.beginDrawingNextSlide(.001, "test");
 		drawTestArray( trials.at( trialIndex ) );
 		SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
 
@@ -244,8 +243,9 @@ vector<TrialData_t> generateTrials (int trialCount) {
 This function is here to show how sucky outputting data is when you have a user-defined struct to store data
 becuase of the lack of reflection in c++. The main problems are:
 
-1) Making errors because the column names must line up with the data, but are output at different places, so
-it is really easy to make an error in the naming of columns (swapping names).
+1) Making errors because the column names must line up with the data, but are output at different places (one block
+of code outputs the headers, another block outputs the data), so it is really easy to make an error in the naming of 
+columns (swapping names).
 2) Leaving out a piece of data just because it was forgotten. This is easy to do if you have 20+ columns of data,
 some of which are not very important to the main point of the experiment, but might be useful for secondary analyses.
 Even for an experiment as simple as this example, making sure that nothing was missing took me a little time.

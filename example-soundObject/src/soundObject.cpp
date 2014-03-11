@@ -76,7 +76,7 @@ void runExperiment (void) {
 	while (player.isPlaying())
 		;
 
-	cout << "Plying a fast duck (2x speed)" << endl;
+	cout << "Plying a fast duck (2x speed; not pitch corrected)" << endl;
 	duck.multiplySpeed(2);
 	//player.BLOCKING_setSound( &duck ); //This does not need to be called because the player already has a pointer to the duck sound.
 	player.play();
@@ -93,7 +93,7 @@ void runExperiment (void) {
 	//at the right offset following an earlier sound.
 	cout << "Playing compound sound: cow then duck." << endl;
 	compoundSound.addSound(cow, 0);
-	compoundSound.addSound(duck, 6000000);
+	compoundSound.addSound(duck, CX_Seconds(6));
 
 	player.BLOCKING_setSound( &compoundSound );
 
@@ -118,7 +118,7 @@ void runExperiment (void) {
 
 	compoundSound = rightCow; //Set the compound sound equal to the rightCow sound (a copy operation).
 	compoundSound.addSound(leftDuck, 0);
-	compoundSound.addSound(leftDuck, 4000000); //Because addSound() takes a copy of a CX_SoundObject,
+	compoundSound.addSound(leftDuck, CX_Seconds(4)); //Because addSound() takes a copy of a CX_SoundObject,
 		//you can add the same sound to another sound object multiple times (you can even add a sound
 		//to itself).
 	
