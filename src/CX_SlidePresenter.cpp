@@ -48,10 +48,6 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 			" unnoticed";
 	}
 
-	if (!_config.useFenceSync) {
-		_config.waitUntilFenceSyncComplete = false;
-	}
-
 	return true;
 }
 
@@ -545,9 +541,7 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 			uint64_t currentFrameNumber = _config.display->getFrameNumber();
 
 			//Was the current frame just swapped in? If so, store information about the swap time.
-			if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) || 
-				(!_config.waitUntilFenceSyncComplete && (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)))
-			{
+			if (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) {
 
 				CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
 

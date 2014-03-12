@@ -21,11 +21,11 @@ int trialCount = 40;
 int lastSlideIndex = 0;
 int nBack = 2;
 
-ofTrueTypeFont letterFont;
-ofTrueTypeFont instructionFont;
-
 ofColor backgroundColor(50);
 ofColor textColor(255);
+
+ofTrueTypeFont letterFont;
+ofTrueTypeFont instructionFont;
 
 char targetKey = 'f';
 char nonTargetKey = 'j';
@@ -36,7 +36,9 @@ CX_Millis interStimulusInterval = 1000;
 
 CX_SlidePresenter SlidePresenter;
 void finalSlideFunction (CX_SlidePresenter::FinalSlideFunctionArgs& info);
+
 void drawStimulusForTrial (unsigned int trial, bool showInstructions);
+
 void generateTrials (int numberOfTrials);
 
 void runExperiment (void) {

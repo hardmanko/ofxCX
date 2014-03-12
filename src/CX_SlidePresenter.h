@@ -142,8 +142,10 @@ namespace CX {
 			before they are swapped in. */
 			bool useFenceSync;
 
-			/*! If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until
-			there is confirmation that the slide has been fully copied into the back buffer. This prevents vertical tearing. */
+			/*! \brief If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until
+			there is confirmation that the slide has been fully copied into the back buffer. This prevents vertical tearing, but
+			may cause slides to be swapped in late if the copy confirmation is delayed but the copy has actually occurred.
+			Does nothing if swappingMode == MULTI_CORE. */
 			bool waitUntilFenceSyncComplete;
 		};
 

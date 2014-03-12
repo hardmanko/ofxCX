@@ -1,5 +1,4 @@
-#ifndef _CX_RANDOM_NUMBER_GENERATOR_H_
-#define _CX_RANDOM_NUMBER_GENERATOR_H_
+#pragma once
 
 #include <random>
 #include <cmath>
@@ -182,7 +181,6 @@ namespace CX {
 	}
 
 	/*! Draws `count` samples from a distribution `dist` that is provided by the user.
-
 	\param count The number of samples to take.
 	\param dist A configured instance of a distribution class that has operator()(Generator& g),
 	where Generator is a random number generator that has operator() that returns a random value.
@@ -208,5 +206,3 @@ namespace CX {
 	}
 
 }
-
-#endif //_CX_RANDOM_NUMBER_GENERATOR_H_

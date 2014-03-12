@@ -6,32 +6,45 @@
 namespace CX {
 	/*! This class provides a convenient way to deal with time in various units. It has at most
 	nanosecond accuracy. The contents of any of the templated versions of CX_Time_t are stored in 
-	nanoseconds, so any	conversion between time types is lossless.
+	nanoseconds, so most conversions between time types is lossless.
 
 	\code{.cpp}
 	CX_Millis mil = 100;
 	CX_Micros mic = mil; //mic now contains 100000 microseconds == 100 milliseconds.
+	//Really, they both contain 100,000,000 nanoseconds.
 
+	//You can add times together.
 	CX_Seconds sec = CX_Minutes(.1) + CX_Millis(100); //sec contains 6.1 seconds.
 
+	//You can take the ratio of times.
+	double secondsPerMinute = CX_Seconds(1)/CX_Minutes(1);
+
+	//You can compare times using the standard comparison operators (==, !=, <, >, <=, >=).
 	if (CX_Minutes(60) == CX_Hours(1)) {
 		cout << "There are 60 minutes in an hour." << endl;
 	}
 
-	if (CX_Millis(123.456) == CX_Micros(123456)) {
-		cout << "Fractional time works." << endl;
+	if (CX_Millis(12.3456) == CX_Micros(12345.6)) {
+		cout << "Time can be represented as a floating point value with sub-time-unit precision." << endl;
 	}
 
-	//If you want to be explicit about what time unit you want out, you can use these functions:
-	CX_Seconds sec(6);
+	//If you want to be explicit about what time unit you want out, you can use the seconds(), millis(), etc., functions:
+	sec = CX_Seconds(6);
 	cout << "In " << sec.seconds() << " seconds there are " << sec.millis() << " milliseconds and " << sec.minutes() << " minutes." << endl;
 
-	//You can alternately do a typecast:
+	//You can alternately do a typecast if you're about to print the result:
 	cout << "In " << sec << " seconds there are " << (CX_Millis)sec << " milliseconds and " << (CX_Minutes)sec << " minutes." << endl;
 
 	//The difference between the above examples is the resulting type.
 	//double minutes = (CX_Minutes)sec; //This does not work: A CX_Minutes cannot be assigned to a double
 	double minutes = sec.minutes(); //minutes() returns a double.
+
+	//You can construct a time with the result of the construction of a time object with a different time unit.
+	CX_Minutes min = CX_Hours(.05); //3 minutes
+
+	//You can get the whole number amounts of different time units.
+	CX_Seconds longTime = CX_Hours(2) + CX_Minutes(16) + CX_Seconds(40) + CX_Millis(123) + CX_Micros(456) + CX_Nanos(1);
+	CX_Seconds::PartitionedTime parts = longTime.getPartitionedTime();
 
 	\endcode
 

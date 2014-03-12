@@ -43,7 +43,8 @@ We will be using a special kind of function object, known as a functor (http://w
 to do our drawing. A functor is basically a structure that can be called like a function using operator().
 But unlike a normal function, a functor carries data along with it that can be used in the function call.
 Thus, a fuctor is a way to have a function without certain arguments for which you can still specify those
-arguments (in a sense) by setting data members of the functor.
+arguments (in a sense) by setting data members of the functor. See struct stimulusFunctor below for an
+implementation.
 */
 
 CX_DataFrame df;
@@ -52,11 +53,11 @@ int trialCount = 40;
 int lastSlideIndex = 0;
 int nBack = 2;
 
-ofTrueTypeFont letterFont;
-ofTrueTypeFont instructionFont;
-
 ofColor backgroundColor(50);
 ofColor textColor(255);
+
+ofTrueTypeFont letterFont;
+ofTrueTypeFont instructionFont;
 
 char targetKey = 'f';
 char nonTargetKey = 'j';
@@ -82,7 +83,7 @@ bool useFramebuffersForStimuli = true; //If true, the standard framebuffer appro
 //false, drawing functions will be used.
 
 //This is a "functor": an object that has data members (letter and showInstructions), but can be called
-//as a function using the overloaded operator().
+//as a function using operator().
 struct stimulusFunctor {
 	string letter;
 	bool showInstructions;
@@ -92,72 +93,10 @@ struct stimulusFunctor {
 	}
 };
 
-
-void drawStimulus(string letter, bool showInstructions) {
-	ofBackground(backgroundColor);
-	ofSetColor(textColor);
-	Draw::centeredString(Display.getCenterOfDisplay(), letter, letterFont);
-
-	if (showInstructions) {
-		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);
-	}
-}
-
-void drawBlank(void) {
-	ofBackground(backgroundColor);
-};
-
 vector<stimulusFunctor> stimulusFunctors;
 
+
 void runExperiment(void) {
-
-	CX_Seconds t = CX_Hours(2) + CX_Minutes(16) + CX_Seconds(40) + CX_Millis(123) + CX_Micros(456) + CX_Nanos(1);
-	CX_Seconds::PartitionedTime parts = t.getPartitionedTime();
-
-	if (CX_Minutes(60) == CX_Hours(1)) {
-		cout << "eq" << endl;
-	}
-
-	if (CX_Millis(123.456) == CX_Micros(123456)) {
-		cout << "Fractional time works." << endl;
-	}
-
-	//If you want to be explicit about what time unit you want out, you can use these functions:
-	CX_Seconds sec(6);
-	cout << "In " << sec.seconds() << " seconds there are " << sec.millis() << " milliseconds and " << sec.minutes() << " minutes." << endl;
-
-	//You can alternately do a typecast:
-	cout << "In " << sec << " seconds there are " << (CX_Millis)sec << " milliseconds and " << (CX_Minutes)sec << " minutes." << endl;
-
-	//The difference between the above examples is the resulting type.
-	//double minutes = (CX_Minutes)sec; //This does not work: A CX_Minutes cannot be assigned to a double
-	double minutes = sec.minutes(); //minutes() returns a double.
-
-	CX_Micros mic1 = CX_Millis(2) / 200; //2 millis == 2000 micros. 2000 micros / 200 == 10 micros. Correct!
-	CX_Micros mic2 = CX_Millis(2).millis() / 200; //This is wrong: 2 / 200 == .01, yes, BUT .01 whats? 
-		//This is interpreted as .01 micros because that is what it is being assigned to.
-	CX_Micros mic3 = CX_Millis(2).micros() / 200; //This is correct. Calculations in micros are assigned to micros.
-
-
-	CX_Millis milMax = CX_Millis::max();
-	CX_Millis milMin = CX_Millis::min();
-
-	cout << milMin << " " << milMax << endl;
-
-	std::poisson_distribution<int> pois(4.2);
-	int deviate = pois(RNG.getGenerator());
-	deviate = pois(RNG.getGenerator());
-	deviate = pois(RNG.getGenerator());
-
-	Algo::LatinSquare ls;
-	ls.generate(4);
-	ls.swapColumns(0, 3);
-
-	cout << ls.print() << endl << endl;
-
-	ls.reverseRows();
-
-	cout << ls.print() << endl << endl;
 
 	//Display.setFullScreen(true);
 
@@ -172,10 +111,9 @@ void runExperiment(void) {
 	config.display = &Display;
 	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
 	config.finalSlideCallback = &finalSlideFunction;
-	config.deallocateCompletedSlides = useFramebuffersForStimuli; //If we aren't using framebuffers, then deallocating the framebuffers is meaningless.
+	config.deallocateCompletedSlides = true;
 
 	config.useFenceSync = true;
-	config.waitUntilFenceSyncComplete = false;
 
 	SlidePresenter.setup(config);
 
@@ -226,7 +164,7 @@ void runExperiment(void) {
 	for (int i = 0; i < slides.size(); i++) {
 		startMinusCopySum += slides[i].actual.startTime - slides[i].copyToBackBufferCompleteTime;
 	}
-	cout << "Average difference between  back buffer copy completion and slide start: " << startMinusCopySum / slides.size() << endl;
+	Log.notice() << "Average difference between  back buffer copy completion and slide start: " << startMinusCopySum / slides.size();
 
 	//Display.setFullScreen(false);
 
@@ -349,3 +287,17 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 	CX_Millis appendingDuration = Clock.now() - startTime;
 	Log.notice() << "Drawing function appending duration: " << appendingDuration;
 }
+
+void drawStimulus(string letter, bool showInstructions) {
+	ofBackground(backgroundColor);
+	ofSetColor(textColor);
+	Draw::centeredString(Display.getCenterOfDisplay(), letter, letterFont);
+
+	if (showInstructions) {
+		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);
+	}
+}
+
+void drawBlank(void) {
+	ofBackground(backgroundColor);
+};
