@@ -132,6 +132,14 @@ namespace CX {
 			the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */
 			CX_Millis preSwapCPUHoggingDuration;
 
+			/*! The method used by the slide presenter to swap stimuli that have been drawn to the back buffer to the front buffer.
+			MULTI_CORE is the best method, but only really works properly if you have at least a 2 core CPU.
+			In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
+			drawn to the back buffer. After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers
+			is queued by launching a thread.
+			In the SINGLE_CORE_BLOCKING_SWAPS mode, everything is the same as SINGLE_CORE_THREADED_SWAPS, but instead of launching a thread to
+			swap the buffers, this mode blocks in the main thread while waiting for the swap.
+			*/
 			enum SwappingMode {
 				SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
 				SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED
@@ -151,10 +159,10 @@ namespace CX {
 
 		/*! Contains information about the presentation timing of the slide. */
 		struct SlideTimingInfo {
-			uint32_t startFrame; /*!< The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
-			uint32_t frameCount; /*!< The number of frames the slide was/should be presented for. */
-			CX_Millis startTime; /*!< The time at which the slide was/should have been started. Can be compared with values from Clock.getTime(). */
-			CX_Millis duration; /*!< Time amount of time the slide was/should have been presented for. */
+			uint32_t startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
+			uint32_t frameCount; /*!< \brief The number of frames the slide was/should be presented for. */
+			CX_Millis startTime; /*!< \brief The time at which the slide was/should have been started. Can be compared with values from Clock.getTime(). */
+			CX_Millis duration; /*!< \brief The amount of time the slide was/should have been presented for. */
 		};
 
 		/*! This struct contains information related to slide presentation using CX_SlidePresenter. */
@@ -176,7 +184,7 @@ namespace CX {
 										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer. 
 										   However, if you want a blank framebuffer, you will have to clear it manually. */
 
-			/*! Status of the current slide vis a vis presentation. */
+			/*! \brief Status of the current slide vis a vis presentation. This should not be modified by the user. */
 			enum {
 				NOT_STARTED,
 				COPY_TO_BACK_BUFFER_PENDING,
