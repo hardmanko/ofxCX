@@ -123,7 +123,7 @@ is ignored.
 the full dimensions of the fbo (whatever size was chosen at allocation of the fbo). 
 */
 void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
-	_blitFboToBackBuffer(fbo, ofPoint(0,0));
+	copyFboToBackBuffer(fbo, ofPoint(0, 0));
 }
 
 /*! Copies an ofFbo to the back buffer using a highly efficient blitting operation.
@@ -131,7 +131,16 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
 \param destination The point on the back buffer where the fbo will be placed.
 */
 void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
-	_blitFboToBackBuffer(fbo, destination);
+
+	ofRectangle res = this->getResolution();
+
+	GLint copyWidth = std::min(fbo.getWidth(), res.width); //Dimensions must be the same
+	GLint copyHeight = std::min(fbo.getHeight(), res.height);
+
+	ofRectangle source(0, 0, copyWidth, copyHeight);
+	ofRectangle dest(destination.x, destination.y, copyWidth, copyHeight);
+
+	_blitFboToBackBuffer(fbo, source, dest);
 }
 
 /*! Copies an ofFbo to the back buffer using a highly efficient blitting operation.
@@ -176,18 +185,6 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofRectangle
 }
 */
 
-void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofPoint destination) {
-	ofRectangle res = this->getResolution();
-
-	GLint copyWidth = std::min(fbo.getWidth(), res.width); //Dimensions must be the same
-	GLint copyHeight = std::min(fbo.getHeight(), res.height);
-
-	ofRectangle source(0, 0, copyWidth, copyHeight);
-	ofRectangle dest( destination.x, destination.y, copyWidth, copyHeight );
-
-	_blitFboToBackBuffer(fbo, source, dest);
-}
-
 void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates) {
 
 	ofRectangle res = this->getResolution();
@@ -221,6 +218,10 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 			" Supported orientations are OF_ORIENTATION_DEFAULT and OF_ORIENTATION_180.";
 		break;
 	}
+
+	
+	glDrawBuffer(GL_BACK);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_BACK);

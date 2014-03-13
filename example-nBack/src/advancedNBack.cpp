@@ -63,8 +63,8 @@ char targetKey = 'f';
 char nonTargetKey = 'j';
 string keyReminderInstructions;
 
-CX_Millis stimulusPresentationDuration = 1000;
-CX_Millis interStimulusInterval = 1000;
+CX_Millis stimulusPresentationDuration = 500;
+CX_Millis interStimulusInterval = CX_Seconds(1.0/60.0);
 
 CX_SlidePresenter SlidePresenter;
 void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info);
@@ -79,7 +79,7 @@ void drawBlank(void);
 void generateTrials(int numberOfTrials);
 
 
-bool useFramebuffersForStimuli = true; //If true, the standard framebuffer approach will be used. If 
+bool useFramebuffersForStimuli = false; //If true, the standard framebuffer approach will be used. If 
 //false, drawing functions will be used.
 
 //This is a "functor": an object that has data members (letter and showInstructions), but can be called
@@ -98,7 +98,13 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
-	//Display.setFullScreen(true);
+	Display.setFullScreen(true);
+
+	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
+	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
+
+	//Display.BLOCKING_estimateFramePeriod(CX_Seconds(2));
+	Log.notice() << "Frame period: " << Display.getFramePeriod();
 
 	Input.setup(true, false); //Use keyboard, not mouse.
 
@@ -109,11 +115,13 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
+	config.swappingMode = CX_SlidePresenter::Configuration::SINGLE_CORE_BLOCKING_SWAPS;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = true;
 
+	config.preSwapCPUHoggingDuration = 2;
 	config.useFenceSync = true;
+	config.waitUntilFenceSyncComplete = false;
 
 	SlidePresenter.setup(config);
 
@@ -146,6 +154,7 @@ void runExperiment(void) {
 	}
 	trialNumber = nBack;
 
+
 	SlidePresenter.startSlidePresentation();
 
 	while (SlidePresenter.isPresentingSlides()) {
@@ -164,7 +173,7 @@ void runExperiment(void) {
 	for (int i = 0; i < slides.size(); i++) {
 		startMinusCopySum += slides[i].actual.startTime - slides[i].copyToBackBufferCompleteTime;
 	}
-	Log.notice() << "Average difference between  back buffer copy completion and slide start: " << startMinusCopySum / slides.size();
+	Log.notice() << "Average difference between back buffer copy completion and slide start: " << startMinusCopySum / slides.size();
 
 	//Display.setFullScreen(false);
 
@@ -299,5 +308,5 @@ void drawStimulus(string letter, bool showInstructions) {
 }
 
 void drawBlank(void) {
-	ofBackground(backgroundColor);
+	ofBackground(255);
 };

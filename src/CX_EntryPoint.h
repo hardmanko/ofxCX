@@ -47,13 +47,16 @@ namespace CX {
 		CX_WindowConfiguration_t(void) :
 			mode(ofWindowMode::OF_WINDOW),
 			width(800),
-			height(600)
+			height(600),
+			multisampleSampleCount(4)
 		{}
 
 		ofWindowMode mode;
 
 		int width;
 		int height;
+
+		unsigned int multisampleSampleCount;
 
 		ofPtr<ofBaseGLRenderer> desiredRenderer;
 		Private::CX_GLVersion desiredOpenGLVersion;
@@ -88,7 +91,6 @@ void runExperiment (void) {
 
 \ingroup entryPoint
 */
-
 void runExperiment (void);
 
 #endif //_CX_ENTRY_POINT_H_

@@ -151,17 +151,17 @@ double clockPeriod(void) {
 
 
 
-void CX_LapTimer::setup(CX_Clock *clock, unsigned int samples) {
+void Util::CX_LapTimer::setup(CX_Clock *clock, unsigned int samples) {
 	_clock = clock;
 	_timePoints.resize(samples);
 	reset();
 }
 
-void CX_LapTimer::reset(void) {
+void Util::CX_LapTimer::reset(void) {
 	_sampleIndex = 0;
 }
 
-void CX_LapTimer::takeSample(void) {
+void Util::CX_LapTimer::takeSample(void) {
 
 	_timePoints[_sampleIndex] = _clock->now();
 
@@ -171,7 +171,7 @@ void CX_LapTimer::takeSample(void) {
 	}
 }
 
-std::string CX_LapTimer::getStatString(void) {
+std::string Util::CX_LapTimer::getStatString(void) {
 	CX_Millis differenceSum = 0;
 	CX_Millis maxDifference = 0;
 	CX_Millis minDifference = CX_Millis::max();
@@ -206,7 +206,7 @@ std::string CX_LapTimer::getStatString(void) {
 	return s.str();
 }
 
-CX_Millis CX_LapTimer::getAverage(void) {
+CX_Millis Util::CX_LapTimer::getAverage(void) {
 	CX_Millis differenceSum = 0;
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
 		differenceSum += _timePoints[i] - _timePoints[i - 1];
@@ -214,7 +214,7 @@ CX_Millis CX_LapTimer::getAverage(void) {
 	return differenceSum.millis() / (_timePoints.size() - 1);
 }
 
-CX_Millis CX_LapTimer::getMaximum(void) {
+CX_Millis Util::CX_LapTimer::getMaximum(void) {
 	CX_Millis maxDifference = 0;
 
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
@@ -227,7 +227,7 @@ CX_Millis CX_LapTimer::getMaximum(void) {
 	return maxDifference;
 }
 
-CX_Millis CX_LapTimer::getMinimum(void) {
+CX_Millis Util::CX_LapTimer::getMinimum(void) {
 	CX_Millis minDifference = CX_Millis::max();
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
 		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];

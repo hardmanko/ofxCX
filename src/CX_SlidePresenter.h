@@ -117,7 +117,7 @@ namespace CX {
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
 				deallocateCompletedSlides(true),
 				swappingMode(SwappingMode::MULTI_CORE),
-				preSwapCPUHoggingDuration(5000),
+				preSwapCPUHoggingDuration(5),
 				useFenceSync(true),
 				waitUntilFenceSyncComplete(false)
 			{}

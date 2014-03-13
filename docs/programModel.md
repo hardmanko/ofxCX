@@ -1,7 +1,5 @@
-
 Program Model {#programModel}
 =============
-
 
 Program Flow
 ------------

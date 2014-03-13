@@ -5,26 +5,40 @@ GLFWwindow *CX::Private::glfwContext = NULL;
 
 ofPtr<CX::Private::CX_AppWindow> CX::Private::window;
 
+CX::Private::CX_GLVersion glVersion;
+
+void CX::Private::learnOpenGLVersion(void) {
+
+	//Find out what version of openGL the graphics card supports, which requires the creation 
+	//of a GLFW window (or other initialization of openGL).
+
+	glfwInit();
+	GLFWwindow *windowP;
+	glfwWindowHint(GLFW_VISIBLE, GL_FALSE); //Make the window invisible
+	windowP = glfwCreateWindow(1, 1, "", NULL, NULL); //Create the window
+	glfwMakeContextCurrent(windowP);
+
+	//Once GL is initialized, get the version number from the version number string.
+	std::string s = (char*)glGetString(GL_VERSION);
+
+	vector<string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space, so split it off.
+	vector<string> version = ofSplitString(versionVendor[0], "."); //Version numbers
+
+	glVersion.major = ofToInt(version[0]);
+	glVersion.minor = ofToInt(version[1]);
+	if (version.size() == 3) {
+		glVersion.release = ofToInt(version[2]);
+	} else {
+		glVersion.release = 0;
+	}
+
+	glfwDestroyWindow(windowP);
+	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
+
+}
+
 CX::Private::CX_GLVersion CX::Private::getOpenGLVersion(void) {
-	static CX_GLVersion ver = []()->CX_GLVersion {
-		std::string s = (char*)glGetString(GL_VERSION);
-
-		vector<string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space, so split it off.
-		vector<string> version = ofSplitString(versionVendor[0], "."); //Version numbers
-
-		CX_GLVersion v;
-		v.major = ofToInt(version[0]);
-		v.minor = ofToInt(version[1]);
-		if (version.size() == 3) {
-			v.release = ofToInt(version[2]);
-		} else {
-			v.release = 0;
-		}
-
-		return v;
-	}();
-
-	return ver;
+	return glVersion;
 }
 
 

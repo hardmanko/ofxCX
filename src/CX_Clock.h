@@ -53,46 +53,47 @@ namespace CX {
 	}
 
 
+	namespace Util {
 
-	/*! This class can be used for profiling event loops.
+		/*! This class can be used for profiling event loops.
 
-	\code{.cpp}
-	//Set up collection:
-	CX_LapTimer lt;
-	lt.setup(&Clock, 1000); //Every 1000 samples, the results of those samples will be logged.
+		\code{.cpp}
+		//Set up collection:
+		CX_LapTimer lt;
+		lt.setup(&Clock, 1000); //Every 1000 samples, the results of those samples will be logged.
 
-	//In the loop:
-	while (whatever) {
+		//In the loop:
+		while (whatever) {
 		//other code...
 		lt.takeSample();
 		//other code...
+		}
+		Log.flush(); //Check the results of the profiling.
+
+		\endcode
+
+		\ingroup timing
+		*/
+		class CX_LapTimer {
+		public:
+			void setup(CX_Clock *clock, unsigned int samples);
+
+			void reset(void);
+
+			void takeSample(void);
+
+			CX_Millis getAverage(void);
+			CX_Millis getMinimum(void);
+			CX_Millis getMaximum(void);
+
+			std::string getStatString(void);
+
+		private:
+			CX_Clock *_clock;
+			vector<CX_Millis> _timePoints;
+			unsigned int _sampleIndex;
+		};
 	}
-	Log.flush(); //Check the results of the profiling.
-
-	\endcode
-
-	\ingroup timing
-	*/
-	class CX_LapTimer {
-	public:
-		void setup(CX_Clock *clock, unsigned int samples);
-
-		void reset(void);
-
-		void takeSample(void);
-
-		CX_Millis getAverage(void);
-		CX_Millis getMinimum(void);
-		CX_Millis getMaximum(void);
-
-		std::string getStatString(void);
-
-	private:
-		CX_Clock *_clock;
-		vector<CX_Millis> _timePoints;
-		unsigned int _sampleIndex;
-	};
-
 }
 
 #endif //_CX_CLOCK_H_

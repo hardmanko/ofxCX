@@ -7,12 +7,15 @@
 using namespace std;
 using namespace CX;
 
+static unsigned int multisamplingSampleCount = 4;
 
-
-int CX::Util::getSampleCount(void) {
-	return 4; 
+unsigned int CX::Util::getSampleCount(void) {
+	return multisamplingSampleCount;
 };
 
+void CX::Private::setSampleCount(unsigned int count) {
+	multisamplingSampleCount = count;
+}
 
 /*! Checks that the version of oF that is used during compilation matches the requested version. If the desired version
 was 0.7.1, simply input (0, 7, 1) as the arguments. A warning will be logged if the versions don't match.

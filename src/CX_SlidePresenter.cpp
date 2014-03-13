@@ -34,9 +34,9 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 
 	_config = config;
 
-	if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
-		_config.useFenceSync = false;
-	}
+	//if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
+	//	_config.useFenceSync = false;
+	//}
 
 	if (!CX::Private::glFenceSyncSupported()) {
 		_config.useFenceSync = false; //Override the setting
@@ -46,6 +46,17 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 			" time at which the front and back buffers are swapped, bringing the new stimulus onscreen. Without fence sync, there is no"
 			" way for the slide presenter to know if the drawing has completed by swap time, potentially allowing vertical tearing to go"
 			" unnoticed";
+	}
+
+	if ((_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) || (_config.swappingMode == Configuration::SINGLE_CORE_THREADED_SWAPS)) {
+		glfwSwapInterval(1); //Testing
+	}
+
+
+	if (_config.preSwapCPUHoggingDuration > (_config.display->getFramePeriod() - CX_Millis(1))) {
+		_config.preSwapCPUHoggingDuration = _config.display->getFramePeriod() - CX_Millis(1);
+		Log.warning("CX_SlidePresenter") << "preSwapCPUHoggingDuration was set to a value greater than a frame period minus one millisecond." <<
+			" It has been set to the frame period minus one millisecond.";
 	}
 
 	return true;
@@ -82,8 +93,13 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
 		if (!_config.display->isAutomaticallySwapping()) {
-			_config.display->BLOCKING_setAutoSwapping(true); //This class requires that the monitor be swapping constantly while presenting slides.
+			_config.display->BLOCKING_setAutoSwapping(true);
 			Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
+		}
+	} else if (_config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS || _config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS) {
+		if (_config.display->isAutomaticallySwapping()) {
+			_config.display->BLOCKING_setAutoSwapping(false);
+			Log.notice("CX_SlidePresenter") << "Display was set to automatically swap at start of presentation. It was set to not swap automatically in order for the slide presentation to occur.";
 		}
 	}
 
@@ -480,18 +496,32 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 			CX_Millis currentTime = CX::Instances::Clock.now();
 			if (currentTime >= _hoggingStartTime) {
 
+				
+
+				//while (Clock.now() < _slides.at(_currentSlide).intended.startTime)
+				//	;
+				CX_Millis swappingStart = Clock.now();
 				_config.display->BLOCKING_swapFrontAndBackBuffers();
+
+				//_config.display->BLOCKING_swapFrontAndBackBuffers();
+				//_config.display->BLOCKING_swapFrontAndBackBuffers();
+
+				//if (_slides[_currentSlide].intended.duration < (_config.display->getFramePeriod() * 2)) {
+				//_config.display->BLOCKING_swapFrontAndBackBuffers();
+				//}
+				Log.notice("CX_SlidePresenter") << "Slide #" << _currentSlide << " swapping duration was " << Clock.now() - swappingStart;
+				
 
 				CX_Millis currentSlideOnset = CX::Instances::Clock.now();
 
 				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " in progress. Started at " << currentSlideOnset;
 
 				_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::IN_PROGRESS;
-				//_slides.at(_currentSlide).actual.startFrame = currentFrameNumber; //Don't have frame number information.
+				_slides.at(_currentSlide).actual.startFrame = 0; //Don't have frame number information.
 				_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
 
 				if (_currentSlide == 0) {
-					//_slides.at(0).intended.startFrame = currentFrameNumber;
+					_slides.at(0).intended.startFrame = 0;
 					_slides.at(0).intended.startTime = currentSlideOnset; //This is sort of weird, but true.
 				}
 
@@ -512,6 +542,7 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 					_prepareNextSlide();
 
 					_hoggingStartTime = currentSlideOnset + _slides.at(_currentSlide).intended.duration - _config.preSwapCPUHoggingDuration;
+					Log.verbose("CX_SlidePresenter") << "Slide #" << (_currentSlide + 1) << " hogging start time: " << _hoggingStartTime;
 
 					_currentSlide++;
 					_renderCurrentSlide(); //render the next slide. You can do this because you know the buffers will not swap automatically
@@ -521,7 +552,19 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 	}
 
 	if (_synchronizing) {
-		_config.display->BLOCKING_swapFrontAndBackBuffers();
+
+		//This is kind of a shitty hack to force v-sync
+		CX_Millis syncSwapStart = Clock.now();
+		CX_Millis swapStart;
+		do {
+			swapStart = Clock.now();
+			_config.display->BLOCKING_swapFrontAndBackBuffers();
+			Log.notice("CX_SlidePresenter") << "swapped during sync";
+		} while (Clock.now() - swapStart < _config.display->getFramePeriod() - CX_Millis(1));
+			
+
+		Log.notice("CX_SlidePresenter") << "Sync swap duration: " << Clock.now() - syncSwapStart;
+
 		_currentSlide = 0;
 		_renderCurrentSlide();
 		_synchronizing = false;
@@ -541,7 +584,7 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 			uint64_t currentFrameNumber = _config.display->getFrameNumber();
 
 			//Was the current frame just swapped in? If so, store information about the swap time.
-			if (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) {
+			if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) || (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)) {
 
 				CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
 
@@ -707,7 +750,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 
 
 void CX_SlidePresenter::_waitSyncCheck(void) {
-	if (!_config.useFenceSync || (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS)) {
+	if (!_config.useFenceSync) {
 		return;
 	}
 
@@ -745,9 +788,9 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 		_config.display->copyFboToBackBuffer(_slides.at(_currentSlide).framebuffer);
 	}
 
-	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started";
+	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started at " << Clock.now();
 
-	if (_config.useFenceSync && (_config.swappingMode != Configuration::SINGLE_CORE_BLOCKING_SWAPS)) {
+	if (_config.useFenceSync) {
 		_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		glFlush();
 		_awaitingFenceSync = true;

@@ -1,3 +1,5 @@
+/* This class is very obviously based heavily on ofAppGLFWWindow, but I thought I would clarify the matter. -KH */
+
 #pragma once
 
 #include "ofConstants.h"

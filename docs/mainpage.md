@@ -41,7 +41,22 @@ exist at this point. You can create them.
 when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
 6. Compile and run the project.
 
+
+
+\section yourFirstExperiment Getting Started
+
+To create your first experiment, follow the steps for using the examples in \ref installationInstructions up to and including step 3. Then create a blank .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define runExperiment, like in the example below:
+\code{.cpp}
+#include "CX_EntryPoint.h"
+
+void runExperiment (void) {
+	//Do your thing
+}
+\endcode
+That's all you need to do to get started. You should look at the \ref examplesAndTutorials in order to learn more about how CX works. You should start with the helloWorld example.
+
 \section examplesAndTutorials Examples and Tutorials
+
 There are several examples that serve as tutorials for CX. Some of the examples are on a specific topic and others 
 are sample experiments that integrate together different features of CX. The example files can be found in the CX
 directory (see \ref installationInstructions) in subfolders with names beginning with "example-".
@@ -55,7 +70,7 @@ files, combining sounds, and playing them.
 
 Experiments:
 ------------------------
-- basicChangeDetection - A very straightforward change-detection task demonstrating some of the features of CX 
++ basicChangeDetection - A very straightforward change-detection task demonstrating some of the features of CX 
 like presentation of time-locked stimuli, keyboard response collection, and use of the CX_RandomNumberGenerator.
 + advancedChangeDetection - This example expands on basicChangeDetection, including CX_DataFrame and CX_TrialController 
 in order to simplify the experiment.
@@ -69,6 +84,8 @@ cursor movement, clicks, and scroll wheel activity.
 + renderingTest - Includes several examples of how to draw stuff using ofPath (arbitrary lines), ofTexture (a kind 
 of pixel buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
 (ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace.
+
+
 
 \page modulesPage Modules
 

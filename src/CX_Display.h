@@ -79,9 +79,6 @@ namespace CX {
 		uint64_t _manualBufferSwaps;
 		uint64_t _frameNumberOnLastSwapCheck;
 
-		void _exitHandler(void);
-
-		void _blitFboToBackBuffer(ofFbo& fbo, ofPoint destination);
 		void _blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates);
 
 	};

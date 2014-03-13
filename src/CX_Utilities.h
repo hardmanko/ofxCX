@@ -20,13 +20,18 @@
 
 namespace CX {
 
+	namespace Private {
+		void setSampleCount(unsigned int count);
+	}
+
 	/*! This namespace contains a variety of utility functions.
 	\ingroup utility*/
 	namespace Util {
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch);
 
-		int getSampleCount(void); //Make private?
+		
+		unsigned int getSampleCount(void); //Make private?
 
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 

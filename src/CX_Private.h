@@ -38,6 +38,7 @@ namespace CX {
 
 		};
 
+		void learnOpenGLVersion(void);
 		CX_GLVersion getOpenGLVersion(void);
 		CX_GLVersion getGLSLVersion(void);
 		bool glFenceSyncSupported(void);
