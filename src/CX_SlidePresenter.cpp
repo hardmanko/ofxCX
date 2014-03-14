@@ -34,10 +34,6 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 
 	_config = config;
 
-	//if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
-	//	_config.useFenceSync = false;
-	//}
-
 	if (!CX::Private::glFenceSyncSupported()) {
 		_config.useFenceSync = false; //Override the setting
 		Log.warning("CX_SlidePresenter") << "OpenGL fence sync not supported by the video card in this computer. This means that the slide"
@@ -49,7 +45,7 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	}
 
 	if ((_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) || (_config.swappingMode == Configuration::SINGLE_CORE_THREADED_SWAPS)) {
-		glfwSwapInterval(1); //Testing
+		//glfwSwapInterval(0); //Testing
 	}
 
 
@@ -119,7 +115,22 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	_config.display->BLOCKING_waitForOpenGL();
 
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
-		_config.display->hasSwappedSinceLastCheck(); //Throw away any very recent swaps.
+
+		//_config.display->hasSwappedSinceLastCheck();
+
+		
+		int requiredSwaps = 3;
+		CX_Millis startTime = Clock.now();
+		while (requiredSwaps) {
+			if (_config.display->hasSwappedSinceLastCheck()) {
+				CX_Millis swapTime = _config.display->getLastSwapTime();
+				if (swapTime - startTime > _config.display->getFramePeriod() - CX_Millis(1)) {
+					requiredSwaps--;
+				}
+				startTime = swapTime;
+			}
+		}
+		
 	}
 
 	return true;
@@ -497,9 +508,10 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 			if (currentTime >= _hoggingStartTime) {
 
 				
+				//Hog for a whlie. This is stupid, honestly. If the user has constructed a proper loop, this function will be checked every ~10 us.
+				while (Clock.now() < _slides.at(_currentSlide).intended.startTime)
+					;
 
-				//while (Clock.now() < _slides.at(_currentSlide).intended.startTime)
-				//	;
 				CX_Millis swappingStart = Clock.now();
 				_config.display->BLOCKING_swapFrontAndBackBuffers();
 

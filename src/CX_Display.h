@@ -54,19 +54,20 @@ namespace CX {
 		void BLOCKING_setAutoSwapping (bool autoSwap);
 		bool isAutomaticallySwapping (void);
 		bool hasSwappedSinceLastCheck (void);
-		CX_Millis getLastSwapTime(void);
-		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
-		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval); //Also estimate standard deviation. Return a struct with this info?
 
+		CX_Millis getLastSwapTime(void);
+		
+		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval); //Also estimate standard deviation. Return a struct with this info?
 		CX_Millis getFramePeriod(void);
+		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
+
+		uint64_t getFrameNumber(void);
+
 		void setWindowResolution (int width, int height);
 		void setWindowTitle(std::string title);
 		ofRectangle getResolution (void);
 		ofPoint getCenterOfDisplay (void);
-		uint64_t getFrameNumber (void);
-
-
-
+		
 		void BLOCKING_waitForOpenGL (void);
 
 	private:

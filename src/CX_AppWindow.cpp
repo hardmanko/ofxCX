@@ -583,9 +583,9 @@ void CX_AppWindow::setFullscreen(bool fullscreen){
  
     int curWindowMode  = windowMode;
  
-  if (fullscreen){
+	if (fullscreen) {
 		windowMode = OF_FULLSCREEN;
-	}else{
+	} else {
 		windowMode = OF_WINDOW;
     }
  

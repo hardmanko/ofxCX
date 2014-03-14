@@ -81,6 +81,10 @@ void CX_Clock::resetExperimentStartTime(void) {
 	}
 }
 
+void CX_Clock::sleep(CX_Millis t) {
+	std::this_thread::sleep_for(std::chrono::nanoseconds(t.nanos()));
+}
+
 /* Get the start time of the experiment in system time. The returned value can be compared with the result of getSystemTime(). */
 //CX_Micros CX_Clock::getExperimentStartTime(void) {
 //	return std::chrono::duration_cast<std::chrono::microseconds>(_experimentStart.time_since_epoch()).count();

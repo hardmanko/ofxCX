@@ -4,7 +4,7 @@
 
 using namespace CX::Synth;
 
-CX_SoundStream ss;
+
 
 
 
@@ -45,20 +45,48 @@ double sineWaveGeneratorFunction(double waveformPosition) {
 
 void runExperiment(void) {
 
+	Input.setup(true, true);
+
 	simpleTest();
 
 
 
+	StreamOutput output; //StreamOutput is one of the ways to get sound out of a modular synth. 
+		//It requires a CX_SoundStream to play the sounds, which is configured below.
+
+	//Configure the sound stream. See the soundObject example for more information about these values. 
+	//Also see the documentation for CX_SoundStream::Configuration.
 	CX_SoundStream::Configuration config;
 	config.api = RtAudio::Api::WINDOWS_DS;
 	config.outputChannels = 2;
 	config.sampleRate = 48000;
 	config.bufferSize = 256;
 	config.streamOptions.numberOfBuffers = 4;
-	ss.setup(config);
 
-	StreamOutput output;
-	output.setOuputStream(ss);
+	CX_SoundStream ss;
+	ss.setup(config);
+	ss.start();
+
+	output.setOuputStream(ss); //Set the CX_SoundStream ss as the sound stream for the StreamOutput.
+
+
+	//Now that we have an output, we can make a really basic synthesizer:
+	Oscillator osc;
+	osc.setGeneratorFunction(Oscillator::saw); //We'll generate a saw wave.
+	osc.frequency = 440; //At 440 Hz (A4)
+
+	osc >> output; //operator>> means that osc feeds into output.
+
+	cout << "Let's listen to a saw wave for 6 seconds" << endl;
+	Clock.sleep(CX_Seconds(6));
+	
+	//Lets add a filter module to the chain.
+	RecursiveFilter filter;
+	filter.setup(RecursiveFilter::FilterType::LOW_PASS); //Lets have it be a low pass filter.
+	filter.cutoff = 600; //Set the cutoff frequency of the filter to 600 Hz, so frequencies past there get attentuated.
+
+	osc >> filter >> output; //Reconnect things so that the osc goes through the filter.
+
 
 
 	Mixer oscMix;
@@ -97,7 +125,8 @@ void runExperiment(void) {
 
 
 	//Create a filter and run the mod envelope into the filter breakpoint frequency.
-	RCFilter filter;
+	RecursiveFilter filter;
+	filter.setup(RecursiveFilter::FilterType::LOW_PASS);
 
 	Envelope modEnv;
 	modEnv.a = .1;
@@ -111,7 +140,7 @@ void runExperiment(void) {
 	Adder modOffset;
 	modOffset.amount = 100;
 
-	modEnv >> modMult >> modOffset >> filter.breakpoint;
+	modEnv >> modMult >> modOffset >> filter.cutoff;
 	
 	Envelope ampEnv;
 	ampEnv.a = .3;
@@ -148,10 +177,9 @@ void runExperiment(void) {
 
 	//Now that we're done hijacking the ampEnv output, let's route it back into the sound output.
 	ampEnv >> output;
-	
-	ss.start();
 
-	Input.setup(true, true);
+
+	
 
 	drawInformation();
 
@@ -235,6 +263,9 @@ void drawInformation(void) {
 	Display.beginDrawingToBackBuffer();
 	ofBackground(50);
 	ofSetColor(255);
+
+	ofDrawBitmapString("Click to trigger the attack, unclick to trigger the release", Display.getCenterOfDisplay() + ofPoint(0, 30));
+
 	ofDrawBitmapString("Low frequency", Display.getCenterOfDisplay() + ofPoint(-230, 0));
 	ofDrawBitmapString("High frequency", Display.getCenterOfDisplay() + ofPoint(170, 0));
 	ofDrawBitmapString("Low volume", Display.getCenterOfDisplay() + ofPoint(-30, 200));
@@ -246,34 +277,3 @@ void drawInformation(void) {
 	Display.BLOCKING_swapFrontAndBackBuffers();
 }
 
-
-
-/*
-osc >> f >> a >> soOut;
-
-soOut.setup(44100);
-
-osc.setGeneratorFunction(Oscillator::sine);
-osc.frequency = 1500;
-f.setBreakpoint(10000);
-a.amount = 1;
-soOut.sampleData(.1);
-a.amount = 0;
-soOut.sampleData(.1);
-a.amount = 1;
-soOut.sampleData(.1);
-
-soOut.so.normalize(1);
-soOut.so.writeToFile("beep beep.wav");
-
-
-soOut.so.clear();
-osc.setGeneratorFunction(Oscillator::sine);
-osc.frequency = 600;
-f.setBreakpoint(10000);
-a.amount = 1;
-soOut.sampleData(.5);
-
-soOut.so.normalize(1);
-soOut.so.writeToFile("beep.wav");
-*/

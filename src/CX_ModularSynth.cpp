@@ -566,10 +566,10 @@ double RecursiveFilter::getNextSample(void) {
 		return 0;
 	}
 
-	frequency.updateValue();
+	cutoff.updateValue();
 	bandwidth.updateValue();
 
-	if (frequency.valueUpdated() || bandwidth.valueUpdated()) {
+	if (cutoff.valueUpdated() || bandwidth.valueUpdated()) {
 		_recalculateCoefficients();
 	}
 
@@ -597,7 +597,7 @@ void RecursiveFilter::_recalculateCoefficients(void) {
 		return;
 	}
 
-	double f_angular = 2 * PI * frequency.getValue() / _data->sampleRate; //Normalized angular frequency
+	double f_angular = 2 * PI * cutoff.getValue() / _data->sampleRate; //Normalized angular frequency
 
 	if (_filterType == LOW_PASS || _filterType == HIGH_PASS) {
 		double x = exp(-f_angular);

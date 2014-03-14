@@ -717,10 +717,10 @@ namespace Synth {
 			x2(0),
 			y1(0),
 			y2(0),
-			frequency(1000),
+			cutoff(1000),
 			bandwidth(50)
 		{
-			this->_registerParameter(&frequency);
+			this->_registerParameter(&cutoff);
 			this->_registerParameter(&bandwidth);
 		}
 
@@ -739,7 +739,7 @@ namespace Synth {
 		//void setBandwidth(double bw);
 
 		/*! The cutoff frequency of the filter. */
-		ModuleParameter frequency;
+		ModuleParameter cutoff;
 
 		/*! Only used for BAND_PASS and NOTCH filters. Sets the width (in frequency domain) of the stop or pass band
 		at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <istream>
 #include <ostream>
+#include <thread>
 
 #include "Poco/DateTimeFormatter.h"
 
@@ -36,6 +37,8 @@ namespace CX {
 		void precisionTest(unsigned int iterations);
 
 		CX_Millis now(void);
+
+		void sleep(CX_Millis t);
 
 		void resetExperimentStartTime(void);
 

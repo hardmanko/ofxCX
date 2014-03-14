@@ -100,6 +100,8 @@ void runExperiment(void) {
 
 	Display.setFullScreen(true);
 
+	ofSleepMillis(1000);
+
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
 
@@ -115,7 +117,7 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::SINGLE_CORE_BLOCKING_SWAPS;
+	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = true;
 
