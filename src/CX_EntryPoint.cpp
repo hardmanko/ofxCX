@@ -25,7 +25,7 @@ void CX::Private::setupCX(void) {
 	ofSetWorkingDirectoryToDefault();
 
 	CX::Instances::Log.captureOFLogMessages();
-	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
+	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
 
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
 
@@ -44,6 +44,7 @@ void CX::Private::setupCX(void) {
 	Clock.precisionTest(10000);
 
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
+	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
 }
 
 

@@ -274,6 +274,7 @@ std::stringstream& CX_Logger::fatalError(std::string module) {
 /*! Set this instance of CX_Logger to be the target of any messages created by oF logging functions. */
 void CX_Logger::captureOFLogMessages(void) {
 	ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
+	ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);
 }
 
 string CX_Logger::_getLogLevelName (CX_LogLevel level) {
