@@ -40,6 +40,64 @@ void squircle(ofPoint center, double radius, double rotationDeg, double amount) 
 }
 */
 
+/*! Draws an arrow to an ofPath.
+\param angle The direction toward which the arrow tip should point, in degrees.
+\param length The length of the arrow in pixels.
+\param headOffsets The angle between the main arrow body and the two legs of the tip, in degrees.
+\param headSize The length of the legs of the head in pixels.
+\return An ofPath containing the arrow. The tip of the arrow is at (0,0) in the ofPath.
+*/
+ofPath CX::Draw::arrowToPath(float length, float headOffsets, float headSize, float lineWidth) {
+	/*
+	angle -= 180;
+	angle = -angle * PI / 180;
+
+	headOffsets = headOffsets * PI / 180;
+
+	ofPoint tailEnd(length * cos(angle), length * sin(angle));
+
+	ofPath p;
+	p.moveTo(0, 0);
+	p.lineTo(tailEnd);
+
+	//p.moveTo(0, 0);
+	p.moveTo(headSize * cos(angle + headOffsets), headSize * sin(angle + headOffsets));
+
+	p.lineTo(0, 0);
+	p.lineTo(headSize * cos(angle - headOffsets), headSize * sin(angle - headOffsets));
+
+	return p;
+	*/
+
+	headOffsets = (90 - headOffsets) * PI / 180;
+
+	ofPath p;
+
+	ofPoint outerPoint(headSize * cos(headOffsets), headSize * sin(headOffsets) - length / 2);
+	ofPoint innerPoint = outerPoint + ofPoint(lineWidth * cos(headOffsets + PI / 2), lineWidth*sin(headOffsets + PI / 2));
+	ofPoint innerAngle(lineWidth / 2, tan(headOffsets)*((lineWidth / 2) - innerPoint.x) + innerPoint.y);
+
+	p.moveTo(0, -length / 2);
+	
+	p.lineTo(outerPoint);
+	p.lineTo(innerPoint);
+	p.lineTo(innerAngle);
+
+	p.lineTo(lineWidth / 2, length / 2);
+	p.lineTo(-lineWidth / 2, length / 2);
+
+	p.lineTo(-innerAngle.x, innerAngle.y);
+	p.lineTo(-innerPoint.x, innerPoint.y);
+	p.lineTo(-outerPoint.x, outerPoint.y);
+	p.lineTo(0, -length / 2);
+
+
+
+	return p;
+
+
+}
+
 /*!
 This draws an N-pointed star to an ofPath. The star will be centered on (0,0) in the ofPath.
 \param numberOfPoints The number of points in the star.

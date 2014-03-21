@@ -236,7 +236,7 @@ void drawStuff (void) {
 	patternProps.width = birds.width;
 	patternProps.height = birds.height;
 	patternProps.period = 40;
-	patternProps.phase = 360.0 * fmod(Clock.getTime().seconds(), 1);
+	patternProps.phase = 360.0 * fmod(Clock.now().seconds(), 1);
 	patternProps.apertureType = Draw::CX_PatternProperties_t::AP_RECTANGLE;
 	patternProps.angle = 15;
 	ofPixels birdPattern = CX::Draw::greyscalePattern(patternProps);
@@ -249,6 +249,13 @@ void drawStuff (void) {
 #endif
 
 #ifdef CX_RT_USE_PATH
+	ofPath p = Draw::arrowToPath(150, 45, 50, 10);
+	p.setStrokeColor(ofColor::red);
+	p.setStrokeWidth(0);
+	p.setFillColor(ofColor::orange);
+	p.rotate(60, ofVec3f(0, 0, 1));
+	p.draw(650, 400);
+
 	//The size of this star can be changed with the mouse wheel
 	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::blue, ofColor::azure, 2);
 #endif

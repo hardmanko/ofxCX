@@ -24,24 +24,20 @@ ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 /*! This is a reciprocal operation: This module's input is removed and in's output to this module
 is removed. */
 void ModuleBase::disconnectInput(ModuleBase* in) {
-	for (unsigned int i = 0; i < _inputs.size(); i++) {
-		if (_inputs[i] == in) {
-			ModuleBase* inputModule = _inputs[i];
-			_inputs.erase(_inputs.begin() + i);
-			inputModule->disconnectOutput(this);
-			return;
-		}
+	auto input = std::find(_inputs.begin(), _inputs.end(), in);
+	if (input != _inputs.end()) {
+		ModuleBase* inputModule = *input;
+		_inputs.erase(input);
+		inputModule->disconnectOutput(this);
 	}
 }
 
 void ModuleBase::disconnectOutput(ModuleBase* out) {
-	for (unsigned int i = 0; i < _outputs.size(); i++) {
-		if (_outputs[i] == out) {
-			ModuleBase* outputModule = _outputs[i];
-			_outputs.erase(_outputs.begin() + i);
-			outputModule->disconnectOutput(this);
-			return;
-		}
+	auto output = std::find(_outputs.begin(), _outputs.end(), out);
+	if (output != _outputs.end()) {
+		ModuleBase* outputModule = *output;
+		_outputs.erase(output);
+		outputModule->disconnectInput(this);
 	}
 }
 
@@ -53,7 +49,7 @@ void ModuleBase::_assignInput(ModuleBase* in) {
 	if (std::find(_inputs.begin(), _inputs.end(), in) == _inputs.end()) { //If it is not in the vector, try to add it.
 
 		if (_inputs.size() == _maxInputs()) { //If the vector is full, pop off an element before adding the new one.
-			_inputs.pop_back();
+			disconnectInput(_inputs.back());
 		}
 
 		_inputs.push_back(in);
@@ -70,7 +66,7 @@ void ModuleBase::_assignOutput(ModuleBase* out) {
 	if (std::find(_outputs.begin(), _outputs.end(), out) == _outputs.end()) {
 
 		if (_outputs.size() == _maxOutputs()) {
-			_outputs.pop_back();
+			disconnectOutput(_outputs.back());
 		}
 
 		_outputs.push_back(out);
@@ -392,6 +388,18 @@ double Clamper::getNextSample(void) {
 //////////////
 
 double Envelope::getNextSample(void) {
+	
+	gateInput.updateValue();
+	if (gateInput.valueUpdated()) {
+		if (gateInput.getValue() == 1.0) {
+			this->attack();
+		} else if (gateInput.getValue() == 0.0) {
+			this->release();
+		}
+	}
+	
+
+
 	if (_stage > 3) {
 		return 0;
 	}
@@ -458,6 +466,89 @@ void Envelope::_dataSetEvent(void) {
 	_timePerSample = 1 / _data->sampleRate;
 }
 
+
+
+////////////
+// Filter //
+////////////
+
+double Filter::getNextSample(void) {
+	if (_inputs.size() == 0) {
+		return 0;
+	}
+
+	cutoff.updateValue();
+	bandwidth.updateValue();
+
+	if (cutoff.valueUpdated() || bandwidth.valueUpdated()) {
+		_recalculateCoefficients();
+	}
+
+	double x0 = _inputs.front()->getNextSample();
+	double y0;
+
+	if (_filterType == FilterType::LOW_PASS || _filterType == FilterType::HIGH_PASS) {
+		//a2 and b2 are always 0 for LOW_PASS and HIGH_PASS, so they are omitted from the calculation.
+		y0 = a0*x0 + a1*x1 + b1*y1;
+		y1 = y0;
+		x1 = x0;
+	} else {
+		y0 = a0*x0 + a1*x1 + a2*x2 + b1*y1 + b2*y2;
+		y2 = y1;
+		y1 = y0;
+		x2 = x1;
+		x1 = x0;
+	}
+
+	return y0;
+}
+
+void Filter::_recalculateCoefficients(void) {
+	if (!_data->initialized) {
+		return;
+	}
+
+	double f_angular = 2 * PI * cutoff.getValue() / _data->sampleRate; //Normalized angular frequency
+
+	if (_filterType == FilterType::LOW_PASS || _filterType == FilterType::HIGH_PASS) {
+		double x = exp(-f_angular);
+
+		a2 = 0;
+		b2 = 0;
+
+		if (_filterType == FilterType::LOW_PASS) {
+			a0 = 1 - x;
+			a1 = 0;
+			b1 = x;
+		} else if (_filterType == FilterType::HIGH_PASS) {
+			a0 = (1 + x) / 2;
+			a1 = -(1 + x) / 2;
+			b1 = x;
+		}
+
+	} else if (_filterType == FilterType::BAND_PASS || _filterType == FilterType::NOTCH) {
+		double R = 1 - (3 * bandwidth.getValue() / _data->sampleRate); //Bandwidth is normalized
+		double K = (1 - 2 * R*cos(f_angular) + (R*R)) / (2 - 2 * cos(f_angular));
+
+		b1 = 2 * R * cos(f_angular);
+		b2 = -(R*R);
+
+		if (_filterType == FilterType::BAND_PASS) {
+			a0 = 1 - K;
+			a1 = 2 * (K - R) * cos(f_angular);
+			a2 = (R*R) - K;
+		} else if (_filterType == FilterType::NOTCH) {
+			a0 = K;
+			a1 = -2 * K * cos(f_angular);
+			a2 = K;
+		}
+	}
+}
+
+///////////
+// Mixer //
+///////////
+
 double Mixer::getNextSample(void) {
 	double d = 0;
 	for (int i = 0; i < _inputs.size(); i++) {
@@ -520,6 +611,20 @@ double Oscillator::getNextSample(void) {
 	return _generatorFunction(_waveformPos);
 }
 
+/*! It is very easy to make your own waveform generating functions to be used with an Oscillator.
+A waveform generating function takes a value that represents the location in the waveform at
+the current point in time. These values are in the interval [0,1).
+
+The waveform generating function should return a double representing the amplitude of the
+wave at the given waveform position.
+
+To put this all together, a sine wave generator looks like this:
+\code{.cpp}
+double sineWaveGeneratorFunction(double waveformPosition) {
+	return sin(2 * PI * waveformPosition); //The argument for sin() is in radians. 1 cycle is 2*PI radians.
+}
+\endcode
+*/
 void Oscillator::setGeneratorFunction(std::function<double(double)> f) {
 	_generatorFunction = f;
 }
@@ -557,94 +662,6 @@ double Oscillator::whiteNoise(double wp) {
 }
 
 
-/////////////////////
-// RecursiveFilter //
-/////////////////////
-
-double RecursiveFilter::getNextSample(void) {
-	if (_inputs.size() == 0) {
-		return 0;
-	}
-
-	cutoff.updateValue();
-	bandwidth.updateValue();
-
-	if (cutoff.valueUpdated() || bandwidth.valueUpdated()) {
-		_recalculateCoefficients();
-	}
-
-	double x0 = _inputs.front()->getNextSample();
-	double y0;
-
-	if (_filterType == FilterType::LOW_PASS || _filterType == FilterType::HIGH_PASS) {
-		//a2 and b2 are always 0 for LOW_PASS and HIGH_PASS, so they are omitted from the calculation.
-		y0 = a0*x0 + a1*x1 + b1*y1;
-		y1 = y0;
-		x1 = x0;
-	} else {
-		y0 = a0*x0 + a1*x1 + a2*x2 + b1*y1 + b2*y2;
-		y2 = y1;
-		y1 = y0;
-		x2 = x1;
-		x1 = x0;
-	}
-
-	return y0;
-}
-
-void RecursiveFilter::_recalculateCoefficients(void) {
-	if (!_data->initialized) {
-		return;
-	}
-
-	double f_angular = 2 * PI * cutoff.getValue() / _data->sampleRate; //Normalized angular frequency
-
-	if (_filterType == LOW_PASS || _filterType == HIGH_PASS) {
-		double x = exp(-f_angular);
-
-		a2 = 0;
-		b2 = 0;
-
-		if (_filterType == LOW_PASS) {
-			a0 = 1 - x;
-			a1 = 0;
-			b1 = x;
-		} else if (_filterType == HIGH_PASS) {
-			a0 = (1 + x) / 2;
-			a1 = -(1 + x) / 2;
-			b1 = x;
-		}
-
-	} else if (_filterType == BAND_PASS || _filterType == NOTCH) {
-		double R = 1 - (3 * bandwidth.getValue() / _data->sampleRate); //Bandwidth is normalized
-		double K = (1 - 2 * R*cos(f_angular) + (R*R)) / (2 - 2 * cos(f_angular));
-
-		b1 = 2 * R * cos(f_angular);
-		b2 = -(R*R);
-
-		if (_filterType == BAND_PASS) {
-			a0 = 1 - K;
-			a1 = 2 * (K - R) * cos(f_angular);
-			a2 = (R*R) - K;
-		} else if (_filterType == NOTCH) {
-			a0 = K;
-			a1 = -2 * K * cos(f_angular);
-			a2 = K;
-		}
-	}
-}
-
-/*! Only used for BAND_PASS and NOTCH filters. Sets the width (in frequency domain) of the stop or pass band
-at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies
-100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set bw to 100.
-Of course, past those frequencies the attenuation continues.
-Larger values result in a less pointy band.
-\param bw The bandwidth.
-*/
-//void RecursiveFilter::setBandwidth(double bw) {
-	//_bandwidth = bw;
-	//bandwidth = bw;
-//}
 
 //////////////
 // Splitter //
@@ -688,10 +705,11 @@ void SoundObjectInput::setSoundObject(CX::CX_SoundObject *so, unsigned int chann
 	_dataSet(nullptr);
 }
 
-//Set where in the sound you are
-void SoundObjectInput::setTime(double t) {
+/*! Set the playback time of the current CX_SoundObject. When playback starts, it will start from this time.
+If playback is in progress, playback will skip to the selected time. */
+void SoundObjectInput::setTime(CX::CX_Millis t) {
 	if (_so != nullptr) {
-		unsigned int startSample = _so->getChannelCount() * (unsigned int)(_so->getSampleRate() * t);
+		unsigned int startSample = _so->getChannelCount() * (unsigned int)(_so->getSampleRate() * t.seconds());
 		_currentSample = startSample + _channel;
 	} else {
 		_currentSample = _channel;
@@ -726,9 +744,13 @@ void SoundObjectOutput::setup(float sampleRate) {
 
 //Sample t seconds of data at the given sample rate (see setup). The result is stored in so.
 //If so is not empty, the data is appended.
-void SoundObjectOutput::sampleData(double t) {
+void SoundObjectOutput::sampleData(CX::CX_Millis t) {
 
-	unsigned int samplesToTake = ceil(_data->sampleRate * t);
+	if (_inputs.size() == 0) {
+		return; //Warn? Is it better to sample zeros than it is to sample nothing?
+	}
+
+	unsigned int samplesToTake = ceil(_data->sampleRate * t.seconds());
 
 	vector<float> tempData(samplesToTake);
 
@@ -756,8 +778,8 @@ void StereoSoundObjectOutput::setup(float sampleRate) {
 	right.setData(data);
 }
 
-void StereoSoundObjectOutput::sampleData(double t) {
-	unsigned int samplesToTake = ceil(left.getData().sampleRate * t);
+void StereoSoundObjectOutput::sampleData(CX::CX_Millis t) {
+	unsigned int samplesToTake = ceil(left.getData().sampleRate * t.seconds());
 
 	unsigned int channels = 2; //Stereo
 
@@ -814,7 +836,7 @@ void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
 
 void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 
-	if (_inputs.front() == nullptr) {
+	if (_inputs.size() == 0) {
 		return;
 	}
 

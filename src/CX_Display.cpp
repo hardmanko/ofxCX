@@ -346,8 +346,9 @@ void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			swapSum += swapTimes[i] - swapTimes[i - 1];
 		}
-
 		_framePeriod = swapSum / (swapTimes.size() - 1);
+	} else {
+		Log.warning("CX_Display") << "BLOCKING_estimateFramePeriod: Not enough swaps occured during the " << estimationInterval << " ms estimation interval.";
 	}
 	
 	BLOCKING_setAutoSwapping(wasSwapping);

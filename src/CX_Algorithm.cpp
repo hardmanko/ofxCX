@@ -11,8 +11,11 @@ LatinSquare::LatinSquare(unsigned int dimensions) {
 	generate(dimensions);
 }
 
-/*! Generate a latin square with the given dimensions. This deletes any previous contents
-of the latin square. */
+/*! Generate a latin square with the given dimensions. The generated square is the
+very basic latin square that, for dimension 3, has {0,1,2} on the first row, {1,2,0}
+on the middle row, and {2,0,1} on the last row.
+
+\note This deletes any previous contents of the latin square. */
 void LatinSquare::generate(unsigned int dimensions) {
 	square.resize(dimensions);
 	_columns = dimensions;

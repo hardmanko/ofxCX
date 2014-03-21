@@ -5,10 +5,11 @@
 #include "CX_SoundObject.h"
 
 #include "CX_RandomNumberGenerator.h" //For white noise generator
+#include "CX_Time_t.h"
 
 /*! \namespace CX::Synth
 This namespace contains a number of classes that can be combined together to form a modular
-synth that can be used to generate sound stimuli.
+synthesizer that can be used to generate sound stimuli.
 
 \ingroup sound
 */
@@ -57,8 +58,7 @@ namespace Synth {
 			delete _data;
 		}
 
-		/*! This function should be overloaded for any derived class that produces values (outputs do not 
-		produce values, they produce sound via sound hardware). */
+		/*! This function should be overloaded for any derived class that can be used as the input for another module. */
 		virtual double getNextSample(void) {
 			return 0;
 		}
@@ -81,7 +81,6 @@ namespace Synth {
 		ModuleControlData_t getData(void) {
 			return *_data;
 		}
-
 		
 		void disconnectInput(ModuleBase* in);
 		void disconnectOutput(ModuleBase* out);
@@ -91,7 +90,6 @@ namespace Synth {
 		vector<ModuleBase*> _inputs;
 		vector<ModuleBase*> _outputs;
 		vector<ModuleParameter*> _parameters;
-		//std::shared_ptr<ModuleControlData_t> _data;
 		ModuleControlData_t *_data;
 
 		/*! This operator is used to connect modules together. `l` is set as the input for `r`. 
@@ -138,7 +136,6 @@ namespace Synth {
 			_owner(nullptr)
 		{}
 
-		/*! Returns true if the value has been updated. */
 		void updateValue(void) {
 			if (_input != nullptr) { //If there is no input connected, just keep the same value.
 				double temp = _input->getNextSample();
@@ -221,11 +218,14 @@ namespace Synth {
 		typedef float amplitude_t;
 
 		enum HarmonicSeriesType {
-			HS_MULTIPLE, //Includes the standard harmonic series
+			HS_MULTIPLE, //Includes the standard harmonic series as a special case
 			HS_SEMITONE, //Includes all of the strange thirds, fourths, tritones, etc.
 			HS_USER_FUNCTION
 		};
 
+		/*! Assuming that the standard harmonic series is being used, the values in this
+		enum, when passed to setAmplitudes(), cause the amplitudes of the harmonics to be
+		set in such a way as to produce the desired waveform. */
 		enum HarmonicAmplitudeType {
 			SINE,
 			SQUARE,
@@ -285,31 +285,9 @@ namespace Synth {
 
 	};
 
-	//For testing purposes mostly
-	class TrivialGenerator : public ModuleBase {
-	public:
-
-		TrivialGenerator(void) :
-			value(0),
-			step(0)
-		{
-			this->_registerParameter(&value);
-			this->_registerParameter(&step);
-		}
-
-		ModuleParameter value;
-		ModuleParameter step;
-
-		double getNextSample(void) override {
-			value.updateValue();
-			value.getValue() += step;
-			return value.getValue() - step;
-		}
-
-	};
-
-	/*! This class simply takes an input and adds an amount to it. The amount can be negative, in which case this
-	class is a subtracter. 
+	/*! This class simply takes an input and adds an `amount` to it. The `amount` can be negative, in which case this
+	class is a subtracter. If there is no input to this module, it behaves as though the input is 0, so the output
+	value will be equal to `amount`.
 	\ingroup modSynth
 	*/
 	class Adder : public ModuleBase {
@@ -332,24 +310,32 @@ namespace Synth {
 		ModuleParameter high;
 	};
 
-	/*! This class is an ADSR envelope: http://en.wikipedia.org/wiki/Synthesizer#ADSR_envelope
-	Setting the a, d, s, and r parameters works in the standard way. s should be in the interval [0,1].
-	a, d, and r are expressed in seconds. 
+	/*! This class is a standard ADSR envelope: http://en.wikipedia.org/wiki/Synthesizer#ADSR_envelope
+	s should be in the interval [0,1]. a, d, and r are expressed in seconds. 
 	Call attack() to start the envelope. Once the attack and decay are finished, the envelope will
 	stay at the sustain level until release() is called.
+
+	The output values produced start at 0, rise to 1 during the attack, drop to the sustain level (s) during
+	the decay, and drop from s to 0 during the release.
+
 	\ingroup modSynth
 	*/
 	class Envelope : public ModuleBase {
 	public:
 
 		Envelope(void) :
-			_stage(4)
-		{}
+			_stage(4),
+			gateInput(0.5)
+		{
+			this->_registerParameter(&gateInput);
+		}
 
 		double getNextSample(void) override;
 
 		void attack(void);
 		void release(void);
+
+		ModuleParameter gateInput;
 
 		double a; //Time
 		double d; //Time
@@ -366,6 +352,92 @@ namespace Synth {
 		double _timeSinceLastStage;
 
 		void _dataSetEvent(void);
+	};
+
+
+	/*!	This class provides a basic way to filter waveforms as part of subtractive synthesis or
+	other audio manipulation.
+
+	This class is based on simple IIR filters. They may not be stable at all frequencies.
+	They are computationally very efficient. They are not highly configurable. They may be chained
+	for sharper frequency response.	This class is based on this chapter: http://www.dspguide.com/ch19.htm.
+	\ingroup modSynth */
+	class Filter : public ModuleBase {
+	public:
+
+		/*! The type of filter to use. */
+		enum FilterType {
+			LOW_PASS,
+			HIGH_PASS,
+			BAND_PASS,
+			NOTCH
+		};
+
+		Filter(void) :
+			_filterType(FilterType::LOW_PASS),
+			x1(0),
+			x2(0),
+			y1(0),
+			y2(0),
+			cutoff(1000),
+			bandwidth(50)
+		{
+			this->_registerParameter(&cutoff);
+			this->_registerParameter(&bandwidth);
+		}
+
+		void setType(FilterType type) {
+			_filterType = type;
+			_recalculateCoefficients();
+		}
+
+		double getNextSample(void) override;
+
+		/*! The cutoff frequency of the filter. */
+		ModuleParameter cutoff;
+
+		/*! Only used for BAND_PASS and NOTCH FilterTypes. Sets the width (in frequency domain) of the stop or pass band
+		at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies
+		100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set bw to 100.
+		Of course, past those frequencies the attenuation continues.
+		Larger values result in a less pointy band.	*/
+		ModuleParameter bandwidth;
+
+	private:
+
+		FilterType _filterType;
+
+		void _dataSetEvent(void) override {
+			_recalculateCoefficients();
+		}
+
+		void _recalculateCoefficients(void);
+
+		double a0;
+		double a1;
+		double a2;
+		double b1;
+		double b2;
+
+		double x1;
+		double x2;
+		double y1;
+		double y2;
+	};
+
+	class GenericOutput : public ModuleBase {
+	public:
+		double getNextSample(void) override {
+			if (_inputs.size() == 0) {
+				return 0;
+			}
+			return _inputs.front()->getNextSample();
+		}
+	private:
+		int _maxOutputs(void) override { return 0; };
+		void _inputAssignedEvent(ModuleBase* in) override {
+			in->setData(*this->_data);
+		}
 	};
 
 	/*! This class mixes together a number of inputs. It does no mixing in the usual sense of
@@ -385,7 +457,8 @@ namespace Synth {
 	};
 
 	/*! This class multiplies an input by an `amount`. You can set the amount in terms of decibels
-	of gain by using the setGain() function. 
+	of gain by using the setGain() function. If there is no input to this module, it behaves as though
+	the input was 0 and consequently outputs 0.
 	\ingroup modSynth
 	*/
 	class Multiplier : public ModuleBase {
@@ -394,6 +467,44 @@ namespace Synth {
 		double getNextSample(void) override;
 		void setGain(double decibels);
 		ModuleParameter amount;
+	};
+
+	/*! This class provides one of the simplest ways of generating waveforms. The output
+	from an Oscillator can be filtered with a CX::Synth::Filter or used in other ways.
+
+	\code{.cpp}
+	//Configure the oscillator to produce a square wave with a fundamental frequency of 200 Hz.
+	Oscillator osc;
+	osc.frequency = 200; //200 Hz
+	osc.setGeneratorFunction(Oscillator::square); //Produce a square wave
+	\endcode
+	\ingroup modSynth
+	*/
+	class Oscillator : public ModuleBase {
+	public:
+
+		Oscillator(void);
+
+		double getNextSample(void) override;
+
+		void setGeneratorFunction(std::function<double(double)> f);
+
+		ModuleParameter frequency;
+
+		static double saw(double wp);
+		static double sine(double wp);
+		static double square(double wp);
+		static double triangle(double wp);
+		static double whiteNoise(double wp);
+
+	private:
+		std::function<double(double)> _generatorFunction;
+		float _sampleRate; //This is a slight optimization. This just needs to refer to a data member, rather than _data->sampleRate.
+		double _waveformPos;
+
+		void _dataSetEvent(void);
+
+		int _maxInputs(void) override { return 0; };
 	};
 
 	/*! This class splits a signal and sends that signal to multiple outputs. This can be used
@@ -434,61 +545,58 @@ namespace Synth {
 	*/
 	class SoundObjectInput : public ModuleBase {
 	public:
-
 		SoundObjectInput(void);
-
-		void setSoundObject(CX::CX_SoundObject *so, unsigned int channel = 0);
-
-		void setTime(double t);
 
 		double getNextSample(void) override;
 
+		void setSoundObject(CX::CX_SoundObject *so, unsigned int channel = 0);
+		void setTime(CX_Millis t);
 		bool canPlay(void);
 
 	private:
-
 		CX::CX_SoundObject *_so;
 		unsigned int _channel;
 		unsigned int _currentSample;
 
 	};
 
-	/*! This class provides one of the simplest ways of generating waveforms.
-
-	\code{.cpp}
-	//Configure the oscillator to produce a square wave with a fundamental frequency of 200 Hz.
-	Oscillator osc;
-	osc.frequency = 200;
-	osc.setGeneratorFunction(Oscillator::square);
-	\endcode
-	\ingroup modSynth
-	*/
-	class Oscillator : public ModuleBase {
+	//For testing purposes mostly
+	class TrivialGenerator : public ModuleBase {
 	public:
 
-		Oscillator(void);
+		TrivialGenerator(void) :
+			value(0),
+			step(0)
+		{
+			this->_registerParameter(&value);
+			this->_registerParameter(&step);
+		}
 
-		double getNextSample(void) override;
+		ModuleParameter value;
+		ModuleParameter step;
 
-		void setGeneratorFunction(std::function<double(double)> f);
-
-		ModuleParameter frequency;
-
-		static double saw(double wp);
-		static double sine(double wp);
-		static double square(double wp);
-		static double triangle(double wp);
-		static double whiteNoise(double wp);
-
-	private:
-		std::function<double(double)> _generatorFunction;
-		float _sampleRate; //This is a slight optimization. This just needs to refer to a data member, rather than _data->sampleRate.
-		double _waveformPos;
-
-		void _dataSetEvent(void);
+		double getNextSample(void) override {
+			value.updateValue();
+			value.getValue() += step;
+			return value.getValue() - step;
+		}
 	};
 
 	/*! This class provides a method of playing the output of a modular synth using a CX_SoundStream.
+	In order to use this class, you need to configure a CX_SoundStream for use. See the soundObject
+	example and the CX::CX_SoundStream class for more information.
+
+	\code{.cpp}
+	//Assume that both osc and ss have been configured and the sound stream has been started.
+	CX_SoundStream ss;
+	Oscillator osc;
+
+	Synth::StreamOutput output;
+	output.setOutputStream(ss);
+
+	osc >> output; //Sound should be playing past this point.
+	\endcode
+
 	\ingroup modSynth
 	*/
 	class StreamOutput : public ModuleBase {
@@ -498,22 +606,15 @@ namespace Synth {
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
 		int _maxOutputs(void) override { return 0; };
-	};
-
-	
-	class GenericOutput : public ModuleBase {
-	public:
-		double getNextSample(void) override {
-			if (_inputs.size() == 0) {
-				return 0;
-			}
-			return _inputs.front()->getNextSample();
+		void _inputAssignedEvent(ModuleBase* in) override {
+			in->setData(*this->_data);
 		}
-	private:
-		int _maxOutputs(void) override { return 0; };
 	};
 
-	/*! This class is much like StreamOutput except in stereo.
+	/*! This class is much like StreamOutput except in stereo. This captures stereo audio by taking the 
+	output of different streams of data into either the `left` or `right` modules that this class has. 
+	See the example code for CX::Synth::StereoSoundObjectOutput and CX::Synth::StreamOutput for ideas
+	on how to use this class.
 	\ingroup modSynth
 	*/
 	class StereoStreamOutput {
@@ -534,16 +635,17 @@ namespace Synth {
 	class SoundObjectOutput : public ModuleBase {
 	public:
 		void setup(float sampleRate);
-		void sampleData(double t);
+		void sampleData(CX_Millis t);
 
 		CX::CX_SoundObject so;
+	private:
+		int _maxOutputs(void) override { return 0; };
 	};
 
-	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundObject
-	for later use.
 
-	This captures stereo audio by taking the output of different streams of data into either the `left` or `right`
-	modules that this class has. See the example code.
+	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundObject
+	for later use. This captures stereo audio by taking the output of different streams of data into either the 
+	`left` or `right` modules that this class has. See the example code.
 
 	\code{.cpp}
 	StereoSoundObjectOutput sout;
@@ -568,14 +670,15 @@ namespace Synth {
 	class StereoSoundObjectOutput {
 	public:
 		void setup(float sampleRate);
-		void sampleData(double t);
+		void sampleData(CX_Millis t);
 
 		GenericOutput left;
 		GenericOutput right;
 	
 		CX::CX_SoundObject so;
-
 	};
+
+
 
 	/*! This class is a start at implementing a Finite Impulse Response (http://en.wikipedia.org/wiki/Finite_impulse_response)
 	filter. You can use it as a basic low-pass or high-pass	filter, or, if you supply your own coefficients, which cause the
@@ -585,10 +688,11 @@ namespace Synth {
 	class FIRFilter : public ModuleBase{
 	public:
 
-		enum FilterType {
+		/*! The type of filter to use. */
+		enum class FilterType {
 			LOW_PASS,
 			HIGH_PASS,
-			USER_DEFINED
+			FIR_USER_DEFINED
 		};
 
 		enum WindowType {
@@ -598,7 +702,7 @@ namespace Synth {
 		};
 
 		FIRFilter(void) :
-			_filterType(LOW_PASS),
+			_filterType(FilterType::LOW_PASS),
 			_coefCount(-1)
 		{}
 
@@ -615,7 +719,7 @@ namespace Synth {
 		//You can supply your own coefficients. See the fir1 and fir2 functions from the 
 		//"signal" package for R for a good way to design your own filter.
 		void setup(std::vector<double> coefficients) {
-			_filterType = USER_DEFINED;
+			_filterType = FilterType::FIR_USER_DEFINED;
 
 			_coefficients = coefficients;
 
@@ -624,7 +728,7 @@ namespace Synth {
 		}
 
 		void setCutoff(double cutoff) {
-			if (_filterType == USER_DEFINED) {
+			if (_filterType == FilterType::FIR_USER_DEFINED) {
 				return;
 			}
 
@@ -642,6 +746,8 @@ namespace Synth {
 				}
 			}
 
+
+			//Do nothing for rectangular window
 			if (_windowType == WindowType::HANNING) {
 				for (int i = 0; i < _coefCount; i++) {
 					_coefficients[i] *= 0.5*(1 - cos(2*PI*i / (_coefCount - 1)));
@@ -695,84 +801,11 @@ namespace Synth {
 		}
 	};
 
-	/*!	This class implements some simple IIR filters. They may not be stable at all frequencies. 
-	They are computationally very efficient. They are not highly configurable. They may be chained
-	for sharper frequency response.
-	This class is based on http://www.dspguide.com/ch19.htm. 
-	\ingroup modSynth */
-	class RecursiveFilter : public ModuleBase {
-	public:
 
-		/*! The type of filter to use. */
-		enum FilterType {
-			LOW_PASS,
-			HIGH_PASS,
-			BAND_PASS,
-			NOTCH
-		};
 
-		RecursiveFilter(void) :
-			_filterType(LOW_PASS),
-			x1(0),
-			x2(0),
-			y1(0),
-			y2(0),
-			cutoff(1000),
-			bandwidth(50)
-		{
-			this->_registerParameter(&cutoff);
-			this->_registerParameter(&bandwidth);
-		}
-
-		void setup(RecursiveFilter::FilterType type) {
-			_filterType = type;
-			_recalculateCoefficients();
-		}
-
-		double getNextSample(void) override;
-
-		//void setBreakpoint(double freq) {
-		//	_breakpoint = freq;
-		//	_calcCoefs();
-		//}
-
-		//void setBandwidth(double bw);
-
-		/*! The cutoff frequency of the filter. */
-		ModuleParameter cutoff;
-
-		/*! Only used for BAND_PASS and NOTCH filters. Sets the width (in frequency domain) of the stop or pass band
-		at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies
-		100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set bw to 100.
-		Of course, past those frequencies the attenuation continues.
-		Larger values result in a less pointy band.	*/
-		ModuleParameter bandwidth;
-
-	private:
-
-		RecursiveFilter::FilterType _filterType;
-
-		void _dataSetEvent(void) override {
-			_recalculateCoefficients();
-		}
-
-		void _recalculateCoefficients(void);
-
-		double a0;
-		double a1;
-		double a2;
-		double b1;
-		double b2;
-
-		double x1;
-		double x2;
-		double y1;
-		double y2;
-	};
-
-	/*! This class emulates an analog RC low-pass filter (http://en.wikipedia.org/wiki/Low-pass_filter#Electronic_low-pass_filters).
+	/* This class emulates an analog RC low-pass filter (http://en.wikipedia.org/wiki/Low-pass_filter#Electronic_low-pass_filters).
 	Setting the breakpoint affects the frequency at which the filter starts to have an effect.
-	\ingroup modSynth */
+	\ingroup modSynth 
 	class RCFilter : public ModuleBase {
 	public:
 
@@ -802,6 +835,7 @@ namespace Synth {
 			return _v0;
 		}
 	};
+	*/
 
 } //namespace Synth
 } //namespace CX

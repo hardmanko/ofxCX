@@ -268,26 +268,14 @@ CX_Millis CX_SoundObject::getLength(void) {
 \return The maximum amplitude.
 \note Amplitudes are between -1 and 1, inclusive. */
 float CX_SoundObject::getPositivePeak (void) {
-	float peak = numeric_limits<float>::min();
-	for (unsigned int i = 0; i < _soundData.size(); i++) {
-		if (_soundData[i] > peak) {
-			peak = _soundData[i];
-		}
-	}
-	return peak;
+	return Util::max(_soundData);
 }
 
 /*! Finds the minimum amplitude in the sound object.
 \return The minimum amplitude.
 \note Amplitudes are between -1 and 1, inclusive. */
 float CX_SoundObject::getNegativePeak (void) {
-	float peak = numeric_limits<float>::max();
-	for (unsigned int i = 0; i < _soundData.size(); i++) {
-		if (_soundData[i] < peak) {
-			peak = _soundData[i];
-		}
-	}
-	return peak;
+	return Util::min(_soundData);
 }
 
 /*! Normalizes the contents of the sound object.
@@ -600,20 +588,14 @@ bool CX_SoundObject::multiplyAmplitudeBy (float amount, int channel) {
 	if (channel < 0) {
 		//Apply to all channels
 		for (unsigned int i = 0; i < _soundData.size(); i++) {
-			float newVal = _soundData[i] * amount;
-			newVal = std::max(newVal, -1.0f);
-			newVal = std::min(newVal, 1.0f);
-			_soundData[i] = newVal;
+			_soundData[i] = Util::clamp<float>(_soundData[i] * amount, -1, 1);
 		}
 
 	} else {
 		//Apply gain to the given channel
 		for (unsigned int sf = 0; sf < (unsigned int)getSampleFrameCount(); sf++) {
 			unsigned int index = (sf * _soundChannels) + channel;
-			float newVal = _soundData[index] * amount;
-			newVal = std::max(newVal, -1.0f);
-			newVal = std::min(newVal, 1.0f);
-			_soundData[index] = newVal;
+			_soundData[index] = Util::clamp<float>(_soundData[index] * amount, -1, 1);
 		}
 
 	}

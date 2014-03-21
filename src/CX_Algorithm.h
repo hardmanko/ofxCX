@@ -14,7 +14,33 @@ namespace CX {
 		template <typename T> std::vector<T> generateSeparatedValues(int count, double minDistance, std::function<double(T, T)> distanceFunction, std::function<T(void)> randomDeviate, int maxSequentialFailures = 200);
 		template <typename T> std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors);
 
-		/*! This class provides a way to work with Latin squares in an easy way. */
+		/*! This class provides a way to work with Latin squares in a relatively easy way. 
+		\code{.cpp}
+		Algo::LatinSquare ls(4);
+		cout << "This latin square has " << ls.rows() << " rows and " << ls.columns() << " columns." << endl;
+		cout << ls.print() << endl;
+
+		ls.reverseColumns();
+		cout << "Reverse the columns: " << endl << ls.print() << endl;
+
+		ls.swapRows(0, 2);
+		cout << "Swap rows 0 and 2: " << endl << ls.print() << endl;
+
+		if (ls.validate()) {
+			cout << "The latin square is still a valid latin square." << endl;
+		}
+
+		cout << "Let's copy, reverse, and append a latin square." << endl;
+		Algo::LatinSquare sq = ls;
+		sq.reverseColumns();
+		ls.appendBelow(sq);
+
+		cout << ls.print() << endl;
+		if (!ls.validate()) {
+			cout << "The latin square is no longer valid, but it is still useful (8 counterbalancing conditions, both forward and backward ordering)." << endl;
+		}
+		\endcode
+		*/
 		class LatinSquare {
 		public:
 			LatinSquare(void);
@@ -52,6 +78,75 @@ namespace CX {
 			
 		private:
 			unsigned int _columns;
+		};
+
+		/*! This class helps with the case where a set of V values must be sampled randomly
+		with the constraint that each block of V samples should have each value in the set.
+		For example, if you want to	present a number of trials in four different conditions, 
+		where the conditions are intermixed, but you want to observe all four trial types 
+		every four trials, you would use this class.
+
+		\code{.cpp}
+		Algo::BlockSampler<int> bs(&RNG, Util::intVector(1, 4));
+
+		cout << "Block, Position, Value" << endl;
+		while (bs.getBlockNumber() < 4) { //Generate 4 blocks of values
+			cout << bs.getBlockNumber() << ", " << bs.getBlockPosition() << ", ";
+			cout << bs.getNextValue() << endl;
+		}
+		\endcode
+		*/
+		template <typename T>
+		class BlockSampler {
+		public:
+
+			BlockSampler(CX_RandomNumberGenerator* rng, const std::vector<T>& values) :
+				_rng(rng),
+				_values(values)
+			{
+				_blockIndices = Util::intVector<unsigned int>(0, _values.size() - 1);
+				resetBlocks();
+			}
+
+			T getNextValue(void) {
+				T rval = _values[_blockIndices[_blockPosition]];
+				if (++_blockPosition >= _blockIndices.size()) {
+					_blockPosition = 0;
+					_rng->shuffleVector(&_blockIndices);
+					_blockNumber++;
+				}
+				return rval;
+			}
+
+			//This disrupts the ongoing blocks that getNextValue() was performing. It calls resetBlocks().
+			std::vector<T> getNBlocks(unsigned int blocks) {
+				std::vector<T> rval(blocks * _blockIndices.size());
+
+				resetBlocks();
+
+				for (unsigned int n = 0; n < rval.size(); n++) {
+					rval[n] = this->getNextValue();
+				}
+				return rval;
+			}
+
+			void resetBlocks(void) {
+				_blockPosition = 0;
+				_blockNumber = 0;
+				_rng->shuffleVector(&_blockIndices);
+			}
+
+			unsigned int getBlockNumber(void) { return _blockNumber; };
+			unsigned int getBlockPosition(void) { return _blockPosition; };
+
+		private:
+			CX_RandomNumberGenerator* _rng;
+
+			std::vector<T> _values;
+
+			std::vector<unsigned int> _blockIndices;
+			unsigned int _blockPosition;
+			unsigned int _blockNumber;
 		};
 	}
 }

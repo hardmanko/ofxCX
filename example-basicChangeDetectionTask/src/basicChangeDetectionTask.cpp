@@ -19,7 +19,6 @@ struct TrialData_t {
 	int changedObjectIndex;
 	ofColor newColor;
 
-	//CX_Keyboard::Event response;
 	CX_Millis responseLatency;
 	bool responseCorrect;
 };
@@ -28,6 +27,10 @@ struct TrialData_t {
 void updateExperiment (void);
 vector<TrialData_t> generateTrials (int trialCount);
 void outputData (void);
+
+void drawStimuli(void);
+void presentStimuli(void);
+void getResponse(void);
 
 CX_SlidePresenter SlidePresenter;
 void drawFixation (void);
@@ -42,8 +45,6 @@ int trialIndex = 0;
 int circleRadius = 30;
 ofColor backgroundColor(50);
 
-string trialPhase = "drawStimuli";
-
 
 void runExperiment (void) {
 	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how the trials are generated).
@@ -54,73 +55,80 @@ void runExperiment (void) {
 
 	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 
-	while (true) {
-		updateExperiment();
+	//trialIndex is a global variable
+	for (trialIndex = 0; trialIndex < trials.size(); trialIndex++) {
+		drawStimuli();
+		presentStimuli();
+		getResponse();
+
+		//The end of a trial is a good time to flush() the logs, to see if any warnings/errors have happened during the trial.
+		//See example-logging in the ofxCX folder for an example of how the logging system works.
+		Log.flush();
 	}
+
+	outputData();
+
+	cout << "Experiment complete: exiting..." << endl;
+	ofSleepMillis(3000);
+
 }
 
-void updateExperiment (void) {
-	if (trialPhase == "drawStimuli") {
-		//At this phase of the experiment, we want to draw all of our stimuli for the coming trial.
+void drawStimuli(void) {
+	//The CX_SlidePresenter is an abstraction that is responsible for displaying visual stimuli for specified durations.
+	//One called SlidePresenter is instanstiated for you, but you can create more if you want.
+	SlidePresenter.clearSlides(); //Start by clearing all slides (from the last trial).
 
-		//The CX_SlidePresenter is an abstraction that is responsible for displaying visual stimuli for specified durations.
-		//One called SlidePresenter is instanstiated for you, but you can create more if you want.
-		SlidePresenter.clearSlides(); //Start by clearing all slides (from the last trial).
+	//To draw to a slide, call beginDrawingNextSlide() with the name of the slide and the duration
+	//that you want the contents of the slide to be presented for.
+	SlidePresenter.beginDrawingNextSlide(1000, "fixation");
+	//After calling beginDrawingNextSlide(), all drawing commands will be directed to the current
+	//slide until beginDrawingNextSlide() is called again or endDrawingCurrentSlide() is called.
+	drawFixation(); //See the definition of this function below for some examples of how to draw stuff.
 
-		//To draw to a slide, call beginDrawingNextSlide() with the name of the slide and the duration
-		//that you want the contents of the slide to be presented for.
-		SlidePresenter.beginDrawingNextSlide(1000, "fixation");
-		//After calling beginDrawingNextSlide(), all drawing commands will be directed to the current
-		//slide until beginDrawingNextSlide() is called again or endDrawingCurrentSlide() is called.
-		drawFixation(); //See the definition of this function below for some examples of how to draw stuff.
-	
-		//Add some more slides.
-		SlidePresenter.beginDrawingNextSlide(250, "blank");
-		drawBlank();
+	//Add some more slides.
+	SlidePresenter.beginDrawingNextSlide(250, "blank");
+	drawBlank();
 
-		SlidePresenter.beginDrawingNextSlide(500, "sample");
-		drawSampleArray( trials.at( trialIndex ) );
+	SlidePresenter.beginDrawingNextSlide(500, "sample");
+	drawSampleArray(trials.at(trialIndex));
 
-		SlidePresenter.beginDrawingNextSlide(1000, "maintenance");
-		drawBlank();
+	SlidePresenter.beginDrawingNextSlide(1000, "maintenance");
+	drawBlank();
 
-		//The duration given for the last slide must be > 0, but is otherwise ignored.
-		//The last slide has an infinite duration: Once it is presented, it will stay
-		//on screen until something else is drawn (i.e. the slide presenter does not
-		//remove it from the screen after its duration is complete). If this is confusing
-		//to you, consider the question of what the slide presenter should replace the
-		//last slide with that will always be correct.
-		SlidePresenter.beginDrawingNextSlide(.001, "test");
-		drawTestArray( trials.at( trialIndex ) );
-		SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
+	//The duration given for the last slide must be > 0, but is otherwise ignored.
+	//The last slide has an infinite duration: Once it is presented, it will stay
+	//on screen until something else is drawn (i.e. the slide presenter does not
+	//remove it from the screen after its duration is complete). If this is confusing
+	//to you, consider the question of what the slide presenter should replace the
+	//last slide with that will always be correct.
+	SlidePresenter.beginDrawingNextSlide(.001, "test");
+	drawTestArray(trials.at(trialIndex));
+	SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
 
-		SlidePresenter.startSlidePresentation(); //Once all of the slides are ready to go for the next trial,
-			//call startSlidePresentation() to do just that. The drawn slides will be drawn on the screen for
-			//the specified duration.
+	SlidePresenter.startSlidePresentation(); //Once all of the slides are ready to go for the next trial,
+	//call startSlidePresentation() to do just that. The drawn slides will be drawn on the screen for
+	//the specified duration.
+}
 
-		trialPhase = "presentStimuli";
-	}
+void presentStimuli(void) {
 
-	if (trialPhase == "presentStimuli") {
+	//Check that the slide presenter is still at work (i.e. not yet on the last slide).
+	//As soon as the last slide is presented, isPresentingSlides() will return false.
+	while (SlidePresenter.isPresentingSlides()) {
 		SlidePresenter.update(); //The whole time that stimuli are being presented, the update function of the
-			//SlidePresenter should be called all the time. This will allow it to update its state and present
-			//the next stimulus, etc.
-
-		//Check that the slide presenter is still at work (i.e. not yet on the last slide).
-		//As soon as the last slide is presented, isPresentingSlides() will return false.
-		if (!SlidePresenter.isPresentingSlides()) {
-			Input.pollEvents(); //Check for any events that were made during encoding and maintenance.
-			Input.Keyboard.clearEvents(); //Then clear all keyboard responses, if any, that were made,
-				//because we are not interested in responses made before the test array is presented.
-			trialPhase = "getResponse";
-		}
+		//SlidePresenter should be called. This will allow it to update its state and present the next stimulus, etc.
 	}
 
-	if (trialPhase == "getResponse") {
-		Input.pollEvents(); //Check to see if any input has been given since the last time updateExperiment was called.
+	Input.pollEvents(); //Check for any events that were made during encoding and maintenance.
+	Input.Keyboard.clearEvents(); //Then clear all keyboard responses, if any, that were made,
+	//because we are not interested in responses made before the test array is presented.
+}
+
+void getResponse(void) {
+	while (true) { //Loop continuously,
+		Input.pollEvents(); //and check to see if any input has been given.
 
 		while (Input.Keyboard.availableEvents() > 0) { //While there are available events, 
-
 			CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent(); //get the next event for processing.
 
 			//Only examine key presses (as opposed to key releases or repeats). Everything would probably work 
@@ -129,8 +137,6 @@ void updateExperiment (void) {
 
 				//Ignore all responses that are not s or d.
 				if (keyEvent.key == 's' || keyEvent.key == 'd') {
-				
-					//trials.at( trialIndex ).response = keyEvent; //Store the raw response event.
 
 					//Figure out the response time. CX does no automatic response time calculation. You have
 					//to find out when the stimulus that the participant is responding to was presented. In
@@ -140,10 +146,12 @@ void updateExperiment (void) {
 					CX_Micros testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 					//One you have the onset time of the test array, you can subtract that from the time
 					//of the response, giving the "response time" (better known as response latency).
-					trials.at( trialIndex ).responseLatency = keyEvent.eventTime - testArrayOnset;
+					trials.at(trialIndex).responseLatency = keyEvent.eventTime - testArrayOnset;
 
-					//Code the response. For a lot of keys, you can compare the CX_Keyboard::Event::key to a character literal.
-					if ((trials.at( trialIndex ).changeTrial && keyEvent.key == 'd') || (!trials.at( trialIndex ).changeTrial && keyEvent.key == 's')) {
+					bool changeTrial = trials.at(trialIndex).changeTrial;
+
+					//Code the response. For a lot of keys, you can compare CX_Keyboard::Event.key to a character literal for many keys.
+					if ((changeTrial && keyEvent.key == 'd') || (!changeTrial && keyEvent.key == 's')) {
 						trials.at(trialIndex).responseCorrect = true;
 						Log.notice() << "Response correct!";
 					} else {
@@ -151,23 +159,15 @@ void updateExperiment (void) {
 						Log.notice() << "Response incorrect.";
 					}
 
-					//The end of a trial is a good time to flush() the logs, to see if any warnings/errors have happened during the trial.
-					//See example-logging in the ofxCX folder for an example of how the logging system works.
-					Log.flush();
-
-					//This trial is now complete, so move on to the next trial, checking to see if you have completed all of the trials.
-					if (++trialIndex >= trials.size()) {
-						outputData();
-						cout << "Experiment complete: exiting..." << endl;
-						ofSleepMillis(3000);
-						ofExit();
-					}
-					trialPhase = "drawStimuli";
+					//Now that we have a valid response, clear any other responses and return from this function.
+					Input.Keyboard.clearEvents();
+					return;
 				}
 			}
 		}
 	}
 }
+
 
 vector<TrialData_t> generateTrials (int trialCount) {
 
@@ -240,69 +240,18 @@ vector<TrialData_t> generateTrials (int trialCount) {
 }
 
 /*
-This function is here to show how sucky outputting data is when you have a user-defined struct to store data
-becuase of the lack of reflection in c++. The main problems are:
-
-1) Making errors because the column names must line up with the data, but are output at different places (one block
-of code outputs the headers, another block outputs the data), so it is really easy to make an error in the naming of 
-columns (swapping names).
-2) Leaving out a piece of data just because it was forgotten. This is easy to do if you have 20+ columns of data,
-some of which are not very important to the main point of the experiment, but might be useful for secondary analyses.
-Even for an experiment as simple as this example, making sure that nothing was missing took me a little time.
-3) It is a waste of time to manually write data outputting functions, because it is a trivial problem yet must be done carefully.
-You have to make sure that you always include the delimiter between items, that line endings are in the right place, etc. This
-is all a waste of time.
-
-There is an example called advancedChangeDetectionTask than shows how using a CX_DataFrame allows you to totally
-bypass all of these problems and output all of the data stored in the data frame with one trivial function call 
-(e.g. myDataFrame.printToFile("filename.txt")).
-*/
-void outputData(void) {
-	string t = "\t";
-	stringstream out;
-
-	//Set up the headers
-	out << "arraySize" << t << "changedObjectIndex" << t << "changeTrial" << t << "responseCorrect" << t << 
-		"respTime" << t << "newColor";
-	out << t << "colors" << t << "locations" << endl;
-
-	for (vector<TrialData_t>::iterator it = trials.begin(); it != trials.end(); it++) {
-		out << it->arraySize << t << it->changedObjectIndex << t << it->changeTrial << t << it->responseCorrect << t << 
-			it->responseLatency << t << it->newColor;
-
-		//Enclose the vectors in quotes so that they are not split on a delimiter when reading into a spreadsheet.
-		out << "\"";
-		for (int i = 0; i < it->colors.size(); i++) {
-			out << it->colors[i];
-			if (i < it->colors.size() - 1) {
-				out << ";";
-			}
-		}
-		out << "\"";
-
-		//CX::vectorToString() does the above ^^^, more or less. vectorToString makes manually outputting data
-		//better, but still loses out to the convenience of a data frame.
-		out << t << "\"" << vectorToString(it->locations, ";") << "\"";
-		out << endl;
-	}
-
-	writeToFile("CD data.txt", out.str(), false); //This file can be found in the data directory of the project.
-		//i.e. %openFrameworks directory%/apps/myApps/%your app name%/bin/data. You can also specify an absolute path
-		//and the file should end up there as long the location does not require write permissions.
-}
-
-/*
 Drawing stuff in CX just uses built in oF drawing functions.
 This section gives some examples of such functions, although there
-are many more, including 3D drawing stuff.
+are many more, including 3D drawing stuff. See the renderingTest
+example for more examples.
 */
 void drawFixation (void) {
-	ofBackground(backgroundColor);
+	ofBackground( backgroundColor );
 
 	ofSetColor( ofColor( 255 ) );
 	ofSetLineWidth( 3 );
 
-	ofPoint centerpoint( Display.getResolution().x/2, Display.getResolution().y/2 );
+	ofPoint centerpoint = Display.getCenterOfDisplay();
 
 	ofLine( centerpoint.x - 10, centerpoint.y, centerpoint.x + 10, centerpoint.y );
 	ofLine( centerpoint.x, centerpoint.y - 10, centerpoint.x, centerpoint.y + 10 );
@@ -322,8 +271,7 @@ void drawSampleArray (const TrialData_t &tr) {
 }
 
 void drawTestArray (const TrialData_t &tr) {
-
-	vector<ofColor> testColors = tr.colors;
+	vector<ofColor> testColors = tr.colors; //Make a copy because we want to modify the colors a little
 	
 	if (tr.changeTrial) {
 		testColors.at( tr.changedObjectIndex ) = tr.newColor;
@@ -335,4 +283,56 @@ void drawTestArray (const TrialData_t &tr) {
 		ofSetColor( testColors.at(i) );
 		ofCircle( tr.locations.at(i), circleRadius );
 	}
+}
+
+/*
+This function is here to show how sucky outputting data is when you have a user-defined struct to store data
+becuase of the lack of reflection in c++. Then, a better solution is suggested. The main problems are:
+
+1) Making errors because the column names must line up with the data, but are output at different places (one block
+of code outputs the headers, another block outputs the data), so it is really easy to make an error in the naming of
+columns (swapping names).
+2) Leaving out a piece of data just because it was forgotten. This is easy to do if you have 20+ columns of data,
+some of which are not very important to the main point of the experiment, but might be useful for secondary analyses.
+Even for an experiment as simple as this example, making sure that nothing was missing took me a little time.
+3) It is a waste of time to manually write data outputting functions, because it is a trivial problem yet must be done carefully.
+You have to make sure that you always include the delimiter between items, that line endings are in the right place, etc. This
+is all a waste of time.
+
+There is an example called advancedChangeDetectionTask than shows how using a CX_DataFrame allows you to totally
+bypass all of these problems and output all of the data stored in the data frame with one trivial function call
+(e.g. myDataFrame.printToFile("filename.txt")).
+*/
+void outputData(void) {
+	string t = "\t";
+	stringstream out;
+
+	//Set up the headers
+	out << "arraySize" << t << "changedObjectIndex" << t << "changeTrial" << t << "responseCorrect" << t <<
+		"respTime" << t << "newColor";
+	out << t << "colors" << t << "locations" << endl;
+
+	for (vector<TrialData_t>::iterator it = trials.begin(); it != trials.end(); it++) {
+		out << it->arraySize << t << it->changedObjectIndex << t << it->changeTrial << t << it->responseCorrect << t <<
+			it->responseLatency << t << it->newColor;
+
+		//Enclose the vectors in quotes so that they are not split on a delimiter when reading into a spreadsheet.
+		out << "\"";
+		for (int i = 0; i < it->colors.size(); i++) {
+			out << it->colors[i];
+			if (i < it->colors.size() - 1) {
+				out << ";";
+			}
+		}
+		out << "\"";
+
+		//CX::vectorToString() does the above ^^^, more or less. vectorToString makes manually outputting data
+		//better, but still loses out to the convenience of a data frame.
+		out << t << "\"" << vectorToString(it->locations, ";") << "\"";
+		out << endl;
+	}
+
+	writeToFile("basic change detection data.txt", out.str(), false); //This file can be found in the data directory of the project.
+	//i.e. %openFrameworks directory%/apps/myApps/%your app name%/bin/data. You can also specify an absolute path
+	//and the file should end up there as long the location does not require write permissions.
 }

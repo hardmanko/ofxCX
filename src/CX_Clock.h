@@ -1,5 +1,4 @@
-#ifndef _CX_CLOCK_H_
-#define _CX_CLOCK_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -85,18 +84,40 @@ namespace CX {
 
 			void takeSample(void);
 
-			CX_Millis getAverage(void);
-			CX_Millis getMinimum(void);
-			CX_Millis getMaximum(void);
+			CX_Millis mean(void);
+			CX_Millis min(void);
+			CX_Millis max(void);
+			CX_Millis stdDev(void);
 
 			std::string getStatString(void);
 
 		private:
 			CX_Clock *_clock;
-			vector<CX_Millis> _timePoints;
+			std::vector<CX_Millis> _timePoints;
+			std::vector<double> _durations;
 			unsigned int _sampleIndex;
+
+			void _calculateDurations(void);
+			bool _durationRecalculationRequired;
+		};
+
+		class CX_SegmentProfiler {
+		public:
+			void setup(CX_Clock *clock);
+
+			void t1(void);
+			void t2(void);
+
+			void reset(void);
+
+			std::string getStatString(void);
+
+		private:
+			CX_Clock *_clock;
+
+			CX_Millis _t1;
+			std::vector<double> _durations;
+
 		};
 	}
 }
-
-#endif //_CX_CLOCK_H_

@@ -138,6 +138,12 @@ namespace CX {
 		long long nanos(void) const {
 			return _nanos;
 		}
+		/*
+		template <typename T>
+		operator T(void) {
+			return this->value();
+		}
+		*/
 
 		template<typename RT>
 		CX_Time_t<TimeUnit> operator+(const CX_Time_t<RT>& rhs) const {

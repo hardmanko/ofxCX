@@ -61,6 +61,14 @@ namespace CX {
 		template <typename T> T clamp(T val, T minimum, T maximum);
 
 		void saveFboToFile(ofFbo& fbo, std::string filename);
+
+		template <typename T> T max(std::vector<T> vals);
+		template <typename T> T min(std::vector<T> vals);
+		template <typename T> T mean(std::vector<T> vals);
+		template <typename T_OUT, typename T_IN> T_OUT mean(std::vector<T_IN> vals);
+		template <typename T> T var(std::vector<T> vals);
+		template <typename T_OUT, typename T_IN> T_OUT var(std::vector<T_IN> vals);
+
 	}
 }
 
@@ -264,6 +272,59 @@ outside of the bounds, it is set to be equal to the nearest bound.
 template <typename T>
 T CX::Util::clamp(T val, T minimum, T maximum) {
 	return std::min(std::max(val, minimum), maximum);
+}
+
+template <typename T> T CX::Util::max(std::vector<T> vals) {
+	if (vals.size() == 0) {
+		return T();
+	}
+	T maximum = vals[0];
+	for (unsigned int i = 1; i < vals.size(); i++) {
+		if (vals[i] > maximum) {
+			maximum = vals[i];
+		}
+	}
+	return maximum;
+}
+
+
+template <typename T> T CX::Util::min(std::vector<T> vals) {
+	if (vals.size() == 0) {
+		return T();
+	}
+	T minimum = vals[0];
+	for (unsigned int i = 1; i < vals.size(); i++) {
+		if (vals[i] < minimum) {
+			minimum = vals[i];
+		}
+	}
+	return minimum;
+}
+
+template <typename T> T CX::Util::mean(std::vector<T> vals) {
+	return mean<T, T>(vals);
+}
+
+template <typename T_OUT, typename T_IN> T_OUT CX::Util::mean(std::vector<T_IN> vals) {
+	T_OUT sum = 0;
+	for (unsigned int i = 0; i < vals.size(); i++) {
+		sum += vals[i];
+	}
+	return sum / vals.size();
+}
+
+template <typename T> T CX::Util::var(std::vector<T> vals) {
+	return Util::var<T, T>(vals);
+}
+
+template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> vals) {
+	T_OUT m = Util::mean(vals);
+	T_OUT sum = 0;
+	for (unsigned int i = 0; i < vals.size(); i++) {
+		T_OUT dif = vals[i] - m;
+		sum += dif * dif;
+	}
+	return sum / (vals.size() - 1); //Sample variance has n - 1 for denominator
 }
 
 #endif //_CX_UTILITIES_H_

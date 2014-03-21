@@ -7,21 +7,15 @@ but because it uses more features of CX. It actually ends up being simpler becau
 of how it uses features of CX.
 
 Items that are commented are new, although not all new stuff will neccessarily be 
-commented. The two main features that are demonstrated are CX_DataFrame and
-CX_TrialController. Using custom units and a custom coordinate system is shown 
-with CX_CoordinateConverter and CX_DegreeToPixelConverter.
+commented. The main feature that as demonstrated as the CX_DataFrame, which is a
+way to store and output experimental data. Using custom units and a custom 
+coordinate system is shown with CX_CoordinateConverter and CX_DegreeToPixelConverter
+as the unit converter.
 */
 
-/*
-One of the main additions to this example is the CX_TrialController. As you will
-see, the trial controller manages which stage of the trial you are in, which means
-that you don't have to track the trial stage with a variable.
-Functions that are given to a CX_TrialController must take void and return int.
-*/
-CX_TrialController trialController;
-int drawStimuli (void);
-int presentStimuli (void);
-int getResponse (void);
+void drawStimuli(void);
+void presentStimuli(void);
+void getResponse(void);
 
 void generateTrials (int trialCount);
 void updateExperiment (void);
@@ -32,10 +26,10 @@ void drawBlank (void);
 void drawSampleArray (void);
 void drawTestArray (void);
 
-CX_DataFrame trialDf;
-int trialIndex = 0;
+CX_DataFrame trialDf; //The data frame into which data from each trial is stored.
+int trialIndex = 0; //The index of the current trial.
 
-int circleRadius = 0; //We will set this later
+int circleRadius = 0; //We will set this later.
 ofColor backgroundColor(50);
 
 void runExperiment (void) {
@@ -48,35 +42,21 @@ void runExperiment (void) {
 
 	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
 
-	//Add the functions to the trial controller in the order in which you want them to be called.
-	trialController.appendFunction( &drawStimuli );
-	trialController.appendFunction( &presentStimuli );
-	trialController.appendFunction( &getResponse );
-	trialController.start();
+	for (trialIndex = 0; trialIndex < trialDf.getRowCount(); trialIndex++) {
+		drawStimuli();
+		presentStimuli();
+		getResponse();
 
-	while (true) {
-		updateExperiment();
+		Log.flush();
 	}
+
+	trialDf.printToFile("change detection data.txt"); //This is all you have to do to output the data from the data frame. 
+		//Compare to the data output function from the basicChangeDetectionTask example.
+	cout << "Experiment complete: exiting..." << endl;
+	ofSleepMillis(3000);
 }
 
-/*
-In updateExperiment in the basicChangeDetection example, there were three stages of each
-trial that were gone through in order. The trialController helps with progressing through
-the stages. In setupExperiment, three functions, each of which handles one stage of the
-trial, were put into the trialController. In updateExperiment, the update function of the
-trialController is called, which simply calls the function for the current stage of the
-trial. When the current function determines that its stage of the trial is complete, it
-indicates that to the trial controller by returning 1, and then the trialController moves
-on to the next stage of the trial, calling the next function on the next call to update().
-
-This makes updateExperiment trivial, with all of the processing offloaded into 
-sub-functions called by the trialController.
-*/
-void updateExperiment (void) {
-	trialController.update();
-}
-
-int drawStimuli (void) {
+void drawStimuli (void) {
 	SlidePresenter.clearSlides();
 
 	SlidePresenter.beginDrawingNextSlide(1000, "fixation");
@@ -96,67 +76,49 @@ int drawStimuli (void) {
 	SlidePresenter.endDrawingCurrentSlide();
 
 	SlidePresenter.startSlidePresentation();
-	return 1; //If you want the trial controller to move on to the next function in its list, return 1 from the current function.
-		//We only want to draw everything once per trial, so this function only ever returns 1.
 }
 
-//In this function, we want to check repeatedly if the SlidePresenter is presenting slides.
-//If its done, then we want to move on to the next stage of the trial, which is getting 
-//the response.
-int presentStimuli (void) {
-	SlidePresenter.update();
-
-	if (!SlidePresenter.isPresentingSlides()) {
-		Input.pollEvents();
-		Input.Keyboard.clearEvents();
-		return 1; //Move on to next function
+void presentStimuli(void) {
+	while (SlidePresenter.isPresentingSlides()) {
+		SlidePresenter.update();
 	}
-	return 0; //If you don't want the trial controller to move on, return 0.
+
+	Input.pollEvents();
+	Input.Keyboard.clearEvents();
 }
 
-int getResponse (void) {
-	Input.pollEvents();
+void getResponse (void) {
+	while (true) {
+		Input.pollEvents();
 
-	while (Input.Keyboard.availableEvents() > 0) {
+		while (Input.Keyboard.availableEvents() > 0) {
+			CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent();
+			if (keyEvent.eventType == CX_Keyboard::Event::PRESSED) {
 
-		CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent();
+				if (keyEvent.key == 's' || keyEvent.key == 'd') {
 
-		if (keyEvent.eventType == CX_Keyboard::Event::PRESSED) {
+					CX_Millis testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
+					trialDf(trialIndex, "responseLatency") = keyEvent.eventTime - testArrayOnset;
 
-			if (keyEvent.key == 's' || keyEvent.key == 'd') {
+					bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();
 
-				CX_Millis testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
-				trialDf(trialIndex, "responseLatency") = keyEvent.eventTime - testArrayOnset;
+					if ((changeTrial && keyEvent.key == 'd') || (!changeTrial && keyEvent.key == 's')) {
+						trialDf(trialIndex, "responseCorrect") = true;
+						Log.notice() << "Response correct!";
+					} else {
+						trialDf(trialIndex, "responseCorrect") = false;
+						Log.notice() << "Response incorrect.";
+					}
 
-				bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();
+					trialDf(trialIndex, "presentationErrors") = SlidePresenter.checkForPresentationErrors().totalErrors();
 
-				if ((changeTrial && keyEvent.key == 'd') || (!changeTrial && keyEvent.key == 's')) {
-					trialDf(trialIndex, "responseCorrect") = true;
-					Log.notice() << "Response correct!";
-				} else {
-					trialDf(trialIndex, "responseCorrect") = false;
-					Log.notice() << "Response incorrect.";
+					cout << SlidePresenter.printLastPresentationInformation() << endl;
+
+					return;
 				}
-
-				trialDf(trialIndex, "presentationErrors") = SlidePresenter.checkForPresentationErrors().totalErrors();
-
-				cout << SlidePresenter.printLastPresentationInformation() << endl;
-
-				Log.flush();
-
-				if (++trialIndex >= trialDf.getRowCount()) {
-					trialDf.printToFile("change detection data.txt"); //This is all you have to do to output the data from the data frame. 
-						//Compare to the data output function from the basicChangeDetectionTask example.
-					cout << "Experiment complete: exiting..." << endl;
-					ofSleepMillis(3000);
-					ofExit();
-				}
-				return 1; //Move on to next function. In this case, this function is at the end of the list, 
-					//so the trial controller wraps around and calls the first function in the list.
 			}
 		}
 	}
-	return 0;
 }
 
 void generateTrials (int trialCount) {
@@ -246,10 +208,10 @@ void generateTrials (int trialCount) {
 }
 
 void drawFixation (void) {
-	ofBackground(backgroundColor);
+	ofBackground( backgroundColor );
 
 	ofSetColor( ofColor( 255 ) );
-	ofSetLineWidth( 5 );
+	ofSetLineWidth( 3 );
 
 	ofPoint centerpoint = Display.getCenterOfDisplay();
 
@@ -262,7 +224,6 @@ void drawBlank (void) {
 }
 
 void drawSampleArray (void) {
-
 	ofBackground( backgroundColor );
 
 	//We know that the contents of the colors and locations cells are vectors, so we read them out into vectors of the appropriate type.
@@ -276,12 +237,12 @@ void drawSampleArray (void) {
 }
 
 void drawTestArray (void) {
-
 	vector<ofColor> testColors = trialDf(trialIndex, "colors");
 	vector<ofPoint> locations = trialDf(trialIndex, "locations");
 	
-	if (trialDf(trialIndex, "changeTrial").to<bool>()) {
-		testColors.at( trialDf(trialIndex, "changedObjectIndex").toInt() ) = trialDf(trialIndex, "newObjectColor").to<ofColor>();
+	//We can do a little type conversion on extraction from the data frame to make sure that we are getting data of the correct type.
+	if (trialDf(trialIndex, "changeTrial").to<bool>()) { //Here we say that we want a boolean value
+		testColors.at( trialDf(trialIndex, "changedObjectIndex").toInt() ) = trialDf(trialIndex, "newObjectColor").to<ofColor>(); //Here we want an ofColor.
 	}
 	
 	ofBackground( backgroundColor );

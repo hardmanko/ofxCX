@@ -95,22 +95,11 @@ The start of the experiment is defined by default as when the CX_Clock instance 
 (instantiated in this file) is constructed (typically the beginning of program execution).
 \return A CX_Millis object containing the time.
 
-\note This cannot be converted to time/day in any meaningful way. Use getDateTimeString() for that.*/
+\note This cannot be converted to current date/time in any meaningful way. Use getDateTimeString() for that.*/
 CX_Millis CX_Clock::now(void) {
 	return CX_Nanos(_impl->nanos());
 }
 
-
-
-/*
-This function returns the current system time in microseconds.
-
-This cannot be converted to time/day in any meaningful way. Use getDateTimeString() for that.
-\return A time value that can be compared to the result of other calls to this function and to getExperimentStartTime().
-*/
-//CX_Micros CX_Clock::getSystemTime(void) {
-//	return std::chrono::duration_cast<std::chrono::microseconds>(CX_InternalClockType::now().time_since_epoch()).count();
-//}
 
 /*! Get a string representing the date/time of the start of the experiment encoded according to a format.
 \param format See getDateTimeString() for the definition of the format. */
@@ -129,31 +118,6 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
 
-/*
-void CX_Clock::_resetExperimentStartTime(void) {
-	_pocoExperimentStart = Poco::LocalDateTime();
-#ifdef CX_CLOCK_IMPLEMENTATION_COUNTS_FROM_ZERO
-	_experimentStart = CX_InternalClockType::time_point(CX_InternalClockType::duration(0));
-#else
-	_experimentStart = CX_InternalClockType::now(); //This is actually irrelevant when using CX_HighResClockImplementation.
-#endif
-}
-*/
-
-/*
-//Does not actually have microsecond precision on some systems.
-void sleepMicros(uint64_t micros) {
-	std::this_thread::sleep_for(std::chrono::microseconds(micros));
-}
-
-
-double clockPeriod(void) {
-	return (double)std::chrono::high_resolution_clock::period().num / std::chrono::high_resolution_clock::period().den;
-}
-*/
-
-
-
 
 void Util::CX_LapTimer::setup(CX_Clock *clock, unsigned int samples) {
 	_clock = clock;
@@ -163,11 +127,12 @@ void Util::CX_LapTimer::setup(CX_Clock *clock, unsigned int samples) {
 
 void Util::CX_LapTimer::reset(void) {
 	_sampleIndex = 0;
+	_durationRecalculationRequired = true;
 }
 
 void Util::CX_LapTimer::takeSample(void) {
-
 	_timePoints[_sampleIndex] = _clock->now();
+	_durationRecalculationRequired = true;
 
 	if (++_sampleIndex == _timePoints.size()) {
 		CX::Instances::Log.notice("CX_LapTimer") << "Data collected: " << getStatString();
@@ -176,69 +141,65 @@ void Util::CX_LapTimer::takeSample(void) {
 }
 
 std::string Util::CX_LapTimer::getStatString(void) {
-	CX_Millis differenceSum = 0;
-	CX_Millis maxDifference = 0;
-	CX_Millis minDifference = CX_Millis::max();
-
-	vector<CX_Millis> differences(_timePoints.size() - 1);
-
-	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-
-		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
-		differenceSum += difference;
-
-		if (difference > maxDifference) {
-			maxDifference = difference;
-		}
-
-		if (difference < minDifference) {
-			minDifference = difference;
-		}
-
-		differences[i - 1] = difference;
-	}
-	CX_Millis mean = differenceSum.millis() / differences.size();
-
-	double absDifSum = 0;
-	for (unsigned int i = 0; i < differences.size(); i++) {
-		absDifSum += pow((differences[i] - mean).micros(), 2);
-	}
-	uint64_t stdDev = sqrt(absDifSum / (differences.size() - 1)); //Sample std dev has n - 1 for denominator
-
 	std::stringstream s;
-	s << "min, mean, max, stdDev: " << minDifference << ", " << mean << ", " << maxDifference << ", " << stdDev;
+	s << "min, mean, max, stdDev: " << this->min() << ", " << this->mean() << ", " << this->max() << ", " << this->stdDev();
 	return s.str();
 }
 
-CX_Millis Util::CX_LapTimer::getAverage(void) {
-	CX_Millis differenceSum = 0;
-	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-		differenceSum += _timePoints[i] - _timePoints[i - 1];
-	}
-	return differenceSum.millis() / (_timePoints.size() - 1);
-}
-
-CX_Millis Util::CX_LapTimer::getMaximum(void) {
-	CX_Millis maxDifference = 0;
-
-	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
-		if (difference > maxDifference) {
-			maxDifference = difference;
-		}
+void Util::CX_LapTimer::_calculateDurations(void) {
+	if (_timePoints.size() < 2 || !_durationRecalculationRequired) {
+		return;
 	}
 
-	return maxDifference;
-}
-
-CX_Millis Util::CX_LapTimer::getMinimum(void) {
-	CX_Millis minDifference = CX_Millis::max();
+	_durations.resize(_timePoints.size() - 1);
 	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-		CX_Millis difference = _timePoints[i] - _timePoints[i - 1];
-		if (difference < minDifference) {
-			minDifference = difference;
-		}
+		_durations[i - 1] = (_timePoints[i] - _timePoints[i - 1]).value();
 	}
-	return minDifference;
+	_durationRecalculationRequired = false;
 }
 
+CX_Millis Util::CX_LapTimer::mean(void) {
+	_calculateDurations();
+	return Util::mean(_durations);
+}
+
+CX_Millis Util::CX_LapTimer::max(void) {
+	_calculateDurations();
+	return Util::max(_durations);
+}
+
+CX_Millis Util::CX_LapTimer::min(void) {
+	_calculateDurations();
+	return Util::min(_durations);
+}
+
+CX_Millis Util::CX_LapTimer::stdDev(void) {
+	_calculateDurations();
+	return CX_Millis(Util::var(_durations));
+}
+
+
+
+void Util::CX_SegmentProfiler::setup(CX_Clock *clock) {
+	_clock = clock;
+	this->reset();
+}
+
+void Util::CX_SegmentProfiler::t1(void) {
+	_t1 = _clock->now();
+}
+void Util::CX_SegmentProfiler::t2(void) {
+	_durations.push_back((_clock->now() - _t1).value());
+}
+
+void Util::CX_SegmentProfiler::reset(void) {
+	_durations.clear();
+}
+
+std::string Util::CX_SegmentProfiler::getStatString(void) {
+	std::stringstream s;
+	s << "min, mean, max, stdDev: " << Util::min(_durations) << ", " << Util::mean(_durations) << ", " <<
+		Util::max(_durations) << ", " << sqrt(Util::var(_durations));
+	this->reset();
+	return s.str();
+}

@@ -13,16 +13,37 @@ namespace CX {
 	\ingroup video */
 	namespace Draw {
 
-		/*
+		
 		struct CX_PathParams_t {
-			ofColor lineColor;
+
+			CX_PathParams_t(void) :
+				strokeColor(255),
+				fillColor(127),
+				filled(true),
+				strokeWidth(1),
+				rotationAmount(0),
+				rotationAxes(0,0,1)
+			{}
+
+			void applyTo(ofPath& p) {
+				p.setFillColor(fillColor);
+				p.setFilled(filled);
+				p.setStrokeColor(strokeColor);
+				p.setStrokeWidth(strokeWidth);
+				p.rotate(rotationAmount, rotationAxes);
+			}
+
+			float strokeWidth;
+			ofColor strokeColor;
+			bool filled;
 			ofColor fillColor;
-			float lineWidth;
 
 			float rotationAmount;
 			ofVec3f rotationAxes;
 		};
-		*/
+		
+
+		ofPath arrowToPath(float length, float headOffsets, float headSize, float lineWidth);
 
 		ofPath squircleToPath(double radius, double amount = 0.9);
 		//void squircle(ofPoint center, double radius, double rotationDeg = 0, double amount = 0.9);
