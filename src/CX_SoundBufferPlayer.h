@@ -1,11 +1,16 @@
 #pragma once
 
-/*! \defgroup sound Sound */
+/*! \defgroup sound Sound 
+There are a few different ways to deal with sounds in CX. The thing that most people want to do is to
+play sounds, which is done with the CX_SoundBufferPlayer. See the soundBuffer tutorial for information
+on how to do that.
 
-/*! \class CX::CX_SoundBufferPlayer
-This class is used for playing CX_SoundBuffers. See the soundBuffer tutorial for an example of how to use this class.
+If you want to record sound, use the CX_SoundBufferRecorder.
 
-\ingroup sound
+If you want to generate sound stimuli through sound synthesis, see the CX::Synth namespace and modularSynth
+tutorial.
+
+Finally, if you want to have direct control of the data going to and from a sound device, see CX_SoundStream.
 */
 
 #include "CX_SoundBuffer.h"
@@ -18,7 +23,11 @@ This class is used for playing CX_SoundBuffers. See the soundBuffer tutorial for
 namespace CX  {
 
 	
+	/*!
+	This class is used for playing CX_SoundBuffers. See the soundBuffer tutorial for an example of how to use this class.
 
+	\ingroup sound
+	*/
 	class CX_SoundBufferPlayer {
 	public:
 

@@ -1,12 +1,9 @@
-#ifndef _CX_TRIAL_CONTROLLER_CLASS_H_
-#define _CX_TRIAL_CONTROLLER_CLASS_H_
+#pragma once
 
 #include <vector>
 #include <functional>
 
 #include "CX_Logger.h"
-
-//using namespace std;
 
 namespace CX {
 
@@ -80,8 +77,6 @@ namespace CX {
 
 }
 
-
-
 /*
 //Simple example of how to do this stuff:
 
@@ -90,5 +85,3 @@ int callFunc (T *object, int (T::*func)(void) ) {
 	return (object->*func)();
 }
 */
-
-#endif //_CX_TRIAL_CONTROLLER_CLASS_H_

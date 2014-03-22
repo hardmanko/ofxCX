@@ -40,34 +40,17 @@ void squircle(ofPoint center, double radius, double rotationDeg, double amount) 
 }
 */
 
-/*! Draws an arrow to an ofPath.
-\param angle The direction toward which the arrow tip should point, in degrees.
+/*! Draws an arrow to an ofPath. The outline of the arrow is drawn with strokes, so you can
+have the path be filled to have a solid arrow, or you can use non-zero width strokes in order
+to have the outline of an arrow. The arrow points up by default but you can rotate it with
+ofPath::rotate().
 \param length The length of the arrow in pixels.
 \param headOffsets The angle between the main arrow body and the two legs of the tip, in degrees.
 \param headSize The length of the legs of the head in pixels.
-\return An ofPath containing the arrow. The tip of the arrow is at (0,0) in the ofPath.
+\param lineWidth The width of the lines used to draw the arrow (i.e. the distance between parallel strokes).
+\return An ofPath containing the arrow. The center of the arrow is at (0,0) in the ofPath.
 */
 ofPath CX::Draw::arrowToPath(float length, float headOffsets, float headSize, float lineWidth) {
-	/*
-	angle -= 180;
-	angle = -angle * PI / 180;
-
-	headOffsets = headOffsets * PI / 180;
-
-	ofPoint tailEnd(length * cos(angle), length * sin(angle));
-
-	ofPath p;
-	p.moveTo(0, 0);
-	p.lineTo(tailEnd);
-
-	//p.moveTo(0, 0);
-	p.moveTo(headSize * cos(angle + headOffsets), headSize * sin(angle + headOffsets));
-
-	p.lineTo(0, 0);
-	p.lineTo(headSize * cos(angle - headOffsets), headSize * sin(angle - headOffsets));
-
-	return p;
-	*/
 
 	headOffsets = (90 - headOffsets) * PI / 180;
 
@@ -91,11 +74,7 @@ ofPath CX::Draw::arrowToPath(float length, float headOffsets, float headSize, fl
 	p.lineTo(-outerPoint.x, outerPoint.y);
 	p.lineTo(0, -length / 2);
 
-
-
 	return p;
-
-
 }
 
 /*!
@@ -143,7 +122,6 @@ the star hit.
 \param lineWidth The width of the lines.
 \param rotationDeg The number of degrees to rotate the star. 0 degrees has one point of the star pointing up. 
 Positive values rotate the star counter-clockwise.
-\return An ofPath containing the star.
 */
 void CX::Draw::star(ofPoint center, int numberOfPoints, float innerRadius, float outerRadius,
 					ofColor lineColor, ofColor fillColor, float lineWidth, float rotationDeg)

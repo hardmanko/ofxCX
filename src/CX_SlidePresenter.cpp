@@ -382,7 +382,12 @@ CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentation
 	return errors;
 }
 
-
+/*! This function prints a ton of data relating to the last presentation of slides.
+It prints the total number of errors and the types of the errors. For each slide,
+it prints the slide index and name, and various information about the slide presentation
+timing. All of the printed information can also be accessed programmatically by using getSlides().
+\return A string containing formatted presentation information.
+*/
 std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 	PresentationErrorInfo errors = checkForPresentationErrors();
 
@@ -401,14 +406,19 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 
 		s << "-----------------------------------" << endl;
 		s << "Index: " << i;
-		s << "  Name: " << slide.slideName << endl;
+		s << " Name: " << slide.slideName << endl;
 
-		s << "Measure:\tIntended,\tActual" << endl;
-		s << "Start time: \t" << slide.intended.startTime << ",\t" << slide.actual.startTime << endl;
-		s << "Duration:   \t" << slide.intended.duration << ",\t" << slide.actual.duration << endl;
-		s << "Start frame:\t" << slide.intended.startFrame << ",\t" << slide.actual.startFrame << endl;
-		s << "Frame count:\t" << slide.intended.frameCount << ",\t" << slide.actual.frameCount;
+		s << "Measure:\tIntended\tActual" << endl;
+		s << "Start time: \t" << slide.intended.startTime << "\t" << slide.actual.startTime;
+		if (slide.intended.startTime > slide.actual.startTime) {
+			s << "*";
+		}
+		s << endl;
 
+		s << "Duration:   \t" << slide.intended.duration << "\t" << slide.actual.duration << endl;
+		s << "Start frame:\t" << slide.intended.startFrame << "\t" << slide.actual.startFrame << endl;
+
+		s << "Frame count:\t" << slide.intended.frameCount << "\t" << slide.actual.frameCount;
 		if (slide.intended.frameCount != slide.actual.frameCount) {
 			if (i != (_slides.size() - 1)) {
 				s << "***"; //Mark the error, but not for the last slide
@@ -510,22 +520,7 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 			CX_Millis currentTime = CX::Instances::Clock.now();
 			if (currentTime >= _hoggingStartTime) {
 
-				
-				//Hog for a whlie. This is stupid, honestly. If the user has constructed a proper loop, this function will be checked every ~10 us.
-				//while (Clock.now() < _slides.at(_currentSlide).intended.startTime)
-				//	;
-
-				CX_Millis swappingStart = Clock.now();
 				_config.display->BLOCKING_swapFrontAndBackBuffers();
-
-				//_config.display->BLOCKING_swapFrontAndBackBuffers();
-				//_config.display->BLOCKING_swapFrontAndBackBuffers();
-
-				//if (_slides[_currentSlide].intended.duration < (_config.display->getFramePeriod() * 2)) {
-				//_config.display->BLOCKING_swapFrontAndBackBuffers();
-				//}
-				Log.notice("CX_SlidePresenter") << "Slide #" << _currentSlide << " swapping duration was " << Clock.now() - swappingStart;
-				
 
 				CX_Millis currentSlideOnset = CX::Instances::Clock.now();
 

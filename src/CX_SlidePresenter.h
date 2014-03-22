@@ -203,7 +203,6 @@ namespace CX {
 		};
 
 
-
 		CX_SlidePresenter (void);
 
 		bool setup (CX_Display *display);
@@ -230,14 +229,6 @@ namespace CX {
 
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
 		std::string printLastPresentationInformation(void) const;
-
-
-		// Returns the index of the slide that is currently being presented.
-		//This is weird because the active slide becomes active before it is on screen.
-		//unsigned int getActiveSlideIndex (void) { return _currentSlide; };
-		//std::string getActiveSlideName (void); //This sucks for the same reason that getActiveSlideIndex sucks.
-		//unsigned int getSlideCount(void) { return _slides.size(); }; //Just use getSlides().size()
-		//CX_SlidePresenter::Slide& getSlide (unsigned int slideIndex);
 
 	protected:
 

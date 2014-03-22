@@ -1081,7 +1081,7 @@ void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int 
 
 	//GLFW defaults to uppercase - OF users are used to lowercase
     //we look and see if shift is being held to toggle upper/lowecase 
-	if( key >= 65 && key <= 90 && !ofGetKeyPressed(OF_KEY_SHIFT) ){
+	if ((key >= 65) && (key <= 90) && !ofGetKeyPressed(OF_KEY_SHIFT)) {
 		key += 32;
 	}
 
@@ -1112,7 +1112,7 @@ void CX_AppWindow::resize_cb(GLFWwindow* windowP_,int w, int h) {
 //------------------------------------------------------------
 void CX_AppWindow::setVerticalSync(bool bVerticalSync){
 	if(bVerticalSync){
-		glfwSwapInterval( 1);
+		glfwSwapInterval(1);
 	}else{
 		glfwSwapInterval(0);
 	}
@@ -1146,10 +1146,11 @@ bool CX_AppWindow::isWindowResizeable(){
 
 //------------------------------------------------------------
 void CX_AppWindow::iconify(bool bIconify){
-	if(bIconify)
-			glfwIconifyWindow(windowP);
-	else
+	if (bIconify) {
+		glfwIconifyWindow(windowP);
+	} else {
 		glfwRestoreWindow(windowP);
+	}
 }
 
 

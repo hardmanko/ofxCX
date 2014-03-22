@@ -1,5 +1,4 @@
-#ifndef _CX_DISPLAY_H_
-#define _CX_DISPLAY_H_
+#pragma once
 
 /*! \defgroup video Video
 This module is related to creating and presenting visual stimuli.
@@ -88,5 +87,3 @@ namespace CX {
 	};
 
 }
-
-#endif //_CX_DISPLAY_H_

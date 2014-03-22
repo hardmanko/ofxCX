@@ -57,16 +57,16 @@ namespace CX {
 
 		struct CX_PatternProperties_t {
 			CX_PatternProperties_t(void) :
-			minValue(0),
-			maxValue(255),
-			angle(0),
-			width(100),
-			height(100),
-			period(30),
-			phase(0),
-			maskType(CX_PatternProperties_t::SINE_WAVE),
-			apertureType(CX_PatternProperties_t::AP_CIRCLE),
-			fallOffPower(std::numeric_limits<double>::min())
+				minValue(0),
+				maxValue(255),
+				angle(0),
+				width(100),
+				height(100),
+				period(30),
+				phase(0),
+				maskType(CX_PatternProperties_t::SINE_WAVE),
+				apertureType(CX_PatternProperties_t::AP_CIRCLE),
+				fallOffPower(std::numeric_limits<double>::min())
 			{}
 
 			unsigned char minValue;

@@ -180,9 +180,9 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 	GLint dx1 = destinationCoordinates.x + destinationCoordinates.width;
 	GLint dy1 = res.height - destinationCoordinates.y - destinationCoordinates.height;
 
-	ofOrientation or = ofGetOrientation();
+	ofOrientation orient = ofGetOrientation();
 
-	switch (or) {
+	switch (orient) {
 	case OF_ORIENTATION_DEFAULT:
 		std::swap(sy0, sy1);
 		break;

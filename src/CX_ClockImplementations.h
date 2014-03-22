@@ -4,6 +4,8 @@
 
 #include <chrono>
 #include <string>
+#include <sstream>
+#include <type_traits>
 
 namespace CX {
 
@@ -46,8 +48,8 @@ namespace CX {
 		}
 
 		std::string getName(void) override {
-			stringstream s;
-			s << "CX_StdClockWrapper<" << typeid(stdClock).name << ">";
+			std::stringstream s;
+			s << "CX_StdClockWrapper<" << typeid(stdClock).name() << ">";
 			return s.str();
 		}
 

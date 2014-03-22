@@ -18,7 +18,6 @@
 
 #include "CX_Events.h"
 
-//class ofVec3f;
 class ofBaseApp;
 
 namespace CX {
@@ -35,18 +34,18 @@ public:
 
 
 	// window settings, this functions can be called from main before calling ofSetupOpenGL
-	void 		setNumSamples(int samples);
-	void 		setDoubleBuffering(bool doubleBuff);
-	void 		setColorBits(int r, int g, int b);
-	void		setAlphaBits(int a);
-	void		setDepthBits(int depth);
-	void		setStencilBits(int stencil);
-	void		listVideoModes();
-	bool		isWindowIconified();
-	bool		isWindowActive();
-	bool		isWindowResizeable();
-	void		iconify(bool bIconify);
-	void        setMultiDisplayFullscreen(bool bMultiFullscreen); //note this just enables the mode, you have to toggle fullscreen to activate it.
+	void setNumSamples(int samples);
+	void setDoubleBuffering(bool doubleBuff);
+	void setColorBits(int r, int g, int b);
+	void setAlphaBits(int a);
+	void setDepthBits(int depth);
+	void setStencilBits(int stencil);
+	void listVideoModes();
+	bool isWindowIconified();
+	bool isWindowActive();
+	bool isWindowResizeable();
+	void iconify(bool bIconify);
+	void setMultiDisplayFullscreen(bool bMultiFullscreen); //note this just enables the mode, you have to toggle fullscreen to activate it.
 
 
 	// this functions are only meant to be called from inside OF don't call them from your code

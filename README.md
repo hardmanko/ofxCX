@@ -7,7 +7,7 @@ ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFramewor
 
 The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there or generate other formats of the documentation by using Doxygen with the Doxyfile there.
 
-Licence
+License
 -------
 This addon is distributed under the MIT license (see license.md).
 
@@ -18,6 +18,8 @@ Drop the contents of this repository into a subdirectory directory under %openFr
 Compatibility
 ------------
 CX only works with oF version 0.8.0. It has only been tested on Windows, but may work completely on OSx. Some functionality is missing on Linux.
+
+As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2013 and Code::Blocks for Windows using GCC.
 
 Known issues
 ------------

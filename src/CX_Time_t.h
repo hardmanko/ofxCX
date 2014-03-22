@@ -2,10 +2,31 @@
 
 #include <chrono>
 
-
 namespace CX {
+
+	template <typename T> class CX_Time_t;
+
+	typedef CX_Time_t<std::ratio<3600, 1> > CX_Hours;
+	typedef CX_Time_t<std::ratio<60, 1> > CX_Minutes;
+	typedef CX_Time_t<std::ratio<1, 1> > CX_Seconds;
+	typedef CX_Time_t<std::ratio<1, 1000> > CX_Millis;
+	typedef CX_Time_t<std::ratio<1, 1000000> > CX_Micros;
+	typedef CX_Time_t<std::ratio<1, 1000000000> > CX_Nanos;
+
+	namespace Private {
+		template<typename tOut, typename tIn, typename resultT>
+		inline resultT convertTimeCount(resultT countIn) {
+			return countIn * (((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
+		}
+
+		template<>
+		inline long long convertTimeCount<std::nano, std::nano, long long>(long long countIn) {
+			return countIn; // *(((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
+		}
+	}
+
 	/*! This class provides a convenient way to deal with time in various units. It has at most
-	nanosecond accuracy. The contents of any of the templated versions of CX_Time_t are stored in 
+	nanosecond accuracy. The contents of any of the templated versions of CX_Time_t are stored in
 	nanoseconds, so most conversions between time types is lossless.
 
 	\code{.cpp}
@@ -21,11 +42,11 @@ namespace CX {
 
 	//You can compare times using the standard comparison operators (==, !=, <, >, <=, >=).
 	if (CX_Minutes(60) == CX_Hours(1)) {
-		cout << "There are 60 minutes in an hour." << endl;
+	cout << "There are 60 minutes in an hour." << endl;
 	}
 
 	if (CX_Millis(12.3456) == CX_Micros(12345.6)) {
-		cout << "Time can be represented as a floating point value with sub-time-unit precision." << endl;
+	cout << "Time can be represented as a floating point value with sub-time-unit precision." << endl;
 	}
 
 	//If you want to be explicit about what time unit you want out, you can use the seconds(), millis(), etc., functions:
@@ -64,7 +85,7 @@ namespace CX {
 		};
 
 		/*! Partitions a CX_Time_t into component parts containing the number of whole time units
-		that are stored in the CX_Time_t. This is different from seconds(), millis(), etc., because 
+		that are stored in the CX_Time_t. This is different from seconds(), millis(), etc., because
 		those functions return the fractional part (e.g. 5.340 seconds) whereas this returns only
 		whole numbers (e.g. 5 seconds and 340 milliseconds).
 		*/
@@ -95,15 +116,15 @@ namespace CX {
 		{}
 
 		CX_Time_t(double t) {
-			_nanos = (long long)_convertCount<std::nano, TimeUnit, double>(t);
+			_nanos = (long long)Private::convertTimeCount<std::nano, TimeUnit, double>(t);
 		}
 
 		CX_Time_t(int t) {
-			_nanos = _convertCount<std::nano, TimeUnit, long long>(t);
+			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
 		}
 
 		CX_Time_t(long long t) {
-			_nanos = _convertCount<std::nano, TimeUnit, long long>(t);
+			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
 		}
 
 		template <typename tArg>
@@ -112,7 +133,7 @@ namespace CX {
 		}
 
 		double value(void) const {
-			return _convertCount<TimeUnit, std::nano, double>(_nanos);
+			return Private::convertTimeCount<TimeUnit, std::nano, double>(_nanos);
 		}
 
 		double hours(void) const {
@@ -141,7 +162,7 @@ namespace CX {
 		/*
 		template <typename T>
 		operator T(void) {
-			return this->value();
+		return this->value();
 		}
 		*/
 
@@ -242,15 +263,8 @@ namespace CX {
 	private:
 		long long _nanos;
 
-		template<typename tOut, typename tIn, typename resultT>
-		static resultT _convertCount(resultT countIn) {
-			return countIn * (((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
-		}
+		//template<typename tOut, typename tIn, typename resultT>	static resultT _convertCount(resultT countIn);
 
-		template<>
-		static long long _convertCount<std::nano, std::nano, long long>(long long countIn) {
-			return countIn; // *(((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
-		}
 	};
 
 	/*! If operator<< and operator>> are used to convert to/from string representation, you MUST use the same
@@ -268,11 +282,4 @@ namespace CX {
 		t = CX_Time_t<TimeUnit>(value);
 		return is;
 	}
-
-	typedef CX_Time_t<std::ratio<3600, 1> > CX_Hours;
-	typedef CX_Time_t<std::ratio<60, 1> > CX_Minutes;
-	typedef CX_Time_t<std::ratio<1, 1> > CX_Seconds;
-	typedef CX_Time_t<std::ratio<1, 1000> > CX_Millis;
-	typedef CX_Time_t<std::ratio<1, 1000000> > CX_Micros;
-	typedef CX_Time_t<std::ratio<1, 1000000000> > CX_Nanos;
 }

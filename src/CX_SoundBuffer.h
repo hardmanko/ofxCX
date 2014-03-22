@@ -5,13 +5,13 @@
 This class is a container for a sound. It can load sound files, manipulate the contents
 of the sound data, add other sounds to an existing sound at specified offsets.
 
-In order to play a CX_SoundBuffer, you use a \ref CX::CX_SoundBufferPlayer.
+In order to play a CX_SoundBuffer, you use a \ref CX::CX_SoundBufferPlayer. See the soundBuffer
+tutorial for an introduction on how to use this class along with a CX_SoundBufferPlayer.
 
-See the soundBuffer example for an introduction on how to use this class along with
-a CX_SoundBufferPlayer.
+To record from a microphone to a CX_SoundBuffer, you use a CX::CX_SoundBufferRecorder.
 
 \note Nearly all functions of this class should be considered \ref blockingCode. Many of
-the operations take quite a while to complete because they are performed on
+the operations can take quite a while to complete because they are performed on
 a potentially large vector of sound samples.
 
 \ingroup sound

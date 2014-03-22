@@ -9,7 +9,7 @@ an overview of how CX works is to look at the \ref examplesAndTutorials.
 
 To learn about presenting visual stimuli, go to the \ref video page or see the renderingTest or animation examples or the N-Back or change detection example experiments.
 
-To learn about auditory stimuli, go to the \ref sound page or see the soundObject or modularSynth examples.
+To learn about playing, recording, and generating sounds, go to the \ref sound page or see the soundObject or modularSynth examples.
 
 To learn how to store and output experiment data, see the \ref dataManagement page or see the dataFrame example.
 
@@ -66,7 +66,7 @@ directory (see \ref installationInstructions) in subfolders with names beginning
 
 Tutorials:
 -----------------------
-+ soundObject - Tutorial covering a number of things that you can do with CX_SoundObjects, including loading sound 
++ soundBuffer - Tutorial covering a number of things that you can do with CX_SoundObjects, including loading sound 
 files, combining sounds, and playing them.
 + modularSynth - This tutorial demonstrates a number of ways to generate auditory stimuli using the synthesizer modules in the CX::Synth namespace.
 + dataFrame - Tutorial covering use of CX_DataFrame, which is a container for storing data that is collected in an experiment.

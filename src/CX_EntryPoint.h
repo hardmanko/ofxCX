@@ -1,8 +1,7 @@
-#ifndef _CX_ENTRY_POINT_H_
-#define _CX_ENTRY_POINT_H_
+#pragma once
 
 /*! \namespace CX
-This namespace contains all of the symbols related to CX.
+This namespace contains all of the symbols related to CX, except for \ref runExperiment().
 */
 
 /*! \namespace CX::Instances
@@ -92,5 +91,3 @@ void runExperiment (void) {
 \ingroup entryPoint
 */
 void runExperiment (void);
-
-#endif //_CX_ENTRY_POINT_H_
