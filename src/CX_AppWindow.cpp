@@ -211,7 +211,7 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 	glfwWindowHint(GLFW_SAMPLES,samples);
 
 	if(glVersionMinor!=-1 && glVersionMajor!=-1){
-		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); //We don't want the window to be resizable by the user.
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersionMajor);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);

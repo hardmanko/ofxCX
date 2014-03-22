@@ -48,6 +48,9 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 		//glfwSwapInterval(0); //Testing
 	}
 
+	if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
+		_config.display->setVSync(true, true);
+	}
 
 	if (_config.preSwapCPUHoggingDuration > (_config.display->getFramePeriod() - CX_Millis(1))) {
 		_config.preSwapCPUHoggingDuration = _config.display->getFramePeriod() - CX_Millis(1);
@@ -509,8 +512,8 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 
 				
 				//Hog for a whlie. This is stupid, honestly. If the user has constructed a proper loop, this function will be checked every ~10 us.
-				while (Clock.now() < _slides.at(_currentSlide).intended.startTime)
-					;
+				//while (Clock.now() < _slides.at(_currentSlide).intended.startTime)
+				//	;
 
 				CX_Millis swappingStart = Clock.now();
 				_config.display->BLOCKING_swapFrontAndBackBuffers();

@@ -25,6 +25,8 @@ namespace CX {
 		CX_Millis estimateNextSwapTime(void);
 		uint64_t getFrameNumber (void);
 
+		void setGLFinishAfterSwap(bool finishAfterSwap);
+
 	private:
 
 		bool _lockMutex (void);
@@ -37,6 +39,8 @@ namespace CX {
 		uint64_t _frameCountOnLastCheck;
 
 		int _swapsBeforeStop;
+
+		bool _glFinishAfterSwap;
 	};
 
 }

@@ -9,7 +9,8 @@ CX_Display::CX_Display (void) :
 	_framePeriod(0),
 	_swapThread(NULL),
 	_manualBufferSwaps(0),
-	_frameNumberOnLastSwapCheck(0)
+	_frameNumberOnLastSwapCheck(0),
+	_softVSyncWithGLFinish(false)
 {
 }
 
@@ -163,27 +164,7 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint des
 	_blitFboToBackBuffer(fbo, source, dest);
 }
 
-/* Draw the given ofFbo to the back buffer at the coordinates given by rect.
-\param fbo The fbo to draw.
-\param coordinates The rectangle in which to place the fbo within the back buffer. The x and y components specify location. 
-The width and height components specify the output width and height of the fbo. If these are
-not equal to the width and height of the fbo, the fbo will be scaled up or down to fit the
-width and height.
 
-void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofRectangle destination) {
-	//beginDrawingToBackBuffer();
-
-	//ofSetColor( 255 );
-	//fbo.draw( rect.x, rect.y, rect.width, rect.height );
-
-	//endDrawingToBackBuffer();
-
-	//rect.width = min(fbo.getWidth(), this->getResolution().width);
-	//rect.height = min(fbo.getHeight(), this->getResolution().height);
-
-	_blitFboToBackBuffer(fbo, source, destination);
-}
-*/
 
 void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates) {
 
@@ -255,8 +236,13 @@ blocks until the swap occurs. It does nothing if isAutomaticallySwapping() == tr
 \see \ref blockingCode */
 void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 	if (!isAutomaticallySwapping()) {
-		glfwSwapBuffers( CX::Private::glfwContext );
+		glfwSwapBuffers(CX::Private::glfwContext);
+		if (_softVSyncWithGLFinish) {
+			glFinish();
+		}
 		_manualBufferSwaps++;
+	} else {
+		Instances::Log.error("CX_Display") << "Manual buffer swap requested with BLOCKING_swapFrontAndBackBuffers while auto swapping mode was in use.";
 	}
 }
 
@@ -362,8 +348,29 @@ void CX_Display::setFullScreen (bool fullScreen) {
 	ofSetFullscreen( fullScreen );
 
 	if (fullScreen) {
+		setVSync(true);
+	} else {
+		setVSync(false); //No v-sync in windowed mode
+	}
+}
+
+/*! Sets whether the display is using V-Sync to control frame presentation.
+Without V-Sync, vertical tearing can occur.
+\param vSync If true, V-Sync will be used.
+\param useSoftwareVSync If true, instead of trying to use hardware to control V-Sync,
+the display will attempt to do V-Sync in software.
+\note This may not work, depending on your video card settings. Modern video card
+drivers allow you to contorl whether V-Sync is used for all applications or not,
+or whether the applications are allowed to choose from themselves whether to use
+V-Sync. If your drivers are not properly adjusted, this function may have no effect.
+Even when the drivers appear to be properly adjusted, it is still possible that this
+function will have no effect.
+*/
+void CX_Display::setVSync(bool vSync, bool useSoftwareVSync) {
+	_softVSyncWithGLFinish = useSoftwareVSync;
+	if (vSync) {
 		glfwSwapInterval(1);
 	} else {
-		glfwSwapInterval(0); //No v-sync in windowed mode
+		glfwSwapInterval(0);
 	}
 }

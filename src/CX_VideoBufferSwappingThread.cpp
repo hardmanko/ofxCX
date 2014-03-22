@@ -8,7 +8,8 @@ CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread (void) :
 	_frameCount(0),
 	_frameCountOnLastCheck(0),
 	_isLocked(false),
-	_swapsBeforeStop(-1)
+	_swapsBeforeStop(-1),
+	_glFinishAfterSwap(true)
 {
 }
 
@@ -16,6 +17,10 @@ void CX_VideoBufferSwappingThread::threadedFunction (void) {
 	while (isThreadRunning()) {
 		
 		glfwSwapBuffers( CX::Private::glfwContext );
+		if (lock() && _glFinishAfterSwap) {
+			unlock();
+			glFinish();
+		}
 
 		CX_Millis swapTime = CX::Instances::Clock.now();
 
@@ -128,6 +133,13 @@ uint64_t CX_VideoBufferSwappingThread::getFrameNumber (void) {
 		_unlockMutex();
 	}
 	return frameNumber;
+}
+
+void CX_VideoBufferSwappingThread::setGLFinishAfterSwap(bool finishAfterSwap) {
+	if (_lockMutex()) {
+		_glFinishAfterSwap = finishAfterSwap;
+		_unlockMutex();
+	}
 }
 
 

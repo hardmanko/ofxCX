@@ -1,16 +1,14 @@
 #include "CX_EntryPoint.h"
 
-using namespace CX::Synth; //All of the modules for the modular synth are in this namespace.
-
 /*! \file
 This example shows some of the ways in which a modular synthesizer can be constructed using
 modules provided in the CX::Synth namespace.
 */
 
+using namespace CX::Synth; //All of the modules for the modular synth are in this namespace.
 
 void drawInformation(void);
 void modularSynthInternals(void);
-
 
 void runExperiment(void) {
 

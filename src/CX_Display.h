@@ -40,6 +40,7 @@ namespace CX {
 		void setup (void);
 
 		void setFullScreen (bool fullScreen);
+		void setVSync(bool vSync, bool useSoftwareVSync = false);
 		
 		void copyFboToBackBuffer (ofFbo &fbo);
 		void copyFboToBackBuffer (ofFbo &fbo, ofPoint destination);
@@ -79,6 +80,8 @@ namespace CX {
 
 		uint64_t _manualBufferSwaps;
 		uint64_t _frameNumberOnLastSwapCheck;
+
+		bool _softVSyncWithGLFinish;
 
 		void _blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates);
 

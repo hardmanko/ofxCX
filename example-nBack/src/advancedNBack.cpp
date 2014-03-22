@@ -98,13 +98,18 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
+	CX_WindowConfiguration_t winConfig;
+	winConfig.desiredRenderer = ofPtr<ofGLProgrammableRenderer>();
+	relaunchWindow(winConfig);
+
 	//Display.setFullScreen(true);
+	Display.setVSync(true, true);
 
 	//ofSetLogLevel("ofTrueTypeFont", ofLogLevel::OF_LOG_VERBOSE);
 	Log.level(CX_LogLevel::LOG_ALL, "ofTrueTypeFont");
 
 	ofSleepMillis(1000);
-	glfwSwapInterval(1);
+	//glfwSwapInterval(1);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
@@ -114,8 +119,8 @@ void runExperiment(void) {
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
-	letterFont.loadFont("impact.ttf", 26);
-	instructionFont.loadFont("impact.ttf", 12);
+	letterFont.loadFont(OF_TTF_SANS, 26);
+	instructionFont.loadFont(OF_TTF_SANS, 12);
 
 	Log.flush();
 
@@ -123,7 +128,7 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
+	config.swappingMode = CX_SlidePresenter::Configuration::SINGLE_CORE_THREADED_SWAPS;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = true;
 
