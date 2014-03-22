@@ -76,7 +76,7 @@ void runExperiment(void) {
 	use a sound object, including saving them to a file. */
 	SoundBufferOutput soOut;
 
-	m >> soOut; //Without changin the other connections, route m into soOut, disconnecting it from output.
+	m >> soOut; //Without changing the other connections, route m into soOut, disconnecting it from output.
 	soOut.setup(44100); //Use the same sample rate as the sound stream
 
 	env.attack(); //Start by priming the evelope so that sound comes out of it.

@@ -23,7 +23,7 @@ Known issues
 ------------
 This is alpha software, don't expect it to be bug-free.
 
-Loading sound files with CX_SoundObject uses FMOD, which is not available on Linux.
+Loading sound files with CX_SoundBuffer uses FMOD, which is not available on Linux.
 
 Version history
 ------------

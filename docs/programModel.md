@@ -11,7 +11,7 @@ Internals/Attributions
 ----------------------
 CX is not a monolithic entity. It is based on a huge amount of open source software written by many different authors over the years. Clearly, CX is based on openFrameworks, but openFramworks itself is based on many different libraries. Window handling, which involves creating a window that can be rendered to and receiving user input events from the operating system, is managed by GLFW (http://www.glfw.org/). The actual rendering is visual stimuli is done using OpenGL (http://www.opengl.org/), which is wrapped by several openFrameworks abstractions (e.g. ofGLProgrammableRenderer at a lower level, e.g. ofPath at the level at which a typical user would use).
 
-Audio is processed in different ways depending on the type of audio player used. CX_SoundObjectPlayer wraps CX_SoundStream which wraps RtAudio (https://www.music.mcgill.ca/~gary/rtaudio/). If you are using ofSoundPlayer, depending on your operating system it might eventually use FMOD on Windows or OSx (http://www.fmod.org/; although the openFrameworks maintainers are considering moving away from FMOD) or OpenAL on Linux (http://en.wikipedia.org/wiki/OpenAL). However, you should check that this information is correct.
+Audio is processed in different ways depending on the type of audio player used. CX_SoundBufferPlayer and CX_SoundBufferRecorder wrap CX_SoundStream which wraps RtAudio (https://www.music.mcgill.ca/~gary/rtaudio/). If you are using ofSoundPlayer, depending on your operating system it might eventually use FMOD on Windows or OSx (http://www.fmod.org/; although the openFrameworks maintainers are considering moving away from FMOD) or OpenAL on Linux (http://en.wikipedia.org/wiki/OpenAL). However, you should check that this information is correct.
 
 There are other libraries that are a part of openFrameworks that I am not as familiar with, including Poco (http://pocoproject.org/), which provides a variety of very useful utility functions and networking, FreeType (http://www.freetype.org/) which does font rendering, and many others. 
 
@@ -23,7 +23,7 @@ Although CX is technically an addon to openFrameworks, there are a number of way
 
 Generally, drawing visual stimuli using oF classes and functions is fully supported. See the renderingTest example to see a pletora of ways to put things on the screen.
 
-Audio output using ofSoundPlayer is supported, although no timing guarantees are made. Prefer CX::CX_SoundObjectPlayer.
+Audio output using ofSoundPlayer is supported, although no timing guarantees are made. Prefer CX::CX_SoundBufferPlayer.
 
 The input events (e.g. ofEvents().mousePressed) technically work, but with two serious limitations. 1) The events only fire when CX_InputManager::pollEvents() is called (which internally calls glfwPollEvents() to actually kick off the events firing). 2) The standard oF events do not have timestamps, which limits their usefulness.
 
@@ -33,7 +33,7 @@ ofGetLastFrameTime() is replaced by CX_Display::getLastSwapTime()
 
 The following functions do nothing: ofGetFrameRate(), ofSetFrameRate(), ofGetTargetFrameRate()
 
-A variety of behaviors related to ofBaseApp do not function because CX is not based on a class derived from ofBaseApp nor does it use ofRunApp() to begin the program. For example, a standard oF app class should have steup(), update(), and draw() functions that will be called by oF during program execution. CX has a different model that is not as object-oriented (at least at some levels).
+A variety of behaviors related to ofBaseApp do not function because CX is not based on a class derived from ofBaseApp nor does it use ofRunApp() to begin the program. For example, a standard oF app class should have steup(), update(), and draw() functions that will be called by oF during program execution. CX has a different model that does not force object-orientation (at least at some levels).
 
 
 Pre-experiment Setup
@@ -62,6 +62,6 @@ Although the kinds of error introduced into response time data can often be deal
 
 Although it is nice to be made aware of errors when they occur, it is better to not have the errors happen in the first place. For this reason, stimulus presentation in CX is designed around avoiding errors. For visual stimuli, the \ref CX::CX_SlidePresenter "CX_SlidePresenter" provides a very easy-to-use way to present visual stimuli. Because the interface is so simple, user error is minimized. The backend code of the CX_SlidePresenter is designed to minimize the potential for timing errors by carefully tracking the passage of time, monitor refreshes, and timing of stimulus rendering. 
 
-On the audio front, CX provides the \ref CX::CX_SoundObjectPlayer "CX_SoundObjectPlayer", which plays CX::CX_SoundObject "CX_SoundObjects". If several sounds are to be presented in a time-locked sequence, playing the sounds individually at their intended onset time can result in unequal startup delays for each sound, but if all of the sounds are combined together into a single audio buffer this possibility is eliminated. CX_SoundObjects are designed to make combining multiple sound stimuli together easy, which helps to prevent timing errors that could have otherwise occurred between sounds. CX also includes \ref CX::CX_SoundStream "CX_SoundStream", which provides a method for directly acessing and manipulating the contents of audio buffers that are received from or sent to audio hardware.
+On the audio front, CX provides the \ref CX::CX_SoundBufferPlayer "CX_SoundBufferPlayer", which plays CX::CX_SoundBuffer "CX_SoundBuffers". If several sounds are to be presented in a time-locked sequence, playing the sounds individually at their intended onset time can result in unequal startup delays for each sound, but if all of the sounds are combined together into a single audio buffer this possibility is eliminated. CX_SoundObjects are designed to make combining multiple sound stimuli together easy, which helps to prevent timing errors that could have otherwise occurred between sounds. CX also includes \ref CX::CX_SoundStream "CX_SoundStream", which provides a method for directly acessing and manipulating the contents of audio buffers that are received from or sent to audio hardware.
 
 
