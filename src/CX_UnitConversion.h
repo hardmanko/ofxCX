@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ofPoint.h"
 
 #include "CX_Utilities.h"

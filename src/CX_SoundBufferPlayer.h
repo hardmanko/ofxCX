@@ -1,15 +1,14 @@
-#ifndef _CX_SOUND_OBJECT_PLAYER_H_
-#define _CX_SOUND_OBJECT_PLAYER_H_
+#pragma once
 
 /*! \defgroup sound Sound */
 
-/*! \class CX::CX_SoundObjectPlayer
-This class is used for playing CX_SoundObjects. See the soundObject example for an example of how to use this class.
+/*! \class CX::CX_SoundBufferPlayer
+This class is used for playing CX_SoundBuffers. See the soundBuffer tutorial for an example of how to use this class.
 
 \ingroup sound
 */
 
-#include "CX_SoundObject.h"
+#include "CX_SoundBuffer.h"
 #include "CX_SoundStream.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
@@ -18,15 +17,17 @@ This class is used for playing CX_SoundObjects. See the soundObject example for 
 
 namespace CX  {
 
-	typedef CX_SoundStream::Configuration CX_SoundObjectPlayerConfiguration_t; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
+	
 
-	class CX_SoundObjectPlayer {
+	class CX_SoundBufferPlayer {
 	public:
 
-		CX_SoundObjectPlayer (void);
-		~CX_SoundObjectPlayer (void);
+		typedef CX_SoundStream::Configuration Configuration; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
 
-		bool setup (CX_SoundObjectPlayerConfiguration_t config);
+		CX_SoundBufferPlayer (void);
+		~CX_SoundBufferPlayer (void);
+
+		bool setup(Configuration config);
 
 		bool play (void);
 		bool startPlayingAt(CX_Millis experimentTime, CX_Millis offset);
@@ -38,10 +39,10 @@ namespace CX  {
 		//! Check if the sound is queued to play.
 		bool isQueuedToStart(void) { return _playbackStartQueued; }; 
 
-		//! Returns the configuration used for this CX_SoundObjectPlayer.
-		CX_SoundObjectPlayerConfiguration_t getConfiguration (void) { return (CX_SoundObjectPlayerConfiguration_t)_soundStream.getConfiguration(); };
+		//! Returns the configuration used for this CX_SoundBufferPlayer.
+		Configuration getConfiguration(void) { return (Configuration)_soundStream.getConfiguration(); };
 		
-		bool BLOCKING_setSound (CX_SoundObject *sound);
+		bool BLOCKING_setSoundBuffer (CX_SoundBuffer *sound);
 
 		void setTime(CX_Millis time);
 
@@ -50,7 +51,7 @@ namespace CX  {
 		bool _outputEventHandler (CX_SoundStream::OutputEventArgs &outputData);
 
 		CX_SoundStream _soundStream;
-		CX_SoundObject *_soundObject;
+		CX_SoundBuffer *_buffer;
 
 		bool _playing;
 
@@ -61,5 +62,3 @@ namespace CX  {
 	};
 
 }
-
-#endif //_CX_SOUND_OBJECT_PLAYER_H_

@@ -74,7 +74,7 @@ void runExperiment(void) {
 	/* You can route the output from a modular synth into a SoundObjectOutput,
 	which allows you to use the sounds you make in that same way that you would
 	use a sound object, including saving them to a file. */
-	SoundObjectOutput soOut;
+	SoundBufferOutput soOut;
 
 	m >> soOut; //Without changin the other connections, route m into soOut, disconnecting it from output.
 	soOut.setup(44100); //Use the same sample rate as the sound stream

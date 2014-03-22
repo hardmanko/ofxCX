@@ -24,8 +24,8 @@ This namespace contains instances of some classes that are fundamental to the fu
 #include "CX_TrialController.h" 
 #include "CX_TrialController_Class.h"
 
-#include "CX_SoundObjectPlayer.h"
-#include "CX_SoundObjectRecorder.h"
+#include "CX_SoundBufferPlayer.h"
+#include "CX_SoundBufferRecorder.h"
 #include "CX_ModularSynth.h"
 
 #include "CX_DataFrame.h"

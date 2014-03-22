@@ -688,28 +688,28 @@ void Splitter::_outputAssignedEvent(ModuleBase* out) {
 
 
 //////////////////////
-// SoundObjectInput //
+// SoundBufferInput //
 //////////////////////
-SoundObjectInput::SoundObjectInput(void) :
+SoundBufferInput::SoundBufferInput(void) :
 	_currentSample(0),
-	_so(nullptr)
+	_sb(nullptr)
 {}
 
-//Set the sound object to use and also the channel to use (you can only use one channel: strictly monophonic).
-void SoundObjectInput::setSoundObject(CX::CX_SoundObject *so, unsigned int channel) {
-	_so = so;
+//Set the CX_SoundBuffer to use and also the channel to use (you can only use one channel: strictly monophonic).
+void SoundBufferInput::setSoundBuffer(CX::CX_SoundBuffer *sb, unsigned int channel) {
+	_sb = sb;
 	_channel = channel;
 
-	_data->sampleRate = _so->getSampleRate();
+	_data->sampleRate = _sb->getSampleRate();
 	_data->initialized = true;
 	_dataSet(nullptr);
 }
 
-/*! Set the playback time of the current CX_SoundObject. When playback starts, it will start from this time.
+/*! Set the playback time of the current CX_SoundBuffer. When playback starts, it will start from this time.
 If playback is in progress, playback will skip to the selected time. */
-void SoundObjectInput::setTime(CX::CX_Millis t) {
-	if (_so != nullptr) {
-		unsigned int startSample = _so->getChannelCount() * (unsigned int)(_so->getSampleRate() * t.seconds());
+void SoundBufferInput::setTime(CX::CX_Millis t) {
+	if (_sb != nullptr) {
+		unsigned int startSample = _sb->getChannelCount() * (unsigned int)(_sb->getSampleRate() * t.seconds());
 		_currentSample = startSample + _channel;
 	} else {
 		_currentSample = _channel;
@@ -717,26 +717,26 @@ void SoundObjectInput::setTime(CX::CX_Millis t) {
 
 }
 
-double SoundObjectInput::getNextSample(void) {
+double SoundBufferInput::getNextSample(void) {
 	if (!this->canPlay()) {
 		return 0;
 	}
-	double value = _so->getRawDataReference().at(_currentSample);
-	_currentSample += _so->getChannelCount();
+	double value = _sb->getRawDataReference().at(_currentSample);
+	_currentSample += _sb->getChannelCount();
 	return value;
 }
 
-/*! Checks to see if the sound object that is associated with this SoundObjectInput is able to play. 
-It is unable to play if CX_SoundObject::isReadyToPlay() is false or if the whole sound has been played.*/
-bool SoundObjectInput::canPlay(void) {
-	return (_so != nullptr) && (_so->isReadyToPlay()) && (_currentSample < _so->getTotalSampleCount());
+/*! Checks to see if the CX_SoundBuffer that is associated with this SoundBufferInput is able to play. 
+It is unable to play if CX_SoundBuffer::isReadyToPlay() is false or if the whole sound has been played.*/
+bool SoundBufferInput::canPlay(void) {
+	return (_sb != nullptr) && (_sb->isReadyToPlay()) && (_currentSample < _sb->getTotalSampleCount());
 }
 
 
 ///////////////////////
-// SoundObjectOutput //
+// SoundBufferOutput //
 ///////////////////////
-void SoundObjectOutput::setup(float sampleRate) {
+void SoundBufferOutput::setup(float sampleRate) {
 	_data->sampleRate = sampleRate;
 	_data->initialized = true;
 	_dataSet(nullptr);
@@ -744,7 +744,7 @@ void SoundObjectOutput::setup(float sampleRate) {
 
 //Sample t seconds of data at the given sample rate (see setup). The result is stored in so.
 //If so is not empty, the data is appended.
-void SoundObjectOutput::sampleData(CX::CX_Millis t) {
+void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 
 	if (_inputs.size() == 0) {
 		return; //Warn? Is it better to sample zeros than it is to sample nothing?
@@ -768,9 +768,9 @@ void SoundObjectOutput::sampleData(CX::CX_Millis t) {
 }
 
 /////////////////////////////
-// StereoSoundObjectOutput //
+// StereoSoundBufferOutput //
 /////////////////////////////
-void StereoSoundObjectOutput::setup(float sampleRate) {
+void StereoSoundBufferOutput::setup(float sampleRate) {
 	ModuleControlData_t data;
 	data.sampleRate = sampleRate;
 	data.initialized = true;
@@ -778,7 +778,7 @@ void StereoSoundObjectOutput::setup(float sampleRate) {
 	right.setData(data);
 }
 
-void StereoSoundObjectOutput::sampleData(CX::CX_Millis t) {
+void StereoSoundBufferOutput::sampleData(CX::CX_Millis t) {
 	unsigned int samplesToTake = ceil(left.getData().sampleRate * t.seconds());
 
 	unsigned int channels = 2; //Stereo

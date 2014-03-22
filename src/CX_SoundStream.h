@@ -11,7 +11,7 @@
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 
-#define CX_SOUND_STREAM_USE_DEFAULT_DEVICE -1
+#define CX_SOUND_STREAM_USE_DEFAULT_DEVICE (-1)
 
 namespace CX {
 

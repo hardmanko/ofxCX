@@ -1,15 +1,14 @@
-#ifndef _CX_SOUND_OBJECT_H_
-#define _CX_SOUND_OBJECT_H_
+#pragma once
 
-/*! \class CX::CX_SoundObject
+/*! \class CX::CX_SoundBuffer
 
 This class is a container for a sound. It can load sound files, manipulate the contents
 of the sound data, add other sounds to an existing sound at specified offsets.
 
-In order to play a CX_SoundObject, you use a \ref CX::CX_SoundObjectPlayer.
+In order to play a CX_SoundBuffer, you use a \ref CX::CX_SoundBufferPlayer.
 
-See the soundObject example for an introduction on how to use this class along with
-a CX_SoundObjectPlayer.
+See the soundBuffer example for an introduction on how to use this class along with
+a CX_SoundBufferPlayer.
 
 \note Nearly all functions of this class should be considered \ref blockingCode. Many of
 the operations take quite a while to complete because they are performed on
@@ -27,19 +26,19 @@ a potentially large vector of sound samples.
 
 namespace CX {
 
-	class CX_SoundObject {
+	class CX_SoundBuffer {
 	public:
 
 		bool loadFile (std::string fileName);
 		bool addSound(std::string fileName, CX_Millis timeOffset); //I'm really not sure I want to have this.
-		bool addSound(CX_SoundObject so, CX_Millis timeOffset);
+		bool addSound(CX_SoundBuffer so, CX_Millis timeOffset);
 		bool setFromVector(const std::vector<float>& data, int channels, float sampleRate);
 
 		void clear(void);
 
 		bool isReadyToPlay (void);
 
-		/*! Checks to see if sound data has been successfully loaded into this CX_SoundObject from a file. */
+		/*! Checks to see if sound data has been successfully loaded into this CX_SoundBuffer from a file. */
 		bool isLoadedSuccessfully (void) { return _successfullyLoaded; }; 
 
 		bool applyGain (float gain, int channel = -1);
@@ -60,23 +59,23 @@ namespace CX {
 
 		void multiplySpeed (float speedMultiplier);
 		void resample (float newSampleRate);
-		//! Returns the sample rate of the sound data stored in this CX_SoundObject.
+		//! Returns the sample rate of the sound data stored in this CX_SoundBuffer.
 		float getSampleRate (void) { return _soundSampleRate; };
 
 		bool setChannelCount (int channels);
 
-		//! Returns the number of channels in the sound data stored in this CX_SoundObject.
+		//! Returns the number of channels in the sound data stored in this CX_SoundBuffer.
 		int getChannelCount (void) { return _soundChannels; };
 		
-		/*! This function returns the total number of samples in the sound data held by the CX_SoundObject, 
+		/*! This function returns the total number of samples in the sound data held by the CX_SoundBuffer, 
 		which is equal to the number of sample frames times the number of channels. */
 		uint64_t getTotalSampleCount (void) { return _soundData.size(); };
 
-		/*! This function returns the number of sample frames in the sound data held by the CX_SoundObject,
+		/*! This function returns the number of sample frames in the sound data held by the CX_SoundBuffer,
 		which is equal to the total number of samples divided by the number of channels. */
 		uint64_t getSampleFrameCount (void) { return _soundData.size()/_soundChannels; };
 
-		/*! This function returns a reference to the raw data underlying the sound object.
+		/*! This function returns a reference to the raw data underlying the CX_SoundBuffer.
 		\return A reference to the data. Modify at your own risk! */
 		std::vector<float>& getRawDataReference (void) { return _soundData; };
 
@@ -101,6 +100,3 @@ namespace CX {
 	};
 
 }
-
-#endif //_CX_SOUND_OBJECT_H_
-

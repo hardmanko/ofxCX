@@ -1,21 +1,21 @@
 #pragma once
 
 #include "CX_SoundStream.h"
-#include "CX_SoundObject.h"
+#include "CX_SoundBuffer.h"
 
 namespace CX {
 	/*! This class is used for recording audio data from, e.g., a microphone. The recorded data is
-	stored in a CX_SoundObject for further use. 
+	stored in a CX_SoundBuffer for further use. 
 	
 	\code{.cpp}
-	CX_SoundObjectRecorder recorder;
+	CX_SoundBufferRecorder recorder;
 
-	CX_SoundObjectRecorder::Configuration recorderConfig;
+	CX_SoundBufferRecorder::Configuration recorderConfig;
 	recorderConfig.inputChannels = 1; //You will probably need to configure more than just this
 	recorder.setup(recorderConfig);
 
-	CX_SoundObject recording;
-	recorder.setSoundObject(&recording); //Associate a CX_SoundObject with the recorder so that it can be recorded to.
+	CX_SoundBuffer recording;
+	recorder.setSoundBuffer(&recording); //Associate a CX_SoundBuffer with the recorder so that it can be recorded to.
 
 	//Record for 5 seconds
 	recorder.startRecording();
@@ -27,17 +27,17 @@ namespace CX {
 	\endcode
 	\ingroup sound
 	*/
-	class CX_SoundObjectRecorder {
+	class CX_SoundBufferRecorder {
 	public:
 		typedef CX_SoundStream::Configuration Configuration; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
 
-		CX_SoundObjectRecorder(void);
-		~CX_SoundObjectRecorder(void);
+		CX_SoundBufferRecorder(void);
+		~CX_SoundBufferRecorder(void);
 
-		bool setup(CX_SoundObjectRecorder::Configuration& config);
+		bool setup(CX_SoundBufferRecorder::Configuration& config);
 
-		void setSoundObject(CX_SoundObject* so);
-		CX_SoundObject* getSoundObject(void);
+		void setSoundBuffer(CX_SoundBuffer* so);
+		CX_SoundBuffer* getSoundBuffer(void);
 
 		void startRecording(bool clearExistingData = false);
 		void stopRecording(void);
@@ -47,7 +47,7 @@ namespace CX {
 
 		bool _recording;
 
-		CX_SoundObject *_soundObject;
+		CX_SoundBuffer *_buffer;
 		CX_SoundStream _soundStream;
 	};
 

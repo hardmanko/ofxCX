@@ -2,7 +2,7 @@
 
 #include "ofEvents.h"
 #include "CX_SoundStream.h"
-#include "CX_SoundObject.h"
+#include "CX_SoundBuffer.h"
 
 #include "CX_RandomNumberGenerator.h" //For white noise generator
 #include "CX_Time_t.h"
@@ -538,23 +538,23 @@ namespace Synth {
 		int _fedOutputs;
 	};
 
-	/*! This class allows you to use a CX_SoundObject as the input for the modular synth.
-	It is strictly monophonic, so when you associate a CX_SoundObject with this class,
+	/*! This class allows you to use a CX_SoundBuffer as the input for the modular synth.
+	It is strictly monophonic, so when you associate a CX_SoundBuffer with this class,
 	you must pick one channel of the sound to use.
 	\ingroup modSynth
 	*/
-	class SoundObjectInput : public ModuleBase {
+	class SoundBufferInput : public ModuleBase {
 	public:
-		SoundObjectInput(void);
+		SoundBufferInput(void);
 
 		double getNextSample(void) override;
 
-		void setSoundObject(CX::CX_SoundObject *so, unsigned int channel = 0);
+		void setSoundBuffer(CX::CX_SoundBuffer *sb, unsigned int channel = 0);
 		void setTime(CX_Millis t);
 		bool canPlay(void);
 
 	private:
-		CX::CX_SoundObject *_so;
+		CX::CX_SoundBuffer *_sb;
 		unsigned int _channel;
 		unsigned int _currentSample;
 
@@ -583,7 +583,7 @@ namespace Synth {
 	};
 
 	/*! This class provides a method of playing the output of a modular synth using a CX_SoundStream.
-	In order to use this class, you need to configure a CX_SoundStream for use. See the soundObject
+	In order to use this class, you need to configure a CX_SoundStream for use. See the soundBuffer
 	example and the CX::CX_SoundStream class for more information.
 
 	\code{.cpp}
@@ -613,7 +613,7 @@ namespace Synth {
 
 	/*! This class is much like StreamOutput except in stereo. This captures stereo audio by taking the 
 	output of different streams of data into either the `left` or `right` modules that this class has. 
-	See the example code for CX::Synth::StereoSoundObjectOutput and CX::Synth::StreamOutput for ideas
+	See the example code for CX::Synth::StereoSoundBufferOutput and CX::Synth::StreamOutput for ideas
 	on how to use this class.
 	\ingroup modSynth
 	*/
@@ -628,27 +628,27 @@ namespace Synth {
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
 	};
 
-	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundObject
+	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer
 	for later use.
 	\ingroup modSynth
 	*/
-	class SoundObjectOutput : public ModuleBase {
+	class SoundBufferOutput : public ModuleBase {
 	public:
 		void setup(float sampleRate);
 		void sampleData(CX_Millis t);
 
-		CX::CX_SoundObject so;
+		CX::CX_SoundBuffer so;
 	private:
 		int _maxOutputs(void) override { return 0; };
 	};
 
 
-	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundObject
+	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer
 	for later use. This captures stereo audio by taking the output of different streams of data into either the 
 	`left` or `right` modules that this class has. See the example code.
 
 	\code{.cpp}
-	StereoSoundObjectOutput sout;
+	StereoSoundBufferOutput sout;
 	sout.setup(44100);
 
 	Splitter sp;
@@ -667,7 +667,7 @@ namespace Synth {
 	\endcode
 
 	\ingroup modSynth */
-	class StereoSoundObjectOutput {
+	class StereoSoundBufferOutput {
 	public:
 		void setup(float sampleRate);
 		void sampleData(CX_Millis t);
@@ -675,7 +675,7 @@ namespace Synth {
 		GenericOutput left;
 		GenericOutput right;
 	
-		CX::CX_SoundObject so;
+		CX::CX_SoundBuffer so;
 	};
 
 
