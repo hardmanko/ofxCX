@@ -1,5 +1,4 @@
-#ifndef _CX_DATA_FRAME_CELL_H_
-#define _CX_DATA_FRAME_CELL_H_
+#pragma once
 
 #include <vector>
 #include <string>
@@ -270,5 +269,3 @@ template<> std::string CX_DataFrameCell::to(void) const;
 std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);
 
 } //namespace CX
-
-#endif //_CX_DATA_FRAME_CELL_H_

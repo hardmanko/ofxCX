@@ -368,9 +368,12 @@ function will have no effect.
 */
 void CX_Display::setVSync(bool vSync, bool useSoftwareVSync) {
 	_softVSyncWithGLFinish = useSoftwareVSync;
+	
 	if (vSync) {
 		glfwSwapInterval(1);
 	} else {
 		glfwSwapInterval(0);
 	}
+
+	_swapThread->setGLFinishAfterSwap(useSoftwareVSync);
 }

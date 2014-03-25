@@ -16,12 +16,22 @@ namespace CX {
 	namespace Private {
 		template<typename tOut, typename tIn, typename resultT>
 		inline resultT convertTimeCount(resultT countIn) {
-			return countIn * (((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
+			return countIn * (((double)tIn::num * tOut::den) / ((double)tIn::den * tOut::num));
 		}
 
 		template<>
 		inline long long convertTimeCount<std::nano, std::nano, long long>(long long countIn) {
-			return countIn; // *(((double)tIn::num * tOut::den) / (tIn::den * tOut::num));
+			return countIn;
+		}
+
+		template<>
+		inline long long convertTimeCount<std::micro, std::micro, long long>(long long countIn) {
+			return countIn;
+		}
+
+		template<>
+		inline long long convertTimeCount<std::milli, std::milli, long long>(long long countIn) {
+			return countIn;
 		}
 	}
 
@@ -262,8 +272,6 @@ namespace CX {
 
 	private:
 		long long _nanos;
-
-		//template<typename tOut, typename tIn, typename resultT>	static resultT _convertCount(resultT countIn);
 
 	};
 

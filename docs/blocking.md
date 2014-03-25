@@ -33,4 +33,5 @@ for a response and constantly polling for user input. For example, the following
 \code{.cpp}
 while(!Input.pollEvents())
 	;
+//Process the inputs.
 \endcode

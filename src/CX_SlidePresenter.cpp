@@ -9,8 +9,7 @@ CX_SlidePresenter::CX_SlidePresenter(void) :
 	_presentingSlides(false),
 	_synchronizing(false),
 	_currentSlide(0),
-	_lastFramebufferActive(false),
-	_awaitingFenceSync(false)
+	_lastFramebufferActive(false)
 {}
 
 /*! Set up the slide presenter with the given CX_Display as the display.
@@ -44,17 +43,13 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 			" unnoticed";
 	}
 
-	if ((_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) || (_config.swappingMode == Configuration::SINGLE_CORE_THREADED_SWAPS)) {
-		//glfwSwapInterval(0); //Testing
-	}
-
 	if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
 		_config.display->setVSync(true, true);
 	}
 
 	if (_config.preSwapCPUHoggingDuration > (_config.display->getFramePeriod() - CX_Millis(1))) {
 		_config.preSwapCPUHoggingDuration = _config.display->getFramePeriod() - CX_Millis(1);
-		Log.warning("CX_SlidePresenter") << "preSwapCPUHoggingDuration was set to a value greater than a frame period minus one millisecond." <<
+		Log.warning("CX_SlidePresenter") << "preSwapCPUHoggingDuration was set to a value greater than the frame period minus one millisecond." <<
 			" It has been set to the frame period minus one millisecond.";
 	}
 
@@ -75,7 +70,7 @@ After this function is called, calls to update() will advance the state of the s
 be logged, true otherwise.
 */
 bool CX_SlidePresenter::startSlidePresentation (void) {
-	if (_config.display == NULL) {
+	if (_config.display == nullptr) {
 		Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid monitor attached. Use setMonitor() to attach a monitor to the SlidePresenter";
 		return false;
 	}
@@ -95,7 +90,9 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 			_config.display->BLOCKING_setAutoSwapping(true);
 			Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
 		}
-	} else if (_config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS || _config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS) {
+	} 
+
+	if (_config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
 		if (_config.display->isAutomaticallySwapping()) {
 			_config.display->BLOCKING_setAutoSwapping(false);
 			Log.notice("CX_SlidePresenter") << "Display was set to automatically swap at start of presentation. It was set to not swap automatically in order for the slide presentation to occur.";
@@ -143,7 +140,10 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 void CX_SlidePresenter::stopSlidePresentation(void) {
 	_synchronizing = false;
 	_presentingSlides = false;
-	_awaitingFenceSync = false;
+
+	for (unsigned int i = 0; i < _slideInfo.size(); i++) {
+		_slideInfo[i].awaitingFenceSync = false;
+	}
 	//_currentSlide = 0; //It can be useful to know what slide you were on when you stopped
 }
 
@@ -173,6 +173,7 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 	}
 
 	_slides.push_back( CX_SlidePresenter::Slide() );
+	_slideInfo.push_back(ExtraSlideInfo());
 
 	_slides.back().slideName = slideName;
 	Log.verbose("CX_SlidePresenter") << "Allocating framebuffer...";
@@ -225,6 +226,7 @@ void CX_SlidePresenter::appendSlide (CX_SlidePresenter::Slide slide) {
 	}
 
 	_slides.push_back( slide );
+	_slideInfo.push_back(ExtraSlideInfo());
 	_slides.back().intended.frameCount = _calculateFrameCount(slide.intended.duration);
 
 	Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().slideName << ") appended. Frame count: " << _slides.back().intended.frameCount;
@@ -258,6 +260,7 @@ void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFun
 	}
 
 	_slides.push_back( CX_SlidePresenter::Slide() );
+	_slideInfo.push_back(ExtraSlideInfo());
 
 	_slides.back().drawingFunction = drawingFunction;
 	_slides.back().intended.duration = slideDuration;
@@ -408,17 +411,17 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 		s << "Index: " << i;
 		s << " Name: " << slide.slideName << endl;
 
-		s << "Measure:\tIntended\tActual" << endl;
-		s << "Start time: \t" << slide.intended.startTime << "\t" << slide.actual.startTime;
+		s << "Measure:\tIntended,\tActual" << endl;
+		s << "Start time: \t" << slide.intended.startTime << ", " << slide.actual.startTime;
 		if (slide.intended.startTime > slide.actual.startTime) {
 			s << "*";
 		}
 		s << endl;
 
-		s << "Duration:   \t" << slide.intended.duration << "\t" << slide.actual.duration << endl;
-		s << "Start frame:\t" << slide.intended.startFrame << "\t" << slide.actual.startFrame << endl;
+		s << "Duration:   \t" << slide.intended.duration << ", " << slide.actual.duration << endl;
+		s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << endl;
 
-		s << "Frame count:\t" << slide.intended.frameCount << "\t" << slide.actual.frameCount;
+		s << "Frame count:\t" << slide.intended.frameCount << ", " << slide.actual.frameCount;
 		if (slide.intended.frameCount != slide.actual.frameCount) {
 			if (i != (_slides.size() - 1)) {
 				s << "***"; //Mark the error, but not for the last slide
@@ -594,7 +597,9 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 			uint64_t currentFrameNumber = _config.display->getFrameNumber();
 
 			//Was the current frame just swapped in? If so, store information about the swap time.
-			if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) || (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)) {
+			if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) || 
+				(_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)) 
+			{
 
 				CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
 
@@ -654,7 +659,7 @@ void CX_SlidePresenter::update(void) {
 	switch (_config.swappingMode) {
 	case CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE: return _multiCoreUpdate();
 	case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();
-	case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS: return _singleCoreThreadedUpdate();
+	//case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS: return _singleCoreThreadedUpdate();
 	}
 }
 
@@ -726,7 +731,9 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 		nextSlide.intended.startTime = currentSlide.actual.startTime + currentSlide.intended.duration;
 		nextSlide.intended.startFrame = currentSlide.actual.startFrame + currentSlide.intended.frameCount;
 
-	} else if (_config.errorMode == CX_SlidePresenter::ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE) {
+	}
+	/*
+	else if (_config.errorMode == CX_SlidePresenter::ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE) {
 
 		nextSlide.intended.startTime = currentSlide.intended.startTime + currentSlide.intended.duration;
 		nextSlide.intended.startFrame = currentSlide.intended.startFrame + currentSlide.intended.frameCount;
@@ -756,6 +763,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 			}
 		}
 	}
+	*/
 }
 
 
@@ -764,33 +772,30 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 		return;
 	}
 
-	//By forcing the fence sync to complete before the slide is marked as ready to swap, you run into the potential
-	//for a late fence sync paired with an on time write to the back buffer to result in false positives for an error
-	//condition. Better a false positive than a miss, I guess.
-	if (_awaitingFenceSync) {
-		GLenum result = glClientWaitSync(_fenceSyncObject, 0, 10); //GL_SYNC_FLUSH_COMMANDS_BIT can be second parameter. Wait for 10 ns for sync.
-		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
-			if (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING) {
+	for (unsigned int i = 0; i < _slideInfo.size(); i++) {
+		if (_slideInfo[i].awaitingFenceSync) {
+			GLenum result = glClientWaitSync(_slideInfo[i].fenceSyncObject, 0, 10);
+			if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
 
-				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.now();
-				_awaitingFenceSync = false;
-				Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " copied to back buffer at " << 
-					_slides.at(_currentSlide).copyToBackBufferCompleteTime;
+				_slides.at(i).copyToBackBufferCompleteTime = CX::Instances::Clock.now();
+				_slideInfo[i].awaitingFenceSync = false;
 
-				_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::SWAP_PENDING;
-			} else {
-				_slides.at(_currentSlide).copyToBackBufferCompleteTime = CX::Instances::Clock.now();
-				_awaitingFenceSync = false;
-				Log.warning("CX_SlidePresenter") << "Slide #" << _currentSlide << 
-					" fence sync completed when active slide was not waiting for copy to back buffer. At " << 
-					_slides.at(_currentSlide).copyToBackBufferCompleteTime;
+				if (_slides[i].slideStatus == Slide::COPY_TO_BACK_BUFFER_PENDING) {
+					_slides[i].slideStatus = Slide::SWAP_PENDING;
+					Log.verbose("CX_SlidePresenter") << "Slide #" << i << " copied to back buffer at " <<
+						_slides[i].copyToBackBufferCompleteTime;
+				} else {
+					Log.warning("CX_SlidePresenter") << "Slide #" << i <<
+						" fence sync completed when active slide was not waiting for copy to back buffer. At " <<
+						_slides[i].copyToBackBufferCompleteTime;
+				}
 			}
 		}
 	}
 }
 
 void CX_SlidePresenter::_renderCurrentSlide(void) {
-	if (_slides.at(_currentSlide).drawingFunction != NULL) {
+	if (_slides.at(_currentSlide).drawingFunction != nullptr) {
 		_config.display->beginDrawingToBackBuffer();
 		_slides.at(_currentSlide).drawingFunction();
 		_config.display->endDrawingToBackBuffer();
@@ -801,12 +806,12 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started at " << Clock.now();
 
 	if (_config.useFenceSync) {
-		_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		_slideInfo.at(_currentSlide).fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 		glFlush();
-		_awaitingFenceSync = true;
+		_slideInfo.at(_currentSlide).awaitingFenceSync = true;
+
 		_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING;
 	} else {
-		_awaitingFenceSync = false;
 		_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::SWAP_PENDING;
 	}
 }

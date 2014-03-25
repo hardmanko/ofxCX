@@ -80,6 +80,7 @@ namespace CX {
 			unsigned int _columns;
 		};
 
+
 		/*! This class helps with the case where a set of V values must be sampled randomly
 		with the constraint that each block of V samples should have each value in the set.
 		For example, if you want to	present a number of trials in four different conditions, 
@@ -114,18 +115,6 @@ namespace CX {
 					_blockPosition = 0;
 					_rng->shuffleVector(&_blockIndices);
 					_blockNumber++;
-				}
-				return rval;
-			}
-
-			//This disrupts the ongoing blocks that getNextValue() was performing. It calls resetBlocks().
-			std::vector<T> getNBlocks(unsigned int blocks) {
-				std::vector<T> rval(blocks * _blockIndices.size());
-
-				resetBlocks();
-
-				for (unsigned int n = 0; n < rval.size(); n++) {
-					rval[n] = this->getNextValue();
 				}
 				return rval;
 			}

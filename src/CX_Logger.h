@@ -1,5 +1,4 @@
-#ifndef _CX_LOGGER_H_
-#define _CX_LOGGER_H_
+#pragma once
 
 #include <sstream>
 #include <iostream>
@@ -113,5 +112,3 @@ namespace CX {
 		extern CX_Logger Log;
 	}
 }
-
-#endif //_CX_LOGGER_H_

@@ -1,5 +1,4 @@
-#ifndef _CX_UTILITIES_H_
-#define _CX_UTILITIES_H_
+#pragma once
 
 #include <vector>
 #include <algorithm>
@@ -326,5 +325,3 @@ template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> v
 	}
 	return sum / (vals.size() - 1); //Sample variance has n - 1 for denominator
 }
-
-#endif //_CX_UTILITIES_H_

@@ -1,5 +1,4 @@
-#ifndef _CX_DATA_FRAME_H_
-#define _CX_DATA_FRAME_H_
+#pragma once
 
 #include <vector>
 #include <map>
@@ -165,5 +164,3 @@ private:
 };
 
 }
-
-#endif //_CX_DATA_FRAME_H_

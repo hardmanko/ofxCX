@@ -1,5 +1,4 @@
-#ifndef _CX_SOUNDSTREAM_H_
-#define _CX_SOUNDSTREAM_H_
+#pragma once
 
 #include "RtAudio.h"
 
@@ -172,5 +171,3 @@ private:
 };
 
 } //namespace CX
-
-#endif //_CX_SOUNDSTREAM_H_

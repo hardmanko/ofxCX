@@ -637,7 +637,7 @@ namespace Synth {
 		void setup(float sampleRate);
 		void sampleData(CX_Millis t);
 
-		CX::CX_SoundBuffer so;
+		CX::CX_SoundBuffer sb;
 	private:
 		int _maxOutputs(void) override { return 0; };
 	};

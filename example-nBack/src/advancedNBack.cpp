@@ -109,12 +109,11 @@ void runExperiment(void) {
 	Log.level(CX_LogLevel::LOG_ALL, "ofTrueTypeFont");
 
 	ofSleepMillis(1000);
-	//glfwSwapInterval(1);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
 
-	Display.BLOCKING_estimateFramePeriod(CX_Seconds(2));
+	Display.BLOCKING_estimateFramePeriod(CX_Seconds(1));
 	Log.notice() << "Frame period: " << Display.getFramePeriod();
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
@@ -128,11 +127,11 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::SINGLE_CORE_THREADED_SWAPS;
+	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = true;
 
-	config.preSwapCPUHoggingDuration = 2;
+	config.preSwapCPUHoggingDuration = 3;
 	config.useFenceSync = true;
 	config.waitUntilFenceSyncComplete = false;
 

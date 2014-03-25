@@ -572,7 +572,7 @@ amount(1)
 }
 
 double Multiplier::getNextSample(void) {
-	if (_inputs.front() == nullptr) {
+	if (_inputs.size() == 0) {
 		return 0;
 	}
 	amount.updateValue();
@@ -742,8 +742,8 @@ void SoundBufferOutput::setup(float sampleRate) {
 	_dataSet(nullptr);
 }
 
-//Sample t seconds of data at the given sample rate (see setup). The result is stored in so.
-//If so is not empty, the data is appended.
+//Sample t seconds of data at the given sample rate (see setup). The result is stored in sb.
+//If sb is not empty, the data is appended.
 void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 
 	if (_inputs.size() == 0) {
@@ -754,15 +754,17 @@ void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 
 	vector<float> tempData(samplesToTake);
 
+	ModuleBase* input = _inputs.front();
+
 	for (unsigned int i = 0; i < samplesToTake; i++) {
-		tempData[i] = CX::Util::clamp<float>((float)_inputs.front()->getNextSample(), -1, 1);
+		tempData[i] = CX::Util::clamp<float>((float)input->getNextSample(), -1, 1);
 	}
 
-	if (so.getTotalSampleCount() == 0) {
-		so.setFromVector(tempData, 1, _data->sampleRate);
+	if (sb.getTotalSampleCount() == 0) {
+		sb.setFromVector(tempData, 1, _data->sampleRate);
 	} else {
 		for (unsigned int i = 0; i < tempData.size(); i++) {
-			so.getRawDataReference().push_back(tempData[i]);
+			sb.getRawDataReference().push_back(tempData[i]);
 		}
 	}
 }
@@ -835,14 +837,14 @@ void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
 }
 
 void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
-
 	if (_inputs.size() == 0) {
 		return;
 	}
 
+	ModuleBase* input = _inputs.front();
+
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-		float value = CX::Util::clamp<float>(_inputs.front()->getNextSample(), -1, 1);
-		//cout << value << endl;
+		float value = CX::Util::clamp<float>(input->getNextSample(), -1, 1);
 		for (int ch = 0; ch < d.outputChannels; ch++) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
 		}

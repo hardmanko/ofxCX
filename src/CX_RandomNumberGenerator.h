@@ -63,6 +63,9 @@ namespace CX {
 		template <typename T> std::vector<T> sample(unsigned int count, const std::vector<T> &source, bool withReplacement);
 		std::vector<int> sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
+
+		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& valueSet, unsigned int blocksToSample);
+
 		template <typename T> T randomExclusive(const std::vector<T> &values, const T& exclude);
 		template <typename T> T randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
 
@@ -202,6 +205,30 @@ namespace CX {
 		for (unsigned int i = 0; i < count; i++) {
 			rval[i] = dist(_mersenneTwister);
 		}
+		return rval;
+	}
+
+	/*!	This function helps with the case where a set of V values must be sampled randomly
+	with the constraint that each block of V samples should have each value in the set.
+	For example, if you want to	present a number of trials in four different conditions,
+	where the conditions are intermixed, but you want to observe all four trial types
+	in every block of four trials, you would use this function.
+	\param valueSet The set of values to sample from.
+	\param blocksToSample The number of blocks to sample.
+	\return A vector with valueSize.size() * blocksToSample elements.
+	*/
+	template <typename T>
+	std::vector<T> CX_RandomNumberGenerator::sampleBlocks(const std::vector<T>& valueSet, unsigned int blocksToSample) {
+		std::vector<T> rval(valueSet.size() * blocksToSample);
+		std::vector<unsigned int> indices = CX::Util::intVector<unsigned int>(0, valueSet.size() - 1);
+
+		for (unsigned int b = 0; b < blocksToSample; b++) {
+			this->shuffleVector(&indices);
+			for (unsigned int i = 0; i < indices.size(); i++) {
+				rval[(b * indices.size()) + i] = valueSet[indices[i]];
+			}
+		}
+
 		return rval;
 	}
 

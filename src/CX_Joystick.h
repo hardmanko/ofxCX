@@ -1,5 +1,4 @@
-#ifndef _CX_JOYSTICK_H_
-#define _CX_JOYSTICK_H_
+#pragma once
 
 #include <queue>
 #include <string>
@@ -66,5 +65,3 @@ namespace CX {
 	std::istream& operator>> (std::istream& is, CX_Joystick::Event& ev);
 
 }
-
-#endif //_CX_JOYSTICK_H_

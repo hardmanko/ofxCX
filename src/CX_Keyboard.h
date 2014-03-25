@@ -1,5 +1,4 @@
-#ifndef _CX_KEYBOARD_H_
-#define _CX_KEYBOARD_H_
+#pragma once
 
 #include <queue>
 #include <set>
@@ -85,5 +84,3 @@ namespace CX {
 	std::ostream& operator<< (std::ostream& os, const CX_Keyboard::Event& ev);
 	std::istream& operator>> (std::istream& is, CX_Keyboard::Event& ev);
 }
-
-#endif //_CX_KEYBOARD_H_

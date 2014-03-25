@@ -1,7 +1,4 @@
-
-
-#ifndef _CX_TRIAL_CONTROLLER_H_
-#define _CX_TRIAL_CONTROLLER_H_
+#pragma once
 
 #include <vector>
 #include <functional>
@@ -66,5 +63,3 @@ namespace CX {
 
 	}
 }
-
-#endif //_CX_TRIAL_CONTROLLER_H_

@@ -1,5 +1,4 @@
-#ifndef _CX_INPUT_MANAGER_H_
-#define _CX_INPUT_MANAGER_H_
+#pragma once
 
 #include <set>
 #include <queue>
@@ -55,5 +54,3 @@ namespace CX {
 		bool _usingJoystick;
 	};
 }
-
-#endif //_CX_INPUT_MANAGER_H_

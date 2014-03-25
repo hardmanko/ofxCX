@@ -1,5 +1,4 @@
-#ifndef _CX_SLIDE_PRESENTER_H_
-#define _CX_SLIDE_PRESENTER_H_
+#pragma once
 
 #include <stdint.h>
 #include <functional>
@@ -53,19 +52,22 @@ namespace CX {
 		Timing errors are probably almost exclusively related to one slide being presented for too long.
 
 		The PROPAGATE_DELAYS setting causes the slide presenter to handle these errors by moving the start time
-		of all future stimuli back by the number of extra frame that the erroneous slide used. This makes the
+		of all future stimuli back by the amount of extra time (or frames) used to the erroneous slide. This makes the
 		durations of all future stimuli correct, so that there is only an error in the duration of one slide.
 
-		An alternative option is to try to keep the onsets of all slides as constant as possible
-		relative to each other. This means that if one slide is presented for an extra frame, the next slide
-		will be presented for one frame less than it should have been. If one slide is presented for several
-		extra frames (this should almost never happen), the next slide may be skipped altogether. However,
-		this mode (FIX_TIMING_FROM_FIRST_SLIDE) does not completely work currently so it should not be used.
+		Other alternatizes are being developed.
 		*/
 		enum class ErrorMode {
-			PROPAGATE_DELAYS, //!< This mode handles timing errors by changing the onset times of future stimuli so
+			PROPAGATE_DELAYS //!< This mode handles timing errors by changing the onset times of future stimuli so
 			//that their durations are kept the same.
-			FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
+			//FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
+			/*
+			An alternative option is to try to keep the onsets of all slides as constant as possible
+			relative to each other. This means that if one slide is presented for an extra frame, the next slide
+			will be presented for one frame less than it should have been. If one slide is presented for several
+			extra frames (this should almost never happen), the next slide may be skipped altogether. However,
+			this mode (FIX_TIMING_FROM_FIRST_SLIDE) does not completely work currently so it should not be used.
+			*/
 		};
 
 		/*! The final slide function takes a reference to a struct of this type. */
@@ -117,7 +119,7 @@ namespace CX {
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
 				deallocateCompletedSlides(true),
 				swappingMode(SwappingMode::MULTI_CORE),
-				preSwapCPUHoggingDuration(5),
+				preSwapCPUHoggingDuration(3),
 				useFenceSync(true),
 				waitUntilFenceSyncComplete(false)
 			{}
@@ -133,16 +135,17 @@ namespace CX {
 			CX_Millis preSwapCPUHoggingDuration;
 
 			/*! The method used by the slide presenter to swap stimuli that have been drawn to the back buffer to the front buffer.
-			MULTI_CORE is the best method, but only really works properly if you have at least a 2 core CPU.
-			In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
-			drawn to the back buffer. After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers
-			is queued by launching a thread.
-			In the SINGLE_CORE_BLOCKING_SWAPS mode, everything is the same as SINGLE_CORE_THREADED_SWAPS, but instead of launching a thread to
-			swap the buffers, this mode blocks in the main thread while waiting for the swap.
+			MULTI_CORE is the best method, but only really works properly if you have at least a 2 core CPU. It uses a secondary thread to
+			constantly swap the front and back buffers, which allows each frame to be counted. This results in really good synchronization
+			between the copies if data to the back buffer and the swaps of the front and back buffers.
+			In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately 
+			drawn to the back buffer. After the correct amount of time minus preSwapCPUHoggingDuration, the buffers are swapped. The main
+			problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" in the main thread while waiting 
+			for the swap.
 			*/
 			enum SwappingMode {
 				SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
-				SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED
+				//SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately drawn to the back buffer.After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers is queued by launching a thread.
 				MULTI_CORE //could be FRAME_COUNTED_THREADED
 			} swappingMode;
 
@@ -153,7 +156,7 @@ namespace CX {
 			/*! \brief If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until
 			there is confirmation that the slide has been fully copied into the back buffer. This prevents vertical tearing, but
 			may cause slides to be swapped in late if the copy confirmation is delayed but the copy has actually occurred.
-			Does nothing if swappingMode == MULTI_CORE. */
+			Does nothing if swappingMode is MULTI_CORE. */
 			bool waitUntilFenceSyncComplete;
 		};
 
@@ -232,6 +235,15 @@ namespace CX {
 
 	protected:
 
+		struct ExtraSlideInfo {
+			ExtraSlideInfo(void) :
+				awaitingFenceSync(false)
+			{}
+
+			bool awaitingFenceSync;
+			GLsync fenceSyncObject;
+		};
+
 		CX_SlidePresenter::Configuration _config;
 
 		CX_Millis _hoggingStartTime;
@@ -240,6 +252,7 @@ namespace CX {
 		bool _synchronizing;
 		unsigned int _currentSlide;
 		std::vector<CX_SlidePresenter::Slide> _slides;
+		std::vector<ExtraSlideInfo> _slideInfo;
 
 		bool _lastFramebufferActive;
 
@@ -253,8 +266,6 @@ namespace CX {
 
 		bool _useFenceSync;
 		void _waitSyncCheck(void);
-		bool _awaitingFenceSync;
-		GLsync _fenceSyncObject;
 
 		void _finishPreviousSlide(void);
 		void _handleFinalSlide(void);
@@ -262,5 +273,3 @@ namespace CX {
 
 	};
 }
-
-#endif //_CX_SLIDE_PRESENTER_H_
