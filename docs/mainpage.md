@@ -2,21 +2,9 @@ Main Page                         {#mainpage}
 =========
 
 ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
-is designed to be used used for creating psychology experiments.
-
-The most well-organized way to access the documentation is go to the \ref modulesPage page. The best way to get
-an overview of how CX works is to look at the \ref examplesAndTutorials.
-
-To learn about presenting visual stimuli, go to the \ref video page or see the renderingTest or animation examples or the N-Back or change detection example experiments.
-
-To learn about playing, recording, and generating sounds, go to the \ref sound page or see the soundObject or modularSynth examples.
-
-To learn how to store and output experiment data, see the \ref dataManagement page or see the dataFrame example.
-
-To learn about random number generation, see the \ref randomNumberGeneration page.
-
-To learn about how CX logs errors and other runtime information, see the \ref errorLogging page.
-
+is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
+is a very good option for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
+free and open source, distributed under the MIT license.
 
 \section installationInstructions Installation
 In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
@@ -43,7 +31,6 @@ exist at this point. You can create them.
 5. This step depends on your compiler, but you'll need to tell it to use the example source file that you copied in step 4a
 when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
 6. Compile and run the project.
-
 
 
 \section yourFirstExperiment Getting Started
@@ -88,7 +75,19 @@ Misc.:
 of pixel buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
 (ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace.
 
+Topics
+===========
 
+The best way to get an overview of how CX works is to look at the \ref examplesAndTutorials.
+
++ To learn about presenting visual stimuli, go to the \ref video page or see the renderingTest or animation examples or the N-Back or change detection example experiments.
++ To learn about playing, recording, and generating sounds, go to the \ref sound page or see the soundObject or modularSynth examples.
++ To learn how to store and output experiment data, see the \ref dataManagement page or see the dataFrame example.
++ To learn about random number generation, see the \ref randomNumberGeneration page.
++ To learn about how CX logs errors and other runtime information, see the \ref errorLogging page.
++ To learn about the 
+
+You can look at the \ref modulesPage page to see the other modules that CX has.
 
 \page modulesPage Modules
 

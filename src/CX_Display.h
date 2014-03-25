@@ -39,6 +39,7 @@ namespace CX {
 		void setup (void);
 
 		void setFullScreen (bool fullScreen);
+		bool isFullscreen(void);
 		void setVSync(bool vSync, bool useSoftwareVSync = false);
 		
 		void copyFboToBackBuffer (ofFbo &fbo);

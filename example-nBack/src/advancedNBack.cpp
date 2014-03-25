@@ -143,8 +143,8 @@ void runExperiment(void) {
 
 
 	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
-	//We'll always use framebuffers for this because it isn't timing-critical. The SlidePresenter
-	//is flexible about whether any given slide is drawn using the framebuffer or with a function.
+	//We'll always use framebuffers for this because it isn't timing-critical. You can use a
+	//mixture of framebuffers and drawing functions with a slide presenter.
 	for (int i = 3; i > 0; i--) {
 		SlidePresenter.beginDrawingNextSlide(1000, "fixation");
 		ofBackground(backgroundColor);
@@ -186,8 +186,10 @@ void runExperiment(void) {
 		startMinusCopySum += slides[i].actual.startTime - slides[i].copyToBackBufferCompleteTime;
 	}
 	Log.notice() << "Average difference between back buffer copy completion and slide start: " << startMinusCopySum / slides.size();
-
-	//Display.setFullScreen(false);
+	
+	if (Display.isFullscreen()) {
+		Display.setFullScreen(false);
+	}
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);

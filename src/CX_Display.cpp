@@ -354,6 +354,11 @@ void CX_Display::setFullScreen (bool fullScreen) {
 	}
 }
 
+/*! \brief Returns true if the display is in full screen mode. */
+bool CX_Display::isFullscreen(void) {
+	return (CX::Private::window->getWindowMode() == OF_FULLSCREEN);
+}
+
 /*! Sets whether the display is using V-Sync to control frame presentation.
 Without V-Sync, vertical tearing can occur.
 \param vSync If true, V-Sync will be used.
