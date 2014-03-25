@@ -54,36 +54,9 @@ int getGLVersionInt(void) {
 	return version;
 }
 
-/*
-int CX::Private::getGLSLVersion(void) {
-	static int glslVersion = [](void) -> int {
-		int glv = getGLVersionInt();
-
-		if (glv >= 330) {
-			return glv;
-		} else if (glv < 200) {
-			return -1; //No version exists
-		}
-
-		switch (glv) {
-		case 200: return 110;
-		case 210: return 120;
-		case 300: return 130;
-		case 310: return 140;
-		case 320: return 150;
-		default: return -1;
-		}
-
-		return -1;
-
-	}();
-
-	return glslVersion;
-}
-*/
 
 CX::Private::CX_GLVersion CX::Private::getGLSLVersionFromGLVersion(CX::Private::CX_GLVersion glVersion) {
-	if (glVersion.major >= 3 && glVersion.minor >= 3) {
+	if (glVersionAtLeast(3,2,0)) {
 		return glVersion;
 	} else if (glVersion.major < 2) {
 		return CX_GLVersion(0, 0, 0); //No version exists
@@ -120,7 +93,7 @@ bool CX::Private::glVersionAtLeast(int desiredMajor, int desiredMinor, int desir
 	return glCompareVersions(actual, desired) >= 0;
 }
 
-//Returns 1 of a > b, 0 if b == a, or -1 if a < b
+//Returns 1 if a > b, 0 if b == a, or -1 if a < b
 int CX::Private::glCompareVersions(CX_GLVersion a, CX_GLVersion b) {
 	if (a.major > b.major) {
 		return 1;

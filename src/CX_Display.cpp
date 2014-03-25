@@ -200,9 +200,8 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 		break;
 	}
 
-	
 	glDrawBuffer(GL_BACK);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_BACK);
@@ -213,8 +212,6 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 /*! Prepares a rendering context for using drawing functions. Must be paired with
 a call to endDrawingToBackBuffer(). */
 void CX_Display::beginDrawingToBackBuffer (void) {
-	//_renderer = ofGetGLProgrammableRenderer();
-
 	if(_renderer){
 		_renderer->startRender();
 	}
@@ -228,7 +225,7 @@ void CX_Display::endDrawingToBackBuffer (void) {
 	if(_renderer){
 		_renderer->finishRender();
 	}
-	glFlush();
+	//glFlush();
 }
 
 /*! This function queues up a swap of the front and back buffers then
@@ -239,6 +236,10 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 		glfwSwapBuffers(CX::Private::glfwContext);
 		if (_softVSyncWithGLFinish) {
 			glFinish();
+			//GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+			//glFlush();
+			//glWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
+			//BLOCKING_waitForOpenGL();
 		}
 		_manualBufferSwaps++;
 	} else {
@@ -345,13 +346,15 @@ the resolution may not be the same as the resolution of display in windowed mode
 versa.
 */
 void CX_Display::setFullScreen (bool fullScreen) {
-	ofSetFullscreen( fullScreen );
-
+	//ofSetFullscreen( fullScreen );
+	Private::window->setFullscreen(fullScreen);
+	/*
 	if (fullScreen) {
 		setVSync(true);
 	} else {
 		setVSync(false); //No v-sync in windowed mode
 	}
+	*/
 }
 
 /*! \brief Returns true if the display is in full screen mode. */
@@ -372,13 +375,14 @@ Even when the drivers appear to be properly adjusted, it is still possible that 
 function will have no effect.
 */
 void CX_Display::setVSync(bool vSync, bool useSoftwareVSync) {
-	_softVSyncWithGLFinish = useSoftwareVSync;
 	
 	if (vSync) {
 		glfwSwapInterval(1);
 	} else {
 		glfwSwapInterval(0);
 	}
-
+	
+	_softVSyncWithGLFinish = useSoftwareVSync;
 	_swapThread->setGLFinishAfterSwap(useSoftwareVSync);
+
 }

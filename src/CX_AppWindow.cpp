@@ -216,7 +216,7 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersionMajor);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);
 
-		if (glVersionMajor >= 3 && glVersionMinor >= 2) {
+		if (glVersionMajor > 3 || (glVersionMajor == 3 && glVersionMinor >= 2)) {
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE); //GLFW_OPENGL_COMPAT_PROFILE, GLFW_OPENGL_CORE_PROFILE
 		} else {
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
@@ -275,7 +275,7 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 	glfwMakeContextCurrent(windowP);
 
 
-	setVerticalSync(false);
+	//setVerticalSync(false);
 
 //	glfwEnable( windowP, GLFW_KEY_REPEAT );
 

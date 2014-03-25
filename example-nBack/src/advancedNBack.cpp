@@ -75,6 +75,7 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex);
 
 void drawStimulus(string letter, bool showInstructions);
 void drawBlank(void);
+void drawFixationSlide(int remainingTime);
 
 void generateTrials(int numberOfTrials);
 
@@ -98,17 +99,17 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
-	CX_WindowConfiguration_t winConfig;
-	winConfig.desiredRenderer = ofPtr<ofGLProgrammableRenderer>();
-	relaunchWindow(winConfig);
+	//CX_WindowConfiguration_t winConfig;
+	//winConfig.desiredRenderer = ofPtr<ofGLProgrammableRenderer>();
+	//relaunchWindow(winConfig);
 
-	//Display.setFullScreen(true);
-	Display.setVSync(true, true);
+	Display.setFullScreen(false);
+	Display.setVSync(true, false);
 
 	//ofSetLogLevel("ofTrueTypeFont", ofLogLevel::OF_LOG_VERBOSE);
 	Log.level(CX_LogLevel::LOG_ALL, "ofTrueTypeFont");
 
-	ofSleepMillis(1000);
+	Clock.sleep(1000);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
@@ -129,9 +130,9 @@ void runExperiment(void) {
 	config.display = &Display;
 	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
 	config.finalSlideCallback = &finalSlideFunction;
-	config.deallocateCompletedSlides = true;
+	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
 
-	config.preSwapCPUHoggingDuration = 3;
+	config.preSwapCPUHoggingDuration = 5;
 	config.useFenceSync = true;
 	config.waitUntilFenceSyncComplete = false;
 
@@ -146,15 +147,14 @@ void runExperiment(void) {
 	//We'll always use framebuffers for this because it isn't timing-critical. You can use a
 	//mixture of framebuffers and drawing functions with a slide presenter.
 	for (int i = 3; i > 0; i--) {
-		SlidePresenter.beginDrawingNextSlide(1000, "fixation");
-		ofBackground(backgroundColor);
-		ofSetColor(textColor);
-		stringstream s;
-		s << nBack << "-back task" << endl;
-		s << keyReminderInstructions << endl;
-		s << "Starting in " << i;
-
-		Draw::centeredString(Display.getCenterOfDisplay(), s.str(), letterFont);
+		if (useFramebuffersForStimuli) {
+			SlidePresenter.beginDrawingNextSlide(1000, "fixation");
+			drawFixationSlide(i);
+		} else {
+			//std::bind sort of "bakes in" the value of i to drawFixationSlide, and the resulting function
+			//takes no arguments, so it can be given to the slide presenter as a drawing function.
+			SlidePresenter.appendSlideFunction( std::bind(drawFixationSlide, i), 1000, "fixation" );
+		}
 	}
 
 	for (unsigned int i = 0; i <= nBack; i++) {
@@ -305,6 +305,9 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 	//an instance of the object as though it were a function.
 	sp.appendSlideFunction(stimulusFunctors[trialIndex], stimulusPresentationDuration, "stimulus");
 
+	//You can also accomplish the same thing using std::bind:
+	//sp.appendSlideFunction( std::bind( drawStimulus, df(trialIndex, "letter").toString(), trialIndex >= nBack ), stimulusPresentationDuration, "stimulus" );
+
 	sp.appendSlideFunction(drawBlank, interStimulusInterval, "blank");
 
 	CX_Millis appendingDuration = Clock.now() - startTime;
@@ -323,4 +326,15 @@ void drawStimulus(string letter, bool showInstructions) {
 
 void drawBlank(void) {
 	ofBackground(255);
-};
+}
+
+void drawFixationSlide (int remainingTime) {
+	ofBackground(backgroundColor);
+	ofSetColor(textColor);
+	stringstream s;
+	s << nBack << "-back task" << endl;
+	s << keyReminderInstructions << endl;
+	s << "Starting in " << remainingTime << " seconds";
+
+	Draw::centeredString(Display.getCenterOfDisplay(), s.str(), letterFont);
+}

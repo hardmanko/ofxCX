@@ -17,10 +17,10 @@ void CX_VideoBufferSwappingThread::threadedFunction (void) {
 	while (isThreadRunning()) {
 		
 		glfwSwapBuffers( CX::Private::glfwContext );
-		if (lock() && _glFinishAfterSwap) {
-			unlock();
+		//if (lock() && _glFinishAfterSwap) {
+		//	unlock();
 			glFinish();
-		}
+		//}
 
 		CX_Millis swapTime = CX::Instances::Clock.now();
 

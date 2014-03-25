@@ -69,7 +69,7 @@ void CX::relaunchWindow(CX_WindowConfiguration_t config) {
 
 	if (config.desiredRenderer) {
 		if (config.desiredRenderer->getType() == ofGLProgrammableRenderer::TYPE) {
-			if (tempGLVersion.major >= 3 && tempGLVersion.minor >= 2) {
+			if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3,2,0)) == 1) {
 				ofSetCurrentRenderer(config.desiredRenderer, true);
 			} else {
 				CX::Instances::Log.warning() << "Desired renderer could not be used: The required OpenGL version is not available. Falling back on ofGLRenderer.";
@@ -79,15 +79,15 @@ void CX::relaunchWindow(CX_WindowConfiguration_t config) {
 			ofSetCurrentRenderer(config.desiredRenderer, true);
 		}
 	} else {
-		/*
+		
 		//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
-		if (glver.major >= 3 && glver.minor >= 2) {
-		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
+		if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3,2,0)) == 1) {
+			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
 		} else {
-		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 		}
-		*/
-		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+		
+		//ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 	}
 
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(Private::window), config.width, config.height, config.mode);

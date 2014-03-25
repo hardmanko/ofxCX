@@ -44,7 +44,7 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	}
 
 	if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
-		_config.display->setVSync(true, true);
+		//_config.display->setVSync(true, false);
 	}
 
 	if (_config.preSwapCPUHoggingDuration > (_config.display->getFramePeriod() - CX_Millis(1))) {
@@ -116,9 +116,9 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
 
-		//_config.display->hasSwappedSinceLastCheck();
+		_config.display->hasSwappedSinceLastCheck();
 
-		
+		/*
 		int requiredSwaps = 3;
 		CX_Millis startTime = Clock.now();
 		while (requiredSwaps) {
@@ -130,6 +130,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 				startTime = swapTime;
 			}
 		}
+		*/
 		
 	}
 
@@ -727,10 +728,20 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 	CX_SlidePresenter::Slide &currentSlide = _slides.at(_currentSlide);
 	CX_SlidePresenter::Slide &nextSlide = _slides.at(_currentSlide + 1);
 
-	if (_config.errorMode == CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS) {
-		nextSlide.intended.startTime = currentSlide.actual.startTime + currentSlide.intended.duration;
-		nextSlide.intended.startFrame = currentSlide.actual.startFrame + currentSlide.intended.frameCount;
-
+	if (_config.errorMode == ErrorMode::DO_NOTHING) {
+		//Always use intended values, never actual.
+		nextSlide.intended.startTime = currentSlide.intended.startTime + currentSlide.intended.duration;
+		nextSlide.intended.startFrame = currentSlide.intended.startFrame + currentSlide.intended.frameCount;
+	} else if (_config.errorMode == ErrorMode::PROPAGATE_DELAYS) {
+		if (currentSlide.actual.startTime > currentSlide.intended.startTime) {
+			//If it went over time, use the actual time.
+			nextSlide.intended.startTime = currentSlide.actual.startTime + currentSlide.intended.duration;
+			nextSlide.intended.startFrame = currentSlide.actual.startFrame + currentSlide.intended.frameCount;
+		} else {
+			//If not over time, use intended start time
+			nextSlide.intended.startTime = currentSlide.intended.startTime + currentSlide.intended.duration;
+			nextSlide.intended.startFrame = currentSlide.intended.startFrame + currentSlide.intended.frameCount;
+		}
 	}
 	/*
 	else if (_config.errorMode == CX_SlidePresenter::ErrorMode::FIX_TIMING_FROM_FIRST_SLIDE) {

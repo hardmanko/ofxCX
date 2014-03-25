@@ -58,6 +58,7 @@ namespace CX {
 		Other alternatizes are being developed.
 		*/
 		enum class ErrorMode {
+			DO_NOTHING,
 			PROPAGATE_DELAYS //!< This mode handles timing errors by changing the onset times of future stimuli so
 			//that their durations are kept the same.
 			//FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
