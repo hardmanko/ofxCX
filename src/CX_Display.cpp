@@ -7,7 +7,8 @@ using namespace CX::Instances;
 
 CX_Display::CX_Display (void) :
 	_framePeriod(0),
-	_swapThread(NULL),
+	_framePeriodStandardDeviation(0),
+	_swapThread(nullptr),
 	_manualBufferSwaps(0),
 	_frameNumberOnLastSwapCheck(0),
 	_softVSyncWithGLFinish(false)
@@ -35,12 +36,6 @@ void CX_Display::setup (void) {
 	_swapThread = new CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
 		//what too early means) or else there will be a crash.
-
-	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast.
-	//So swap a few times to clear out the "bad" initial swaps.
-	for (int i = 0; i < 5; i++) {
-		glfwSwapBuffers(CX::Private::glfwContext);
-	}
 
 	BLOCKING_estimateFramePeriod( CX_Millis(500) );
 }
@@ -89,6 +84,10 @@ CX_Millis CX_Display::estimateNextSwapTime(void) {
 /*! Gets the estimate of the frame period calculated with BLOCKING_estimateFramePeriod(). */
 CX_Millis CX_Display::getFramePeriod(void) {
 	return _framePeriod;
+}
+
+CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
+	return _framePeriodStandardDeviation;
 }
 
 /*! Check to see if the display has swapped the front and back buffers since the last call to this function.
@@ -322,6 +321,12 @@ void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 
 	vector<CX_Millis> swapTimes;
 
+	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
+	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
+	for (int i = 0; i < 3; i++) {
+		BLOCKING_swapFrontAndBackBuffers();
+	}
+
 	CX_Millis startTime = CX::Instances::Clock.now();
 	while (CX::Instances::Clock.now() - startTime < estimationInterval) {
 		BLOCKING_swapFrontAndBackBuffers();
@@ -329,11 +334,15 @@ void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 	}
 	
 	if (swapTimes.size() > 1) {
-		CX_Millis swapSum = 0;
+
+		std::vector<CX_Millis> durations(swapTimes.size() - 1);
+		
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
-			swapSum += swapTimes[i] - swapTimes[i - 1];
+			durations[i - 1] = swapTimes[i] - swapTimes[i - 1];
 		}
-		_framePeriod = swapSum / (swapTimes.size() - 1);
+		_framePeriodStandardDeviation = CX_Millis::standardDeviation(durations);
+		_framePeriod = Util::mean(durations);
+		
 	} else {
 		Log.warning("CX_Display") << "BLOCKING_estimateFramePeriod: Not enough swaps occured during the " << estimationInterval << " ms estimation interval.";
 	}
@@ -362,21 +371,21 @@ bool CX_Display::isFullscreen(void) {
 	return (CX::Private::window->getWindowMode() == OF_FULLSCREEN);
 }
 
-/*! Sets whether the display is using V-Sync to control frame presentation.
-Without V-Sync, vertical tearing can occur.
-\param vSync If true, V-Sync will be used.
-\param useSoftwareVSync If true, instead of trying to use hardware to control V-Sync,
-the display will attempt to do V-Sync in software.
+/*! Sets whether the display is using Vsync to control frame presentation.
+Without Vsync, vertical tearing can occur.
+\param useHardwareVSync If true, "hardware" Vsync will be used.
+\param useSoftwareVSync If true, instead of trying to use hardware to control Vsync,
+the display will attempt to do Vsync in software.
 \note This may not work, depending on your video card settings. Modern video card
-drivers allow you to contorl whether V-Sync is used for all applications or not,
+drivers allow you to contorl whether Vsync is used for all applications or not,
 or whether the applications are allowed to choose from themselves whether to use
-V-Sync. If your drivers are not properly adjusted, this function may have no effect.
-Even when the drivers appear to be properly adjusted, it is still possible that this
-function will have no effect.
+Vsync. If your drivers are set to force Vsync to a particular setting, this function
+is unlikely to have an effect. Even when the drivers allow applications to choose 
+a Vsync setting, it is still possible that this function will have no effect.
+\see \ref framebufferSwapping for information on what Vsync is.
 */
-void CX_Display::setVSync(bool vSync, bool useSoftwareVSync) {
-	
-	if (vSync) {
+void CX_Display::setVSync(bool useHardwareVSync, bool useSoftwareVSync) {
+	if (useHardwareVSync) {
 		glfwSwapInterval(1);
 	} else {
 		glfwSwapInterval(0);
@@ -384,5 +393,4 @@ void CX_Display::setVSync(bool vSync, bool useSoftwareVSync) {
 	
 	_softVSyncWithGLFinish = useSoftwareVSync;
 	_swapThread->setGLFinishAfterSwap(useSoftwareVSync);
-
 }

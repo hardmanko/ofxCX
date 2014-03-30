@@ -29,8 +29,7 @@ namespace CX {
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch);
 
-		
-		unsigned int getSampleCount(void); //Make private?
+		unsigned int getSampleCount(void);
 
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 
@@ -54,10 +53,10 @@ namespace CX {
 			ROUND_DOWN,
 			ROUND_TOWARD_ZERO
 		};
-
 		double round(double d, int roundingPower, CX_RoundingConfiguration c);
 
 		template <typename T> T clamp(T val, T minimum, T maximum);
+		template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
 
 		void saveFboToFile(ofFbo& fbo, std::string filename);
 
@@ -273,6 +272,18 @@ T CX::Util::clamp(T val, T minimum, T maximum) {
 	return std::min(std::max(val, minimum), maximum);
 }
 
+template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum) {
+	std::vector<T> rval(vals.size());
+	for (unsigned int i = 0; i < vals.size(); i++) {
+		rval[i] = clamp<T>(vals[i], minimum, maximum);
+	}
+	return rval;
+}
+
+/*! Finds the maximum value in a vector of values.
+\tparam T The type of data to be operated on. This type must have operator> defined.
+\param vals The vector of values.
+\return The maximum value in the vector. */
 template <typename T> T CX::Util::max(std::vector<T> vals) {
 	if (vals.size() == 0) {
 		return T();
@@ -286,7 +297,10 @@ template <typename T> T CX::Util::max(std::vector<T> vals) {
 	return maximum;
 }
 
-
+/*! Finds the minimum value in a vector of values.
+\tparam T The type of data to be operated on. This type must have operator< defined.
+\param vals The vector of values.
+\return The minimum value in the vector. */
 template <typename T> T CX::Util::min(std::vector<T> vals) {
 	if (vals.size() == 0) {
 		return T();
@@ -300,14 +314,23 @@ template <typename T> T CX::Util::min(std::vector<T> vals) {
 	return minimum;
 }
 
+/*! Calculates the mean value of a vector of values.
+\tparam T The type of data to be operated on and returned. This type must have operator+(T) and operator/(unsigned int) defined.
+\param vals The vector of values.
+\return The mean of the vector. */
 template <typename T> T CX::Util::mean(std::vector<T> vals) {
 	return mean<T, T>(vals);
 }
 
+/*! Calculates the mean value of a vector of values.
+\tparam T_OUT The type of data to be returned. This type must have operator+(T_IN) and operator/(unsigned int) defined.
+\tparam T_IN The type of data to be operated on.
+\param vals The vector of values.
+\return The mean of the vector. */
 template <typename T_OUT, typename T_IN> T_OUT CX::Util::mean(std::vector<T_IN> vals) {
 	T_OUT sum = 0;
 	for (unsigned int i = 0; i < vals.size(); i++) {
-		sum += vals[i];
+		sum = sum + vals[i];
 	}
 	return sum / vals.size();
 }
@@ -316,6 +339,11 @@ template <typename T> T CX::Util::var(std::vector<T> vals) {
 	return Util::var<T, T>(vals);
 }
 
+/*! Calculates the sample variance of a vector of values.
+\tparam T_OUT The type of data to be returned.
+\tparam T_IN The type of data to be operated on.
+\param vals The vector of values.
+\return The mean of the vector. */
 template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> vals) {
 	T_OUT m = Util::mean(vals);
 	T_OUT sum = 0;

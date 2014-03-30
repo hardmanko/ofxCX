@@ -101,10 +101,10 @@ void runExperiment(void) {
 
 	//CX_WindowConfiguration_t winConfig;
 	//winConfig.desiredRenderer = ofPtr<ofGLProgrammableRenderer>();
-	//relaunchWindow(winConfig);
+	//reopenWindow(winConfig);
 
 	Display.setFullScreen(false);
-	Display.setVSync(true, false);
+	Display.setVSync(true, true);
 
 	//ofSetLogLevel("ofTrueTypeFont", ofLogLevel::OF_LOG_VERBOSE);
 	Log.level(CX_LogLevel::LOG_ALL, "ofTrueTypeFont");
@@ -114,15 +114,19 @@ void runExperiment(void) {
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
 
-	Display.BLOCKING_estimateFramePeriod(CX_Seconds(1));
-	Log.notice() << "Frame period: " << Display.getFramePeriod();
+	//Display.BLOCKING_estimateFramePeriod(CX_Seconds(2));
+	Log.notice() << "Frame period: " << Display.getFramePeriod() << " (" << Display.getFramePeriodStandardDeviation() << ")";
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
 	letterFont.loadFont(OF_TTF_SANS, 26);
 	instructionFont.loadFont(OF_TTF_SANS, 12);
 
-	Log.flush();
+	stringstream s;
+	s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
+	keyReminderInstructions = s.str();
+
+	
 
 	generateTrials(10);
 
@@ -132,15 +136,11 @@ void runExperiment(void) {
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
 
-	config.preSwapCPUHoggingDuration = 5;
+	config.preSwapCPUHoggingDuration = 3;
 	config.useFenceSync = true;
 	config.waitUntilFenceSyncComplete = false;
 
 	SlidePresenter.setup(config);
-
-	stringstream s;
-	s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
-	keyReminderInstructions = s.str();
 
 
 	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
@@ -166,6 +166,7 @@ void runExperiment(void) {
 	}
 	trialNumber = nBack;
 
+	Log.flush();
 
 	SlidePresenter.startSlidePresentation();
 
@@ -189,6 +190,10 @@ void runExperiment(void) {
 	
 	if (Display.isFullscreen()) {
 		Display.setFullScreen(false);
+	}
+
+	if (Display.isAutomaticallySwapping()) {
+		Display.BLOCKING_setAutoSwapping(false);
 	}
 
 	Display.beginDrawingToBackBuffer();

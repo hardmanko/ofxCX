@@ -204,14 +204,14 @@ namespace CX {
 
 		/*! \brief Multiplies a CX_Time_t by a unitless value, resulting in a CX_Time_t of the same type.
 		You cannot multiply a time by another time because that would result in units of time squared. */
-		CX_Time_t<TimeUnit> operator*(const double rhs) const {
+		CX_Time_t<TimeUnit> operator*(double rhs) const {
 			double n = this->_nanos * rhs;
 			return CX_Nanos(n);
 		}
 
 		/*! \brief Multiplies a CX_Time_t by a unitless value, storing the result in the CX_Time_t.
 		You cannot multiply a time by another time because that would result in units of time squared. */
-		CX_Time_t<TimeUnit>& operator*=(const double rhs) {
+		CX_Time_t<TimeUnit>& operator*=(double rhs) {
 			this->_nanos *= rhs;
 			return *this;
 		}
@@ -268,6 +268,16 @@ namespace CX {
 			CX_Time_t<TimeUnit> t(0);
 			t._nanos = std::numeric_limits<long long>::max();
 			return t;
+		}
+
+		static CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
+			CX_Time_t<TimeUnit> m = Util::mean(vals);
+			double sum = 0;
+			for (unsigned int i = 0; i < vals.size(); i++) {
+				double dif = vals[i].value() - m.value();
+				sum += dif * dif;
+			}
+			return CX_Time_t<TimeUnit>(sqrt(sum / (vals.size() - 1))); //Sample variance has n - 1 for denominator
 		}
 
 	private:

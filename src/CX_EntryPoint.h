@@ -42,12 +42,14 @@ namespace CX {
 		extern CX_InputManager Input;
 	}
 
+	/*! This structure is used to configure windows opened with CX::reopenWindow(). */
 	struct CX_WindowConfiguration_t {
 		CX_WindowConfiguration_t(void) :
 			mode(ofWindowMode::OF_WINDOW),
 			width(800),
 			height(600),
-			multisampleSampleCount(4)
+			msaaSampleCount(8), //!< See CX::Util::getSampleCount().
+			windowTitle("CX Experiment")
 		{}
 
 		ofWindowMode mode;
@@ -55,13 +57,15 @@ namespace CX {
 		int width;
 		int height;
 
-		unsigned int multisampleSampleCount;
+		unsigned int msaaSampleCount;
 
 		ofPtr<ofBaseGLRenderer> desiredRenderer;
 		Private::CX_GLVersion desiredOpenGLVersion;
+
+		std::string windowTitle;
 	};
 
-	void relaunchWindow(CX_WindowConfiguration_t config);
+	void reopenWindow(CX_WindowConfiguration_t config);
 
 }
 

@@ -35,7 +35,6 @@ namespace CX {
 			int major;
 			int minor;
 			int release;
-
 		};
 
 		void learnOpenGLVersion(void);

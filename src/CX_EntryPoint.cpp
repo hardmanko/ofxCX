@@ -30,7 +30,7 @@ void CX::Private::setupCX(void) {
 	Util::checkOFVersion(0, 8, 0); //Check to make sure that the version of oF that is being used is supported by CX.
 
 	Private::learnOpenGLVersion(); //Should come before relaunchWindow.
-	relaunchWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
+	reopenWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
 
 	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
 		//This must happen after the window is configured because it relies on GLFW.
@@ -47,8 +47,12 @@ void CX::Private::setupCX(void) {
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
 }
 
-
-void CX::relaunchWindow(CX_WindowConfiguration_t config) {
+/*! This function opens a GLFW window that can be rendered to. If another window was already
+open by the application at the time this is called, that window will be closed. This is useful
+if you want to control some of the parameters of the window that cannot be changed after the window
+has been opened.
+*/
+void CX::reopenWindow(CX_WindowConfiguration_t config) {
 	if (CX::Private::glfwContext == glfwGetCurrentContext()) {
 		glfwDestroyWindow(CX::Private::glfwContext); //Close previous window
 	}
@@ -60,16 +64,16 @@ void CX::relaunchWindow(CX_WindowConfiguration_t config) {
 		tempGLVersion = Private::getOpenGLVersion();
 	}
 
-	Private::setSampleCount(config.multisampleSampleCount);
+	Private::setSampleCount(config.msaaSampleCount);
 
 	Private::window = ofPtr<Private::CX_AppWindow>(new Private::CX_AppWindow);
 	Private::window->setOpenGLVersion(tempGLVersion.major, tempGLVersion.minor);
-	Private::window->setNumSamples(config.multisampleSampleCount);
+	Private::window->setNumSamples(Util::getSampleCount());
 
 
 	if (config.desiredRenderer) {
 		if (config.desiredRenderer->getType() == ofGLProgrammableRenderer::TYPE) {
-			if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3,2,0)) == 1) {
+			if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3,2,0)) >= 0) {
 				ofSetCurrentRenderer(config.desiredRenderer, true);
 			} else {
 				CX::Instances::Log.warning() << "Desired renderer could not be used: The required OpenGL version is not available. Falling back on ofGLRenderer.";
@@ -81,13 +85,11 @@ void CX::relaunchWindow(CX_WindowConfiguration_t config) {
 	} else {
 		
 		//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
-		if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3,2,0)) == 1) {
+		if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3, 2, 0)) >= 0) {
 			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
 		} else {
 			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 		}
-		
-		//ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 	}
 
 	ofSetupOpenGL(ofPtr<ofAppBaseWindow>(Private::window), config.width, config.height, config.mode);
@@ -97,7 +99,7 @@ void CX::relaunchWindow(CX_WindowConfiguration_t config) {
 	Instances::Log.flush();
 
 	Private::window->initializeWindow();
-	Private::window->setWindowTitle("CX Experiment");
+	Private::window->setWindowTitle(config.windowTitle);
 
 	Private::glfwContext = glfwGetCurrentContext();
 }

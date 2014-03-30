@@ -53,14 +53,14 @@ namespace CX {
 
 		The PROPAGATE_DELAYS setting causes the slide presenter to handle these errors by moving the start time
 		of all future stimuli back by the amount of extra time (or frames) used to the erroneous slide. This makes the
-		durations of all future stimuli correct, so that there is only an error in the duration of one slide.
+		durations of all future stimuli correct, so that there is only an error in the duration of one slide. If
+		a slide's presentation start time is early, the intended start time is used (i.e. only delays, not early
+		arrivals, are propogated).
 
 		Other alternatizes are being developed.
 		*/
 		enum class ErrorMode {
-			DO_NOTHING,
-			PROPAGATE_DELAYS //!< This mode handles timing errors by changing the onset times of future stimuli so
-			//that their durations are kept the same.
+			PROPAGATE_DELAYS
 			//FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
 			/*
 			An alternative option is to try to keep the onsets of all slides as constant as possible

@@ -2,17 +2,22 @@
 
 #include "ofMain.h"
 #include "ofConstants.h"
-//#include "ofFileUtils.h"
 
 using namespace std;
 using namespace CX;
 
-static unsigned int multisamplingSampleCount = 4;
+static unsigned int multisamplingSampleCount = 8;
 
+/*! This function retrieves the MSAA (http://en.wikipedia.org/wiki/Multisample_anti-aliasing)
+sample count. The sample count can be set by calling CX::relaunchWindow() with the desired sample
+count set in the argument to relaunchWindow(). */
 unsigned int CX::Util::getSampleCount(void) {
 	return multisamplingSampleCount;
 };
 
+//This should not be used in user code to set the MSAA sample count because if this is set
+//after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK, 
+//GL_FRONT). Use CX::relaunchWindow() to set the MSAA sample count.
 void CX::Private::setSampleCount(unsigned int count) {
 	multisamplingSampleCount = count;
 }

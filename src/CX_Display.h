@@ -40,7 +40,7 @@ namespace CX {
 
 		void setFullScreen (bool fullScreen);
 		bool isFullscreen(void);
-		void setVSync(bool vSync, bool useSoftwareVSync = false);
+		void setVSync(bool useHardwareVSync, bool useSoftwareVSync);
 		
 		void copyFboToBackBuffer (ofFbo &fbo);
 		void copyFboToBackBuffer (ofFbo &fbo, ofPoint destination);
@@ -60,6 +60,7 @@ namespace CX {
 		
 		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval); //Also estimate standard deviation. Return a struct with this info?
 		CX_Millis getFramePeriod(void);
+		CX_Millis getFramePeriodStandardDeviation(void);
 		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
 
 		uint64_t getFrameNumber(void);
@@ -77,6 +78,7 @@ namespace CX {
 		CX_VideoBufferSwappingThread *_swapThread;
 
 		CX_Millis _framePeriod;
+		CX_Millis _framePeriodStandardDeviation;
 
 		uint64_t _manualBufferSwaps;
 		uint64_t _frameNumberOnLastSwapCheck;

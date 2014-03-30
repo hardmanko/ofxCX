@@ -3,9 +3,13 @@ ofxCX
 
 Introduction
 ------------
-ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that is designed to be used used for creating psychology experiments.
+ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
+is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
+is a very good option for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
+free and open source, distributed under the MIT license.
 
-The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there or generate other formats of the documentation by using Doxygen with the Doxyfile there.
+The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there or generate 
+other formats of the documentation by using Doxygen with the Doxyfile there.
 
 License
 -------
@@ -13,7 +17,9 @@ This addon is distributed under the MIT license (see license.md).
 
 Installation
 ------------
-Drop the contents of this repository into a subdirectory directory under %openFrameworksDirectory%/addons (typically addons/ofxCX). See the manual for more installation information, like how to get openFrameworks and how to use the examples for CX.
+Drop the contents of this repository into a subdirectory directory under %openFrameworksDirectory%/addons 
+(typically addons/ofxCX). See the manual for more installation information, like how to get openFrameworks 
+and how to use the examples for CX.
 
 Compatibility
 ------------

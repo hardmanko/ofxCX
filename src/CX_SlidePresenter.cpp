@@ -728,11 +728,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 	CX_SlidePresenter::Slide &currentSlide = _slides.at(_currentSlide);
 	CX_SlidePresenter::Slide &nextSlide = _slides.at(_currentSlide + 1);
 
-	if (_config.errorMode == ErrorMode::DO_NOTHING) {
-		//Always use intended values, never actual.
-		nextSlide.intended.startTime = currentSlide.intended.startTime + currentSlide.intended.duration;
-		nextSlide.intended.startFrame = currentSlide.intended.startFrame + currentSlide.intended.frameCount;
-	} else if (_config.errorMode == ErrorMode::PROPAGATE_DELAYS) {
+	if (_config.errorMode == ErrorMode::PROPAGATE_DELAYS) {
 		if (currentSlide.actual.startTime > currentSlide.intended.startTime) {
 			//If it went over time, use the actual time.
 			nextSlide.intended.startTime = currentSlide.actual.startTime + currentSlide.intended.duration;
