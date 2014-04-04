@@ -42,15 +42,29 @@ namespace CX {
 			ofVec3f rotationAxes;
 		};
 		
+		enum class LineCornerMode {
+			OUTER_POINT, //outer points
+			BEZIER_ARC, //outer points and two points
+			STRAIGHT_LINE, //two points
+			ARC //two points
+		};
+		ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCornerMode cornerMode);
+		void lines(std::vector<ofPoint> points, float lineWidth);
+		void line(ofPoint p1, ofPoint p2, float width);
+
+		void ring(ofPoint center, float radius, float width, unsigned int resolution);
+
+		void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution);
 
 		ofPath arrowToPath(float length, float headOffsets, float headSize, float lineWidth);
 
 		ofPath squircleToPath(double radius, double amount = 0.9);
 		//void squircle(ofPoint center, double radius, double rotationDeg = 0, double amount = 0.9);
 
-		ofPath starToPath(int numberOfPoints, double innerRadius, double outerRadius);
-		void star(ofPoint center, int numberOfPoints, float innerRadius, float outerRadius,
-				  ofColor lineColor, ofColor fillColor, float lineWidth = 1, float rotationDeg = 0);
+		ofPath starToPath(unsigned int numberOfPoints, float innerRadius, float outerRadius);
+		void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius,
+				  ofColor fillColor, float rotationDeg = 0);
+		std::vector<ofPoint> getStarVertices(unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg = 0);
 
 		void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
 		void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font);

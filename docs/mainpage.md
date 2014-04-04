@@ -3,8 +3,8 @@ Main Page                         {#mainpage}
 
 ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
-is a very good option for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
-free and open source, distributed under the MIT license.
+is a very good programming languange for anything requiring a high degree of timing precision. OpenFrameworks 
+and CX are both free and open source, distributed under the MIT license.
 
 \section installationInstructions Installation
 In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
@@ -12,11 +12,8 @@ On that page, you can algo find installation guides for some of the most popular
 Currently only version 0.8.0 of openFrameworks is supported by CX.
 
 Once you have installed openFrameworks, you can install CX by putting the contents of the CX repository into a subdirectory 
-under OFDIR/addons (typically OFDIR/addons/ofxCX), where OFDIR
-is where you put openFramworks when you installed it.
-
-To use CX in a project, use the openFrameworks project generator and select ofxCX as an addon. The project generator can
-be found in OFDIR/projectGenerator.
+under OFDIR/addons (typically OFDIR/addons/ofxCX), where OFDIR is where you put openFramworks when you installed it. To use CX 
+in a project, use the openFrameworks project generator and select ofxCX as an addon. The project generator can be found in OFDIR/projectGenerator.
 
 In order to use the \ref examplesAndTutorials, do the following:
 1. Use the oF project generator (OFDIR/projectGenerator/projectGeneratorSimple.exe) to create a new project that uses the ofxCX addon.
@@ -32,6 +29,11 @@ exist at this point. You can create them.
 when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
 6. Compile and run the project.
 
+\section hardwareRequirements System Requirements
+
+penFrameworks works on a wide variety of hardware and software, some of which are not supported by CX. CX works on computers with certain versions of Windows, Linux, or OSx operating systems. Windows 7 and XP are both supported.
+
+As far as hardware is concerned, the minimum requirements for CX are very low. However, if your video card is too old, you won't be able to use some types of rendering. Having a video card that supports OpenGL version 3.2 at least is good, although older ones will work. Also, a 2+ core CPU helps with some things and is generally a good idea for psychology experiments, because one core can be hogged by CX and the operating system can use the other core for other things.
 
 \section yourFirstExperiment Getting Started
 

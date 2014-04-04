@@ -17,6 +17,8 @@ ofFbo trivialFbo;
 
 #ifdef CX_RT_USE_PATH
 ofPath squirclePath;
+ofPath linePath;
+ofPath arrowPath;
 #endif
 
 #ifdef CX_RT_USE_IMAGE
@@ -38,7 +40,16 @@ float starSize = .8;
 void updateDrawings(void);
 void drawStuff (void);
 
+
+vector<ofPoint> points(6);
+
 void runExperiment(void) {
+
+	//CX::CX_WindowConfiguration_t wConfig;
+	//wConfig.desiredRenderer = ofPtr<ofGLRenderer>(new ofGLRenderer);
+	//reopenWindow(wConfig);
+
+	//VASEr::renderer::init();
 
 	Input.setup(true, true);
 
@@ -89,6 +100,37 @@ void runExperiment(void) {
 	squirclePath = Draw::squircleToPath(50);
 	squirclePath.setStrokeWidth(2);
 	squirclePath.setStrokeColor(ofColor::white);
+
+	arrowPath = Draw::arrowToPath(150, 45, 50, 10);
+	arrowPath.setStrokeColor(ofColor::red);
+	arrowPath.setStrokeWidth(0);
+	arrowPath.setFillColor(ofColor::orange);
+	arrowPath.rotate(60, ofVec3f(0, 0, 1));
+
+
+	
+	points[0].x = 200;
+	points[0].y = 200;
+	points[1].x = 300;
+	points[1].y = 150;
+	points[2].x = 210;
+	points[2].y = 230;
+	
+	points[3].x = 450;
+	points[3].y = 500;
+	
+	points[4].x = 150;
+	points[4].y = 400;
+
+	points[5].x = 200;
+	points[5].y = 200;
+
+	//std::swap(points[1], points[5]);
+	//std::swap(points[1], points[4]);
+	//std::swap(points[2], points[3]);
+
+
+	linePath = Draw::lines(points, ofColor::red, 5, Draw::LineCornerMode::STRAIGHT_LINE);
 #endif
 
 #ifdef CX_RT_USE_IMAGE
@@ -162,21 +204,34 @@ void drawStuff (void) {
 	ofBackground( 50 ); //Fill the whole image with this color
 
 	ofSetColor( 200, 100, 100 ); //Set the color of the next thing to be drawn
-	ofSetLineWidth(3); //In pixels
-	ofLine(150, 10, 180, 40);
+	//ofSetLineWidth(3); //In pixels
+	//ofLine(150, 10, 180, 40);
+	Draw::line(ofPoint(150, 10), ofPoint(180, 40), 3);
 
 	ofSetCircleResolution(6); //This sets the number of lines that will be used to draw the outer edge of the circle.
 	ofCircle( 50, 50, 20 ); //This is really a hexagon
 
 	ofSetCircleResolution(50);
-	ofNoFill(); //Don't fill basic shapes
-	ofCircle(100, 50, 20); //This is a better circle then above
-	ofFill(); //Fill them again
+	
+	Draw::ring(ofPoint(100, 50), 20, 5, 40);
+
+	vector<ofPoint> cps(4);
+	cps[0] = ofPoint(240, 80);
+	cps[1] = cps[0] + ofPoint(60, 0);
+	cps[2] = cps[1] + ofPoint(0, 60);
+	cps[3] = cps[2] + ofPoint(60, 0);
+	ofSetColor(ofColor::blue);
+	Draw::bezier(cps, 10, 20);
+
+	//ofCircle(100, 50, 20); //This is a better circle than above
+	
 
 	ofSetColor(ofColor::blue);
 	ofRect(20, 100, 60, 40);
 	ofSetColor(ofColor(0, 255, 0, 127)); //If the set the alpha channel to less than 255, you get transparency effects
+	ofNoFill(); //Don't fill basic shapes
 	ofEllipse(40, 140, 40, 70); //Drawn over the rectangle
+	ofFill(); //Fill them again
 
 	ofSetColor(ofColor::darkorange);
 	ofTriangle( 100, 100, 150, 150, 100, 150 );
@@ -249,15 +304,13 @@ void drawStuff (void) {
 #endif
 
 #ifdef CX_RT_USE_PATH
-	ofPath p = Draw::arrowToPath(150, 45, 50, 10);
-	p.setStrokeColor(ofColor::red);
-	p.setStrokeWidth(0);
-	p.setFillColor(ofColor::orange);
-	p.rotate(60, ofVec3f(0, 0, 1));
-	p.draw(650, 400);
+	arrowPath.draw(650, 400);
 
 	//The size of this star can be changed with the mouse wheel
-	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::blue, ofColor::azure, 2);
+	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::turquoise);
+
+	ofSetColor(ofColor(0, 255, 0, 127));
+	Draw::lines(points, 30);
 #endif
 
 #ifdef CX_RT_USE_TTF
