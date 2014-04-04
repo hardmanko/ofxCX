@@ -488,8 +488,6 @@ ofPath CX::Draw::lines(std::vector<ofPoint> points, ofColor color, float width, 
 			i2 = 0;
 		}
 
-
-
 		for (unsigned int j = 0; j < 2; j++) {
 			for (unsigned int k = 0; k < 2; k++) {
 
@@ -642,16 +640,70 @@ void CX::Draw::lines(std::vector<ofPoint> points, float lineWidth) {
 	ofCircle(points[points.size() - 1], d);
 }
 
+/*
+GLfloat vertices[] = {...}; // 36 of vertex coords
+...
+// activate and specify pointer to vertex array
+glEnableClientState(GL_VERTEX_ARRAY);
+glVertexPointer(3, GL_FLOAT, 0, vertices);
+
+// draw a cube
+glDrawArrays(GL_TRIANGLES, 0, 36);
+
+// deactivate vertex arrays after drawing
+glDisableClientState(GL_VERTEX_ARRAY);
+*/
+
 void CX::Draw::line(ofPoint p1, ofPoint p2, float width) {
 
 	std::vector<LineSegment> ls = getParallelLineSegments(LineSegment(p1, p2), width/2);
 
+	ofPoint points [4];
+	points[0] = ls[0].p1;
+	points[1] = ls[0].p2;
+	points[2] = ls[1].p1;
+	points[3] = ls[1].p2;
+
+	/*
+	GLfloat vertices[4 * 3];
+	vertices[0] = ls[0].p1.x;
+	vertices[1] = ls[0].p1.y;
+	vertices[2] = ls[0].p1.z;
+	vertices[3] = ls[0].p2.x;
+	vertices[4] = ls[0].p2.y;
+	vertices[5] = ls[0].p2.z;
+	vertices[6] = ls[1].p1.x;
+	vertices[7] = ls[1].p1.y;
+	vertices[8] = ls[1].p1.z;
+	vertices[9] = ls[1].p2.x;
+	vertices[10] = ls[1].p2.y;
+	vertices[11] = ls[1].p2.z;
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 0, &vertices);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	*/
+
+	/*
 	glBegin(GL_TRIANGLE_STRIP);
 		glVertex2f(ls[0].p1.x, ls[0].p1.y);
 		glVertex2f(ls[0].p2.x, ls[0].p2.y);
 		glVertex2f(ls[1].p1.x, ls[1].p1.y);
 		glVertex2f(ls[1].p2.x, ls[1].p2.y);
 	glEnd();
+	*/
+
+	ofFloatColor cols [4];
+	cols[0] = ofColor::red;
+	cols[1] = ofColor::yellow;
+	cols[2] = ofColor::green;
+	cols[3] = ofColor::blue;
+
+	ofVbo vbo;
+	vbo.setVertexData(points, 4, GL_STATIC_DRAW);
+	vbo.setColorData(cols, 4, GL_STATIC_DRAW);
+	vbo.draw(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 
@@ -682,7 +734,9 @@ void CX::Draw::ring(ofPoint center, float radius, float width, unsigned int reso
 	path.circle(center, radius);
 	path.moveTo(center + ofPoint(radius - width, 0));
 	path.circle(center, radius - width);
-	path.draw();
+	
+	ofMesh tess = path.getTessellation();
+	tess.draw(ofPolyRenderMode::OF_MESH_FILL);
 }
 
 
