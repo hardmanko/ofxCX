@@ -1,4 +1,4 @@
-#include "CX_Draw.h"
+﻿#include "CX_Draw.h"
 
 //using namespace CX::Draw;
 
@@ -19,13 +19,15 @@ ofPath CX::Draw::squircleToPath(double radius, double amount) {
 	int s1[] = { 1, 1, -1, -1 };
 	int s2[] = { 1, -1, -1, 1 };
 
+	sq.moveTo(ofPoint(s1[0] * radius, 0));
+
 	for (int i = 0; i < 4; i++) {
 		start = ofPoint(s1[i] * radius, 0);
 		p1 = ofPoint(s1[i] * radius, s2[i] * amount * radius);
 		p2 = ofPoint(s1[i] * amount * radius, s2[i] * radius);
 		end = ofPoint(0, s2[i] * radius);
 
-		sq.moveTo(start);
+		sq.lineTo(start);
 		sq.bezierTo(p1, p2, end);
 	}
 
@@ -147,17 +149,17 @@ void CX::Draw::star(ofPoint center, unsigned int numberOfPoints, float innerRadi
 
 	ofSetColor(fillColor);
 	std::vector<ofPoint> vertices = getStarVertices(numberOfPoints, innerRadius, outerRadius, rotationDeg);
+
 	for (unsigned int i = 0; i < vertices.size(); i++) {
 		vertices[i] += center;
 	}
 
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(center.x, center.y);
-	for (unsigned int i = 0; i < vertices.size(); i++) {
-		glVertex2f(vertices[i].x, vertices[i].y);
-	}
-	glEnd();
+	vertices.insert(vertices.begin(), center);
 
+	ofVbo vbo;
+	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
+
+	vbo.draw(GL_TRIANGLE_FAN, 0, vertices.size());
 }
 
 /*! Equivalent to a call to CX::Draw::centeredString(ofPoint(x, y), s, font). */
@@ -194,10 +196,12 @@ ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
 	}
 	pix.set(0, properties.minValue); //Set the single channel to 0. Already done in allocate
 
+	double waveformPositionDeg = (properties.period * fmod(properties.phase, 360.0) / 360.0);
+
 	//Get point on line tangent to "radius" of rectangle and the interecept of the line passing through that point
 	double tanRadius = sqrt(pow(pix.getWidth(), 2) + pow(pix.getHeight(), 2));
 	//Make the tanRadius be the next greatest multiple of the period
-	tanRadius = (ceil(tanRadius / properties.period) * properties.period) + (properties.period * fmod(properties.phase, 360.0) / 360.0);
+	tanRadius = (ceil(tanRadius / properties.period) * properties.period) + waveformPositionDeg;
 	ofPoint tangentPoint(tanRadius * sin(PI - theta), tanRadius * cos(PI - theta));
 	double b = tangentPoint.y - (slope * tangentPoint.x);
 
@@ -217,11 +221,11 @@ ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
 
 			double distFromA;
 			if (slope == 0) { //Special case for flat lines.
-				distFromA = p.y + (properties.period * fmod(properties.phase, 360.0) / 360.0);
+				distFromA = p.y + waveformPositionDeg;
 			} else {
 				double xa = (p.y - b) / slope;
 
-				double hyp = abs(xa - p.x);
+				double hyp = (xa - p.x); //abs
 				distFromA = hyp * sin(theta);
 			}
 
@@ -368,7 +372,6 @@ struct LineStandardCoefs {
 	float B;
 	float C;
 };
-
 
 
 //This does not find the intersection of the line segments, but the intersection of the lines defined by the two points
@@ -626,36 +629,32 @@ ofPath CX::Draw::lines(std::vector<ofPoint> points, ofColor color, float width, 
 	return path;
 }
 
-
-
-
+/*! This function draws a series of line segments to connect the given points.
+At each point, the line segments are joined with a circle, which results in overdraw.
+As a result, this function does not work well with transparency.
+\param points The points to connect with lines.
+\param lineWidth The width of the line.
+\note If the last point is the same as the first point, the final line segment 
+junction will be joined with a circle.
+*/
 void CX::Draw::lines(std::vector<ofPoint> points, float lineWidth) {
-
 	float d = lineWidth / 2;
-
-	for (unsigned int i = 0; i < points.size() - 1; i++) {
-		Draw::line(points[i], points[i + 1], lineWidth);
+	Draw::line(points[0], points[1], lineWidth);
+	for (unsigned int i = 1; i < points.size() - 1; i++) {
 		ofCircle(points[i], d);
+		Draw::line(points[i], points[i + 1], lineWidth);
 	}
-	ofCircle(points[points.size() - 1], d);
+
+	if (points.back() == points.front()) {
+		ofCircle(points.front(), d);
+	}
 }
 
-/*
-GLfloat vertices[] = {...}; // 36 of vertex coords
-...
-// activate and specify pointer to vertex array
-glEnableClientState(GL_VERTEX_ARRAY);
-glVertexPointer(3, GL_FLOAT, 0, vertices);
-
-// draw a cube
-glDrawArrays(GL_TRIANGLES, 0, 36);
-
-// deactivate vertex arrays after drawing
-glDisableClientState(GL_VERTEX_ARRAY);
+/*! This function draws a line from p1 to p2 with the given width.
+\note This function supersedes ofLine because the line width of the line drawn
+with ofLine cannot be set to a value greater than 1.
 */
-
 void CX::Draw::line(ofPoint p1, ofPoint p2, float width) {
-
 	std::vector<LineSegment> ls = getParallelLineSegments(LineSegment(p1, p2), width/2);
 
 	ofPoint points [4];
@@ -664,72 +663,23 @@ void CX::Draw::line(ofPoint p1, ofPoint p2, float width) {
 	points[2] = ls[1].p1;
 	points[3] = ls[1].p2;
 
-	/*
-	GLfloat vertices[4 * 3];
-	vertices[0] = ls[0].p1.x;
-	vertices[1] = ls[0].p1.y;
-	vertices[2] = ls[0].p1.z;
-	vertices[3] = ls[0].p2.x;
-	vertices[4] = ls[0].p2.y;
-	vertices[5] = ls[0].p2.z;
-	vertices[6] = ls[1].p1.x;
-	vertices[7] = ls[1].p1.y;
-	vertices[8] = ls[1].p1.z;
-	vertices[9] = ls[1].p2.x;
-	vertices[10] = ls[1].p2.y;
-	vertices[11] = ls[1].p2.z;
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, 0, &vertices);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	*/
-
-	/*
-	glBegin(GL_TRIANGLE_STRIP);
-		glVertex2f(ls[0].p1.x, ls[0].p1.y);
-		glVertex2f(ls[0].p2.x, ls[0].p2.y);
-		glVertex2f(ls[1].p1.x, ls[1].p1.y);
-		glVertex2f(ls[1].p2.x, ls[1].p2.y);
-	glEnd();
-	*/
-
-	ofFloatColor cols [4];
-	cols[0] = ofColor::red;
-	cols[1] = ofColor::yellow;
-	cols[2] = ofColor::green;
-	cols[3] = ofColor::blue;
-
 	ofVbo vbo;
 	vbo.setVertexData(points, 4, GL_STATIC_DRAW);
-	vbo.setColorData(cols, 4, GL_STATIC_DRAW);
 	vbo.draw(GL_TRIANGLE_STRIP, 0, 4);
 }
 
+/*! This function draws a ring, i.e. an unfilled circle.
+\param center The center of the ring.
+\param radius The radius of the ring.
+\param width The radial width of the ring.
+\param resolution The ring will be approximated with a number of line segments, which is controlled with `resolution`.
 
+\note This function supersedes drawing rings with ofCircle with fill set to off
+because the line width of the unfilled circle cannot be set to a value greater than 1.
+*/
 void CX::Draw::ring(ofPoint center, float radius, float width, unsigned int resolution) {
-	/*
-	std::vector<ofPoint> vertices;
-
-	float innerRadius = std::max(radius - width, 0.0f);
-	float m = 2 * PI / resolution;
-	for (unsigned int i = 0; i < resolution; i++) {
-		float angle = i * m;
-
-		vertices.push_back(center + ofPoint(innerRadius*cos(angle), innerRadius*sin(angle)));
-		vertices.push_back(center + ofPoint(radius*cos(angle), radius*sin(angle)));
-	}
-
-	glBegin(GL_TRIANGLE_STRIP);
-		for (unsigned int i = 0; i < vertices.size(); i++) {
-			glVertex2f(vertices[i].x, vertices[i].y);
-		}
-		glVertex2f(vertices[0].x, vertices[0].y);
-		glVertex2f(vertices[1].x, vertices[1].y);
-	glEnd();
-	*/
-
 	ofPath path;
+	path.setCircleResolution(resolution);
 	path.moveTo(center + ofPoint(radius, 0));
 	path.circle(center, radius);
 	path.moveTo(center + ofPoint(radius - width, 0));
@@ -737,6 +687,36 @@ void CX::Draw::ring(ofPoint center, float radius, float width, unsigned int reso
 	
 	ofMesh tess = path.getTessellation();
 	tess.draw(ofPolyRenderMode::OF_MESH_FILL);
+}
+
+/*! Draw an arc around a central point. If radiusX and radiusY are equal, the arc will be like a section of a circle. If they
+are unequal, the arc will be a section of an ellipse.
+\param center The point around which the arc will be drawn.
+\param radiusX The radius of the arc in the X-axis.
+\param radiusY The radius of the arc in the Y-axis.
+\param angleBegin The angle at which to begin the arc.
+\param angleEnd The angle at which to end the arc.
+\param width The width of the arc, radially from the center.
+\param resolution The resolution of the arc. The arc will be composed of `resolution` line segments.
+*/
+void CX::Draw::arc(ofPoint center, float radiusX, float radiusY, float angleBegin, float angleEnd, float width, unsigned int resolution) {
+
+	float d = width / 2;
+	unsigned int vertexCount = resolution + 1;
+
+	vector<ofPoint> vertices(2 * vertexCount);
+
+	for (unsigned int i = 0; i < vertexCount; i++) {
+		float angle = (angleEnd - angleBegin) * i / (vertexCount - 1) + angleBegin;
+		angle = angle * PI / 180;
+
+		vertices[(2 * i)] = center + ofPoint((radiusX - d) * cos(angle), (radiusY - d) * sin(angle));
+		vertices[(2 * i) + 1] = center + ofPoint((radiusX + d) * cos(angle), (radiusY + d) * sin(angle));
+	}
+
+	ofVbo vbo;
+	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
+	vbo.draw(GL_TRIANGLE_STRIP, 0, vertices.size());
 }
 
 
@@ -786,3 +766,4 @@ void CX::Draw::bezier(std::vector<ofPoint> controlPoints, float width, unsigned 
 
 	Draw::lines(outputPoints, width);
 }
+

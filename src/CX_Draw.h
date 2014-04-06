@@ -4,6 +4,7 @@
 #include "ofPath.h"
 #include "ofTrueTypeFont.h"
 #include "ofGraphics.h"
+#include "ofShader.h"
 
 #include "CX_Utilities.h"
 
@@ -53,6 +54,7 @@ namespace CX {
 		void line(ofPoint p1, ofPoint p2, float width);
 
 		void ring(ofPoint center, float radius, float width, unsigned int resolution);
+		void arc(ofPoint center, float radiusX, float radiusY, float angleBegin, float angleEnd, float width, unsigned int resolution);
 
 		void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution);
 
