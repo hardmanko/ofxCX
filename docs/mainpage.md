@@ -15,6 +15,20 @@ Once you have installed openFrameworks, you can install CX by putting the conten
 under OFDIR/addons (typically OFDIR/addons/ofxCX), where OFDIR is where you put openFramworks when you installed it. To use CX 
 in a project, use the openFrameworks project generator and select ofxCX as an addon. The project generator can be found in OFDIR/projectGenerator.
 
+
+\section hardwareRequirements System Requirements
+
+openFrameworks works on a wide variety of hardware and software, some of which are not supported by CX. CX works on computers with certain versions of Windows, Linux, or OSx operating systems. Windows 7 and XP are both supported.
+
+As far as hardware is concerned, the minimum requirements for CX are very low. However, if your video card is too old, you won't be able to use some types of rendering. Having a video card that supports OpenGL version 3.2 at least is good, although older ones will work, potentially with reduced functionality. Also, a 2+ core CPU helps with some things and is generally a good idea for psychology experiments, because one core can be hogged by CX and the operating system can use the other core for other things. Basically, use a computer made after 2010 and you will have no worries whatsoever. However, CX has been found to work with reduced functionality on computers from the mid 90's, so there is that option, although I cannot make any guarantees that it will work on any given computer of that vintage.
+
+
+\section examplesAndTutorials Examples and Tutorials
+
+There are several examples of how to use CX. The example files can be found in the CX directory 
+(see \ref installationInstructions) in subfolders with names beginning with "example-". 
+Some of the examples are on a specific topic and others are sample experiments that integrate together different features of CX. 
+
 In order to use the \ref examplesAndTutorials, do the following:
 1. Use the oF project generator (OFDIR/projectGenerator/projectGeneratorSimple.exe) to create a new project that uses the ofxCX addon.
 The project generator asks you what to name your project, where to put it (defaults to OFDIR/apps/myApps/), and has the option of selecting
@@ -22,36 +36,12 @@ addons. Click the "addons" button and check to box next to ofxCX. If ofxCX does 
 ofxCX directory in the right place.
 2. Go to the newly-created project directory (that you chose when creating the project in step 1) and go into the src subdirectory.
 3. Delete all of the files in the src directory (main.cpp, testApp.h, and testApp.cpp).
-4a. Copy the example .cpp file into this src directory.
-4b. If the example has a data folder, copy the contents of that folder into yourProjectDirectory/bin/data. bin/data folders probably won't 
-exist at this point. You can create them.
-5. This step depends on your compiler, but you'll need to tell it to use the example source file that you copied in step 4a
+4. Copy the example .cpp file into this src directory.
+5. If the example has a data folder, copy the contents of that folder into yourProjectDirectory/bin/data. The bin/data folder probably won't 
+exist at this point. You can create it.
+6. This step depends on your compiler, but you'll need to tell it to use the example source file that you copied in step 4
 when it compiles the project (and possibly to specifically not use the files you deleted from the src directory in step 3).
-6. Compile and run the project.
-
-\section hardwareRequirements System Requirements
-
-penFrameworks works on a wide variety of hardware and software, some of which are not supported by CX. CX works on computers with certain versions of Windows, Linux, or OSx operating systems. Windows 7 and XP are both supported.
-
-As far as hardware is concerned, the minimum requirements for CX are very low. However, if your video card is too old, you won't be able to use some types of rendering. Having a video card that supports OpenGL version 3.2 at least is good, although older ones will work. Also, a 2+ core CPU helps with some things and is generally a good idea for psychology experiments, because one core can be hogged by CX and the operating system can use the other core for other things.
-
-\section yourFirstExperiment Getting Started
-
-To create your first experiment, follow the steps for using the examples in \ref installationInstructions up to and including step 3. Then create a blank .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define runExperiment, like in the example below:
-\code{.cpp}
-#include "CX_EntryPoint.h"
-
-void runExperiment (void) {
-	//Do your thing
-}
-\endcode
-That's all you need to do to get started. You should look at the \ref examplesAndTutorials in order to learn more about how CX works. You should start with the helloWorld example.
-
-\section examplesAndTutorials Examples and Tutorials
-
-There are several examples that serve as tutorials for CX. Some of the examples are on a specific topic and others 
-are sample experiments that integrate together different features of CX. The example files can be found in the CX
-directory (see \ref installationInstructions) in subfolders with names beginning with "example-".
+7. Compile and run the project.
 
 Tutorials:
 -----------------------
@@ -73,9 +63,23 @@ in order to simplify the experiment.
 Misc.:
 -----------------------
 + helloWorld - A very basic getting started program.
-+ renderingTest - Includes several examples of how to draw stuff using ofPath (arbitrary lines), ofTexture (a kind 
++ renderingTest - Includes several examples of how to draw stuff using ofTexture (a kind 
 of pixel buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
-(ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace.
+(ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace that supplement oF functionality.
+
+
+\section yourFirstExperiment Creating A Blank Experiment
+
+To create your first experiment, follow the steps for using the examples in \ref examplesAndTutorials up to and including step 3. Then create a blank .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define runExperiment, like in the example below:
+\code{.cpp}
+#include "CX_EntryPoint.h"
+
+void runExperiment (void) {
+	//Do everything you need to do for your experiment
+}
+\endcode
+That's all you need to do to get started. You should look at the \ref examplesAndTutorials in order to learn more about how CX works. You should start with the helloWorld example.
+
 
 Topics
 ===========

@@ -16,8 +16,8 @@ namespace Private {
 		int key;
 	};
 
-	ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
-	ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
+	extern ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
+	extern ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
 
 }
 }

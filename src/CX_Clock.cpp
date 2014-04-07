@@ -13,10 +13,11 @@ CX_Clock CX::Instances::Clock;
 CX_Clock::CX_Clock (void) {
 
 #ifdef TARGET_WIN32
-	_impl = new CX::CX_WIN32_PerformanceCounterClock();
+	_impl = new CX::CX_WIN32_PerformanceCounterClock(); //I realize this causes a memory leak... of about 8 bytes.
 #else
 	_impl = new CX::CX_StdClockWrapper<std::chrono::high_resolution_clock>();
 #endif
+	_implSelfAllocated = true;
 
 	resetExperimentStartTime();
 }
@@ -70,10 +71,26 @@ void CX_Clock::precisionTest (unsigned int iterations) {
 	}
 }
 
-void CX_Clock::setImplementation(CX::CX_BaseClock* impl) {
+/*! Set the underlying clock implementation used by this instance of CX_Clock. You would
+use this function if the default clock implementation used by CX_Clock has insufficient 
+precision on your system. You can use CX::CX_StdClockWrapper to wrap any of the clocks
+from the std::chrono namespace or any clock that conforms to the standard of those clocks.
+\param impl A pointer to an instance of a class derived from CX::CX_BaseClockImplementation. 
+*/
+void CX_Clock::setImplementation(CX::CX_BaseClockImplementation* impl) {
+
+	if (_implSelfAllocated) {
+		_implSelfAllocated = false;
+		delete _impl;
+	}
 	_impl = impl;
 }
 
+/*! If for some reason you have a long setup period before the experiment proper
+starts, you could call this function so that the values returned by CX_Clock::now()
+will count up from 0 starting from when this function was called.
+This function also resets the experiment start date/time (see getExperimentStartDateTimeString()).
+*/
 void CX_Clock::resetExperimentStartTime(void) {
 	_pocoExperimentStart = Poco::LocalDateTime();
 	if (_impl) {
@@ -81,8 +98,21 @@ void CX_Clock::resetExperimentStartTime(void) {
 	}
 }
 
+/*! This functions sleeps for the requested period of time. This can be somewhat
+imprecise because it requests a specific sleep duration from the operating system,
+but the operating system may not provide the exact sleep time. */
 void CX_Clock::sleep(CX_Millis t) {
 	std::this_thread::sleep_for(std::chrono::nanoseconds(t.nanos()));
+}
+
+/*! This functions blocks for the requested period of time. This is likely more
+precise than CX_Clock::sleep() because it does not give up control to the operating
+system, but it wastes resources because it just sits in a spinloop for the requested
+duration. */
+void CX_Clock::wait(CX_Millis t) {
+	CX_Millis startTime = this->now();
+	while ((this->now() - startTime) < t)
+		;
 }
 
 /* Get the start time of the experiment in system time. The returned value can be compared with the result of getSystemTime(). */
@@ -119,87 +149,67 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 }
 
 
-void Util::CX_LapTimer::setup(CX_Clock *clock, unsigned int samples) {
-	_clock = clock;
-	_timePoints.resize(samples);
-	reset();
-}
 
-void Util::CX_LapTimer::reset(void) {
-	_sampleIndex = 0;
-	_durationRecalculationRequired = true;
-}
+#ifdef TARGET_WIN32
 
-void Util::CX_LapTimer::takeSample(void) {
-	_timePoints[_sampleIndex] = _clock->now();
-	_durationRecalculationRequired = true;
+#include "Windows.h"
 
-	if (++_sampleIndex == _timePoints.size()) {
-		CX::Instances::Log.notice("CX_LapTimer") << "Data collected: " << getStatString();
-		reset();
-	}
-}
+/*
+Calculate the overflow characteristics of this implementation as follows:
 
-std::string Util::CX_LapTimer::getStatString(void) {
-	std::stringstream s;
-	s << "min, mean, max, stdDev: " << this->min() << ", " << this->mean() << ", " << this->max() << ", " << this->stdDev();
-	return s.str();
-}
+uint64_t_max = 2^64 #although this uses (signed) long long, it still holds 2^64 values
+den = 1e9
 
-void Util::CX_LapTimer::_calculateDurations(void) {
-	if (_timePoints.size() < 2 || !_durationRecalculationRequired) {
-		return;
-	}
+secPerOvf = uint64_t_max/den
 
-	_durations.resize(_timePoints.size() - 1);
-	for (unsigned int i = 1; i < _timePoints.size(); i++) {
-		_durations[i - 1] = (_timePoints[i] - _timePoints[i - 1]).value();
-	}
-	_durationRecalculationRequired = false;
-}
+hoursPerOvf = secPerOvf/60/60
+yearsPerOvf = hoursPerOvf / 24 / 365
 
-CX_Millis Util::CX_LapTimer::mean(void) {
-	_calculateDurations();
-	return Util::mean(_durations);
-}
+*/
+CX::CX_WIN32_HRC::time_point CX::CX_WIN32_HRC::now() {
+	static long long freq = []() -> long long
+	{
+		LARGE_INTEGER frequency;
+		QueryPerformanceFrequency(&frequency);
+		return frequency.QuadPart;
+	}();
 
-CX_Millis Util::CX_LapTimer::max(void) {
-	_calculateDurations();
-	return Util::max(_durations);
-}
+	static long long start = []() -> long long
+	{
+		LARGE_INTEGER scount;
+		QueryPerformanceCounter(&scount);
+		return scount.QuadPart;
+	}();
 
-CX_Millis Util::CX_LapTimer::min(void) {
-	_calculateDurations();
-	return Util::min(_durations);
-}
+	LARGE_INTEGER count;
+	QueryPerformanceCounter(&count);
 
-CX_Millis Util::CX_LapTimer::stdDev(void) {
-	_calculateDurations();
-	return CX_Millis(Util::var(_durations));
+	return time_point(duration((count.QuadPart - start) * static_cast<rep>(period::den) / freq));
 }
 
 
 
-void Util::CX_SegmentProfiler::setup(CX_Clock *clock) {
-	_clock = clock;
-	this->reset();
+CX::CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
+	_resetFrequency();
+	resetStartTime();
 }
 
-void Util::CX_SegmentProfiler::t1(void) {
-	_t1 = _clock->now();
-}
-void Util::CX_SegmentProfiler::t2(void) {
-	_durations.push_back((_clock->now() - _t1).value());
-}
-
-void Util::CX_SegmentProfiler::reset(void) {
-	_durations.clear();
+long long CX::CX_WIN32_PerformanceCounterClock::nanos(void) {
+	LARGE_INTEGER count;
+	QueryPerformanceCounter(&count);
+	return ((count.QuadPart - _startTime) * 1000000000LL) / _frequency;
 }
 
-std::string Util::CX_SegmentProfiler::getStatString(void) {
-	std::stringstream s;
-	s << "min, mean, max, stdDev: " << Util::min(_durations) << ", " << Util::mean(_durations) << ", " <<
-		Util::max(_durations) << ", " << sqrt(Util::var(_durations));
-	this->reset();
-	return s.str();
+void CX::CX_WIN32_PerformanceCounterClock::resetStartTime(void) {
+	LARGE_INTEGER count;
+	QueryPerformanceCounter(&count);
+	_startTime = count.QuadPart;
 }
+
+void CX::CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
+	LARGE_INTEGER li;
+	QueryPerformanceFrequency(&li);
+	_frequency = li.QuadPart;
+}
+
+#endif //TARGET_WIN32

@@ -695,7 +695,7 @@ are unequal, the arc will be a section of an ellipse.
 \param radiusX The radius of the arc in the X-axis.
 \param radiusY The radius of the arc in the Y-axis.
 \param angleBegin The angle at which to begin the arc.
-\param angleEnd The angle at which to end the arc.
+\param angleEnd The angle at which to end the arc. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
 \param width The width of the arc, radially from the center.
 \param resolution The resolution of the arc. The arc will be composed of `resolution` line segments.
 */

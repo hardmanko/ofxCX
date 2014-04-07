@@ -10,7 +10,9 @@
 
 namespace CX {
 
-	/*! This namespace contains functions for drawing certain complex stimuli.
+	/*! This namespace contains functions for drawing certain complex stimuli. 
+	These functions are provided "as-is": If what they draw looks nice to you, great;
+	however, there are no strong guarantees about what the output of the functions will look like.
 	\ingroup video */
 	namespace Draw {
 
@@ -43,10 +45,10 @@ namespace CX {
 		};
 		
 		enum class LineCornerMode {
-			OUTER_POINT, //outer points
-			BEZIER_ARC, //outer points and two points
-			STRAIGHT_LINE, //two points
-			ARC //two points
+			OUTER_POINT,
+			BEZIER_ARC,
+			STRAIGHT_LINE,
+			ARC //unimplemented
 		};
 		ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCornerMode cornerMode);
 		void lines(std::vector<ofPoint> points, float lineWidth);

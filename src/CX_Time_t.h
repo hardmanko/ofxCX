@@ -35,10 +35,22 @@ namespace CX {
 		}
 	}
 
-	/*! This class provides a convenient way to deal with time in various units. It has at most
-	nanosecond accuracy. The contents of any of the templated versions of CX_Time_t are stored in
-	nanoseconds, so most conversions between time types is lossless.
+	/*! This class provides a convenient way to deal with time in various units. The upside of this
+	system is that although all functions in CX that take time can take time values in a variety of
+	units. For example, CX_Clock::wait() takes CX_Millis as the time type so if you were to do
+	\code{.cpp}
+	Clock.wait(20);
+	\endcode
+	it would attempt to wait for 20 milliseconds. However, you could do
+	\code{.cpp}
+	Clock.wait(CX_Seconds(.5));
+	\endcode
+	to wait for half of a second, if units of seconds are easier to think in for the given situation.
+	
+	CX_Time_t has at most nanosecond accuracy. The contents of any of the templated 
+	versions of CX_Time_t are all stored in nanoseconds, so conversion between time types is lossless.
 
+	See this example for a varity of things you can do with this class.
 	\code{.cpp}
 	CX_Millis mil = 100;
 	CX_Micros mic = mil; //mic now contains 100000 microseconds == 100 milliseconds.

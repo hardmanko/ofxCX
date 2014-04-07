@@ -226,7 +226,14 @@ of the sequence if equal to outputLength.
 */
 template <typename T> std::vector<T> CX::Util::sequenceAlong(T start, T end, unsigned int outputLength) {
 	T stepSize = (end - start)/(outputLength - 1);
-	return CX::Util::sequence<T>(start, end, stepSize);
+
+	std::vector<T> seq = CX::Util::sequence<T>(start, start + stepSize * (outputLength - 1), stepSize);
+	if (seq.size() == outputLength) {
+		seq.back() = end;
+	} else if (seq.size() < outputLength) {
+		seq.push_back(end);
+	}
+	return seq;
 }
 
 /*!

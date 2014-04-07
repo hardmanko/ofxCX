@@ -1,7 +1,7 @@
 #pragma once
 
 /*! \namespace CX
-This namespace contains all of the symbols related to CX, except for \ref runExperiment().
+This namespace contains all of the symbols related to CX, except for \ref runExperiment(), which is not namespace qualified.
 */
 
 /*! \namespace CX::Instances
@@ -11,6 +11,7 @@ This namespace contains instances of some classes that are fundamental to the fu
 #include "ofMain.h" //Include all of the oF stuff.
 
 #include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Instances::Clock
+#include "CX_TimeUtilities.h"
 #include "CX_Logger.h" //Includes an instance called CX::Instances::Log
 #include "CX_RandomNumberGenerator.h" //Includes an instance called CX::Instances::RNG
 

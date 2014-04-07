@@ -5,13 +5,16 @@
 #include <chrono>
 #include <istream>
 #include <ostream>
+#include <sstream>
 #include <thread>
+#include <type_traits>
 
 #include "Poco/DateTimeFormatter.h"
 
+#include "ofConstants.h"
+
 #include "CX_Utilities.h"
 #include "CX_Logger.h"
-#include "CX_ClockImplementations.h"
 #include "CX_Time_t.h"
 
 /*! \defgroup timing Timing 
@@ -19,6 +22,8 @@ This module provides methods for timestamping events in experiments.
 */
 
 namespace CX {
+
+	class CX_BaseClockImplementation;
 
 	/*! This class is responsible for getting timestamps for anything requiring timestamps. The way to
 	get timing information is the function now(). It returns the current time relative to the start
@@ -31,13 +36,14 @@ namespace CX {
 	public:
 		CX_Clock (void);
 
-		void setImplementation(CX::CX_BaseClock* impl);
+		void setImplementation(CX::CX_BaseClockImplementation* impl);
 
 		void precisionTest(unsigned int iterations);
 
 		CX_Millis now(void);
 
 		void sleep(CX_Millis t);
+		void wait(CX_Millis t);
 
 		void resetExperimentStartTime(void);
 
@@ -47,77 +53,101 @@ namespace CX {
 	private:
 		Poco::LocalDateTime _pocoExperimentStart;
 
-		CX::CX_BaseClock* _impl;
+		CX::CX_BaseClockImplementation* _impl;
+		bool _implSelfAllocated;
 	};
 
 	namespace Instances {
 		extern CX_Clock Clock;
 	}
 
+	/*! CX_Clock uses classes that are derived from this class for timing. See CX::CX_Clock::setImplementation().
 
-	namespace Util {
+	nanos() should return the current time in nanoseconds. If the implementation does not
+	have nanosecond precision, it should still return time in nanoseconds, which might just
+	involve a multiplication (e.g. clock ticks are in microseconds, so multiply by 1000 to make
+	each value equal to a nanosecond).
 
-		/*! This class can be used for profiling event loops.
+	It is assumed that the implementation has some way to subtract off a start time so that
+	nanos() counts up from 0 and that resetStartTime() can reset the start time so that the
+	clock counts up from 0 after resetStartTime() is called.
 
-		\code{.cpp}
-		//Set up collection:
-		CX_LapTimer lt;
-		lt.setup(&Clock, 1000); //Every 1000 samples, the results of those samples will be logged.
-
-		//In the loop:
-		while (whatever) {
-		//other code...
-		lt.takeSample();
-		//other code...
+	\ingroup timing
+	*/
+	class CX_BaseClockImplementation {
+	public:
+		virtual long long nanos(void) = 0;
+		virtual void resetStartTime(void) = 0;
+		virtual std::string getName(void) {
+			return "CX_BaseClock";
 		}
-		Log.flush(); //Check the results of the profiling.
+	};
 
-		\endcode
 
-		\ingroup timing
-		*/
-		class CX_LapTimer {
-		public:
-			void setup(CX_Clock *clock, unsigned int samples);
+	template <class stdClock>
+	class CX_StdClockWrapper : public CX_BaseClockImplementation {
+	public:
 
-			void reset(void);
+		CX_StdClockWrapper(void) {
+			resetStartTime();
+		}
 
-			void takeSample(void);
+		long long nanos(void) override {
+			return std::chrono::duration_cast<std::chrono::nanoseconds>(stdClock::now() - _startTime).count();
+		}
 
-			CX_Millis mean(void);
-			CX_Millis min(void);
-			CX_Millis max(void);
-			CX_Millis stdDev(void);
+		void resetStartTime(void) override {
+			_startTime = stdClock::now();
+		}
 
-			std::string getStatString(void);
+		std::string getName(void) override {
+			std::stringstream s;
+			s << "CX_StdClockWrapper<" << typeid(stdClock).name() << ">";
+			return s.str();
+		}
 
-		private:
-			CX_Clock *_clock;
-			std::vector<CX_Millis> _timePoints;
-			std::vector<double> _durations;
-			unsigned int _sampleIndex;
+	private:
+		typename stdClock::time_point _startTime;
+	};
 
-			void _calculateDurations(void);
-			bool _durationRecalculationRequired;
-		};
 
-		class CX_SegmentProfiler {
-		public:
-			void setup(CX_Clock *clock);
+#ifdef TARGET_WIN32
 
-			void t1(void);
-			void t2(void);
+	class CX_WIN32_PerformanceCounterClock : public CX_BaseClockImplementation {
+	public:
+		CX_WIN32_PerformanceCounterClock(void);
 
-			void reset(void);
+		long long nanos(void) override;
+		void resetStartTime(void) override;
 
-			std::string getStatString(void);
+		std::string getName(void) override {
+			return "CX_WIN32_PerformanceCounterClock";
+		}
 
-		private:
-			CX_Clock *_clock;
+	private:
+		void _resetFrequency(void);
 
-			CX_Millis _t1;
-			std::vector<double> _durations;
+		long long _startTime;
+		long long _frequency;
+	};
 
-		};
-	}
+	/* This implementation of a high resolution clock uses QueryPerformanceCounter (a Windows API call).
+
+	Based on http://stackoverflow.com/questions/16299029/resolution-of-stdchronohigh-resolution-clock-doesnt-correspond-to-measureme/16299576#16299576
+	with a few changes.
+	*/
+	struct CX_WIN32_HRC {
+		typedef long long                               rep;
+		typedef std::nano                               period;
+		typedef std::chrono::duration<rep, period>      duration;
+		typedef std::chrono::time_point<CX_WIN32_HRC>   time_point;
+		static const bool is_steady = true;
+
+		static time_point now();
+	};
+
+#endif
+
+
+
 }
