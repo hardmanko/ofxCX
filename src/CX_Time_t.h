@@ -142,39 +142,43 @@ namespace CX {
 			this->_nanos = t.nanos();
 		}
 
+		/*! Get the numerical value of the time in units of the time type. For example, if
+		you are using an instance of CX_Seconds, this will return the time value in seconds,
+		including fractional seconds.
+		*/
 		double value(void) const {
 			return Private::convertTimeCount<TimeUnit, std::nano, double>(_nanos);
 		}
 
+		/*! \brief Get the time stored by this CX_Time_t in hours, including fractional hours. */
 		double hours(void) const {
 			return (double)_nanos / (1e9 * 60 * 60);
 		}
 
+		/*! \brief Get the time stored by this CX_Time_t in minutes, including fractional minutes. */
 		double minutes(void) const {
 			return (double)_nanos / (1e9 * 60);
 		}
 
+		/*! \brief Get the time stored by this CX_Time_t in seconds, including fractional seconds. */
 		double seconds(void) const {
 			return (double)_nanos / 1e9;
 		}
 
+		/*! \brief Get the time stored by this CX_Time_t in milliseconds, including fractional milliseconds. */
 		double millis(void) const {
 			return (double)_nanos / 1e6;
 		}
 
+		/*! \brief Get the time stored by this CX_Time_t in microseconds, including fractional microseconds. */
 		double micros(void) const {
 			return (double)_nanos / 1e3;
 		}
 
+		/*! \brief Get the time stored by this CX_Time_t in nanoseconds. */
 		long long nanos(void) const {
 			return _nanos;
 		}
-		/*
-		template <typename T>
-		operator T(void) {
-		return this->value();
-		}
-		*/
 
 		template<typename RT>
 		CX_Time_t<TimeUnit> operator+(const CX_Time_t<RT>& rhs) const {
@@ -270,6 +274,7 @@ namespace CX {
 			return t;
 		}
 
+		/*! This function calculates the sample standard deviation for a vector of time values. */
 		static CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
 			CX_Time_t<TimeUnit> m = Util::mean(vals);
 			double sum = 0;
@@ -285,7 +290,8 @@ namespace CX {
 
 	};
 
-	/*! If operator<< and operator>> are used to convert to/from string representation, you MUST use the same
+	/*! This is a standard stream operator for converting a CX_Time_t to a std::ostream.
+	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same
 	time type on both ends of the conversion. */
 	template <typename TimeUnit>
 	std::ostream& operator<< (std::ostream& os, const CX_Time_t<TimeUnit>& t) {

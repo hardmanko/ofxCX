@@ -21,8 +21,8 @@ ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 // ModuleBase //
 ////////////////
 
-/*! This is a reciprocal operation: This module's input is removed and in's output to this module
-is removed. */
+/*! This is a reciprocal operation: This module's input is disconnected and `in`'s output to this module
+is disconnected. */
 void ModuleBase::disconnectInput(ModuleBase* in) {
 	auto input = std::find(_inputs.begin(), _inputs.end(), in);
 	if (input != _inputs.end()) {
@@ -32,6 +32,8 @@ void ModuleBase::disconnectInput(ModuleBase* in) {
 	}
 }
 
+/*! This is a reciprocal operation: This module's output is disconnected and `out`'s input from this module
+is disconnected. */
 void ModuleBase::disconnectOutput(ModuleBase* out) {
 	auto output = std::find(_outputs.begin(), _outputs.end(), out);
 	if (output != _outputs.end()) {
@@ -110,11 +112,64 @@ void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
 
 }
 
+//If you are using a CX::Synth::ModuleParameter in your module, you must register that ModuleParameter
+//during setup of the module using this function.
 void ModuleBase::_registerParameter(ModuleParameter* p) {
 	if (std::find(_parameters.begin(), _parameters.end(), p) == _parameters.end()) {
 		_parameters.push_back(p);
 		p->_owner = this;
 	}
+}
+
+/////////////////////
+// ModuleParameter //
+/////////////////////
+
+ModuleParameter::ModuleParameter(void) :
+_value(0),
+_updated(true),
+_input(nullptr),
+_owner(nullptr)
+{}
+
+ModuleParameter::ModuleParameter(double d) :
+_value(d),
+_updated(true),
+_input(nullptr),
+_owner(nullptr)
+{}
+
+void ModuleParameter::updateValue(void) {
+	if (_input != nullptr) { //If there is no input connected, just keep the same value.
+		double temp = _input->getNextSample();
+		if (temp != _value) {
+			_value = temp;
+			_updated = true;
+		}
+	}
+}
+
+bool ModuleParameter::valueUpdated(void) {
+	if (_updated) {
+		_updated = false;
+		return true;
+	}
+	return false;
+}
+
+double& ModuleParameter::getValue(void) {
+	return _value;
+}
+
+ModuleParameter::operator double(void) {
+	return _value;
+}
+
+ModuleParameter& ModuleParameter::operator=(double d) {
+	_value = d;
+	_updated = true;
+	_input = nullptr; //Disconnect the input
+	return *this;
 }
 
 ///////////
@@ -695,7 +750,12 @@ SoundBufferInput::SoundBufferInput(void) :
 	_sb(nullptr)
 {}
 
-//Set the CX_SoundBuffer to use and also the channel to use (you can only use one channel: strictly monophonic).
+/*! This function sets the CX_SoundBuffer from which data will be drawn. Because the SoundBufferInput is monophonic,
+you must pick one channel of the CX_SoundBuffer to use.
+\param sb The CX_SoundBuffer to use. Because this CX_SoundBuffer is taken as a pointer and is not copied,
+you should make sure that `sb` remains in existence and unmodified while the SoundBufferInput is in use.
+\param channel The channel of the CX_SoundBuffer to use.
+*/
 void SoundBufferInput::setSoundBuffer(CX::CX_SoundBuffer *sb, unsigned int channel) {
 	_sb = sb;
 	_channel = channel;
@@ -736,14 +796,19 @@ bool SoundBufferInput::canPlay(void) {
 ///////////////////////
 // SoundBufferOutput //
 ///////////////////////
+
+/*! Configure the output to use a particular sample rate. If this function is not called, the sample rate
+of the modular synth may be undefined.
+\param sampleRate The sample rate in Hz. */
 void SoundBufferOutput::setup(float sampleRate) {
 	_data->sampleRate = sampleRate;
 	_data->initialized = true;
 	_dataSet(nullptr);
 }
 
-//Sample t seconds of data at the given sample rate (see setup). The result is stored in sb.
-//If sb is not empty, the data is appended.
+/*! This function samples `t` milliseconds of data at the sample rate given in setup(). 
+The result is stored in the `sb` member of this class. If `sb` is not empty when this function
+is called, the data is appended to `sb`. */
 void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 
 	if (_inputs.size() == 0) {
@@ -772,6 +837,9 @@ void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 /////////////////////////////
 // StereoSoundBufferOutput //
 /////////////////////////////
+/*! Configure the output to use a particular sample rate. If this function is not called, the sample rate
+of the modular synth may be undefined. 
+\param sampleRate The sample rate in Hz. */
 void StereoSoundBufferOutput::setup(float sampleRate) {
 	ModuleControlData_t data;
 	data.sampleRate = sampleRate;
@@ -780,6 +848,9 @@ void StereoSoundBufferOutput::setup(float sampleRate) {
 	right.setData(data);
 }
 
+/*! This function samples `t` milliseconds of data at the sample rate given in setup().
+The result is stored in the `sb` member of this class. If `sb` is not empty when this function
+is called, the data is appended to `sb`. */
 void StereoSoundBufferOutput::sampleData(CX::CX_Millis t) {
 	unsigned int samplesToTake = ceil(left.getData().sampleRate * t.seconds());
 
@@ -792,11 +863,11 @@ void StereoSoundBufferOutput::sampleData(CX::CX_Millis t) {
 		tempData[(i * channels) + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
 	}
 
-	if (so.getTotalSampleCount() == 0) {
-		so.setFromVector(tempData, channels, left.getData().sampleRate);
+	if (sb.getTotalSampleCount() == 0) {
+		sb.setFromVector(tempData, channels, left.getData().sampleRate);
 	} else {
 		for (unsigned int i = 0; i < tempData.size(); i++) {
-			so.getRawDataReference().push_back(tempData[i]);
+			sb.getRawDataReference().push_back(tempData[i]);
 		}
 	}
 }

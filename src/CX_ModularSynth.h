@@ -9,7 +9,17 @@
 
 /*! \namespace CX::Synth
 This namespace contains a number of classes that can be combined together to form a modular
-synthesizer that can be used to generate sound stimuli.
+synthesizer that can be used to procedurally generate sound stimuli. There are methods for
+saving the sound stimuli to a file for later use or directly outputting the sounds to sound
+hardware. There is also a way to use the data from a CX_SoundBuffer as the input to the synth.
+
+There are two types of oscillators (Oscillator and AdditiveSynth), an ADSR Envelope, two types
+of filters (Filter and FIRFilter), a Splitter and a Mixer, and some utility classes for adding,
+multiplying, and clamping values.
+
+Making your own modules is simplified by the fact that all modules inherit from ModuleBase. You
+only need to overload one function from ModuleBase in order to have a functional module, although
+there are some other functions that can be overloaded for advanced uses.
 
 \ingroup sound
 */
@@ -68,7 +78,9 @@ namespace Synth {
 		to set the data for one module and the change will propagate to the other connected modules automatically.
 
 		This function does not usually need to be called driectly by the user. If an appropriate input or output is 
-		connected, the data will be set from that module. 
+		connected, the data will be set from that module. However, there are some cases where a pattern of reconnecting
+		previously used modules may result in inappropriate sample rates being set. For that reason, if you are having
+		a problem with seeing the correct sample rate after reconnecting some modules, try manually calling setData().
 		
 		\param d The data to set.
 		*/
@@ -107,14 +119,20 @@ namespace Synth {
 		void _setDataIfNotSet(ModuleBase* target);
 		void _registerParameter(ModuleParameter* p);
 
-
 		virtual void _assignInput(ModuleBase* in);
 		virtual void _assignOutput(ModuleBase* out);
 
-		virtual int _maxInputs(void) { return 1; };
+
+		//Feel free to overload these functions (_maxInputs, _maxOutputs, _inputAssignedEvent, _outputAssignedEvent) in your own modules.
+
+		//The values returned by these functions directly control how many inputs or outputs a modules can have at once.
+		//If more modules are assigned as input or outputs than are allowed, previously assigned inputs or outputs are
+		//disconnected.
+		virtual int _maxInputs(void) { return 1; }; 
 		virtual int _maxOutputs(void) { return 1; };
 
-		virtual void _inputAssignedEvent(ModuleBase* in) {};
+		//These functions are called whenever an input or output has been assigned to this module.
+		virtual void _inputAssignedEvent(ModuleBase* in) {}; 
 		virtual void _outputAssignedEvent(ModuleBase* out) {};
 	};
 
@@ -122,57 +140,22 @@ namespace Synth {
 	class ModuleParameter {
 	public:
 
-		ModuleParameter(void) :
-			_value(0),
-			_updated(true),
-			_input(nullptr),
-			_owner(nullptr)
-		{}
+		ModuleParameter(void);
+		ModuleParameter(double d);
 
-		ModuleParameter(double d) :
-			_value(d),
-			_updated(true),
-			_input(nullptr),
-			_owner(nullptr)
-		{}
+		void updateValue(void);
+		bool valueUpdated(void);
+		double& getValue(void);
 
-		void updateValue(void) {
-			if (_input != nullptr) { //If there is no input connected, just keep the same value.
-				double temp = _input->getNextSample();
-				if (temp != _value) {
-					_value = temp;
-					_updated = true;
-				}
-			}
-		}
+		operator double(void);
 
-		bool valueUpdated(void) {
-			if (_updated) {
-				_updated = false;
-				return true;
-			}
-			return false;
-		}
-
-		double& getValue(void) {
-			return _value;
-		}
-
-		operator double(void) {
-			return _value;
-		}
-
-		ModuleParameter& operator=(double d) {
-			_value = d;
-			_updated = true;
-			_input = nullptr; //Disconnect the input
-			return *this;
-		}
+		ModuleParameter& operator=(double d);
 
 		/*! This operator connects a module to the module parameter. It is not possible to connect a module
-		parameter as an input for anything. They are dead ends.
+		parameter as an input for anything: They are dead ends.
 		
 		\code{.cpp}
+		using namespace CX::Synth;
 		Oscillator osc;
 		Envelope fenv;
 		Adder add;
@@ -287,7 +270,7 @@ namespace Synth {
 
 	/*! This class simply takes an input and adds an `amount` to it. The `amount` can be negative, in which case this
 	class is a subtracter. If there is no input to this module, it behaves as though the input is 0, so the output
-	value will be equal to `amount`.
+	value will be equal to `amount`. Thus, it can also behave as a numerical constant.
 	\ingroup modSynth
 	*/
 	class Adder : public ModuleBase {
@@ -310,13 +293,13 @@ namespace Synth {
 		ModuleParameter high;
 	};
 
-	/*! This class is a standard ADSR envelope: http://en.wikipedia.org/wiki/Synthesizer#ADSR_envelope
-	s should be in the interval [0,1]. a, d, and r are expressed in seconds. 
+	/*! This class is a standard ADSR envelope: http://en.wikipedia.org/wiki/Synthesizer#ADSR_envelope.
+	`s` should be in the interval [0,1]. `a`, `d`, and `r` are expressed in seconds. 
 	Call attack() to start the envelope. Once the attack and decay are finished, the envelope will
 	stay at the sustain level until release() is called.
 
-	The output values produced start at 0, rise to 1 during the attack, drop to the sustain level (s) during
-	the decay, and drop from s to 0 during the release.
+	The output values produced start at 0, rise to 1 during the attack, drop to the sustain level (`s`) during
+	the decay, and drop from `s` to 0 during the release.
 
 	\ingroup modSynth
 	*/
@@ -386,6 +369,7 @@ namespace Synth {
 			this->_registerParameter(&bandwidth);
 		}
 
+		/*! \brief Set the type of filter to use, from the Filter::FilterType enum. */
 		void setType(FilterType type) {
 			_filterType = type;
 			_recalculateCoefficients();
@@ -473,6 +457,7 @@ namespace Synth {
 	from an Oscillator can be filtered with a CX::Synth::Filter or used in other ways.
 
 	\code{.cpp}
+	using namespace CX::Synth;
 	//Configure the oscillator to produce a square wave with a fundamental frequency of 200 Hz.
 	Oscillator osc;
 	osc.frequency = 200; //200 Hz
@@ -513,6 +498,7 @@ namespace Synth {
 	This class is special because it allows multiple outputs.
 
 	\code{.cpp}
+	using namespace CX::Synth;
 	Splitter sp;
 	Oscillator osc;
 	Multiplier m1;
@@ -540,7 +526,8 @@ namespace Synth {
 
 	/*! This class allows you to use a CX_SoundBuffer as the input for the modular synth.
 	It is strictly monophonic, so when you associate a CX_SoundBuffer with this class,
-	you must pick one channel of the sound to use.
+	you must pick one channel of the sound to use. You can use multiple SoundBufferInputs
+	to play multiple channels from the same CX_SoundBuffer.
 	\ingroup modSynth
 	*/
 	class SoundBufferInput : public ModuleBase {
@@ -560,33 +547,12 @@ namespace Synth {
 
 	};
 
-	//For testing purposes mostly
-	class TrivialGenerator : public ModuleBase {
-	public:
-
-		TrivialGenerator(void) :
-			value(0),
-			step(0)
-		{
-			this->_registerParameter(&value);
-			this->_registerParameter(&step);
-		}
-
-		ModuleParameter value;
-		ModuleParameter step;
-
-		double getNextSample(void) override {
-			value.updateValue();
-			value.getValue() += step;
-			return value.getValue() - step;
-		}
-	};
-
 	/*! This class provides a method of playing the output of a modular synth using a CX_SoundStream.
 	In order to use this class, you need to configure a CX_SoundStream for use. See the soundBuffer
 	example and the CX::CX_SoundStream class for more information.
 
 	\code{.cpp}
+	using namespace CX::Synth;
 	//Assume that both osc and ss have been configured and the sound stream has been started.
 	CX_SoundStream ss;
 	Oscillator osc;
@@ -648,6 +614,7 @@ namespace Synth {
 	`left` or `right` modules that this class has. See the example code.
 
 	\code{.cpp}
+	using namespace CX::Synth;
 	StereoSoundBufferOutput sout;
 	sout.setup(44100);
 
@@ -663,7 +630,7 @@ namespace Synth {
 	sp >> leftM >> sout.left;
 	sp >> rightM >> sout.right;
 
-	sout.sampleData(2); //Sample 2 seconds worth of data on both channels.
+	sout.sampleData(CX_Seconds(2)); //Sample 2 seconds worth of data on both channels.
 	\endcode
 
 	\ingroup modSynth */
@@ -675,13 +642,35 @@ namespace Synth {
 		GenericOutput left;
 		GenericOutput right;
 	
-		CX::CX_SoundBuffer so;
+		CX::CX_SoundBuffer sb;
 	};
 
 
+	//For testing purposes mostly
+	class TrivialGenerator : public ModuleBase {
+	public:
 
-	/*! This class is a start at implementing a Finite Impulse Response (http://en.wikipedia.org/wiki/Finite_impulse_response)
-	filter. You can use it as a basic low-pass or high-pass	filter, or, if you supply your own coefficients, which cause the
+		TrivialGenerator(void) :
+			value(0),
+			step(0)
+		{
+			this->_registerParameter(&value);
+			this->_registerParameter(&step);
+		}
+
+		ModuleParameter value;
+		ModuleParameter step;
+
+		double getNextSample(void) override {
+			value.updateValue();
+			value.getValue() += step;
+			return value.getValue() - step;
+		}
+	};
+
+
+	/*! This class is a start at implementing a Finite Impulse Response filter (http://en.wikipedia.org/wiki/Finite_impulse_response). 
+	You can use it as a basic low-pass or high-pass	filter, or, if you supply your own coefficients, which cause the
 	filter to do filtering in whatever way you want. See the "signal" package for R for a method of constructing your own coefficients.
 	\ingroup modSynth
 	*/

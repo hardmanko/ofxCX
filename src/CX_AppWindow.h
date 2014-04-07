@@ -16,8 +16,6 @@
 #include "ofEvents.h"
 #include "ofPixels.h"
 
-#include "CX_Events.h"
-
 class ofBaseApp;
 
 namespace CX {

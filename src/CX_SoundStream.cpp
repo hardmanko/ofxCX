@@ -299,6 +299,11 @@ std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std:
 	return rval;
 }
 
+/*! Converts a bitmask of audio formats to a vector of strings. 
+\param formats The bitmask of audio formats.
+\return A vector of strings, one string for each bit set in formats for 
+which there is a corresponding valid audio format that RtAudio supports.
+*/
 std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats) {
 	vector<string> rval;
 
@@ -322,6 +327,11 @@ std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats
 	return rval;
 }
 
+/*! Converts a bitmask of audio formats to a string, with each format delimited by `delim`.
+\param formats The bitmask of audio formats.
+\param delim The delimiter.
+\return A string containing string representations of the valid formats in `formats`.
+*/
 std::string CX_SoundStream::formatsToString (RtAudioFormat formats, std::string delim) {
 	vector<string> sFormats = formatsToStrings(formats);
 	string rval;

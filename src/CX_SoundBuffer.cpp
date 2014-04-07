@@ -142,7 +142,7 @@ See those functions for more information.
 
 \return Returns true if the new sound was added sucessfully, false otherwise.
 */
-bool CX_SoundBuffer::addSound(string fileName, CX_Millis timeOffset) {
+bool CX_SoundBuffer::addSound(std::string fileName, CX_Millis timeOffset) {
 	if (_soundData.size() == 0 || !this->_successfullyLoaded) {
 		bool loadSuccess = this->loadFile(fileName);
 		if (loadSuccess) {

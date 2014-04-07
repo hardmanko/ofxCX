@@ -128,9 +128,8 @@ public:
 	\return A const reference to the configuration struct. */
 	const CX_SoundStream::Configuration& getConfiguration (void) { return _config; };
 	
-	/*! Returns the number of the sample frame that  */
+	/*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
 	uint64_t getSampleFrameNumber (void) { return _lastSampleNumber; };
-	//void setLastSampleNumber (uint64_t sampleNumber) { _lastSampleNumber = sampleNumber; };
 
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
@@ -143,7 +142,6 @@ public:
 	CX_Millis estimateNextSwapTime(void);
 
 	RtAudio* getRtAudioInstance(void);
-
 
 	static std::vector<RtAudio::Api> getCompiledApis (void);
 	static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);

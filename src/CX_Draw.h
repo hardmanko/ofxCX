@@ -14,7 +14,6 @@ namespace CX {
 	\ingroup video */
 	namespace Draw {
 
-		
 		struct CX_PathParams_t {
 
 			CX_PathParams_t(void) :

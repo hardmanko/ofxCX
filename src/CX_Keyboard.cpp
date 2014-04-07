@@ -39,10 +39,11 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 	if (listen) {
 		ofAddListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
 		ofAddListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
-		ofAddListener(CX::Private::getEvents().keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
+		ofAddListener(CX::Private::keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
 	} else {
 		ofRemoveListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
 		ofRemoveListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
+		ofRemoveListener(CX::Private::keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
 	}
 	_listeningForEvents = listen;
 }
