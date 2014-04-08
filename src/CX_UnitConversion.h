@@ -10,11 +10,17 @@ namespace Util {
 	float degreesToPixels(float degrees, float pixelsPerUnit, float viewingDistance);
 	float pixelsToDegrees(float pixels, float pixelsPerUnit, float viewingDistance);
 
+	/*! This class should be inherited from by any unit converters. You should override 
+	both operator() and inverse(). inverse() should	perform the mathematical inverse of 
+	the operation performed by operator(). */
 	class CX_BaseUnitConverter {
 	public:
-		virtual float operator() (float inputUnits) {
-			return inputUnits;
+		virtual float operator() (float x) {
+			return (5 * x) - 2;
 		};
+		virtual float inverse(float y) {
+			return (y + 2) / 5;
+		}
 	};
 
 	/*! This simple utility class is used for converting degrees of visual angle to pixels on a monitor.
@@ -33,7 +39,9 @@ namespace Util {
 	class CX_DegreeToPixelConverter : public CX_BaseUnitConverter {
 	public:
 		CX_DegreeToPixelConverter(float pixelsPerUnit, float viewingDistance, bool roundResult = false);
-		float operator() (float degrees);
+
+		float operator() (float degrees) override;
+		float inverse(float pixels) override;
 
 	private:
 		float _pixelsPerUnit;
@@ -43,7 +51,8 @@ namespace Util {
 
 	/*! This simple utility class is used for converting lengths (perhaps of objects drawn on the monitor) to
 	pixels on a monitor. See also CX::Util::CX_CoordinateConverter for a way to also convert from one coordinate 
-	system to another.
+	system to another. This assumes that pixels are square, which may not be true, especially if you are using
+	a resolution that is not the native resolution of the monitor.
 
 	Example use:
 
@@ -57,7 +66,8 @@ namespace Util {
 	class CX_LengthToPixelConverter : public CX_BaseUnitConverter {
 	public:
 		CX_LengthToPixelConverter(float pixelsPerUnit, bool roundResult = false);
-		float operator() (float length);
+		float operator() (float length) override;
+		float inverse(float pixels) override;
 
 	private:
 		float _pixelsPerUnit;
@@ -98,6 +108,9 @@ namespace Util {
 		ofPoint operator() (ofPoint p);
 		ofPoint operator() (float x, float y, float z = 0);
 
+		ofPoint inverse(ofPoint p);
+		ofPoint inverse(float x, float y, float z = 0);
+
 		void setAxisInversion(bool invertX, bool invertY, bool invertZ = false);
 		void setOrigin(ofPoint newOrigin);
 		void setMultiplier(float multiplier);
@@ -106,9 +119,10 @@ namespace Util {
 
 	private:
 		ofPoint _origin;
-		bool _invertX;
-		bool _invertY;
-		bool _invertZ;
+		//bool _invertX;
+		//bool _invertY;
+		//bool _invertZ;
+		ofPoint _inversionCoefficients;
 
 		float _multiplier;
 

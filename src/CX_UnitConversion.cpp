@@ -37,14 +37,24 @@ namespace Util {
 
 	/*! Converts the degrees to pixels based on the settings given during construction.
 	\param degrees The number of degrees of visual angle to convert to pixels.
-	\return The number of pixels corresponding to the number of degrees of visual angle.
-	*/
+	\return The number of pixels corresponding to the number of degrees of visual angle. */
 	float CX_DegreeToPixelConverter::operator() (float degrees) {
 		float px = degreesToPixels(degrees, _pixelsPerUnit, _viewingDistance);
 		if (_roundResult) {
 			px = CX::Util::round(px, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 		}
 		return px;
+	}
+
+	/*! Performs the inverse of the operation performed by operator(), i.e. converts pixels to degrees.
+	\param pixels The number of pixels to convert to degrees.
+	\return The number of degrees of visual angle subtended by the given number of pixels. */
+	float CX_DegreeToPixelConverter::inverse(float pixels) {
+		float deg = pixelsToDegrees(pixels, _pixelsPerUnit, _viewingDistance);
+		//if (_roundResult) {
+		//	deg = CX::Util::round(deg, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+		//}
+		return deg;
 	}
 
 	/*! Constructs a CX_LengthToPixelConverter with the given configuration.
@@ -69,6 +79,17 @@ namespace Util {
 		return px;
 	}
 
+	/*! Performs to inverse of operator(), i.e. converts pixels to length.
+	\param pixels The number of pixels to convert to a length.
+	\return The length of the given number of pixels. */
+	float CX_LengthToPixelConverter::inverse(float pixels) {
+		float length = pixels / _pixelsPerUnit;
+		//if (_roundResult) {
+		//	length = CX::Util::round(length, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+		//}
+		return length;
+	}
+
 	/*! Constructs a coordinate converter with the given settings.
 	\param origin The location within the standard coordinate system at which the origin (the point at which the x,
 	y, and z values are 0) of the user-defined coordinate system is located.
@@ -81,12 +102,11 @@ namespace Util {
 	*/
 	CX_CoordinateConverter::CX_CoordinateConverter(ofPoint origin, bool invertX, bool invertY, bool invertZ) :
 		_origin(origin),
-		_invertX(invertX),
-		_invertY(invertY),
-		_invertZ(invertZ),
 		_conv(nullptr),
 		_multiplier(1.0)
-	{}
+	{
+		setAxisInversion(invertX, invertY, invertZ);
+	}
 
 	/*! Sets whether each axis within the user-defined system is inverted from the standard coordinate system. 
 	\param invertX Invert the x-axis from the default, which is that x increases to the right.
@@ -95,10 +115,7 @@ namespace Util {
 	(i.e. pointing out of the front of the screen).
 	*/
 	void CX_CoordinateConverter::setAxisInversion(bool invertX, bool invertY, bool invertZ) {
-		_invertX = invertX;
-		_invertY = invertY;
-		_invertZ = invertZ;
-		//_orientations = ofPoint(invertX ? -1 : 1, invertY ? -1 : 1, invertZ ? -1 : 1);
+		_inversionCoefficients = ofPoint((invertX ? -1 : 1), (invertY ? -1 : 1), (invertZ ? -1 : 1));
 	}
 
 	/*! Sets the location within the standard coordinate system at which the origin
@@ -136,25 +153,44 @@ namespace Util {
 	\return The point in standard coordinates.
 	*/
 	ofPoint CX_CoordinateConverter::operator() (ofPoint p) {
-
 		p *= _multiplier;
+		p *= _inversionCoefficients;
 
 		if (_conv != nullptr) {
-			p.x = _origin.x + (*_conv)((_invertX ? -1 : 1) * p.x);
-			p.y = _origin.y + (*_conv)((_invertY ? -1 : 1) * p.y);
-			p.z = _origin.z + (*_conv)((_invertZ ? -1 : 1) * p.z);
-		} else {
-			p.x = _origin.x + ((_invertX ? -1 : 1) * p.x);
-			p.y = _origin.y + ((_invertY ? -1 : 1) * p.y);
-			p.z = _origin.z + ((_invertZ ? -1 : 1) * p.z);
+			p.x = (*_conv)(p.x);
+			p.y = (*_conv)(p.y);
+			p.z = (*_conv)(p.z);
 		}
 
+		p += _origin;
 		return p;
 	}
 
-	/*! Equivalent to a call to operator()(ofPoint(x, y, z)). */
+	/*! Equivalent to a call to `operator()(ofPoint(x, y, z));`. */
 	ofPoint CX_CoordinateConverter::operator() (float x, float y, float z) {
 		return this->operator()(ofPoint(x, y, z));
+	}
+
+	/*! Performs the inverse of operator(), i.e. converts from standard coordinates to user coordinates.
+	\param p A point in standard coordinates.
+	\param A point in user coordinates.	*/
+	ofPoint CX_CoordinateConverter::inverse(ofPoint p) {
+		p -= _origin;
+
+		if (_conv != nullptr) {
+			p.x = _conv->inverse(p.x);
+			p.y = _conv->inverse(p.y);
+			p.z = _conv->inverse(p.z);
+		}
+
+		p /= _inversionCoefficients;
+		p /= _multiplier;
+		return p;
+	}
+
+	/*! Equivalent to `inverse(ofPoint(x,y,z));` */
+	ofPoint CX_CoordinateConverter::inverse(float x, float y, float z) {
+		return this->inverse(ofPoint(x, y, z));
 	}
 
 	/*! Sets the unit converter that will be used when converting the coordinate system.

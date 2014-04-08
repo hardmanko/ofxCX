@@ -39,8 +39,6 @@ float starSize = .8;
 void updateDrawings(void);
 void drawStuff (void);
 
-vector<ofColor> colorWheelColors;
-
 void runExperiment(void) {
 
 	Input.setup(true, true);
