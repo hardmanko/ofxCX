@@ -16,8 +16,13 @@ namespace Private {
 		int key;
 	};
 
-	extern ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
-	extern ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
+	class CX_Events {
+	public:
+		ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
+		ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
+	};
+
+	CX_Events& getEvents(void);
 
 }
 }

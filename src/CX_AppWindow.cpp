@@ -942,7 +942,7 @@ void CX_AppWindow::motion_cb(GLFWwindow* windowP_, double x, double y) {
 //------------------------------------------------------------
 void CX_AppWindow::scroll_cb(GLFWwindow* windowP_, double x, double y) {
 	CX_MouseScrollEventArgs_t ev(x, y);
-	ofNotifyEvent(CX::Private::scrollEvent, ev);
+	ofNotifyEvent(CX::Private::getEvents().scrollEvent, ev);
 }
 
 //------------------------------------------------------------
@@ -1092,7 +1092,7 @@ void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int 
 	case GLFW_REPEAT:
 		CX::Private::CX_KeyRepeatEventArgs_t args;
 		args.key = key;
-		ofNotifyEvent(CX::Private::keyRepeatEvent, args);
+		ofNotifyEvent(CX::Private::getEvents().keyRepeatEvent, args);
 		break;
 	case GLFW_RELEASE:
 		ofNotifyKeyReleased(key);

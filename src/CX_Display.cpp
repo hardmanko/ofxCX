@@ -86,6 +86,7 @@ CX_Millis CX_Display::getFramePeriod(void) {
 	return _framePeriod;
 }
 
+/*! Gets the estimate of the standard deviation of the frame period calculated with BLOCKING_estimateFramePeriod(). */
 CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
 	return _framePeriodStandardDeviation;
 }
@@ -231,19 +232,16 @@ void CX_Display::endDrawingToBackBuffer (void) {
 blocks until the swap occurs. It does nothing if isAutomaticallySwapping() == true.
 \see \ref blockingCode */
 void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
-	if (!isAutomaticallySwapping()) {
-		glfwSwapBuffers(CX::Private::glfwContext);
-		if (_softVSyncWithGLFinish) {
-			glFinish();
-			//GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-			//glFlush();
-			//glWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
-			//BLOCKING_waitForOpenGL();
-		}
-		_manualBufferSwaps++;
-	} else {
-		Instances::Log.error("CX_Display") << "Manual buffer swap requested with BLOCKING_swapFrontAndBackBuffers while auto swapping mode was in use.";
+	if (isAutomaticallySwapping()) {
+		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with BLOCKING_swapFrontAndBackBuffers while auto swapping mode was in use.";
 	}
+
+	glfwSwapBuffers(CX::Private::glfwContext);
+	if (_softVSyncWithGLFinish) {
+		glFinish();
+	}
+	_manualBufferSwaps++;
+
 }
 
 /*! This function cues a swap of the front and back buffers. It avoids blocking

@@ -18,9 +18,10 @@ void CX_VideoBufferSwappingThread::threadedFunction (void) {
 		
 		glfwSwapBuffers( CX::Private::glfwContext );
 		//if (lock() && _glFinishAfterSwap) {
+		if (_glFinishAfterSwap) { //Really, I should be locking first, like the above commented out line, but for whatever reason, it causes all kinds of problems/
 		//	unlock();
 			glFinish();
-		//}
+		}
 
 		CX_Millis swapTime = CX::Instances::Clock.now();
 
@@ -45,7 +46,6 @@ void CX_VideoBufferSwappingThread::threadedFunction (void) {
 				this->stopThread();
 			}
 		}
-		//yield(); //??
 	}
 }
 

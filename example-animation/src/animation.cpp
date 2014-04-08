@@ -34,13 +34,14 @@ void updateAnimation (void);
 void drawNextFrameOfAnimation (void);
 ofPoint calculateObjectCenter(double angleDeg, double distanceFromCenter);
 
-
 void runExperiment (void) {
 	//Use mouse, but not keyboard.
 	Input.setup(false, true);
 
 	//The window needs to be about this size in order to fit the circles.
 	Display.setWindowResolution(600, 600);
+
+	Display.setVSync(false, false);
 
 	//See the main comment at the top of this file.
 	Display.BLOCKING_setAutoSwapping(true);
@@ -49,6 +50,8 @@ void runExperiment (void) {
 		updateAnimation();
 	}
 }
+
+
 
 void updateAnimation (void) {
 
@@ -59,9 +62,10 @@ void updateAnimation (void) {
 		drawNextFrameOfAnimation();
 
 		Display.endDrawingToBackBuffer(); //Make sure to call this to end the drawing.
-			//Because the front and back buffers are automatically swapping, you don't
-			//need to do anything else here: the new frame will be swapped to the front
-			//at some point in the near future.
+		
+		//Because the front and back buffers are automatically swapping, you don't
+		//need to do anything else here: the new frame will be swapped to the front
+		//at some point in the near future.
 	}
 
 	//Do a little bit of stuff to get the state of the mouse.

@@ -19,10 +19,10 @@ void Util::CX_LapTimer::setup(CX_Clock *clock, unsigned int logSamples) {
 
 void Util::CX_LapTimer::reset(void) {
 	_durationRecalculationRequired = true;
+	_timePoints.clear();
 }
 
 void Util::CX_LapTimer::takeSample(void) {
-
 	_timePoints.push_back(_clock->now());
 	_durationRecalculationRequired = true;
 
@@ -30,7 +30,6 @@ void Util::CX_LapTimer::takeSample(void) {
 		CX::Instances::Log.notice("CX_LapTimer") << "Data collected: " << getStatString();
 		reset();
 	}
-
 }
 
 std::vector<double>::size_type Util::CX_LapTimer::collectedSamples(void) {

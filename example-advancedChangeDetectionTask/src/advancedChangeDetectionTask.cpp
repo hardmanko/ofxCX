@@ -210,13 +210,11 @@ void generateTrials (int trialCount) {
 void drawFixation (void) {
 	ofBackground( backgroundColor );
 
-	ofSetColor( ofColor( 255 ) );
-	ofSetLineWidth( 3 );
-
 	ofPoint centerpoint = Display.getCenterOfDisplay();
 
-	ofLine( centerpoint.x - 10, centerpoint.y, centerpoint.x + 10, centerpoint.y );
-	ofLine( centerpoint.x, centerpoint.y - 10, centerpoint.x, centerpoint.y + 10 );
+	ofSetColor(ofColor(255));
+	Draw::line(ofPoint(centerpoint.x - 10, centerpoint.y), ofPoint(centerpoint.x + 10, centerpoint.y), 3);
+	Draw::line(ofPoint(centerpoint.x, centerpoint.y - 10), ofPoint(centerpoint.x, centerpoint.y + 10), 3);
 }
 
 void drawBlank (void) {

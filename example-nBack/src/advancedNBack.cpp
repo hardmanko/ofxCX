@@ -96,25 +96,17 @@ struct stimulusFunctor {
 
 vector<stimulusFunctor> stimulusFunctors;
 
-
 void runExperiment(void) {
 
-	//CX_WindowConfiguration_t winConfig;
-	//winConfig.desiredRenderer = ofPtr<ofGLProgrammableRenderer>();
-	//reopenWindow(winConfig);
-
-	Display.setFullScreen(false);
+	Display.setFullScreen(true);
+	if (Display.isFullscreen()) {
+		Clock.sleep(2000);
+	}
 	Display.setVSync(true, true);
-
-	//ofSetLogLevel("ofTrueTypeFont", ofLogLevel::OF_LOG_VERBOSE);
-	Log.level(CX_LogLevel::LOG_ALL, "ofTrueTypeFont");
-
-	Clock.sleep(1000);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
 
-	//Display.BLOCKING_estimateFramePeriod(CX_Seconds(2));
 	Log.notice() << "Frame period: " << Display.getFramePeriod() << " (" << Display.getFramePeriodStandardDeviation() << ")";
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
@@ -126,13 +118,11 @@ void runExperiment(void) {
 	s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
 	keyReminderInstructions = s.str();
 
-	
-
 	generateTrials(10);
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
+	config.swappingMode = CX_SlidePresenter::Configuration::SINGLE_CORE_BLOCKING_SWAPS;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
 
@@ -311,7 +301,7 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 	sp.appendSlideFunction(stimulusFunctors[trialIndex], stimulusPresentationDuration, "stimulus");
 
 	//You can also accomplish the same thing using std::bind:
-	//sp.appendSlideFunction( std::bind( drawStimulus, df(trialIndex, "letter").toString(), trialIndex >= nBack ), stimulusPresentationDuration, "stimulus" );
+	//sp.appendSlideFunction( std::bind( drawStimulus, df(trialIndex, "letter").toString(), (trialIndex >= nBack) ), stimulusPresentationDuration, "stimulus" );
 
 	sp.appendSlideFunction(drawBlank, interStimulusInterval, "blank");
 

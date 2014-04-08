@@ -116,7 +116,13 @@ void runExperiment (void) {
 	//Calling this function can give us a lot of information about the last presentation of slides.
 	Log.notice() << "Slide presentation information: " << endl << SlidePresenter.printLastPresentationInformation();
 
-	Display.setFullScreen(false);
+	if (Display.isFullscreen()) {
+		Display.setFullScreen(false);
+	}
+
+	if (Display.isAutomaticallySwapping()) {
+		Display.BLOCKING_setAutoSwapping(false);
+	}
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);

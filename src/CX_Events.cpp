@@ -1,4 +1,6 @@
 #include "CX_Events.h"
 
-ofEvent<CX::Private::CX_MouseScrollEventArgs_t> CX::Private::scrollEvent;
-ofEvent<CX::Private::CX_KeyRepeatEventArgs_t> CX::Private::keyRepeatEvent;
+CX::Private::CX_Events& CX::Private::getEvents(void) {
+	CX::Private::CX_Events* ev = new CX::Private::CX_Events;
+	return *ev;
+}
