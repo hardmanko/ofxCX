@@ -33,6 +33,8 @@ ofTrueTypeFont smallFont;
 ofTrueTypeFont largeFont;
 #endif
 
+ofVbo rainbowVbo;
+
 bool drawingToFboFirst = false;
 float starSize = .8;
 
@@ -116,6 +118,9 @@ void runExperiment(void) {
 	largeFont.loadFont(OF_TTF_SERIF, 40);
 #endif
 
+	vector<ofFloatColor> rainbowColors = Draw::getRGBSpectrum<ofFloatColor>(90);
+	rainbowVbo = Draw::colorArcToVbo(ofPoint(400, 550), rainbowColors, 100, 70, 30, 0, 180);
+
 	while (true) {
 		updateDrawings();
 		Log.flush();
@@ -190,19 +195,12 @@ void drawStuff (void) {
 	ofFill(); //Fill them again
 
 	vector<ofPoint> cps(4);
-	cps[0] = ofPoint(240, 100);
+	cps[0] = ofPoint(240, 180);
 	cps[1] = cps[0] + ofPoint(60, 0);
 	cps[2] = cps[1] + ofPoint(0, 60);
 	cps[3] = cps[2] + ofPoint(60, 0);
 	ofSetColor(ofColor::green);
 	Draw::bezier(cps, 10, 20);
-
-#ifdef CX_RT_USE_PATH
-	//This squircle is rotated around all three axes at once. If you want to rotate ofPaths only around the Z axis (i.e. the normal 2D rotation),
-	//use ofVec3f(0,0,1) for the axis argument (no x, no y, yes z).
-	squirclePath.rotate(.5, ofVec3f(1,1,1)); //The current rotation is saved by the ofPath, so each time this called, it rotates a little more.
-	squirclePath.draw(300, 70);
-#endif
 
 #ifdef CX_RT_USE_FBO
 	ofSetColor(255); //Before drawing an ofFbo that has transparent elements, if the color is not set to white, 
@@ -233,22 +231,29 @@ void drawStuff (void) {
 	//The bird image may not have any transparency data, so set it to have an alpha channel
 	birds.setImageType(ofImageType::OF_IMAGE_COLOR_ALPHA);
 	birds.getPixelsRef().setChannel(3, birdPattern.getChannel(0)); //Set the alpha channel (channel 3) of the birds image to 
-		//the single channel of the gabor.
+		//the single channel of the greyscale pattern.
 	birds.draw(500, 20);
 #endif
 
-#ifdef CX_RT_USE_PATH
-	arrowPath.draw(650, 400);
-
-	//The size of this star can be changed with the mouse wheel
-	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::turquoise);
-#endif
+	rainbowVbo.draw(GL_TRIANGLE_STRIP, 0, rainbowVbo.getNumVertices());
 
 #ifdef CX_RT_USE_TTF
 	ofSetColor(255);
 	smallFont.drawString("Some small text", 550, 500);
-	ofSetColor(255,0,150);
+	ofSetColor(255, 0, 150);
 	largeFont.drawString("Big text", 550, 540);
+#endif
+
+#ifdef CX_RT_USE_PATH
+	//This squircle is rotated around all three axes at once. If you want to rotate ofPaths only around the Z axis (i.e. the normal 2D rotation),
+	//use ofVec3f(0,0,1) for the axis argument (no x, no y, yes z).
+	squirclePath.rotate(.5, ofVec3f(1, 1, 1)); //The current rotation is saved by the ofPath, so each time this called, it rotates a little more.
+	squirclePath.draw(300, 70);
+
+	arrowPath.draw(650, 400);
+
+	//The size of this star can be changed with the mouse wheel
+	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::turquoise);
 #endif
 
 #ifdef CX_RT_USE_TEXTURE
@@ -269,6 +274,8 @@ void drawStuff (void) {
 	prop.pattern.fallOffPower = 6;
 	CX::Draw::gabor(ofGetMouseX(), ofGetMouseY(), prop);
 #endif
+
+	
 
 }
 

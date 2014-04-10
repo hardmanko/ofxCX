@@ -33,7 +33,7 @@ void CX_Display::setup (void) {
 		//Log.warning("CX_Display") << "Programmable renderer not available. Standard renderer will be used instead.";
 	}
 
-	_swapThread = new CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
+	_swapThread = new Private::CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
 		//what too early means) or else there will be a crash.
 
@@ -60,8 +60,7 @@ void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 
 /*! Determine whether the display is configured to automatically swap the front and back buffers
 every frame.
-See \ref BLOCKING_setAutoSwapping for more information.
-*/
+See \ref BLOCKING_setAutoSwapping for more information. */
 bool CX_Display::isAutomaticallySwapping (void) {
 	return _swapThread->isThreadRunning();
 }
@@ -74,7 +73,9 @@ CX_Millis CX_Display::getLastSwapTime(void) {
 
 /*! Get an estimate of the next time the front and back buffers will be swapped.
 This function depends on the precision of the frame period as estimated using 
-BLOCKING_estimateFramePeriod().
+BLOCKING_estimateFramePeriod(). If the front and back buffers are not swapped
+every frame, the result of this function is meaningless because it uses the 
+last buffer swap time as a reference.
 \return A time value that can be compared to CX::Instances::Clock.now(). */
 CX_Millis CX_Display::estimateNextSwapTime(void) {
 	return this->getLastSwapTime() + this->getFramePeriod();

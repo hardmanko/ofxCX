@@ -117,7 +117,7 @@ std::vector<T> CX::Util::repeat(std::vector<T> values, std::vector<unsigned int>
 	std::vector<T> rval;
 
 	if (values.size() != each.size()) {
-		//CX::Instances::Log.error("CX::Util::repeat") << "values.size() != each.size()"; //For some reason GCC doesn't like this.
+		//CX::Instances::Log.error("CX::Util::repeat") << "values.size() != each.size()"; //For some reason GCC doesn't like this error printout.
 		return rval;
 	}
 
@@ -131,6 +131,7 @@ std::vector<T> CX::Util::repeat(std::vector<T> values, std::vector<unsigned int>
 
 	return rval;
 }
+
 
 /*! This function converts a vector of values to a string representation of the values.
 \param values The vector of values to convert.

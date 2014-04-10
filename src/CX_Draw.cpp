@@ -694,12 +694,12 @@ are unequal, the arc will be a section of an ellipse.
 \param center The point around which the arc will be drawn.
 \param radiusX The radius of the arc in the X-axis.
 \param radiusY The radius of the arc in the Y-axis.
-\param angleBegin The angle at which to begin the arc.
-\param angleEnd The angle at which to end the arc. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
 \param width The width of the arc, radially from the center.
+\param angleBegin The angle at which to begin the arc, in degrees.
+\param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
 \param resolution The resolution of the arc. The arc will be composed of `resolution` line segments.
 */
-void CX::Draw::arc(ofPoint center, float radiusX, float radiusY, float angleBegin, float angleEnd, float width, unsigned int resolution) {
+void CX::Draw::arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution) {
 
 	float d = width / 2;
 	unsigned int vertexCount = resolution + 1;
@@ -767,3 +767,93 @@ void CX::Draw::bezier(std::vector<ofPoint> controlPoints, float width, unsigned 
 	Draw::lines(outputPoints, width);
 }
 
+
+/*! Draws a color wheel with specified colors.
+\param center The center of the color wheel.
+\param colors The colors to use in the color wheel.
+\param radius The radius of the color wheel.
+\param width The width of the color wheel. The color wheel will extend half of the width
+in either direction from the radius.
+\param angle The amount to rotate the color wheel. */
+void CX::Draw::colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
+
+	ofVbo vbo = colorWheelToVbo(center, colors, radius, width, angle);
+	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
+
+	/*
+	float d = width / 2;
+	angle *= -PI / 180;
+
+	colors = CX::Util::repeat(colors, 1, 2);
+
+	vector<ofPoint> vertices(colors.size(), center);
+
+	for (unsigned int i = 0; i < colors.size() / 2; i++) {
+
+		float rad = 2 * PI * (float)i / (colors.size() / 2) - (PI / 2) + angle;
+
+		vertices[2 * i] += ofPoint((radius + d) * cos(rad), (radius + d) * sin(rad));
+		vertices[2 * i + 1] += ofPoint((radius - d) * cos(rad), (radius - d) * sin(rad));
+	}
+
+	colors.push_back(colors[0]);
+	colors.push_back(colors[1]);
+
+	vertices.push_back(vertices[0]);
+	vertices.push_back(vertices[1]);
+
+	ofVbo vbo;
+	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
+	vbo.setColorData(colors.data(), colors.size(), GL_STATIC_DRAW);
+	vbo.draw(GL_TRIANGLE_STRIP, 0, vertices.size());
+	*/
+}
+
+/*! Draws an arc with specified colors. The precision of the arc is controlled by how many colors are supplied.
+\param center The center of the color wheel.
+\param colors The colors to use in the color arc.
+\param radiusX The radius of the color wheel in the X-axis.
+\param radiusY The radius of the color wheel in the Y-axis.
+\param width The width of the arc. The arc will extend half of the width
+in either direction from the radii.
+\param angleBegin The angle at which to begin the arc, in degrees.
+\param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
+*/
+void CX::Draw::colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+	ofVbo vbo = colorArcToVbo(center, colors, radiusX, radiusY, width, angleBegin, angleEnd);
+	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
+}
+
+ofVbo CX::Draw::colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
+	colors.push_back(colors.front());
+
+	return CX::Draw::colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
+}
+
+ofVbo CX::Draw::colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+	float d = width / 2;
+
+	angleBegin *= -PI / 180;
+	angleEnd *= -PI / 180;
+
+	colors = CX::Util::repeat(colors, 1, 2);
+
+	vector<ofPoint> vertices(colors.size(), center);
+
+	unsigned int resolution = vertices.size() / 2;
+
+	for (unsigned int i = 0; i < resolution; i++) {
+
+		float p = (float)i / (resolution - 1);
+
+		float rad = (angleEnd - angleBegin) * p + angleBegin;
+
+		vertices[2 * i] += ofPoint((radiusX + d) * cos(rad), (radiusY + d) * sin(rad));
+		vertices[2 * i + 1] += ofPoint((radiusX - d) * cos(rad), (radiusY - d) * sin(rad));
+	}
+
+	ofVbo vbo;
+	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
+	vbo.setColorData(colors.data(), colors.size(), GL_STATIC_DRAW);
+	return vbo;
+}

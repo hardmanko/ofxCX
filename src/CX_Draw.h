@@ -55,7 +55,7 @@ namespace CX {
 		void line(ofPoint p1, ofPoint p2, float width);
 
 		void ring(ofPoint center, float radius, float width, unsigned int resolution);
-		void arc(ofPoint center, float radiusX, float radiusY, float angleBegin, float angleEnd, float width, unsigned int resolution);
+		void arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution);
 
 		void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution);
 
@@ -125,5 +125,54 @@ namespace CX {
 		ofPixels gaborToPixels (const CX_GaborProperties_t& properties);
 		ofTexture gaborToTexture (const CX_GaborProperties_t& properties);
 		void gabor (int x, int y, const CX_GaborProperties_t& properties);
+
+		template <typename ofColorType>	std::vector<ofColorType> getRGBSpectrum(unsigned int colorCount);
+
+		ofVbo colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle);
+		ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd);
+		void colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle);
+		void colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd);
 	}
+}
+
+/*! Sample colors from the RGB spectrum with variable precision. Colors will be sampled
+beginning with red, continue through yellow, green, cyan, blue, violet, and almost, but not quite, back to red.
+\param colorCount The number of colors to draw from the RGB spectrum, which will be rounded
+up to the next power of 6.
+\return A vector containing the sampled colors with a number of colors equal to colorCount
+rounded up to the next power of 6.
+*/
+template <typename ofColorType>
+std::vector<ofColorType> CX::Draw::getRGBSpectrum(unsigned int colorCount) {
+
+	unsigned int precision = 1 + (colorCount - (colorCount % 6)) / 6;
+	float maxValue = ofFloatColor::limit();
+
+	vector<float> increasingComponents = CX::Util::sequenceAlong<float>(0, maxValue, precision + 1);
+	increasingComponents.pop_back();
+	vector<float> decreasingComponents = CX::Util::sequenceAlong<float>(maxValue, 0, precision + 1);
+	decreasingComponents.pop_back();
+
+	vector<float> redComponents(precision, maxValue);
+	redComponents.insert(redComponents.end(), decreasingComponents.begin(), decreasingComponents.end());
+	redComponents.insert(redComponents.end(), 2 * precision, 0);
+	redComponents.insert(redComponents.end(), increasingComponents.begin(), increasingComponents.end());
+	redComponents.insert(redComponents.end(), precision, maxValue);
+
+	vector<float> greenComponents = increasingComponents;
+	greenComponents.insert(greenComponents.end(), 2 * precision, maxValue);
+	greenComponents.insert(greenComponents.end(), decreasingComponents.begin(), decreasingComponents.end());
+	greenComponents.insert(greenComponents.end(), 2 * precision, 0);
+
+	vector<float> blueComponents = Util::repeat<float>(0, precision * 2);
+	blueComponents.insert(blueComponents.end(), increasingComponents.begin(), increasingComponents.end());
+	blueComponents.insert(blueComponents.end(), 2 * precision, maxValue);
+	blueComponents.insert(blueComponents.end(), decreasingComponents.begin(), decreasingComponents.end());
+
+	vector<ofColorType> colors(redComponents.size());
+	for (unsigned int i = 0; i < colors.size(); i++) {
+		colors[i] = ofFloatColor(redComponents[i], greenComponents[i], blueComponents[i]); //Implicit conversion in assignment
+	}
+
+	return colors;
 }

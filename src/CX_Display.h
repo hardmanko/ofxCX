@@ -75,7 +75,7 @@ namespace CX {
 	private:
 		ofPtr<ofGLProgrammableRenderer> _renderer;
 
-		CX_VideoBufferSwappingThread *_swapThread;
+		Private::CX_VideoBufferSwappingThread *_swapThread;
 
 		CX_Millis _framePeriod;
 		CX_Millis _framePeriodStandardDeviation;
