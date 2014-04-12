@@ -21,6 +21,7 @@ draw stimuli: see the graphics and 3d sections if this page: http://www.openfram
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 #include "CX_VideoBufferSwappingThread.h"
+#include "CX_DataFrame.h"
 
 namespace CX {
 
@@ -71,6 +72,8 @@ namespace CX {
 		ofPoint getCenterOfDisplay (void);
 		
 		void BLOCKING_waitForOpenGL (void);
+
+		CX_DataFrame testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
 	private:
 		ofPtr<ofGLProgrammableRenderer> _renderer;

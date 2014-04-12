@@ -511,8 +511,6 @@ ofPath CX::Draw::lines(std::vector<ofPoint> points, ofColor color, float width, 
 						//Middle point is between others. This should have been removed earlier.
 					} else {
 						//Middle point is not between others, it is at the end of a line sticking out.
-
-
 						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
 					}
 				} else if (inLs1 && inLs2) {
@@ -698,6 +696,7 @@ are unequal, the arc will be a section of an ellipse.
 \param angleBegin The angle at which to begin the arc, in degrees.
 \param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
 \param resolution The resolution of the arc. The arc will be composed of `resolution` line segments.
+\note This uses an ofVbo internally. If VBOs are not supported by your video card, this may not work at all.
 */
 void CX::Draw::arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution) {
 

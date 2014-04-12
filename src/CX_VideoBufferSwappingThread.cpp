@@ -12,7 +12,7 @@ namespace Private {
 		_frameCountOnLastCheck(0),
 		_isLocked(false),
 		_swapsBeforeStop(-1),
-		_glFinishAfterSwap(true)
+		_glFinishAfterSwap(false)
 	{
 	}
 

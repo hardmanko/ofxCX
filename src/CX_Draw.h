@@ -137,6 +137,7 @@ namespace CX {
 
 /*! Sample colors from the RGB spectrum with variable precision. Colors will be sampled
 beginning with red, continue through yellow, green, cyan, blue, violet, and almost, but not quite, back to red.
+\tparam ofColorType An oF color type. One of: ofColor, ofFloatColor, or ofShortColor.
 \param colorCount The number of colors to draw from the RGB spectrum, which will be rounded
 up to the next power of 6.
 \return A vector containing the sampled colors with a number of colors equal to colorCount

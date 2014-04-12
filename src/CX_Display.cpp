@@ -226,17 +226,18 @@ void CX_Display::endDrawingToBackBuffer (void) {
 	if(_renderer){
 		_renderer->finishRender();
 	}
-	//glFlush();
 }
 
 /*! This function queues up a swap of the front and back buffers then
-blocks until the swap occurs. It does nothing if isAutomaticallySwapping() == true.
+blocks until the swap occurs. This usually should not be used if 
+`isAutomaticallySwapping() == true`. If it is, a warning will be logged.
 \see \ref blockingCode */
 void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 	if (isAutomaticallySwapping()) {
 		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with BLOCKING_swapFrontAndBackBuffers while auto swapping mode was in use.";
 	}
 
+	//glFlush();
 	glfwSwapBuffers(CX::Private::glfwContext);
 	if (_softVSyncWithGLFinish) {
 		glFinish();
@@ -247,7 +248,10 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 
 /*! This function cues a swap of the front and back buffers. It avoids blocking
 (like BLOCKING_swapFrontAndBackBuffers()) by spawning a thread in which the 
-swap is waited for. */
+swap is waited for. This does not make it obviously better than BLOCKING_swapFrontAndBackBuffers(),
+because spawning a thread has a cost and may introduce synchronization problems. Also,
+because this function does not block, in order to know when the buffer swap took place,
+you need to check hasSwappedSinceLastCheck() in order to know when the buffer swap has taken place. */
 void CX_Display::swapFrontAndBackBuffers (void) {
 	_swapThread->swapNFrames(1);
 }
@@ -392,4 +396,237 @@ void CX_Display::setVSync(bool useHardwareVSync, bool useSoftwareVSync) {
 	
 	_softVSyncWithGLFinish = useSoftwareVSync;
 	_swapThread->setGLFinishAfterSwap(useSoftwareVSync);
+}
+
+/*! This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
+are requested in the main thread or in a secondary thread. The tests combine visual inspection and automated 
+time measurement. The visual inspection is important because what the computer is told to put on the screen
+and what is actually drawn on the screen are not always the same. It is best to run the tests in full screen
+mode, although that is not enforced.
+
+In the resulting CX_DataFrame, there are three columns that give the test conditions. "thread" indicates
+whether the main thread or a secondary thread was used. "hardVSync" and "softVSync" indicate whether
+hardware or software Vsync were enabled for the test (see \ref setVSync()). Other columns, giving data
+from the tests, are explained below.
+
+Continuous swapping test
+--------------------------------
+This test examines the case of constantly swapping the fron and back buffers. It measures the amount of time
+between swaps, which should always approximately equal the frame period. The data from this test are found
+in columns of the data frame beginning with "cs": "csDurations" gives the raw between-swap durations, and 
+"csDurationMean" and "csDurationStdDev" give the mean and standard deviation of the durations.
+
+During this test, you should see the screen very rapidly flickering between black and white. If you see
+slow flickering or a constant color, that is an error.
+
+Wait swap test
+--------------------------------
+One case that this function checks for is what happens if a swap is requested after a long period of
+no swaps being requested. In particular, this function swaps, waits for 2.5 swap periods and then swaps twice in a row.
+The idea is that there is a long delay between the first swap (the "long" swap) and the second swap (the "short" swap),
+followed by a standard delay before the third swap (the "normal" swap).
+
+There are graded levels of success in this test. Complete success is when the duration of the first swap is 3P, 
+where P is the standard swap period, and the duration of both of the second two swaps is 1P. 
+Partial success is if the duration of the long swap is ~2.5P, the duration of the short swap is ~.5P, and the duration
+of the normal swap is 1P. In this case, the short swap at least gets things back on the right track.
+Failure occurs if the short swap duration is ~0P. Mega failure occurs if the normal swap duration is ~0P. In this
+case, it is taking multiple repeated swaps in order to regain vertical synchronization, which is unacceptable behavior.
+
+You can visually check these results. During this test, an attempt is made to draw three bars on the left, 
+middle, and right of the screen. The left bar is drawn for the long duration, the middle bar for the short duration,
+and the right bar for the normal duration.
+Complete success results in all three bars flickering (although you still need to check the timing data). 
+Partial success results in only the left and right bars flickering with the middle bar location flat black.
+For the partial success case, the middle bar is never visible because at the time at which it is swapped in, 
+the screen is in the middle of a refresh cycle. When the next refresh cycle starts, then the middle bar can 
+start to be drawn to the screen. However, before it has a chance to be drawn, the right rectangle is drawn 
+to the back buffer, overwriting the middle bar (or at least, this is my best explanation for why it isn't visible).
+
+The timing data from the wait swap test can be found in columns of the data frame beginning with "ws". "wsLongMean",
+"wsShortMean", and "wsNormalMean" are the averages of the long, short, and normal swap durations, respectively.
+"wsTotalMean" is the sum of wsLongMean, wsShortMean, and wsNormalMean. But also be sure to check the raw data in 
+"wsDurations", which goes along with the duration type in "wsTypes".
+
+The wait swap test is not performed for the secondary thread, because the assumption is that if the secondary
+thread is used, in that thread the front and back buffers will be swapped constantly so there will be no wait swaps.
+
+\param desiredTestDuration An approximate amount of time to spend performing the tests.
+\param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested.
+\return A CX_DataFrame containing timing results from the tests.
+
+\note This function blocks for approximately `desiredTestDuration` or more. See \ref blockingCode.
+*/
+CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread) {
+
+	//lamdas
+	auto drawScreenData = [](CX_Display* display, ofColor color, string information) {
+		display->beginDrawingToBackBuffer();
+		ofBackground(color);
+		ofDrawBitmapStringHighlight(information, ofPoint(100, 50), ofColor::black, ofColor::white);
+		display->endDrawingToBackBuffer();
+	};
+
+	auto drawWaitSwapScreenData = [](CX_Display* display, ofColor background, ofColor rectColor, ofRectangle rect, string information) {
+		display->beginDrawingToBackBuffer();
+		ofBackground(background);
+		ofSetColor(rectColor);
+		ofRect(rect);
+		ofDrawBitmapStringHighlight(information, ofPoint(100, 50), ofColor::black, ofColor::white);
+		display->endDrawingToBackBuffer();
+	};
+
+
+	bool wasSwapping = isAutomaticallySwapping();
+
+	CX_Millis testSegmentDuration = desiredTestDuration / 12; //8 continuous swapping tests, but only 4 wait swap tests
+	testSegmentDuration *= testSecondaryThread ? 1 : 1.5; //If not doing the secondary thread, make everything else go longer.
+
+	CX_DataFrame data;
+
+	for (int thread = (testSecondaryThread ? 0 : 1); thread < 2; thread++) {
+
+		bool mainThread = (thread == 1);
+		BLOCKING_setAutoSwapping(!mainThread);
+
+		for (int hardV = 0; hardV < 2; hardV++) {
+			for (int softV = 0; softV < 2; softV++) {
+				CX_DataFrameRow row;
+				row["thread"] = mainThread ? "main" : "secondary";
+				row["hardVSync"] = hardV;
+				row["hardVSync"] = softV;
+
+				//Configure V-Sync for the current test.
+				setVSync(hardV == 1, softV == 1);
+		
+				std::stringstream ss;
+				ss << "Thread: " << row["thread"].toString() << "\nHardV: " << hardV << "\nSoftV: " << softV;
+				std::string conditionString = ss.str();
+
+				vector<CX_Millis> swapTimes;
+
+				//////////////////////////////
+				// Continuous swapping test //
+				//////////////////////////////
+				if (mainThread) {
+					//In order to give a fair test, each main thread test should start with some swaps.
+					for (unsigned int i = 0; i < 5; i++) {
+						BLOCKING_swapFrontAndBackBuffers();
+					}
+
+					CX_Millis startTime = Clock.now();
+					while ((Clock.now() - startTime) < testSegmentDuration) {
+						BLOCKING_swapFrontAndBackBuffers();
+						swapTimes.push_back(Clock.now());
+
+						drawScreenData(this, (swapTimes.size() % 2) ? ofColor(255) : ofColor(0), "Continuous swapping test\n" + conditionString);
+					}
+
+				} else {
+
+					Clock.wait(200);
+
+					CX_Millis startTime = Clock.now();
+					while ((Clock.now() - startTime) < testSegmentDuration) {
+						if (this->hasSwappedSinceLastCheck()) {
+							swapTimes.push_back(this->getLastSwapTime());
+
+							drawScreenData(this, (swapTimes.size() % 2) ? ofColor(255) : ofColor(0), "Continuous swapping test\n" + conditionString);
+						}
+					}
+				}
+
+				vector<CX_Millis> durations(swapTimes.size() - 1);
+				for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
+					durations[i] = swapTimes[i + 1] - swapTimes[i];
+				}
+
+				row["csDurations"] = durations;
+				row["csDurationMean"] = Util::mean(durations);
+				row["csDurationStdDev"] = CX_Millis::standardDeviation(durations);
+
+				
+				////////////////////
+				// Wait swap test //
+				////////////////////
+				if (mainThread) {
+					swapTimes.clear();
+					vector<string> durationType;
+
+					ofRectangle resolution = this->getResolution();
+
+					CX_Millis startTime = Clock.now();
+					CX_Millis period = Util::mean(durations);
+					while ((Clock.now() - startTime) < testSegmentDuration) {
+
+						drawWaitSwapScreenData(this, ofColor::black, ofColor::white, 
+											   ofRectangle(0, 0, resolution.width / 3, resolution.height),
+											   "Wait swap test\n" + conditionString);
+						BLOCKING_swapFrontAndBackBuffers();
+						swapTimes.push_back(Clock.now());
+						durationType.push_back("long");
+
+
+						drawWaitSwapScreenData(this, ofColor::black, ofColor::white,
+											   ofRectangle(resolution.width / 3, 0, resolution.width / 3, resolution.height),
+											   "Wait swap test\n" + conditionString);
+
+						Clock.wait(period * 2.5);
+
+						BLOCKING_swapFrontAndBackBuffers();
+						swapTimes.push_back(Clock.now());
+						durationType.push_back("short");
+
+						drawWaitSwapScreenData(this, ofColor::black, ofColor::white,
+											   ofRectangle(resolution.width * 2 / 3, 0, resolution.width / 3, resolution.height),
+											   "Wait swap test\n" + conditionString);
+						BLOCKING_swapFrontAndBackBuffers();
+						swapTimes.push_back(Clock.now());
+						durationType.push_back("normal");
+					}
+
+					durationType.pop_back(); //Make it so that durations lines up with swapType in terms of length.
+
+					durations.resize(swapTimes.size() - 1);
+					for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
+						durations[i] = swapTimes[i + 1] - swapTimes[i];
+					}
+
+					row["wsDurations"] = durations;
+					row["wsType"] = durationType;
+
+					CX_Millis longSwapSum = 0;
+					unsigned int longSwapCount = 0;
+					CX_Millis shortSwapSum = 0;
+					unsigned int shortSwapCount = 0;
+					CX_Millis normalSwapSum = 0;
+					unsigned int normalSwapCount = 0;
+
+					for (unsigned int i = 0; i < durationType.size(); i++) {
+						if (durationType[i] == "long") {
+							longSwapSum += durations[i];
+							longSwapCount++;
+						} else if (durationType[i] == "short") {
+							shortSwapSum += durations[i];
+							shortSwapCount++;
+						} else if (durationType[i] == "normal") {
+							normalSwapSum += durations[i];
+							normalSwapCount++;
+						}
+					}
+
+					row["wsLongMean"] = longSwapSum / longSwapCount;
+					row["wsShortMean"] = shortSwapSum / shortSwapCount;
+					row["wsNormalMean"] = normalSwapSum / normalSwapCount;
+					row["wsTotalMean"] = row["wsLongMean"].toDouble() + row["wsShortMean"].toDouble() + row["wsNormalMean"].toDouble();
+				}
+
+				data.appendRow(row);
+			}
+		}
+	}
+
+	BLOCKING_setAutoSwapping(wasSwapping);
+
+	return data;
 }

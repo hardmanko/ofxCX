@@ -6,6 +6,10 @@ is designed to be used used for creating psychology experiments. OpenFrameworks 
 is a very good programming languange for anything requiring a high degree of timing precision. OpenFrameworks 
 and CX are both free and open source, distributed under the MIT license.
 
+One of the features that CX has is the ability to run without a substantial installation process.
+When a CX program is compiled and linked, the resulting artifact is an executable binary that can be run directly with needing another program to be installed.
+The collection of files needed to run a CX program is about 10 MB (possibly more, depending on stimuli). Installing the program just requires unzipping a file.
+
 \section installationInstructions Installation
 In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
 On that page, you can algo find installation guides for some of the most popular development environments.

@@ -307,7 +307,7 @@ bool CX_DataFrame::deleteRow (rowIndex_t row) {
 \note If the row has columns that do not exist in the data frame, those columns will be added to the data frame.
 */
 void CX_DataFrame::appendRow(CX_DataFrameRow row) {
-	//This implementation looks weird, but don't change it: it deals with a number of edge cases.
+	//This implementation looks weird, but don't change it without care: it deals with a number of edge cases.
 	_rowCount++;
 	vector<string> names = row.names();
 	for (unsigned int i = 0; i < names.size(); i++) {
