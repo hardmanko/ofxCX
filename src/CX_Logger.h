@@ -93,6 +93,8 @@ namespace CX {
 		std::vector<CX_LoggerTargetInfo> _targetInfo;
 		std::map<std::string, CX_LogLevel> _moduleLogLevels;
 		std::vector<CX_LogMessage> _messageQueue;
+		Poco::Mutex _messageQueueMutex;
+		Poco::Mutex _moduleLogLevelsMutex;
 
 		std::stringstream& _log(CX_LogLevel level, std::string module);
 		std::string _getLogLevelName(CX_LogLevel level);

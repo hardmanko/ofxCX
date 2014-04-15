@@ -7,20 +7,27 @@ using namespace CX;
 namespace CX {
 namespace Private {
 
-	CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread(void) :
-		_frameCount(0),
-		_frameCountOnLastCheck(0),
-		_isLocked(false),
-		_swapsBeforeStop(-1),
-		_glFinishAfterSwap(false)
-	{
-	}
+CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread(void) :
+	_frameCount(0),
+	_frameCountOnLastCheck(0),
+	_isLocked(false),
+	_swapsBeforeStop(-1),
+	_glFinishAfterSwap(false)
+{
+}
 
-	void CX_VideoBufferSwappingThread::threadedFunction(void) {
-		while (isThreadRunning()) {
+void CX_VideoBufferSwappingThread::threadedFunction(void) {
+
+	CX_Millis lastSwapTime = 0;
+	glfwSwapInterval(-1);
+
+	while (isThreadRunning()) {
+
+		//if ((CX::Instances::Clock.now() - lastSwapTime) > CX_Millis(5)) {
+			//cout << "Swapping at " << CX::Instances::Clock.now() << endl;
 
 			glfwSwapBuffers(CX::Private::glfwContext);
-
+			/*
 			if (lock()) {
 				bool finish = _glFinishAfterSwap;
 				unlock();
@@ -28,13 +35,14 @@ namespace Private {
 					glFinish();
 				}
 			}
+			*/
+			lastSwapTime = CX::Instances::Clock.now();
 
-			CX_Millis swapTime = CX::Instances::Clock.now();
 
 			if (lock()) {
 				++_frameCount;
 
-				_recentSwapTimes.push_back(swapTime);
+				_recentSwapTimes.push_back(lastSwapTime);
 				while (_recentSwapTimes.size() > 30) {
 					_recentSwapTimes.pop_front();
 				}
@@ -52,120 +60,124 @@ namespace Private {
 					this->stopThread();
 				}
 			}
-		}
+
+			//CX::Instances::Clock.sleep(10);
+		//}
 	}
 
+}
 
-	void CX_VideoBufferSwappingThread::swapNFrames(unsigned int n) {
-		if (n == 0) {
-			return;
-		}
 
-		if (!this->isThreadRunning()) {
+void CX_VideoBufferSwappingThread::swapNFrames(unsigned int n) {
+	if (n == 0) {
+		return;
+	}
+
+	if (!this->isThreadRunning()) {
+		_swapsBeforeStop = n;
+		this->startThread(true, false);
+	} else {
+		if (_lockMutex()) {
 			_swapsBeforeStop = n;
-			this->startThread(true, false);
-		} else {
-			if (_lockMutex()) {
-				_swapsBeforeStop = n;
-				_unlockMutex();
+			_unlockMutex();
+		}
+	}
+}
+
+bool CX_VideoBufferSwappingThread::hasSwappedSinceLastCheck(void) {
+	bool rval = false;
+	if (_lockMutex()) {
+		if (_frameCount != _frameCountOnLastCheck) {
+			_frameCountOnLastCheck = _frameCount;
+			rval = true;
+		}
+		_unlockMutex();
+	}
+	return rval;
+}
+
+CX_Millis CX_VideoBufferSwappingThread::getTypicalSwapPeriod(void) {
+	CX_Millis typicalSwapPeriod = 0;
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() >= 2) {
+			CX_Millis swapPeriodSum = 0;
+			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
+				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
 			}
+			typicalSwapPeriod = swapPeriodSum / (_recentSwapTimes.size() - 1);
 		}
+		_unlockMutex();
 	}
+	return typicalSwapPeriod;
+}
 
-	bool CX_VideoBufferSwappingThread::swappedSinceLastCheck(void) {
-		bool rval = false;
-		if (_lockMutex()) {
-			if (_frameCount != _frameCountOnLastCheck) {
-				_frameCountOnLastCheck = _frameCount;
-				rval = true;
-			}
-			_unlockMutex();
+CX_Millis CX_VideoBufferSwappingThread::estimateNextSwapTime(void) {
+	CX_Millis nextSwapTime = 0;
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() >= 2) {
+			nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
 		}
-		return rval;
+		_unlockMutex();
 	}
+	return nextSwapTime;
+}
 
-	CX_Millis CX_VideoBufferSwappingThread::getTypicalSwapPeriod(void) {
-		CX_Millis typicalSwapPeriod = 0;
-		if (_lockMutex()) {
-			if (_recentSwapTimes.size() >= 2) {
-				CX_Millis swapPeriodSum = 0;
-				for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
-					swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
-				}
-				typicalSwapPeriod = swapPeriodSum / (_recentSwapTimes.size() - 1);
-			}
-			_unlockMutex();
+CX_Millis CX_VideoBufferSwappingThread::getLastSwapTime(void) {
+	CX_Millis lastSwapTime = 0;
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() > 0) {
+			lastSwapTime = _recentSwapTimes.back();
 		}
-		return typicalSwapPeriod;
+		_unlockMutex();
 	}
+	return lastSwapTime;
+}
 
-	CX_Millis CX_VideoBufferSwappingThread::estimateNextSwapTime(void) {
-		CX_Millis nextSwapTime = 0;
-		if (_lockMutex()) {
-			if (_recentSwapTimes.size() >= 2) {
-				nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
-			}
-			_unlockMutex();
+CX_Millis CX_VideoBufferSwappingThread::getLastSwapPeriod(void) {
+	CX_Millis lastSwapPeriod = 0;
+	if (_lockMutex()) {
+		if (_recentSwapTimes.size() >= 2) {
+			lastSwapPeriod = _recentSwapTimes.at(_recentSwapTimes.size() - 1) - _recentSwapTimes.at(_recentSwapTimes.size() - 2);
 		}
-		return nextSwapTime;
+		_unlockMutex();
 	}
+	return lastSwapPeriod;
+}
 
-	CX_Millis CX_VideoBufferSwappingThread::getLastSwapTime(void) {
-		CX_Millis lastSwapTime = 0;
-		if (_lockMutex()) {
-			if (_recentSwapTimes.size() > 0) {
-				lastSwapTime = _recentSwapTimes.back();
-			}
-			_unlockMutex();
-		}
-		return lastSwapTime;
+uint64_t CX_VideoBufferSwappingThread::getFrameNumber(void) {
+	uint64_t frameNumber = 0;
+	if (_lockMutex()) {
+		frameNumber = _frameCount;
+		_unlockMutex();
 	}
+	return frameNumber;
+}
 
-	CX_Millis CX_VideoBufferSwappingThread::getLastSwapPeriod(void) {
-		CX_Millis lastSwapPeriod = 0;
-		if (_lockMutex()) {
-			if (_recentSwapTimes.size() >= 2) {
-				lastSwapPeriod = _recentSwapTimes.at(_recentSwapTimes.size() - 1) - _recentSwapTimes.at(_recentSwapTimes.size() - 2);
-			}
-			_unlockMutex();
-		}
-		return lastSwapPeriod;
+void CX_VideoBufferSwappingThread::setGLFinishAfterSwap(bool finishAfterSwap) {
+	if (_lockMutex()) {
+		_glFinishAfterSwap = finishAfterSwap;
+		_unlockMutex();
 	}
-
-	uint64_t CX_VideoBufferSwappingThread::getFrameNumber(void) {
-		uint64_t frameNumber = 0;
-		if (_lockMutex()) {
-			frameNumber = _frameCount;
-			_unlockMutex();
-		}
-		return frameNumber;
-	}
-
-	void CX_VideoBufferSwappingThread::setGLFinishAfterSwap(bool finishAfterSwap) {
-		if (_lockMutex()) {
-			_glFinishAfterSwap = finishAfterSwap;
-			_unlockMutex();
-		}
-	}
+}
 
 
-	bool CX_VideoBufferSwappingThread::_lockMutex(void) {
-		if (_isLocked) {
-			return true;
-		}
-
-		if (lock()) {
-			_isLocked = true;
-			return true;
-		}
-		return false;
-	}
-
-	bool CX_VideoBufferSwappingThread::_unlockMutex(void) {
-		_isLocked = false;
-		unlock();
+bool CX_VideoBufferSwappingThread::_lockMutex(void) {
+	if (_isLocked) {
 		return true;
 	}
+
+	if (lock()) {
+		_isLocked = true;
+		return true;
+	}
+	return false;
+}
+
+bool CX_VideoBufferSwappingThread::_unlockMutex(void) {
+	_isLocked = false;
+	unlock();
+	return true;
+}
 
 }
 }

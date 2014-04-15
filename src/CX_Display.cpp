@@ -48,7 +48,7 @@ check to see if the display is automatically swapping by calling isAutomatically
 void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
-			_swapThread->startThread(true, false); //verbose is true only for testing.
+			_swapThread->startThread(true, true); //verbose is true only for testing.
 		}
 	} else {
 		if (_swapThread->isThreadRunning()) {
@@ -96,7 +96,7 @@ CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
 This is generally used in conjuction with automatic swapping of the buffers (BLOCKING_setAutoSwapping())
 or with an individual threaded swap of the buffers (swapFrontAndBackBuffers()). This technically works
 with BLOCKING_swapFrontAndBackBuffers(), but given that that function only returns once the buffers have
-swapped, checking that the buffers have swapped is redundant.
+swapped, using this function to check that the buffers have swapped is redundant.
 \return True if a swap has been made since the last call to this function, false otherwise. */
 bool CX_Display::hasSwappedSinceLastCheck (void) {
 	bool hasSwapped = false;
@@ -116,98 +116,6 @@ number of front and back buffer swaps. It tracks buffer swaps that result from
 returned by this function. */
 uint64_t CX_Display::getFrameNumber (void) {
 	return _swapThread->getFrameNumber() + _manualBufferSwaps;
-}
-
-/*! Copies an ofFbo to the back buffer using a highly efficient blitting operation. This copies
-over the contents of the back buffer, it does not draw over them. For this reason, transparaency
-is ignored.
-\param fbo The framebuffer to copy. It will be drawn starting from (0, 0) and will be drawn at
-the full dimensions of the fbo (whatever size was chosen at allocation of the fbo). 
-*/
-void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
-	copyFboToBackBuffer(fbo, ofPoint(0, 0));
-}
-
-/*! Copies an ofFbo to the back buffer using a highly efficient blitting operation.
-\param fbo The framebuffer to copy.
-\param destination The point on the back buffer where the fbo will be placed.
-*/
-void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
-
-	ofRectangle res = this->getResolution();
-
-	GLint copyWidth = std::min(fbo.getWidth(), res.width); //Dimensions must be the same
-	GLint copyHeight = std::min(fbo.getHeight(), res.height);
-
-	ofRectangle source(0, 0, copyWidth, copyHeight);
-	ofRectangle dest(destination.x, destination.y, copyWidth, copyHeight);
-
-	_blitFboToBackBuffer(fbo, source, dest);
-}
-
-/*! Copies an ofFbo to the back buffer using a highly efficient blitting operation.
-\param fbo The framebuffer to copy.
-\param source A rectangle giving an area of the fbo to copy.
-\param destination The point on the back buffer where the area of the fbo will be placed.
-
-If this function does not provide enough flexibility, you can always draw ofFbo's using the following
-technique:
-\code{.cpp}
-Display.beginDrawingToBackBuffer();
-ofSetColor( 255 );
-fbo.draw( x, y, width, height ); //Replace these variables with the destination location (x,y) and dimensions of the 
-Display.endDrawingToBackBuffer();
-\endcode
-*/
-void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination) {
-	ofRectangle dest(destination.x, destination.y, source.width, source.height);
-
-	_blitFboToBackBuffer(fbo, source, dest);
-}
-
-
-
-void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates) {
-
-	ofRectangle res = this->getResolution();
-
-	GLint sx0 = sourceCoordinates.x;
-	GLint sy0 = fbo.getHeight() - sourceCoordinates.y;
-	GLint sx1 = sourceCoordinates.x + sourceCoordinates.width;
-	GLint sy1 = fbo.getHeight() - sourceCoordinates.y - sourceCoordinates.height;
-
-	GLint dx0 = destinationCoordinates.x;
-	GLint dy0 = res.height - destinationCoordinates.y;
-	GLint dx1 = destinationCoordinates.x + destinationCoordinates.width;
-	GLint dy1 = res.height - destinationCoordinates.y - destinationCoordinates.height;
-
-	ofOrientation orient = ofGetOrientation();
-
-	switch (orient) {
-	case OF_ORIENTATION_DEFAULT:
-		std::swap(sy0, sy1);
-		break;
-	case OF_ORIENTATION_180:
-		std::swap(sx0, sx1);
-		//std::swap(sy0, sy1);
-		break;
-	case OF_ORIENTATION_90_LEFT:
-		//std::swap(y0, y1);
-		//break;
-	case OF_ORIENTATION_90_RIGHT:
-		//std::swap(y0, y1);
-		Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
-			" Supported orientations are OF_ORIENTATION_DEFAULT and OF_ORIENTATION_180.";
-		break;
-	}
-
-	glDrawBuffer(GL_BACK);
-	//glClear(GL_COLOR_BUFFER_BIT);
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_BACK);
-
-	glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 /*! Prepares a rendering context for using drawing functions. Must be paired with
@@ -398,23 +306,120 @@ void CX_Display::setVSync(bool useHardwareVSync, bool useSoftwareVSync) {
 	_swapThread->setGLFinishAfterSwap(useSoftwareVSync);
 }
 
+/*! Copies an ofFbo to the back buffer using an efficient blitting operation. This overwrites
+the contents of the back buffer, it does not draw over them. For this reason, transparaency
+is ignored.
+\param fbo The framebuffer to copy. It will be drawn starting from (0, 0) and will be drawn at
+the full dimensions of the fbo (whatever size was chosen at allocation of the fbo).
+*/
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
+	copyFboToBackBuffer(fbo, ofPoint(0, 0));
+}
+
+/*! Copies an ofFbo to the back buffer using an efficient blitting operation.
+\param fbo The framebuffer to copy.
+\param destination The point on the back buffer where the fbo will be placed.
+*/
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
+
+	ofRectangle res = this->getResolution();
+
+	GLint copyWidth = std::min(fbo.getWidth(), res.width); //Dimensions must be the same
+	GLint copyHeight = std::min(fbo.getHeight(), res.height);
+
+	ofRectangle source(0, 0, copyWidth, copyHeight);
+	ofRectangle dest(destination.x, destination.y, copyWidth, copyHeight);
+
+	_blitFboToBackBuffer(fbo, source, dest);
+}
+
+/*! Copies an ofFbo to the back buffer using an efficient blitting operation.
+\param fbo The framebuffer to copy.
+\param source A rectangle giving an area of the fbo to copy.
+\param destination The point on the back buffer where the area of the fbo will be placed.
+
+If this function does not provide enough flexibility, you can always draw ofFbo's using the following
+technique, which allows for transparency:
+\code{.cpp}
+Display.beginDrawingToBackBuffer();
+ofSetColor( 255 );
+fbo.draw( x, y, width, height ); //Replace these variables with the destination location (x,y) and dimensions of the FBO.
+Display.endDrawingToBackBuffer();
+\endcode
+*/
+void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination) {
+	ofRectangle dest(destination.x, destination.y, source.width, source.height);
+
+	_blitFboToBackBuffer(fbo, source, dest);
+}
+
+void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates) {
+
+	ofRectangle res = this->getResolution();
+
+	GLint sx0 = sourceCoordinates.x;
+	GLint sy0 = fbo.getHeight() - sourceCoordinates.y;
+	GLint sx1 = sourceCoordinates.x + sourceCoordinates.width;
+	GLint sy1 = fbo.getHeight() - sourceCoordinates.y - sourceCoordinates.height;
+
+	GLint dx0 = destinationCoordinates.x;
+	GLint dy0 = res.height - destinationCoordinates.y;
+	GLint dx1 = destinationCoordinates.x + destinationCoordinates.width;
+	GLint dy1 = res.height - destinationCoordinates.y - destinationCoordinates.height;
+
+	ofOrientation orient = ofGetOrientation();
+
+	switch (orient) {
+	case OF_ORIENTATION_DEFAULT:
+		std::swap(sy0, sy1);
+		break;
+	case OF_ORIENTATION_180:
+		std::swap(sx0, sx1);
+		//std::swap(sy0, sy1);
+		break;
+	case OF_ORIENTATION_90_LEFT:
+		//std::swap(y0, y1);
+		//break;
+	case OF_ORIENTATION_90_RIGHT:
+		//std::swap(y0, y1);
+		Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
+			" Supported orientations are OF_ORIENTATION_DEFAULT and OF_ORIENTATION_180.";
+		break;
+	}
+
+	glDrawBuffer(GL_BACK);
+	//glClear(GL_COLOR_BUFFER_BIT);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_BACK);
+
+	glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+}
+
 /*! This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
 are requested in the main thread or in a secondary thread. The tests combine visual inspection and automated 
 time measurement. The visual inspection is important because what the computer is told to put on the screen
 and what is actually drawn on the screen are not always the same. It is best to run the tests in full screen
-mode, although that is not enforced.
+mode, although that is not enforced. At the end of the tests, the results of the tests are provided to
+you to interpret based on the guidelines described here. The outcome of the test will usually be that there
+are some modes that don't work correctly and some that work well for the tested computer.
 
 In the resulting CX_DataFrame, there are three columns that give the test conditions. "thread" indicates
 whether the main thread or a secondary thread was used. "hardVSync" and "softVSync" indicate whether
 hardware or software Vsync were enabled for the test (see \ref setVSync()). Other columns, giving data
-from the tests, are explained below.
+from the tests, are explained below. Whatever combination of Vsync works best can be chosen for use in
+experiments using setVSync(). The threading mode is primarily used by CX_SlidePresenter in the 
+CX::CX_SlidePresenter::Configuration::SwappingMode setting.
 
 Continuous swapping test
 --------------------------------
 This test examines the case of constantly swapping the fron and back buffers. It measures the amount of time
 between swaps, which should always approximately equal the frame period. The data from this test are found
 in columns of the data frame beginning with "cs": "csDurations" gives the raw between-swap durations, and 
-"csDurationMean" and "csDurationStdDev" give the mean and standard deviation of the durations.
+"csDurationMean" and "csDurationStdDev" give the mean and standard deviation of the durations. If the swapping
+durations are not very consistent, which can be determined by examination or by looking at the standard deviation,
+then there is a problem with the configuration. If the mean duration is different from the monitor's actual
+refresh period, then there is a serious problem with the configuration.
 
 During this test, you should see the screen very rapidly flickering between black and white. If you see
 slow flickering or a constant color, that is an error.
@@ -452,7 +457,8 @@ The wait swap test is not performed for the secondary thread, because the assump
 thread is used, in that thread the front and back buffers will be swapped constantly so there will be no wait swaps.
 
 \param desiredTestDuration An approximate amount of time to spend performing the tests.
-\param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested.
+\param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested. If false, only 
+swapping from within the main thread will be tested.
 \return A CX_DataFrame containing timing results from the tests.
 
 \note This function blocks for approximately `desiredTestDuration` or more. See \ref blockingCode.
@@ -494,7 +500,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				CX_DataFrameRow row;
 				row["thread"] = mainThread ? "main" : "secondary";
 				row["hardVSync"] = hardV;
-				row["hardVSync"] = softV;
+				row["softVSync"] = softV;
 
 				//Configure V-Sync for the current test.
 				setVSync(hardV == 1, softV == 1);
@@ -503,14 +509,14 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				ss << "Thread: " << row["thread"].toString() << "\nHardV: " << hardV << "\nSoftV: " << softV;
 				std::string conditionString = ss.str();
 
-				vector<CX_Millis> swapTimes;
+				std::vector<CX_Millis> swapTimes;
 
 				//////////////////////////////
 				// Continuous swapping test //
 				//////////////////////////////
 				if (mainThread) {
 					//In order to give a fair test, each main thread test should start with some swaps.
-					for (unsigned int i = 0; i < 5; i++) {
+					for (unsigned int i = 0; i < 3; i++) {
 						BLOCKING_swapFrontAndBackBuffers();
 					}
 
@@ -528,7 +534,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 					CX_Millis startTime = Clock.now();
 					while ((Clock.now() - startTime) < testSegmentDuration) {
-						if (this->hasSwappedSinceLastCheck()) {
+						if (_swapThread->hasSwappedSinceLastCheck()) {
 							swapTimes.push_back(this->getLastSwapTime());
 
 							drawScreenData(this, (swapTimes.size() % 2) ? ofColor(255) : ofColor(0), "Continuous swapping test\n" + conditionString);
@@ -536,7 +542,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 					}
 				}
 
-				vector<CX_Millis> durations(swapTimes.size() - 1);
+				std::vector<CX_Millis> durations(swapTimes.size() - 1);
 				for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
 					durations[i] = swapTimes[i + 1] - swapTimes[i];
 				}
@@ -549,9 +555,17 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				////////////////////
 				// Wait swap test //
 				////////////////////
-				if (mainThread) {
+				if (!mainThread) {
+					//Wait swap test is not performed for secondary thread.
+					row["wsDurations"] = "NULL";
+					row["wsType"] = "NULL";
+					row["wsLongMean"] = "NULL";
+					row["wsShortMean"] = "NULL";
+					row["wsNormalMean"] = "NULL";
+					row["wsTotalMean"] = "NULL";
+				} else {
 					swapTimes.clear();
-					vector<string> durationType;
+					std::vector<std::string> durationType;
 
 					ofRectangle resolution = this->getResolution();
 

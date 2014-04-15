@@ -18,7 +18,7 @@ namespace Private {
 
 		void swapNFrames(unsigned int n);
 
-		bool swappedSinceLastCheck(void);
+		bool hasSwappedSinceLastCheck(void);
 
 		CX_Millis getTypicalSwapPeriod(void);
 		CX_Millis getLastSwapTime(void);

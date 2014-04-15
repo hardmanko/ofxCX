@@ -24,7 +24,7 @@ struct CX::CX_LoggerTargetInfo {
 	LogTarget targetType;
 	CX_LogLevel level;
 
-	string filename;
+	std::string filename;
 	ofFile *file;
 };
 
@@ -35,10 +35,10 @@ struct CX::CX_LogMessage {
 		module(module_)
 	{}
 
-	stringstream* message;
+	std::shared_ptr<std::stringstream> message;
 	CX_LogLevel level;
-	string module;
-	string timestamp;
+	std::string module;
+	std::string timestamp;
 };
 
 
@@ -69,8 +69,14 @@ CX_Logger::~CX_Logger (void) {
 	}
 }
 
-/*! Log all of the messages stored since the last call to flush() to the selected logging targets. This is a BLOCKING operation. */
+/*! Log all of the messages stored since the last call to flush() to the selected logging targets. This is a BLOCKING operation.
+This function is not reentrant. */
 void CX_Logger::flush (void) {
+
+	unsigned int messageCount = _messageQueue.size();
+	if (messageCount == 0) {
+		return;
+	}
 
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == LogTarget::FILE) {
@@ -81,33 +87,35 @@ void CX_Logger::flush (void) {
 		}
 	}
 
-	for (auto it = _messageQueue.begin(); it != _messageQueue.end(); it++) {
-		CX_MessageFlushData dat( it->message->str(), it->level, it->module );
-		//ofNotifyEvent(this->messageFlushEvent, dat );
+	
+	for (unsigned int i = 0; i < messageCount; i++) {
+		CX_LogMessage& m = _messageQueue[i];
+
 		if (_flushCallback) {
+			CX_MessageFlushData dat(m.message->str(), m.level, m.module);
 			_flushCallback( dat );
 		}
 
-		string logName = _getLogLevelName(it->level);
+		string logName = _getLogLevelName(m.level);
 		logName.append( max<int>((int)(7 - logName.size()), 0), ' ' ); //Pad out names to 7 chars
 		string formattedMessage;
 		if (_logTimestamps) {
-			formattedMessage += it->timestamp + " ";
+			formattedMessage += m.timestamp + " ";
 		}
 
 		formattedMessage += "[ " + logName + " ] ";
 
-		if (it->module != "") {
-			formattedMessage += "<" + it->module + "> ";
+		if (m.module != "") {
+			formattedMessage += "<" + m.module + "> ";
 		}
 
-		*it->message << endl;
+		*m.message << endl;
 
-		formattedMessage += it->message->str();
+		formattedMessage += m.message->str();
 
-		if (it->level >= _moduleLogLevels[it->module]) {
+		if (m.level >= _moduleLogLevels[m.module]) {
 			for (unsigned int i = 0; i < _targetInfo.size(); i++) {
-				if (it->level >= _targetInfo[i].level) {
+				if (m.level >= _targetInfo[i].level) {
 					if (_targetInfo[i].targetType == LogTarget::CONSOLE) {
 						cout << formattedMessage;
 					} else if (_targetInfo[i].targetType == LogTarget::FILE) {
@@ -117,7 +125,7 @@ void CX_Logger::flush (void) {
 			}
 		}
 
-		delete it->message; //Deallocate message pointer
+		//delete m.message; //Deallocate message pointer
 	}
 
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
@@ -126,7 +134,10 @@ void CX_Logger::flush (void) {
 		}
 	}
 
-	_messageQueue.clear();
+	//_messageQueue.clear();
+	_messageQueueMutex.lock();
+	_messageQueue.erase(_messageQueue.begin(), _messageQueue.begin() + messageCount);
+	_messageQueueMutex.unlock();
 }
 
 /*! Set the log level for messages to be printed to the console. */
@@ -196,7 +207,9 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 \param module A string representing one of the modules from which log messages are generated.
 */
 void CX_Logger::level(CX_LogLevel level, std::string module) {
+	_moduleLogLevelsMutex.lock();
 	_moduleLogLevels[module] = level;
+	_moduleLogLevelsMutex.unlock();
 }
 
 /*!
@@ -205,9 +218,11 @@ are given the log level and the default log level for new modules as set to the 
 */
 void CX_Logger::levelForAllModules(CX_LogLevel level) {
 	_defaultLogLevel = level;
+	_moduleLogLevelsMutex.lock();
 	for (map<string, CX_LogLevel>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
 		_moduleLogLevels[it->first] = level;
 	}
+	_moduleLogLevelsMutex.unlock();
 }
 
 /*!
@@ -241,6 +256,9 @@ This should not be LOG_ALL or LOG_NONE, because that would be weird, wouldn't it
 \param module Name of the module that this log message is related to. This has implications for message filtering.
 See level().
 \return A reference to a std::stringstream that the log message data should be streamed into.
+\note This function and all of the trivial wrappers of this function (verbose(), notice(), warning(), 
+error(), fatalError()) are reentrant, which means that you can call them from multiple threads without
+problems.
 */
 std::stringstream& CX_Logger::log(CX_LogLevel level, std::string module) {
 	return _log(level, module);
@@ -307,16 +325,22 @@ void CX_Logger::_loggerChannelEventHandler(CX::CX_ofLogMessageEventData_t& md) {
 
 stringstream& CX_Logger::_log(CX_LogLevel level, string module) {
 
+	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(module) == _moduleLogLevels.end()) {
 		_moduleLogLevels[module] = _defaultLogLevel;
 	}
+	_moduleLogLevelsMutex.unlock();
 
-	_messageQueue.push_back(CX_LogMessage(level, module));
-	_messageQueue.back().message = new stringstream; //Manually allocated: Must deallocate later.
+	CX_LogMessage temp(level, module);
+	temp.message = std::shared_ptr<std::stringstream>(new std::stringstream);
+
+	_messageQueueMutex.lock();
+	_messageQueue.push_back(temp);
 
 	if (_logTimestamps) {
 		_messageQueue.back().timestamp = CX::Instances::Clock.getDateTimeString(_timestampFormat);
 	}
+	_messageQueueMutex.unlock();
 
-	return *(_messageQueue.back().message);
+	return *temp.message;
 }
