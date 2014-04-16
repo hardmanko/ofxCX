@@ -13,6 +13,9 @@ and will present the first few stimuli. When it runs out of stimuli, the last sl
 called. In this function, we will check for any responses that have been made since the last time the 
 function was called and draw the next stimulus-blank pair. See the definition of finalSlideFunction and
 setupExperiment for the implementation of these ideas.
+
+Once you understand this example, please also see the advancedNBack example. It has some important 
+improvements that make an N-Back task much more reliable in terms of visual stimulus timing.
 */
 
 CX_DataFrame df;

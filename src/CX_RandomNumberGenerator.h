@@ -31,7 +31,8 @@ namespace CX {
 	randomizations used for that participant (unless random number generation varies as a function of the 
 	responses given by a participant).
 
-	An instance of this class is preinstantiated for you. See CX::Instances::RNG for information about the instance.
+	An instance of this class is preinstantiated for you. See CX::Instances::RNG for information about the instance
+	with that name.
 
 	\ingroup randomNumberGeneration
 	*/
@@ -215,7 +216,7 @@ namespace CX {
 	in every block of four trials, you would use this function.
 	\param valueSet The set of values to sample from.
 	\param blocksToSample The number of blocks to sample.
-	\return A vector with valueSize.size() * blocksToSample elements.
+	\return A vector with `valueSize.size() * blocksToSample` elements.
 	*/
 	template <typename T>
 	std::vector<T> CX_RandomNumberGenerator::sampleBlocks(const std::vector<T>& valueSet, unsigned int blocksToSample) {

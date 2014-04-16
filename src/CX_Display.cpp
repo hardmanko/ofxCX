@@ -48,7 +48,7 @@ check to see if the display is automatically swapping by calling isAutomatically
 void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
-			_swapThread->startThread(true, true); //verbose is true only for testing.
+			_swapThread->startThread(true, false); //verbose is true only for testing.
 		}
 	} else {
 		if (_swapThread->isThreadRunning()) {
@@ -99,13 +99,12 @@ with BLOCKING_swapFrontAndBackBuffers(), but given that that function only retur
 swapped, using this function to check that the buffers have swapped is redundant.
 \return True if a swap has been made since the last call to this function, false otherwise. */
 bool CX_Display::hasSwappedSinceLastCheck (void) {
-	bool hasSwapped = false;
 	uint64_t currentFrameNumber = this->getFrameNumber();
 	if (currentFrameNumber != _frameNumberOnLastSwapCheck) {
 		_frameNumberOnLastSwapCheck = currentFrameNumber;
-		hasSwapped = true;
+		return true;
 	}
-	return hasSwapped;
+	return false;
 }
 
 /*! This function returns the number of the last frame presented, as determined by 
@@ -121,7 +120,7 @@ uint64_t CX_Display::getFrameNumber (void) {
 /*! Prepares a rendering context for using drawing functions. Must be paired with
 a call to endDrawingToBackBuffer(). */
 void CX_Display::beginDrawingToBackBuffer (void) {
-	if(_renderer){
+	if (_renderer) {
 		_renderer->startRender();
 	}
 
@@ -131,7 +130,7 @@ void CX_Display::beginDrawingToBackBuffer (void) {
 
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
 void CX_Display::endDrawingToBackBuffer (void) {
-	if(_renderer){
+	if (_renderer) {
 		_renderer->finishRender();
 	}
 }
@@ -251,7 +250,7 @@ void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			durations[i - 1] = swapTimes[i] - swapTimes[i - 1];
 		}
-		_framePeriodStandardDeviation = CX_Millis::standardDeviation(durations);
+		_framePeriodStandardDeviation = CX::Util::standardDeviation(durations);
 		_framePeriod = Util::mean(durations);
 		
 	} else {
@@ -549,7 +548,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 				row["csDurations"] = durations;
 				row["csDurationMean"] = Util::mean(durations);
-				row["csDurationStdDev"] = CX_Millis::standardDeviation(durations);
+				row["csDurationStdDev"] = CX::Util::standardDeviation(durations);
 
 				
 				////////////////////

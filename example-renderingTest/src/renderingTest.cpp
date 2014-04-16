@@ -48,7 +48,6 @@ void runExperiment(void) {
 	Display.setWindowResolution(800, 600);
 	Display.setWindowTitle("CX Rendering Test");
 
-
 #ifdef CX_RT_USE_FBO
 	//This is the most simple way to use an ofFbo.
 	trivialFbo.allocate(100, 100, GL_RGB); //You must allocate the fbo before you use it. 
@@ -187,6 +186,9 @@ void drawStuff (void) {
 	ofRect(20, 100, 60, 40); //Draw a rectangle
 	ofSetColor(ofColor(0, 255, 0, 127)); //If the set the alpha channel to less than 255, you get transparency effects
 	ofEllipse(40, 140, 40, 70); //Drawn over the rectangle
+
+	ofSetColor(ofColor::red);
+	ofTriangle(ofPoint(50, 250), ofPoint(150, 400), ofPoint(280, 350));
 	
 
 	ofSetColor(ofColor::darkorange);

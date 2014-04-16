@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include "CX_Utilities.h"
+
 namespace CX {
 
 	template <typename T> class CX_Time_t;
@@ -286,21 +288,31 @@ namespace CX {
 			return t;
 		}
 
+	private:
+		long long _nanos;
+
+	};
+
+	namespace Util {
 		/*! This function calculates the sample standard deviation for a vector of time values. */
-		static CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
-			CX_Time_t<TimeUnit> m = Util::mean(vals);
+		template <typename TimeUnit>
+		CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
+			std::vector<double> timeValues(vals.size());
+			for (unsigned int i = 0; i < vals.size(); i++) {
+				timeValues[i] = vals[i].value();
+			}
+			return sqrt(var(timeValues));
+			/*
+			CX_Time_t<TimeUnit> m = mean(vals);
 			double sum = 0;
 			for (unsigned int i = 0; i < vals.size(); i++) {
 				double dif = vals[i].value() - m.value();
 				sum += dif * dif;
 			}
 			return CX_Time_t<TimeUnit>(sqrt(sum / (vals.size() - 1))); //Sample variance has n - 1 for denominator
+			*/
 		}
-
-	private:
-		long long _nanos;
-
-	};
+	}
 
 	/*! This is a standard stream operator for converting a CX_Time_t to a std::ostream.
 	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same

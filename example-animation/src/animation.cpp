@@ -14,7 +14,7 @@ This causes the contents of the back buffer to be automatically swapped to
 the front buffer every monitor refresh.
 
 Then, in updateAnimation(), check hasSwappedSinceLastCheck() to see if
-a swap has just occured. If so, use beginDrawingToBackBuffer() and 
+a swap has just occurred. If so, use beginDrawingToBackBuffer() and 
 endDrawingToBackBuffer() to draw whatever the next frame of the animation
 is into the back buffer.
 
@@ -22,13 +22,14 @@ That's it!
 */
 
 //These variables have to do with the contents of the animation
-int mouseX = 0;
+int mouseX = 100;
 double circleRadius = 30;
 double angles[3] = { 0, 0, 0 };
 double angleMultiplier[3] = { 1, 2, 3 };
 int directions[3] = { 1, 1, 1 };
 double distancesFromCenter[3] = { 75, 150, 225 };
 double distanceMultiplier = 1;
+CX_Millis lastAnimationDrawTime = 0;
 
 void updateAnimation (void);
 void drawNextFrameOfAnimation (void);
@@ -40,8 +41,6 @@ void runExperiment (void) {
 
 	//The window needs to be about this size in order to fit the circles.
 	Display.setWindowResolution(600, 600);
-
-	Display.setVSync(false, false);
 
 	//See the main comment at the top of this file.
 	Display.BLOCKING_setAutoSwapping(true);
@@ -57,6 +56,7 @@ void updateAnimation (void) {
 
 	//See the main comment at the top of this file.
 	if (Display.hasSwappedSinceLastCheck()) {
+
 		Display.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.
 
 		drawNextFrameOfAnimation();
@@ -86,6 +86,7 @@ void updateAnimation (void) {
 			}
 		}
 
+		//If the mouse was scrolled, change the distance of the circles from the center.
 		if (mev.eventType == CX_Mouse::Event::SCROLLED) {
 			distanceMultiplier += mev.y * .02; //The y component of the scroll wheel is the typical scroll wheel on most mice
 			if (distanceMultiplier > 1.5) {
@@ -108,8 +109,14 @@ void drawNextFrameOfAnimation (void) {
 					   "Click on a circle to change its direction.\n"
 					   "Use the mouse wheel to change the orbit size.", ofPoint(30, 30));
 
+	//it's a good idea to have animations change as a function of time, not as a function of frames,
+	//because if the animation is based on frames and a frame is missed the animation appears uneven.
+	CX_Millis now = Clock.now();
+	CX_Millis elapsedTime = now - lastAnimationDrawTime;
+	lastAnimationDrawTime = now;
+
 	for (int i = 0; i < 3; i++) {
-		angles[i] += 0.005 * mouseX * directions[i] * angleMultiplier[i];
+		angles[i] += elapsedTime.seconds()/5 * mouseX * directions[i] * angleMultiplier[i];
 		ofSetColor(colors[i]);
 		ofCircle(calculateObjectCenter(angles[i], distancesFromCenter[i]), circleRadius);
 	}

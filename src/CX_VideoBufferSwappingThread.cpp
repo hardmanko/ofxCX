@@ -19,52 +19,44 @@ CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread(void) :
 void CX_VideoBufferSwappingThread::threadedFunction(void) {
 
 	CX_Millis lastSwapTime = 0;
-	glfwSwapInterval(-1);
 
 	while (isThreadRunning()) {
 
-		//if ((CX::Instances::Clock.now() - lastSwapTime) > CX_Millis(5)) {
-			//cout << "Swapping at " << CX::Instances::Clock.now() << endl;
+		glfwSwapBuffers(CX::Private::glfwContext);
 
-			glfwSwapBuffers(CX::Private::glfwContext);
-			/*
-			if (lock()) {
-				bool finish = _glFinishAfterSwap;
-				unlock();
-				if (finish) {
-					glFinish();
-				}
+		if (lock()) {
+			bool finish = _glFinishAfterSwap;
+			unlock();
+			if (finish) {
+				glFinish();
 			}
-			*/
-			lastSwapTime = CX::Instances::Clock.now();
+		}
 
+		lastSwapTime = CX::Instances::Clock.now();
 
-			if (lock()) {
-				++_frameCount;
+		if (lock()) {
+			++_frameCount;
 
-				_recentSwapTimes.push_back(lastSwapTime);
-				while (_recentSwapTimes.size() > 30) {
-					_recentSwapTimes.pop_front();
-				}
+			_recentSwapTimes.push_back(lastSwapTime);
+			while (_recentSwapTimes.size() > 30) {
+				_recentSwapTimes.pop_front();
+			}
 
-				bool stopSwapping = false;
-				if (_swapsBeforeStop > 0) {
-					if (--_swapsBeforeStop == 0) {
-						stopSwapping = true;
-					}
-				}
-
-				unlock();
-
-				if (stopSwapping) {
-					this->stopThread();
+			bool stopSwapping = false;
+			if (_swapsBeforeStop > 0) {
+				if (--_swapsBeforeStop == 0) {
+					stopSwapping = true;
 				}
 			}
 
-			//CX::Instances::Clock.sleep(10);
-		//}
+			unlock();
+
+			if (stopSwapping) {
+				this->stopThread();
+			}
+		}
+
 	}
-
 }
 
 
@@ -178,6 +170,22 @@ bool CX_VideoBufferSwappingThread::_unlockMutex(void) {
 	unlock();
 	return true;
 }
+
+/*
+void CX_VideoBufferSwappingThread::pauseSwapping(void) {
+	if (_lockMutex()) {
+		_swappingPaused = true;
+		_unlockMutex();
+	}
+}
+
+void CX_VideoBufferSwappingThread::unpauseSwapping(void) {
+	if (_lockMutex()) {
+		_swappingPaused = false;
+		_unlockMutex();
+	}
+}
+*/
 
 }
 }

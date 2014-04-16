@@ -70,7 +70,7 @@ CX_Logger::~CX_Logger (void) {
 }
 
 /*! Log all of the messages stored since the last call to flush() to the selected logging targets. This is a BLOCKING operation.
-This function is not reentrant. */
+This function is not thread-safe: Only call it from the main thread. */
 void CX_Logger::flush (void) {
 
 	unsigned int messageCount = _messageQueue.size();
@@ -93,7 +93,7 @@ void CX_Logger::flush (void) {
 
 		if (_flushCallback) {
 			CX_MessageFlushData dat(m.message->str(), m.level, m.module);
-			_flushCallback( dat );
+			_flushCallback(dat);
 		}
 
 		string logName = _getLogLevelName(m.level);
@@ -217,8 +217,8 @@ Set the log level for all modules. This works both retroactively and proactively
 are given the log level and the default log level for new modules as set to the level.
 */
 void CX_Logger::levelForAllModules(CX_LogLevel level) {
-	_defaultLogLevel = level;
 	_moduleLogLevelsMutex.lock();
+	_defaultLogLevel = level;
 	for (map<string, CX_LogLevel>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
 		_moduleLogLevels[it->first] = level;
 	}
@@ -257,8 +257,7 @@ This should not be LOG_ALL or LOG_NONE, because that would be weird, wouldn't it
 See level().
 \return A reference to a std::stringstream that the log message data should be streamed into.
 \note This function and all of the trivial wrappers of this function (verbose(), notice(), warning(), 
-error(), fatalError()) are reentrant, which means that you can call them from multiple threads without
-problems.
+error(), fatalError()) are thread-safe.
 */
 std::stringstream& CX_Logger::log(CX_LogLevel level, std::string module) {
 	return _log(level, module);

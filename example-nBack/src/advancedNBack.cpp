@@ -63,8 +63,8 @@ char targetKey = 'f';
 char nonTargetKey = 'j';
 string keyReminderInstructions;
 
-CX_Millis stimulusPresentationDuration = 500;
-CX_Millis interStimulusInterval = CX_Seconds(1.0/60.0);
+CX_Millis stimulusPresentationDuration = 1000;
+CX_Millis interStimulusInterval = 800;
 
 CX_SlidePresenter SlidePresenter;
 void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info);
@@ -100,9 +100,9 @@ void runExperiment(void) {
 
 	Display.setFullScreen(true);
 	if (Display.isFullscreen()) {
-		Clock.sleep(2000);
+		Clock.sleep(CX_Seconds(2));
 	}
-	Display.setVSync(true, true);
+	Display.setVSync(true, false);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
@@ -122,20 +122,16 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::SINGLE_CORE_BLOCKING_SWAPS;
+	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
 
-	config.preSwapCPUHoggingDuration = 3;
+	config.preSwapCPUHoggingDuration = CX_Millis(3);
 	config.useFenceSync = true;
 	config.waitUntilFenceSyncComplete = false;
 
 	SlidePresenter.setup(config);
 
-
-	//Start loading slides into the SlidePresenter. Load up a little countdown-to-start screen.
-	//We'll always use framebuffers for this because it isn't timing-critical. You can use a
-	//mixture of framebuffers and drawing functions with a slide presenter.
 	for (int i = 3; i > 0; i--) {
 		if (useFramebuffersForStimuli) {
 			SlidePresenter.beginDrawingNextSlide(1000, "fixation");
@@ -320,7 +316,7 @@ void drawStimulus(string letter, bool showInstructions) {
 }
 
 void drawBlank(void) {
-	ofBackground(255);
+	ofBackground(backgroundColor);
 }
 
 void drawFixationSlide (int remainingTime) {

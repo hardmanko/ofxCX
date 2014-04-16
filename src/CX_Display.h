@@ -46,7 +46,6 @@ namespace CX {
 		void copyFboToBackBuffer (ofFbo &fbo);
 		void copyFboToBackBuffer (ofFbo &fbo, ofPoint destination);
 		void copyFboToBackBuffer (ofFbo &fbo, ofRectangle source, ofPoint destination);
-		//void copyFboToBackBuffer (ofFbo &fbo, ofRectangle source, ofRectangle destination);
 
 		void beginDrawingToBackBuffer (void);
 		void endDrawingToBackBuffer (void);
@@ -59,7 +58,7 @@ namespace CX {
 
 		CX_Millis getLastSwapTime(void);
 		
-		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval); //Also estimate standard deviation. Return a struct with this info?
+		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval);
 		CX_Millis getFramePeriod(void);
 		CX_Millis getFramePeriodStandardDeviation(void);
 		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?

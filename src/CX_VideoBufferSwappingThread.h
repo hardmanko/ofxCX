@@ -20,6 +20,9 @@ namespace Private {
 
 		bool hasSwappedSinceLastCheck(void);
 
+		//void pauseSwapping(void);
+		//void unpauseSwapping(void);
+
 		CX_Millis getTypicalSwapPeriod(void);
 		CX_Millis getLastSwapTime(void);
 		CX_Millis getLastSwapPeriod(void);
@@ -42,6 +45,8 @@ namespace Private {
 		int _swapsBeforeStop;
 
 		bool _glFinishAfterSwap;
+
+		//bool _swappingPaused;
 	};
 
 }
