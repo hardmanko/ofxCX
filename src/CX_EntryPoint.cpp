@@ -64,11 +64,11 @@ void CX::reopenWindow(CX_WindowConfiguration_t config) {
 		tempGLVersion = Private::getOpenGLVersion();
 	}
 
-	Private::setSampleCount(config.msaaSampleCount);
+	Private::setMsaaSampleCount(config.msaaSampleCount);
 
 	Private::window = ofPtr<Private::CX_AppWindow>(new Private::CX_AppWindow);
 	Private::window->setOpenGLVersion(tempGLVersion.major, tempGLVersion.minor);
-	Private::window->setNumSamples(Util::getSampleCount());
+	Private::window->setNumSamples(Util::getMsaaSampleCount());
 
 
 	if (config.desiredRenderer) {

@@ -20,7 +20,7 @@
 namespace CX {
 
 	namespace Private {
-		void setSampleCount(unsigned int count);
+		void setMsaaSampleCount(unsigned int count);
 	}
 
 	/*! This namespace contains a variety of utility functions.
@@ -29,7 +29,7 @@ namespace CX {
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch);
 
-		unsigned int getSampleCount(void);
+		unsigned int getMsaaSampleCount(void);
 
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 

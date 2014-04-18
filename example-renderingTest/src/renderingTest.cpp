@@ -83,7 +83,7 @@ void runExperiment(void) {
 
 	transparency.end(); //Stop drawing to the transparency fbo
 
-	mainFbo.allocate(Display.getResolution().x, Display.getResolution().y, GL_RGB, CX::Util::getSampleCount());
+	mainFbo.allocate(Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::Util::getSampleCount());
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -150,9 +150,16 @@ void updateDrawings (void) {
 		drawStuff();
 		ofSetColor(255);
 		ofDrawBitmapString("FBO", 20, 20);
+		ofClearAlpha();
 		mainFbo.end();
+
+		Display.beginDrawingToBackBuffer();
+		ofBackground(0);
+		ofSetColor(255);
+		mainFbo.draw(0,0);
+		Display.endDrawingToBackBuffer();
 				
-		Display.copyFboToBackBuffer(mainFbo);
+		//Display.copyFboToBackBuffer(mainFbo);
 	} else 
 #endif
 	{

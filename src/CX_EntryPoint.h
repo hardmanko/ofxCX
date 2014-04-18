@@ -49,7 +49,7 @@ namespace CX {
 			mode(ofWindowMode::OF_WINDOW),
 			width(800),
 			height(600),
-			msaaSampleCount(8), //!< See CX::Util::getSampleCount().
+			msaaSampleCount(4), //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
 			windowTitle("CX Experiment")
 		{}
 
@@ -60,7 +60,7 @@ namespace CX {
 
 		unsigned int msaaSampleCount;
 
-		ofPtr<ofBaseGLRenderer> desiredRenderer;
+		ofPtr<ofBaseGLRenderer> desiredRenderer; //If not set, default is assumed
 		Private::CX_GLVersion desiredOpenGLVersion;
 
 		std::string windowTitle;

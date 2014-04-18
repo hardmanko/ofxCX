@@ -6,7 +6,10 @@ namespace Util {
 	/*! Returns the number of pixels needed to subtend deg degrees of visual angle. You might want to round this
 	if you want to align to pixel boundaries. However, if you are antialiasing your stimuli you
 	might want to use floating point values to get precise subpixel rendering.
-	\param deg Number of degrees.
+	\param degrees Number of degrees.
+	\param pixelsPerUnit The number of pixels per distance unit on the target monitor. You can pick any unit of 
+	distance, as long as `viewingDistance` has the same unit.
+	\param viewingDistance The distance of the viewer from the monitor, with the same distance unit as `pixelsPerUnit`.
 	\return The number of pixels needed. */
 	float degreesToPixels(float degrees, float pixelsPerUnit, float viewingDistance) {
 		float rad = (degrees / 2) * PI / 180;
@@ -173,7 +176,7 @@ namespace Util {
 
 	/*! Performs the inverse of operator(), i.e. converts from standard coordinates to user coordinates.
 	\param p A point in standard coordinates.
-	\param A point in user coordinates.	*/
+	\return A point in user coordinates. */
 	ofPoint CX_CoordinateConverter::inverse(ofPoint p) {
 		p -= _origin;
 

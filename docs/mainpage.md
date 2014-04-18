@@ -11,9 +11,10 @@ When a CX program is compiled and linked, the resulting artifact is an executabl
 The collection of files needed to run a CX program is about 10 MB (possibly more, depending on stimuli). Installing the program just requires unzipping a file.
 
 \section installationInstructions Installation
-In order to use CX, you must have openFrameworks installed. See http://openframeworks.cc/download/ to download openFrameworks.
-On that page, you can algo find installation guides for some of the most popular development environments.
-Currently only version 0.8.0 of openFrameworks is supported by CX.
+In order to use CX, you must have openFrameworks installed. Currently only version 0.8.0 of openFrameworks is supported by CX,
+which you can download from this page: http://openframeworks.cc/download/older.html The main openFrameworks download page 
+(http://openframeworks.cc/download/) has information about how to install openFrameworks for use with some of the more popular 
+development environments.
 
 Once you have installed openFrameworks, you can install CX by putting the contents of the CX repository into a subdirectory 
 under OFDIR/addons (typically OFDIR/addons/ofxCX), where OFDIR is where you put openFramworks when you installed it. To use CX 

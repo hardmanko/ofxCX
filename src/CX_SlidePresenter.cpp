@@ -66,17 +66,13 @@ void CX_SlidePresenter::clearSlides (void) {
 
 /*! Start presenting the slides that are stored in the slide presenter.
 After this function is called, calls to update() will advance the state of the slide presentation.
+If you do not call update(), nothing will be presented.
 \return False if an error was encountered while starting presentation, in which case messages will
 be logged, true otherwise.
 */
 bool CX_SlidePresenter::startSlidePresentation (void) {
 	if (_config.display == nullptr) {
-		Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid monitor attached. Use setMonitor() to attach a monitor to the SlidePresenter";
-		return false;
-	}
-
-	if (_slides.size() <= 0) {
-		Log.warning("CX_SlidePresenter") << "Cannot start slide presentation without any slides to present.";
+		Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid CX_Display attached. Use setup() to attach a CX_Display to the SlidePresenter.";
 		return false;
 	}
 
@@ -111,27 +107,11 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	_synchronizing = true;
 	_presentingSlides = false;
 
-	//Wait for any ongoing rendering operations to complete before starting frame presentation.
+	//Wait for any ongoing rendering operations to complete before starting slide presentation.
 	_config.display->BLOCKING_waitForOpenGL();
 
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
-
 		_config.display->hasSwappedSinceLastCheck();
-
-		/*
-		int requiredSwaps = 3;
-		CX_Millis startTime = Clock.now();
-		while (requiredSwaps) {
-			if (_config.display->hasSwappedSinceLastCheck()) {
-				CX_Millis swapTime = _config.display->getLastSwapTime();
-				if (swapTime - startTime > _config.display->getFramePeriod() - CX_Millis(1)) {
-					requiredSwaps--;
-				}
-				startTime = swapTime;
-			}
-		}
-		*/
-		
 	}
 
 	return true;
@@ -145,7 +125,6 @@ void CX_SlidePresenter::stopSlidePresentation(void) {
 	for (unsigned int i = 0; i < _slideInfo.size(); i++) {
 		_slideInfo[i].awaitingFenceSync = false;
 	}
-	//_currentSlide = 0; //It can be useful to know what slide you were on when you stopped
 }
 
 
@@ -155,6 +134,17 @@ will cause stimuli to be drawn to the framebuffer of the slide.
 
 \param slideDuration The amount of time to present the slide for. If this is less than or equal to 0, the slide will be ignored.
 \param slideName The name of the slide. This can be anything and is purely for the user to use to help identify the slide.
+
+\code{.cpp}
+CX_SlidePresenter sp; //Assume that this has been set up.
+
+sp.beginDrawingNextSlide(2000, "circles");
+ofBackground(50);
+ofSetColor(255, 0, 0);
+ofCirlce(100, 100, 30);
+ofCircle(210, 50, 20);
+sp.endDrawingCurrentSlide();
+\endcode
 */
 void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string slideName) {
 
@@ -173,12 +163,12 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 		return;
 	}
 
-	_slides.push_back( CX_SlidePresenter::Slide() );
+	_slides.push_back(CX_SlidePresenter::Slide());
 	_slideInfo.push_back(ExtraSlideInfo());
 
 	_slides.back().slideName = slideName;
 	Log.verbose("CX_SlidePresenter") << "Allocating framebuffer...";
-	_slides.back().framebuffer.allocate(_config.display->getResolution().x, _config.display->getResolution().y, GL_RGB, CX::Util::getSampleCount());
+	_slides.back().framebuffer.allocate(_config.display->getResolution().x, _config.display->getResolution().y, GL_RGB, CX::Util::getMsaaSampleCount());
 	Log.verbose("CX_SlidePresenter") << "Finished allocating.";
 	
 	_slides.back().intended.duration = slideDuration;
@@ -193,8 +183,9 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 
 /*! Ends drawing to the framebuffer of the slide that is currently being drawn to. See beginDrawingNextSlide(). */
 void CX_SlidePresenter::endDrawingCurrentSlide (void) {
+	//ofClearAlpha();
 	_slides.back().framebuffer.end();
-	glFlush();
+	//glFlush();
 	_lastFramebufferActive = false;
 }
 
@@ -234,13 +225,70 @@ void CX_SlidePresenter::appendSlide (CX_SlidePresenter::Slide slide) {
 }
 
 /*! Appends a slide to the slide presenter that will call the given drawing function when it comes time
-to render the slide to the back buffer. Essentially, the drawing function will be called one frame
-before the front and back buffers are swapped.
-\param drawingFunction A pointer to a function that will draw the data to the slide. The contents of
-the back buffer are not clear before this function is called, so the function must clear the background
+to render the slide to the back buffer. This approach has the advantage over using framebuffers that
+it takes essentially zero time to append a function to the list of slides, whereas a framebuffer must
+be allocated, which takes time. Additionally, because framebuffers must be allocated, they use video 
+memory, so if you are using a very large number of slides, you could potentially run out of video memory. 
+Also, when it comes time to draw the slide to the back buffer, it may be faster to draw directly to the 
+back buffer than to copy an FBO to the fack buffer (although this depends on various factors). 
+\param drawingFunction A pointer to a function that will draw the slide to the back buffer. The contents of
+the back buffer are not cleared before this function is called, so the function must clear the background
 to the desired color.
 \param slideDuration The amount of time to present the slide for. If this is less than or equal to 0, the slide will be ignored.
 \param slideName The name of the slide. This can be anything and is purely for the user to use to help identify the slide.
+
+\note See \ref framebufferSwapping for more information about framebuffers.
+
+One of the most tedius parts of using drawing functions is the fact that they can take no arguments. Here are two
+ways to get around that limitation using std::bind and function objects (functors):
+
+\code{.cpp}
+#include "CX_EntryPoint.h"
+
+CX_SlidePresenter SlidePresenter;
+
+//This is the function we want to use to draw a stimulus, but it takes two arguments
+void drawRectangle(ofRectangle r, ofColor col) {
+	ofBackground(0);
+	ofSetColor(col);
+	ofRect(r);
+}
+
+struct rectFunctor {
+	ofRectangle position;
+	ofColor color;
+	void operator() (void) {
+		drawRectangle(position, color);
+	}
+};
+
+void runExperiment(void) {
+
+	SlidePresenter.setup(&Display);
+
+	ofRectangle rectPos(100, 50, 100, 30);
+	ofColor rectColor(255, 255, 0);
+
+	//We can use std::bind to "bake in" the arguments rectPos and rectColor to drawRectangle. Because all of the
+	//arguments for drawRectangle have been bound to it, it no longer takes any arguments and is a valid
+	//drawing function to give to appendSlideFunction.
+	SlidePresenter.appendSlideFunction(std::bind(drawRectangle, rectPos, rectColor), 2000.0, "bind rect");
+
+	//We can also use a functor to sort of shift around where the arguments to the function come from. With a
+	//functor, like rectFunctor, you can define an operator() that takes no arguments directly, but gets its
+	//data from members of the structure like `position` and `color`. Because rectFunctor has operator(), it looks
+	//like a function and can be called like a function, so you can use instances of it as drawing functions.
+	rectFunctor rf;
+	rf.position = ofRectangle(100, 100, 50, 80);
+	rf.color = ofColor(0, 255, 0);
+	SlidePresenter.appendSlideFunction(rf, 2000.0, "functor rect");
+
+	SlidePresenter.startSlidePresentation();
+	while (SlidePresenter.isPresentingSlides()) {
+		SlidePresenter.update();
+	}
+}
+\endcode
 */
 void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFunction, CX_Millis slideDuration, string slideName) {
 
@@ -249,8 +297,8 @@ void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFun
 		return;
 	}
 
-	if (drawingFunction == NULL) {
-		Log.error("CX_SlidePresenter") << "NULL pointer to drawing function given.";
+	if (drawingFunction == nullptr) {
+		Log.error("CX_SlidePresenter") << "Null pointer to drawing function given.";
 		return;
 	}
 
@@ -260,7 +308,7 @@ void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFun
 		endDrawingCurrentSlide();
 	}
 
-	_slides.push_back( CX_SlidePresenter::Slide() );
+	_slides.push_back(CX_SlidePresenter::Slide());
 	_slideInfo.push_back(ExtraSlideInfo());
 
 	_slides.back().drawingFunction = drawingFunction;
@@ -655,7 +703,7 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 
 /*! Updates the state of the slide presenter. If the slide presenter is presenting stimuli,
 update() must be called very regularly (at least once per millisecond) in order for the slide 
-presenter to function. */
+presenter to function. If slide presentation is stopped, you do not need to call update() */
 void CX_SlidePresenter::update(void) {
 	switch (_config.swappingMode) {
 	case CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE: return _multiCoreUpdate();
@@ -807,7 +855,14 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 		_slides.at(_currentSlide).drawingFunction();
 		_config.display->endDrawingToBackBuffer();
 	} else {
-		_config.display->copyFboToBackBuffer(_slides.at(_currentSlide).framebuffer);
+		//_config.display->copyFboToBackBuffer(_slides.at(_currentSlide).framebuffer);
+		_config.display->beginDrawingToBackBuffer();
+		ofPushStyle();
+		ofDisableAlphaBlending();
+		ofSetColor(255);
+		_slides.at(_currentSlide).framebuffer.draw(0, 0);
+		ofPopStyle();
+		_config.display->endDrawingToBackBuffer();
 	}
 
 	Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started at " << Clock.now();

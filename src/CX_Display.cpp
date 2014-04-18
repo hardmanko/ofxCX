@@ -390,7 +390,7 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 	//glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_BACK);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); //GL_BACK
 
 	glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }

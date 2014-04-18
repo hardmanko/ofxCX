@@ -6,19 +6,19 @@
 using namespace std;
 using namespace CX;
 
-static unsigned int multisamplingSampleCount = 8;
+static unsigned int multisamplingSampleCount = 4; //This is set during setup
 
 /*! This function retrieves the MSAA (http://en.wikipedia.org/wiki/Multisample_anti-aliasing)
 sample count. The sample count can be set by calling CX::relaunchWindow() with the desired sample
 count set in the argument to relaunchWindow(). */
-unsigned int CX::Util::getSampleCount(void) {
+unsigned int CX::Util::getMsaaSampleCount(void) {
 	return multisamplingSampleCount;
 };
 
 //This should not be used in user code to set the MSAA sample count because if this is set
 //after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK, 
 //GL_FRONT). Use CX::relaunchWindow() to set the MSAA sample count.
-void CX::Private::setSampleCount(unsigned int count) {
+void CX::Private::setMsaaSampleCount(unsigned int count) {
 	multisamplingSampleCount = count;
 }
 
@@ -44,18 +44,19 @@ existing file will be overwritten and a warning will be logged. If no file exist
 an error message will be logged.
 */
 bool CX::Util::writeToFile(std::string filename, std::string data, bool append) {
-	ofFile out( ofToDataPath(filename), ofFile::Reference );
+	filename = ofToDataPath(filename);
+	ofFile out(filename, ofFile::Reference);
 	if (out.exists() && !append) {
-		CX::Instances::Log.warning("CX::Util::writeToFile") << "File " << filename << " already exists. It will be overwritten.";
+		CX::Instances::Log.warning("CX::Util::writeToFile") << "File \"" << filename << "\" already exists. It will be overwritten.";
 	}
 	out.close();
-	out.open( ofToDataPath(filename), (append ? ofFile::Append : ofFile::WriteOnly), false );
+	out.open(filename, (append ? ofFile::Append : ofFile::WriteOnly), false);
 	if (out.is_open()) {
 		out << data;
 		out.close();
 		return true;
 	} else {
-		CX::Instances::Log.error("CX::Util::writeToFile") << "File " << filename << " could not be opened.";
+		CX::Instances::Log.error("CX::Util::writeToFile") << "File \"" << filename << "\" could not be opened.";
 	}
 	return false;
 }

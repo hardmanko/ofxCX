@@ -100,7 +100,7 @@ void runExperiment(void) {
 
 	Display.setFullScreen(true);
 	if (Display.isFullscreen()) {
-		Clock.sleep(CX_Seconds(2));
+		Clock.sleep(CX_Seconds(1));
 	}
 	Display.setVSync(true, false);
 
