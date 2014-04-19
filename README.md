@@ -8,7 +8,7 @@ is designed to be used used for creating psychology experiments. OpenFrameworks 
 is a very good option for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
 free and open source, distributed under the MIT license.
 
-The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there or generate 
+The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there (or try this link: https://sites.google.com/site/kylehardmancom/CX%20Manual.pdf?attredirects=0) or generate 
 other formats of the documentation by using Doxygen with the Doxyfile there.
 
 License
@@ -29,7 +29,7 @@ As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2
 
 Known issues
 ------------
-This is alpha software, don't expect it to be bug-free.
+This is alpha/beta software, don't expect it to be bug-free.
 
 Loading sound files with CX_SoundBuffer uses FMOD, which is not available on Linux.
 
