@@ -212,6 +212,19 @@ void CX_Logger::level(CX_LogLevel level, std::string module) {
 	_moduleLogLevelsMutex.unlock();
 }
 
+/*! Gets the log level in use by the given module.
+\param module The name of the module.
+\return The CX_LogLevel for `module`. */
+CX_LogLevel CX_Logger::getModuleLevel(std::string module) {
+	CX_LogLevel level = _defaultLogLevel;
+	_moduleLogLevelsMutex.lock();
+	if (_moduleLogLevels.find(module) != _moduleLogLevels.end()) {
+		level = _moduleLogLevels[module];
+	}
+	_moduleLogLevelsMutex.unlock();
+	return level;
+}
+
 /*!
 Set the log level for all modules. This works both retroactively and proactively: All currently known modules
 are given the log level and the default log level for new modules as set to the level.

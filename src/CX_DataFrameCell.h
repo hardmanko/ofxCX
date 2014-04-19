@@ -59,12 +59,14 @@ public:
 
 	void copyCellTo(CX_DataFrameCell* targetCell);
 
-	std::string getStoredType (void);
+	std::string getStoredType (void) const;
+	void deleteStoredType(void);
 
 private:
 	std::shared_ptr<std::string> _str;
 	std::shared_ptr<std::string> _type;
 	std::shared_ptr<bool> _dataIsVector;
+	std::shared_ptr<bool> _ignoreStoredType;
 	//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
 	/*
 	// For linking back to data frame
@@ -199,15 +201,15 @@ scalar that is stored, the logs a warning but attempts the conversion anyway.
 */
 template <typename T> 
 std::vector<T> CX_DataFrameCell::toVector (void) const {
-	std::string typeName = typeid(T).name();
+	std::string extractedTypeName = typeid(T).name();
 
 	if (!(*_dataIsVector)) {
 		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract a vector when the stored data was a scalar. The returned vector will be of length one.";
 	}
 
-	if (*_type != typeName) {
+	if (*_type != extractedTypeName) {
 		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract data of different type than was inserted:" <<
-			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << typeName << "\".";
+			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << extractedTypeName << "\".";
 	}
 
 	/*
@@ -240,14 +242,9 @@ If the data to be stored are strings containing semicolons, the data will not be
 template <typename T> 
 void CX_DataFrameCell::storeVector (std::vector<T> values) {
 	*_str = _getVectorStartString() + CX::Util::vectorToString(values, _getVectorElementDelimiter(), _getFloatingPointPrecision()) + _getVectorEndString();
-
-	//*_type = "vector<";
-	//*_type += typeid(T).name();
-	//*_type += ">";
-
 	*_type = typeid(T).name();
-
 	*_dataIsVector = true;
+	*_ignoreStoredType = false;
 }
 
 /*! Stores the given value with the given type. This function is a good way to explicitly
@@ -259,6 +256,7 @@ template <typename T> void CX_DataFrameCell::store(const T& value) {
 	*_str = ofToString<T>(value);
 	*_type = typeid(T).name();
 	*_dataIsVector = false;
+	*_ignoreStoredType = false;
 }
 
 /*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.

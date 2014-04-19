@@ -34,6 +34,10 @@ namespace CX {
 	An instance of this class is preinstantiated for you. See CX::Instances::RNG for information about the instance
 	with that name.
 
+	Because the underlying C++ std library random number generators are not thread safe, CX_RandomNumberGenerator
+	is not thread safe. If you want to use a CX_RandomNumberGenerator in a thread, that thread should have its
+	own CX_RandomNumberGenerator. You may seed the thread's CX_RandomNumberGenerator with CX::Instances::RNG.
+
 	\ingroup randomNumberGeneration
 	*/
 	class CX_RandomNumberGenerator {

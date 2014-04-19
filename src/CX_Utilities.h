@@ -58,6 +58,8 @@ namespace CX {
 		template <typename T> T clamp(T val, T minimum, T maximum);
 		template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
 
+		template <typename T> std::vector<T> unique(std::vector<T> vals);
+
 		void saveFboToFile(ofFbo& fbo, std::string filename);
 
 		template <typename T> T max(std::vector<T> vals);
@@ -360,4 +362,14 @@ template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> v
 		sum += dif * dif;
 	}
 	return sum / (vals.size() - 1); //Sample variance has n - 1 for denominator
+}
+
+
+template <typename T> std::vector<T> CX::Util::unique(std::vector<T> vals) {
+	auto pastEnd = std::unique(vals.begin(), vals.end());
+	std::vector<T> uniqueVals;
+	for (auto it = vals.begin(); it != pastEnd; it++) {
+		uniqueVals.push_back(*it);
+	}
+	return uniqueVals;
 }

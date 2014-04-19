@@ -11,8 +11,6 @@ CX_DataFrameCell::CX_DataFrameCell (void) {
 /*! Constructs the cell with a string literal, treating it as a std::string. */
 CX_DataFrameCell::CX_DataFrameCell(const char* c) {
 	_allocatePointers();
-	//*_str = c;
-	//*_type = typeid(std::string).name();
 
 	this->store<const char*>(c);
 	*_type = typeid(std::string).name(); //override the type information with the type of std::string.
@@ -23,6 +21,7 @@ void CX_DataFrameCell::_allocatePointers(void) {
 	_str = std::shared_ptr<std::string>(new std::string);
 	_type = std::shared_ptr<std::string>(new std::string);
 	_dataIsVector = std::shared_ptr<bool>(new bool);
+	_ignoreStoredType = std::shared_ptr<bool>(new bool);
 }
 
 /*! Assigns a string literal to the cell, treating it as a std::string. */
@@ -38,13 +37,16 @@ CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 (which is the C++ standards committee way of saying "It can be anything at all"). It is only guranteed to be 
 the same for the same type, but not neccessarily be different for different types.
 \return A string containing the name of the stored type as given by typeid(typename).name(). */
-std::string CX_DataFrameCell::getStoredType(void) {
+std::string CX_DataFrameCell::getStoredType(void) const {
 	if (*_dataIsVector) {
 		return "vector<" + *_type + ">";
 	}
 	return *_type;
 }
 
+void CX_DataFrameCell::deleteStoredType(void) {
+	*_ignoreStoredType = true;
+}
 
 /*! Copies the contents of this cell to targetCell, including type information.
 \param targetCell A pointer to the cell to copy data to.

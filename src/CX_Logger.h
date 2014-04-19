@@ -81,6 +81,8 @@ namespace CX {
 		void levelForFile(CX_LogLevel level, std::string filename = "CX_DEFERRED_LOGGER_DEFAULT");
 		void levelForAllModules(CX_LogLevel level);
 
+		CX_LogLevel getModuleLevel(std::string module);
+
 		void flush (void); //BLOCKING
 
 		void timestamps(bool logTimestamps, std::string format = "%H:%M:%S.%i");

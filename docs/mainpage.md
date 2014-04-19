@@ -1,7 +1,7 @@
 Main Page                         {#mainpage}
 =========
 
-ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
+ofxCX (aka the C++ Experiment System; hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
 is a very good programming languange for anything requiring a high degree of timing precision. OpenFrameworks 
 and CX are both free and open source, distributed under the MIT license.
@@ -18,7 +18,8 @@ development environments.
 
 Once you have installed openFrameworks, you can install CX by putting the contents of the CX repository into a subdirectory 
 under OFDIR/addons (typically OFDIR/addons/ofxCX), where OFDIR is where you put openFramworks when you installed it. To use CX 
-in a project, use the openFrameworks project generator and select ofxCX as an addon. The project generator can be found in OFDIR/projectGenerator.
+in a project, use the openFrameworks project generator and select ofxCX as an addon (see the instructions for using the 
+\ref examplesAndTutorials for information).
 
 
 \section hardwareRequirements System Requirements
@@ -34,7 +35,7 @@ There are several examples of how to use CX. The example files can be found in t
 (see \ref installationInstructions) in subfolders with names beginning with "example-". 
 Some of the examples are on a specific topic and others are sample experiments that integrate together different features of CX. 
 
-In order to use the \ref examplesAndTutorials, do the following:
+In order to use the examples and tutorials, do the following:
 1. Use the oF project generator (OFDIR/projectGenerator/projectGeneratorSimple.exe) to create a new project that uses the ofxCX addon.
 The project generator asks you what to name your project, where to put it (defaults to OFDIR/apps/myApps/), and has the option of selecting
 addons. Click the "addons" button and check to box next to ofxCX. If ofxCX does not appear in the list of addons, you probably didn't put the 
@@ -53,7 +54,7 @@ Tutorials:
 + soundBuffer - Tutorial covering a number of things that you can do with CX_SoundObjects, including loading sound 
 files, combining sounds, and playing them.
 + modularSynth - This tutorial demonstrates a number of ways to generate auditory stimuli using the synthesizer modules in the CX::Synth namespace.
-+ dataFrame - Tutorial covering use of CX_DataFrame, which is a container for storing data that is collected in an experiment.
++ dataFrame - Tutorial covering use of CX_DataFrame, which is a container for storing data of various types that is collected in an experiment.
 + logging - Tutoral explaining how the error logging system of CX works and how you can use it in your experiments.
 + animation - A simple example of a simple way to draw moving things in CX. Also includes some mouse input handling: cursor movement, clicks, and scroll wheel activity.
 
@@ -68,14 +69,14 @@ in order to simplify the experiment.
 Misc.:
 -----------------------
 + helloWorld - A very basic getting started program.
-+ renderingTest - Includes several examples of how to draw stuff using ofTexture (a kind 
-of pixel buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
-(ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace that supplement oF functionality.
++ renderingTest - Includes several examples of how to draw stuff using ofFbo (a kind 
+of offscreen buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
+(ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace that supplement
+openFramework's drawing capabilities.
 
+\section yourFirstExperiment Creating a Blank Experiment
 
-\section yourFirstExperiment Creating A Blank Experiment
-
-To create your first experiment, follow the steps for using the examples in \ref examplesAndTutorials up to and including step 3. Then create a blank .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define runExperiment, like in the example below:
+To create your first experiment, follow the steps for using the examples in \ref examplesAndTutorials up to and including step 3. Then create an empty .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define runExperiment, like in the example below:
 \code{.cpp}
 #include "CX_EntryPoint.h"
 
@@ -96,7 +97,6 @@ The best way to get an overview of how CX works is to look at the \ref examplesA
 + To learn how to store and output experiment data, see the \ref dataManagement page or see the dataFrame example.
 + To learn about random number generation, see the \ref randomNumberGeneration page.
 + To learn about how CX logs errors and other runtime information, see the \ref errorLogging page.
-+ To learn about the 
 
 You can look at the \ref modulesPage page to see the other modules that CX has.
 
