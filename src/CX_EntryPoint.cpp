@@ -104,10 +104,11 @@ void CX::reopenWindow(CX_WindowConfiguration_t config) {
 	Private::glfwContext = glfwGetCurrentContext();
 }
 
-
-
 int main (void) {
 	CX::Private::setupCX();
+
 	runExperiment();
+
+	Instances::Log.flush();
 	return 0;
 }

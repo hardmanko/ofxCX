@@ -61,8 +61,8 @@ public:
 		will be 512 samples). Defaults to 4096 samples. */
 		unsigned int bufferSize;
 
-		/*! This argument depends on your operating system. Using RtAudio::Api::UNSPECIFIED will attempt to pick a working
-		API from those that are available on your system. The API means the type of software interface to use. For example,
+		/*! This argument depends on your operating system. Using RtAudio::Api::UNSPECIFIED will pick an available API for 
+		your system (if any; see the links below). The API means the type of software interface to use. For example,
 		on Windows, you can choose from Windows Direct Sound (DS) and ASIO. ASIO is commonly used with audio recording equipment
 		because	it has lower latency whereas DS is more of a consumer-grade interface. The choice of API does not affect
 		how you use this class, but it may affect the performance of sound playback.
@@ -95,7 +95,7 @@ public:
 		unsigned int bufferSize; //!< The number of sample frames that are in `outputBuffer`. The total number of samples is `bufferSize * outputChannels`.
 		int outputChannels; //!< The number of channels worth of data in `outputBuffer`.
 
-		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that contains the output event.
+		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that notified this output event.
 	};
 
 	/*! The audio input event of the CX_SoundStream sends a copy of this structure with
@@ -110,7 +110,7 @@ public:
 		unsigned int bufferSize; //!< The number of sample frames that are in `inputBuffer`. The total number of samples is `bufferSize * inputChannels`.
 		int inputChannels; //!< The number of channels worth of data in `inputBuffer`.
 
-		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that contains the input event.
+		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that notified this input event.
 	};
 
 

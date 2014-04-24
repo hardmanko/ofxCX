@@ -83,7 +83,7 @@ namespace CX {
 
 		CX_LogLevel getModuleLevel(std::string module);
 
-		void flush (void); //BLOCKING
+		void flush (void);
 
 		void timestamps(bool logTimestamps, std::string format = "%H:%M:%S.%i");
 

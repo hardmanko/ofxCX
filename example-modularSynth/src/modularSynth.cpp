@@ -229,7 +229,7 @@ void drawInformation(void) {
 					   "Key: Waveform\nt: triangle\nq: square\ni: sine\na: saw\nw: white noise", Display.getCenterOfDisplay() + ofPoint(-50,-50));
 
 	Display.endDrawingToBackBuffer();
-	Display.BLOCKING_swapFrontAndBackBuffers();
+	Display.swapBuffers();
 }
 
 //This function shows a part of how the modules work internally, based on a sample-by-sample model.

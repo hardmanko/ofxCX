@@ -43,7 +43,7 @@ namespace CX {
 		CX_Millis now(void);
 
 		void sleep(CX_Millis t);
-		void wait(CX_Millis t);
+		void delay(CX_Millis t);
 
 		void resetExperimentStartTime(void);
 

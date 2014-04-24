@@ -51,7 +51,7 @@ namespace CX  {
 		//! Returns the configuration used for this CX_SoundBufferPlayer.
 		Configuration getConfiguration(void) { return (Configuration)_soundStream.getConfiguration(); };
 		
-		bool BLOCKING_setSoundBuffer (CX_SoundBuffer *sound);
+		bool setSoundBuffer (CX_SoundBuffer *sound);
 
 		void setTime(CX_Millis time);
 

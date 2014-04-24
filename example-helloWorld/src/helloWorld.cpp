@@ -28,7 +28,7 @@ void runExperiment (void) {
 	Display.endDrawingToBackBuffer();
 
 	//Swap the front and back buffers, which moves what you drew into the offscreen back buffer into the onscreen front buffer.
-	Display.BLOCKING_swapFrontAndBackBuffers();
+	Display.swapBuffers();
 
 	//Set up the keyboard for use, but not the mouse.
 	Input.setup(true, false);

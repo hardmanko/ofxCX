@@ -91,9 +91,9 @@ void CX_SoundBufferPlayer::setTime(CX_Millis time) {
 	_soundPlaybackSampleFrame = time.seconds() * _soundStream.getConfiguration().sampleRate;
 }
 
-
 /*!
-This function is blocking because the sample rate and number of channels of sound are changed to those of the currently open stream.
+This function is potentially blocking because the sample rate and number of channels of sound are changed to those of the currently 
+open stream if they do not already match (see \ref blockingCode).
 \param sound A pointer to a CX_SoundBuffer that will be set as the current sound for the CX_SoundBufferPlayer. There are a variety of
 reasons why the sound could fail to be set as the current sound for the player. If sound was not loaded successfully, this function
 call fails and an error is logged. If it is not possible to convert the number of channels of sound to the number of channels that
@@ -104,7 +104,7 @@ the CX_SoundBufferPlayer. See \ref blockingCode for more information.
 
 \return True if sound was successfully set to be the current sound, false otherwise.
 */
-bool CX_SoundBufferPlayer::BLOCKING_setSoundBuffer(CX_SoundBuffer *sound) {
+bool CX_SoundBufferPlayer::setSoundBuffer(CX_SoundBuffer *sound) {
 	if (sound == nullptr) { //This check is redundant, in that nullptr is checked for in play().
 		return false;
 	}

@@ -124,14 +124,14 @@ void runExperiment (void) {
 	}
 
 	if (Display.isAutomaticallySwapping()) {
-		Display.BLOCKING_setAutoSwapping(false);
+		Display.setAutomaticSwapping(false);
 	}
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
 	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!\nPress any key to exit.", letterFont);
 	Display.endDrawingToBackBuffer();
-	Display.BLOCKING_swapFrontAndBackBuffers();
+	Display.swapBuffers();
 
 	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. 
 		//You could do it in each interstimulus blank, but there is more potential for timing problems there.

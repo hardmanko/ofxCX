@@ -49,16 +49,16 @@ namespace CX {
 
 		void beginDrawingToBackBuffer (void);
 		void endDrawingToBackBuffer (void);
-		void BLOCKING_swapFrontAndBackBuffers (void);
-		void swapFrontAndBackBuffers (void);
+		void swapBuffers (void);
+		void swapBuffersInThread (void);
 
-		void BLOCKING_setAutoSwapping (bool autoSwap);
+		void setAutomaticSwapping (bool autoSwap);
 		bool isAutomaticallySwapping (void);
 		bool hasSwappedSinceLastCheck (void);
 
 		CX_Millis getLastSwapTime(void);
 		
-		void BLOCKING_estimateFramePeriod(CX_Millis estimationInterval);
+		void estimateFramePeriod(CX_Millis estimationInterval);
 		CX_Millis getFramePeriod(void);
 		CX_Millis getFramePeriodStandardDeviation(void);
 		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
@@ -70,7 +70,7 @@ namespace CX {
 		ofRectangle getResolution (void);
 		ofPoint getCenterOfDisplay (void);
 		
-		void BLOCKING_waitForOpenGL (void);
+		void waitForOpenGL (void);
 
 		CX_DataFrame testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 

@@ -179,14 +179,14 @@ void runExperiment(void) {
 	}
 
 	if (Display.isAutomaticallySwapping()) {
-		Display.BLOCKING_setAutoSwapping(false);
+		Display.setAutomaticSwapping(false);
 	}
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
 	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!\nPress any key to exit.", letterFont);
 	Display.endDrawingToBackBuffer();
-	Display.BLOCKING_swapFrontAndBackBuffers();
+	Display.swapBuffers();
 
 	Log.flush();
 

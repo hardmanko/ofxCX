@@ -83,14 +83,14 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
 		if (!_config.display->isAutomaticallySwapping()) {
-			_config.display->BLOCKING_setAutoSwapping(true);
+			_config.display->setAutomaticSwapping(true);
 			Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
 		}
 	} 
 
 	if (_config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
 		if (_config.display->isAutomaticallySwapping()) {
-			_config.display->BLOCKING_setAutoSwapping(false);
+			_config.display->setAutomaticSwapping(false);
 			Log.notice("CX_SlidePresenter") << "Display was set to automatically swap at start of presentation. It was set to not swap automatically in order for the slide presentation to occur.";
 		}
 	}
@@ -108,7 +108,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	_presentingSlides = false;
 
 	//Wait for any ongoing rendering operations to complete before starting slide presentation.
-	_config.display->BLOCKING_waitForOpenGL();
+	_config.display->waitForOpenGL();
 
 	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
 		_config.display->hasSwappedSinceLastCheck();
@@ -502,7 +502,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 			//Check to see if we are within the CPU hogging phase of presentation
 			CX_Millis currentTime = CX::Instances::Clock.now();
 			if (currentTime >= _hoggingStartTime) {
-				_config.display->swapFrontAndBackBuffers();
+				_config.display->swapBuffersInThread();
 			}
 		}
 
@@ -546,7 +546,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 	}
 
 	if (_synchronizing) {
-		_config.display->BLOCKING_swapFrontAndBackBuffers();
+		_config.display->swapBuffers();
 		_currentSlide = 0;
 		_renderCurrentSlide();
 		_synchronizing = false;
@@ -572,7 +572,7 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 			CX_Millis currentTime = CX::Instances::Clock.now();
 			if (currentTime >= _hoggingStartTime) {
 
-				_config.display->BLOCKING_swapFrontAndBackBuffers();
+				_config.display->swapBuffers();
 
 				CX_Millis currentSlideOnset = CX::Instances::Clock.now();
 
@@ -620,7 +620,7 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 		CX_Millis swapStart;
 		do {
 			swapStart = Clock.now();
-			_config.display->BLOCKING_swapFrontAndBackBuffers();
+			_config.display->swapBuffers();
 			Log.notice("CX_SlidePresenter") << "swapped during sync";
 		} while (Clock.now() - swapStart < _config.display->getFramePeriod() - CX_Millis(1));
 			

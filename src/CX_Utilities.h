@@ -364,7 +364,10 @@ template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> v
 	return sum / (vals.size() - 1); //Sample variance has n - 1 for denominator
 }
 
-
+/*! Uses std::unique to find all of the unique values in `vals` and return copies of those values.
+\param vals Th vector of values to find unique values in.
+\return A vector containing the unique values in `vals`.
+*/
 template <typename T> std::vector<T> CX::Util::unique(std::vector<T> vals) {
 	auto pastEnd = std::unique(vals.begin(), vals.end());
 	std::vector<T> uniqueVals;

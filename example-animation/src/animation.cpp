@@ -5,11 +5,11 @@ It is not immediately obvious how to do animations using CX while not blocking,
 so I've made an example showing how to do so.
 
 There are really just four critical functions:
-CX_Display::BLOCKING_setAutoSwapping(), CX_Display::hasSwappedSinceLastCheck(),
+CX_Display::setAutomaticSwapping(), CX_Display::hasSwappedSinceLastCheck(),
 CX_Display::beginDrawingToBackBuffer(), and CX_Display::endDrawingToBackBuffer().
 
 All you have to do to set up the animation is to call:
-CX_Display::BLOCKING_setAutoSwapping(true);
+CX_Display::setAutomaticSwapping(true);
 This causes the contents of the back buffer to be automatically swapped to
 the front buffer every monitor refresh.
 
@@ -43,7 +43,7 @@ void runExperiment (void) {
 	Display.setWindowResolution(600, 600);
 
 	//See the main comment at the top of this file.
-	Display.BLOCKING_setAutoSwapping(true);
+	Display.setAutomaticSwapping(true);
 
 	while (true) {
 		updateAnimation();

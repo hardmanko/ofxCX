@@ -69,7 +69,9 @@ CX_Logger::~CX_Logger (void) {
 	}
 }
 
-/*! Log all of the messages stored since the last call to flush() to the selected logging targets. This is a BLOCKING operation.
+/*! Log all of the messages stored since the last call to flush() to the 
+selected logging targets. This is a blocking operation, because it may take 
+quite a while to output all log messages to various targets (see \ref blockingCode).
 This function is not thread-safe: Only call it from the main thread. */
 void CX_Logger::flush (void) {
 

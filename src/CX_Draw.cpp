@@ -1,6 +1,9 @@
 ﻿#include "CX_Draw.h"
 
 //using namespace CX::Draw;
+namespace CX {
+namespace Draw {
+
 
 /*!
 This function draws an approximation of a squircle (http://en.wikipedia.org/wiki/Squircle) using Bezier curves.
@@ -33,14 +36,6 @@ ofPath CX::Draw::squircleToPath(double radius, double amount) {
 
 	return sq;
 }
-
-/*
-void squircle(ofPoint center, double radius, double rotationDeg, double amount) {
-	ofPath sq = CX::Draw::squircleToPath(radius, amount);
-	sq.rotate(-rotationDeg, ofVec3f(0, 0, 1));
-	sq.draw(center.x, center.y);
-}
-*/
 
 /*! Draws an arrow to an ofPath. The outline of the arrow is drawn with strokes, so you can
 have the path be filled to have a solid arrow, or you can use non-zero width strokes in order
@@ -184,66 +179,71 @@ void CX::Draw::centeredString(ofPoint center, std::string s, ofTrueTypeFont &fon
 
 
 ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
-	double theta = properties.angle * PI / 180;
-	double radius = properties.width / 2; //Use width for radius. Consider using the one not set to 0 (whatever default value is)
-	double slope = tan(theta);
+	float theta = properties.angle * PI / 180;
+	float radius = properties.width / 2; //Use width for radius.
+	float slope = tan(theta);
 
 	ofPixels pix;
 	if (properties.apertureType == CX_PatternProperties_t::AP_CIRCLE) {
-		pix.allocate(properties.width, properties.width, ofImageType::OF_IMAGE_GRAYSCALE);
+		pix.allocate(ceil(properties.width), ceil(properties.width), ofImageType::OF_IMAGE_GRAYSCALE);
 	} else {
-		pix.allocate(properties.width, properties.height, ofImageType::OF_IMAGE_GRAYSCALE);
+		pix.allocate(ceil(properties.width), ceil(properties.height), ofImageType::OF_IMAGE_GRAYSCALE);
 	}
 	pix.set(0, properties.minValue); //Set the single channel to 0. Already done in allocate
 
-	double waveformPositionDeg = (properties.period * fmod(properties.phase, 360.0) / 360.0);
+	float waveformPosition = properties.period * fmod(properties.phase, 360.0) / 360.0;
 
 	//Get point on line tangent to "radius" of rectangle and the interecept of the line passing through that point
-	double tanRadius = sqrt(pow(pix.getWidth(), 2) + pow(pix.getHeight(), 2));
+	float tanRadius = sqrt(pow(pix.getWidth(), 2) + pow(pix.getHeight(), 2));
 	//Make the tanRadius be the next greatest multiple of the period
-	tanRadius = (ceil(tanRadius / properties.period) * properties.period) + waveformPositionDeg;
+	tanRadius = (ceil(tanRadius / properties.period) * properties.period) + waveformPosition;
 	ofPoint tangentPoint(tanRadius * sin(PI - theta), tanRadius * cos(PI - theta));
-	double b = tangentPoint.y - (slope * tangentPoint.x);
+	float b = tangentPoint.y - (slope * tangentPoint.x);
+
+	float halfWidth = (float)pix.getWidth() / 2;
+	float halfHeight = (float)pix.getHeight() / 2;
 
 	//i indexes y values, j indexes x values
 	for (int i = 0; i < pix.getHeight(); i++) {
 		for (int j = 0; j < pix.getWidth(); j++) {
 
-			ofPoint p(j - (pix.getWidth() / 2), i - (pix.getHeight() / 2)); //Center so that x and y are relative to the origin.
+			ofPoint p(j - halfWidth, i - halfHeight); //Center so that x and y are relative to the origin.
+			float distanceFromOrigin = p.distance(ofPoint(0, 0));
 
 			if (properties.apertureType == CX_PatternProperties_t::AP_CIRCLE) {
-				if (p.distance(ofPoint(0, 0)) > radius) { //Determine radius from the width
+				if (distanceFromOrigin > radius) {
 					continue; //Do not draw anything in this pixel (already transparent)
 				}
-			} else if (properties.apertureType == CX_PatternProperties_t::AP_RECTANGLE) {
+			} 
+			//else if (properties.apertureType == CX_PatternProperties_t::AP_RECTANGLE) {
 				//Do nothing, allow pattern to be drawn in entire texture.
-			}
+			//}
 
-			double distFromA;
+			float distFromLine;
 			if (slope == 0) { //Special case for flat lines.
-				distFromA = p.y + waveformPositionDeg;
+				distFromLine = p.y + waveformPosition;
 			} else {
-				double xa = (p.y - b) / slope;
+				float xa = (p.y - b) / slope;
 
-				double hyp = (xa - p.x); //abs
-				distFromA = hyp * sin(theta);
+				float hyp = (xa - p.x); //abs
+				distFromLine = hyp * sin(theta);
 			}
 
-			double intensity = 0;
+			float intensity = 0;
 
 			switch (properties.maskType) {
 			case CX_PatternProperties_t::SINE_WAVE:
-				intensity = (1.0 + sin((distFromA / properties.period) * 2 * PI)) / 2.0; //Scale to be between 0 and 1
+				intensity = (1.0 + sin((distFromLine / properties.period) * 2 * PI)) / 2.0; //Scale to be between 0 and 1
 				break;
 			case CX_PatternProperties_t::SQUARE_WAVE:
-				if (cos((distFromA / properties.period) * 2 * PI) > 0) {
+				if (cos((distFromLine / properties.period) * 2 * PI) > 0) {
 					intensity = 1;
 				} else {
 					intensity = 0;
 				}
 				break;
 			case CX_PatternProperties_t::TRIANGLE_WAVE:
-				double modulo = abs(fmod(distFromA, properties.period));
+				double modulo = abs(fmod(distFromLine, properties.period));
 				if (modulo >= properties.period / 2) {
 					intensity = modulo / properties.period;
 				} else {
@@ -252,21 +252,21 @@ ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
 				break;
 			}
 
-			if (properties.fallOffPower != std::numeric_limits<double>::min()) {
-				intensity *= (1 - pow(p.distance(ofPoint(0, 0)) / radius, properties.fallOffPower));
+			if (properties.fallOffPower != std::numeric_limits<float>::min()) {
+				float distanceRatio = pow(distanceFromOrigin / radius, properties.fallOffPower);
+				intensity *= (cos(distanceRatio * PI) + 1) / 2;
 			}
 
-			intensity = CX::Util::clamp<double>(intensity, 0, 1);
+			intensity = CX::Util::clamp<float>(intensity, 0, 1);
 
 			pix.setColor(j, i, ofColor((properties.maxValue - properties.minValue) * intensity + properties.minValue));
-
 		}
 	}
 
 	return pix;
 }
 
-ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
+ofPixels gaborToPixels (const CX_GaborProperties_t& properties) {
 	ofPixels pattern = greyscalePattern(properties.pattern);
 	
 	ofPixels pix;
@@ -277,7 +277,7 @@ ofPixels CX::Draw::gaborToPixels (const CX_GaborProperties_t& properties) {
 	return pix;
 }
 
-ofTexture CX::Draw::gaborToTexture (const CX_GaborProperties_t& properties) {
+ofTexture gaborToTexture (const CX_GaborProperties_t& properties) {
 	ofPixels pix = gaborToPixels(properties);
 	ofTexture tex;
 	tex.allocate(pix);
@@ -285,10 +285,10 @@ ofTexture CX::Draw::gaborToTexture (const CX_GaborProperties_t& properties) {
 	return tex;
 }
 
-void CX::Draw::gabor (int x, int y, const CX_GaborProperties_t& properties) {
+void gabor (ofPoint p, const CX_GaborProperties_t& properties) {
 	ofTexture tex = gaborToTexture(properties);
 	ofSetColor(255);
-	tex.draw(x - tex.getWidth()/2, y - tex.getHeight()/2); //Draws centered
+	tex.draw(p.x - tex.getWidth()/2, p.y - tex.getHeight()/2); //Draws centered
 }
 
 
@@ -448,7 +448,7 @@ struct CornerPoint {
 	Type type;
 };
 
-ofPath CX::Draw::lines(std::vector<ofPoint> points, ofColor color, float width, LineCornerMode cornerMode) {
+ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCornerMode cornerMode) {
 	bool isClosed = (points.front() == points.back());
 
 	
@@ -635,7 +635,7 @@ As a result, this function does not work well with transparency.
 \note If the last point is the same as the first point, the final line segment 
 junction will be joined with a circle.
 */
-void CX::Draw::lines(std::vector<ofPoint> points, float lineWidth) {
+void lines(std::vector<ofPoint> points, float lineWidth) {
 	float d = lineWidth / 2;
 	Draw::line(points[0], points[1], lineWidth);
 	for (unsigned int i = 1; i < points.size() - 1; i++) {
@@ -652,7 +652,7 @@ void CX::Draw::lines(std::vector<ofPoint> points, float lineWidth) {
 \note This function supersedes ofLine because the line width of the line drawn
 with ofLine cannot be set to a value greater than 1.
 */
-void CX::Draw::line(ofPoint p1, ofPoint p2, float width) {
+void line(ofPoint p1, ofPoint p2, float width) {
 	std::vector<LineSegment> ls = getParallelLineSegments(LineSegment(p1, p2), width/2);
 
 	ofPoint points [4];
@@ -675,7 +675,7 @@ void CX::Draw::line(ofPoint p1, ofPoint p2, float width) {
 \note This function supersedes drawing rings with ofCircle with fill set to off
 because the line width of the unfilled circle cannot be set to a value greater than 1.
 */
-void CX::Draw::ring(ofPoint center, float radius, float width, unsigned int resolution) {
+void ring(ofPoint center, float radius, float width, unsigned int resolution) {
 	ofPath path;
 	path.setCircleResolution(resolution);
 	path.moveTo(center + ofPoint(radius, 0));
@@ -698,7 +698,7 @@ are unequal, the arc will be a section of an ellipse.
 \param resolution The resolution of the arc. The arc will be composed of `resolution` line segments.
 \note This uses an ofVbo internally. If VBOs are not supported by your video card, this may not work at all.
 */
-void CX::Draw::arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution) {
+void arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution) {
 
 	float d = width / 2;
 	unsigned int vertexCount = resolution + 1;
@@ -728,7 +728,7 @@ http://pomax.github.io/bezierinfo/
 \param resolution Controls the approximation of the bezier curve. There will be `resolution` line segments drawn to 
 complete the curve.
 */
-void CX::Draw::bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution) {
+void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution) {
 
 	vector<vector<LineSegment>> segs(controlPoints.size() - 1);
 	for (unsigned int i = 0; i < segs.size(); i++) {
@@ -774,7 +774,7 @@ void CX::Draw::bezier(std::vector<ofPoint> controlPoints, float width, unsigned 
 \param width The width of the color wheel. The color wheel will extend half of the width
 in either direction from the radius.
 \param angle The amount to rotate the color wheel. */
-void CX::Draw::colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
+void colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
 
 	ofVbo vbo = colorWheelToVbo(center, colors, radius, width, angle);
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
@@ -818,18 +818,18 @@ in either direction from the radii.
 \param angleBegin The angle at which to begin the arc, in degrees.
 \param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
 */
-void CX::Draw::colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+void colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
 	ofVbo vbo = colorArcToVbo(center, colors, radiusX, radiusY, width, angleBegin, angleEnd);
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 }
 
-ofVbo CX::Draw::colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
+ofVbo colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
 	colors.push_back(colors.front());
 
 	return CX::Draw::colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
 }
 
-ofVbo CX::Draw::colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
 	float d = width / 2;
 
 	angleBegin *= -PI / 180;
@@ -855,4 +855,7 @@ ofVbo CX::Draw::colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float
 	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
 	vbo.setColorData(colors.data(), colors.size(), GL_STATIC_DRAW);
 	return vbo;
+}
+
+}
 }

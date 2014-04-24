@@ -83,21 +83,25 @@ namespace CX {
 				phase(0),
 				maskType(CX_PatternProperties_t::SINE_WAVE),
 				apertureType(CX_PatternProperties_t::AP_CIRCLE),
-				fallOffPower(std::numeric_limits<double>::min())
+				fallOffPower(std::numeric_limits<float>::min())
 			{}
 
 			unsigned char minValue;
 			unsigned char maxValue;
 			
-			double angle;
+			float angle;
 
-			double width; //If AP_CIRCLE is used, the diameter of the circle is specified by width
-			double height;
+			float width; //If AP_CIRCLE is used, the diameter of the circle is specified by width
+			float height;
 
-			double period;
-			double phase;
+			float period;
+			float phase;
 
-			double fallOffPower;
+			/*! The intensity of each pixel is decreased slightly based on how far from the center of the pattern
+			that pixel is, depending on the value of fallOffPower. By default, there is no falloff. A value of 1
+			produces a falloff. The falloff is computed as (cos((d/r)^falloffPower * PI) + 1)/2, where d is the 
+			distance of the current pixel from the origin and r is the radius of the pattern. */
+			float fallOffPower;
 
 			enum {
 				SINE_WAVE,
@@ -124,7 +128,7 @@ namespace CX {
 
 		ofPixels gaborToPixels (const CX_GaborProperties_t& properties);
 		ofTexture gaborToTexture (const CX_GaborProperties_t& properties);
-		void gabor (int x, int y, const CX_GaborProperties_t& properties);
+		void gabor (ofPoint p, const CX_GaborProperties_t& properties);
 
 		template <typename ofColorType>	std::vector<ofColorType> getRGBSpectrum(unsigned int colorCount);
 

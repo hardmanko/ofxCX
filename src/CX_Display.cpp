@@ -37,15 +37,15 @@ void CX_Display::setup (void) {
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
 		//what too early means) or else there will be a crash.
 
-	BLOCKING_estimateFramePeriod( CX_Millis(500) );
+	estimateFramePeriod( CX_Millis(500) );
 }
 
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
 \param autoSwap If true, the front and back buffer will swap automatically every frame. 
-\see \ref blockingCode */
-void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
+\note This function may block to due the requirement that it synchronize with the thread. See \ref blockingCode. */
+void CX_Display::setAutomaticSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
 			_swapThread->startThread(true, false); //verbose is true only for testing.
@@ -60,7 +60,7 @@ void CX_Display::BLOCKING_setAutoSwapping (bool autoSwap) {
 
 /*! Determine whether the display is configured to automatically swap the front and back buffers
 every frame.
-See \ref BLOCKING_setAutoSwapping for more information. */
+See \ref setAutomaticSwapping for more information. */
 bool CX_Display::isAutomaticallySwapping (void) {
 	return _swapThread->isThreadRunning();
 }
@@ -73,7 +73,7 @@ CX_Millis CX_Display::getLastSwapTime(void) {
 
 /*! Get an estimate of the next time the front and back buffers will be swapped.
 This function depends on the precision of the frame period as estimated using 
-BLOCKING_estimateFramePeriod(). If the front and back buffers are not swapped
+estimateFramePeriod(). If the front and back buffers are not swapped
 every frame, the result of this function is meaningless because it uses the 
 last buffer swap time as a reference.
 \return A time value that can be compared to CX::Instances::Clock.now(). */
@@ -82,20 +82,20 @@ CX_Millis CX_Display::estimateNextSwapTime(void) {
 	//return _swapThread->estimateNextSwapTime();
 }
 
-/*! Gets the estimate of the frame period calculated with BLOCKING_estimateFramePeriod(). */
+/*! Gets the estimate of the frame period calculated with estimateFramePeriod(). */
 CX_Millis CX_Display::getFramePeriod(void) {
 	return _framePeriod;
 }
 
-/*! Gets the estimate of the standard deviation of the frame period calculated with BLOCKING_estimateFramePeriod(). */
+/*! Gets the estimate of the standard deviation of the frame period calculated with estimateFramePeriod(). */
 CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
 	return _framePeriodStandardDeviation;
 }
 
 /*! Check to see if the display has swapped the front and back buffers since the last call to this function.
-This is generally used in conjuction with automatic swapping of the buffers (BLOCKING_setAutoSwapping())
-or with an individual threaded swap of the buffers (swapFrontAndBackBuffers()). This technically works
-with BLOCKING_swapFrontAndBackBuffers(), but given that that function only returns once the buffers have
+This is generally used in conjuction with automatic swapping of the buffers (setAutomaticSwapping())
+or with an individual threaded swap of the buffers (swapBuffersInThread()). This technically works
+with swapBuffers(), but given that that function only returns once the buffers have
 swapped, using this function to check that the buffers have swapped is redundant.
 \return True if a swap has been made since the last call to this function, false otherwise. */
 bool CX_Display::hasSwappedSinceLastCheck (void) {
@@ -109,8 +109,8 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 
 /*! This function returns the number of the last frame presented, as determined by 
 number of front and back buffer swaps. It tracks buffer swaps that result from 
-1) the front and back buffer swapping automatically (as a result of BLOCKING_setAutoSwapping() with true as the argument) and 
-2) manual swaps resulting from a call to BLOCKING_swapFrontAndBackBuffers() or swapFrontAndBackBuffers().
+1) the front and back buffer swapping automatically (as a result of setAutomaticSwapping() with true as the argument) and 
+2) manual swaps resulting from a call to swapBuffers() or swapBuffersInThread().
 \return The number of the last frame. This value can only be compared with other values 
 returned by this function. */
 uint64_t CX_Display::getFrameNumber (void) {
@@ -139,9 +139,9 @@ void CX_Display::endDrawingToBackBuffer (void) {
 blocks until the swap occurs. This usually should not be used if 
 `isAutomaticallySwapping() == true`. If it is, a warning will be logged.
 \see \ref blockingCode */
-void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
+void CX_Display::swapBuffers (void) {
 	if (isAutomaticallySwapping()) {
-		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with BLOCKING_swapFrontAndBackBuffers while auto swapping mode was in use.";
+		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffers() while auto swapping mode was in use.";
 	}
 
 	//glFlush();
@@ -154,22 +154,20 @@ void CX_Display::BLOCKING_swapFrontAndBackBuffers (void) {
 }
 
 /*! This function cues a swap of the front and back buffers. It avoids blocking
-(like BLOCKING_swapFrontAndBackBuffers()) by spawning a thread in which the 
-swap is waited for. This does not make it obviously better than BLOCKING_swapFrontAndBackBuffers(),
+(like swapBuffers()) by spawning a thread in which the 
+swap is waited for. This does not make it obviously better than swapBuffers(),
 because spawning a thread has a cost and may introduce synchronization problems. Also,
 because this function does not block, in order to know when the buffer swap took place,
 you need to check hasSwappedSinceLastCheck() in order to know when the buffer swap has taken place. */
-void CX_Display::swapFrontAndBackBuffers (void) {
+void CX_Display::swapBuffersInThread (void) {
 	_swapThread->swapNFrames(1);
 }
 
-/*!
-Wait until all OpenGL instructions that were given before this was called to complete. 
+/*! This function blocks until all OpenGL instructions that were given before this was called to complete. 
 This can be useful if you are trying to determine how long a set of rendering commands takes
 or need to make sure that all rendering is complete before moving on. 
-\see \ref blockingCode
-*/
-void CX_Display::BLOCKING_waitForOpenGL (void) {
+\see \ref blockingCode */
+void CX_Display::waitForOpenGL (void) {
 	glFinish();
 	/*
 	if (CX::Private::glFenceSyncSupported()) {
@@ -216,30 +214,28 @@ void CX_Display::setWindowTitle(std::string title) {
 	CX::Private::window->setWindowTitle(title);
 }
 
-/*!
-This function estimates the typical period of the display refresh.
-This function blocks for estimationInterval while the swapping thread swaps in the background.
+/*! This function estimates the typical period of the display refresh.
+This function blocks for estimationInterval while the swapping thread swaps in the background (see \ref blockingCode).
 This function is called with an argument of 300 ms during construction of this class, so
 there will always be some information about the frame period. If more precision of the estimate
 is desired, this function can be called again with a longer wait duration.
 \param estimationInterval The length of time to spend estimating the frame period.
-\see \ref blockingCode
 */
-void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
+void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();
-	BLOCKING_setAutoSwapping(false);
+	setAutomaticSwapping(false);
 
 	vector<CX_Millis> swapTimes;
 
 	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
 	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
 	for (int i = 0; i < 3; i++) {
-		BLOCKING_swapFrontAndBackBuffers();
+		swapBuffers();
 	}
 
 	CX_Millis startTime = CX::Instances::Clock.now();
 	while (CX::Instances::Clock.now() - startTime < estimationInterval) {
-		BLOCKING_swapFrontAndBackBuffers();
+		swapBuffers();
 		swapTimes.push_back(CX::Instances::Clock.now());
 	}
 	
@@ -254,10 +250,10 @@ void CX_Display::BLOCKING_estimateFramePeriod(CX_Millis estimationInterval) {
 		_framePeriod = Util::mean(durations);
 		
 	} else {
-		Log.warning("CX_Display") << "BLOCKING_estimateFramePeriod: Not enough swaps occured during the " << estimationInterval << " ms estimation interval.";
+		Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occured during the " << estimationInterval << " ms estimation interval.";
 	}
 	
-	BLOCKING_setAutoSwapping(wasSwapping);
+	setAutomaticSwapping(wasSwapping);
 }
 
 /*! Set whether the display is full screen or not. If the display is set to full screen, 
@@ -492,7 +488,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 	for (int thread = (testSecondaryThread ? 0 : 1); thread < 2; thread++) {
 
 		bool mainThread = (thread == 1);
-		BLOCKING_setAutoSwapping(!mainThread);
+		setAutomaticSwapping(!mainThread);
 
 		for (int hardV = 0; hardV < 2; hardV++) {
 			for (int softV = 0; softV < 2; softV++) {
@@ -516,12 +512,12 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				if (mainThread) {
 					//In order to give a fair test, each main thread test should start with some swaps.
 					for (unsigned int i = 0; i < 3; i++) {
-						BLOCKING_swapFrontAndBackBuffers();
+						swapBuffers();
 					}
 
 					CX_Millis startTime = Clock.now();
 					while ((Clock.now() - startTime) < testSegmentDuration) {
-						BLOCKING_swapFrontAndBackBuffers();
+						swapBuffers();
 						swapTimes.push_back(Clock.now());
 
 						drawScreenData(this, (swapTimes.size() % 2) ? ofColor(255) : ofColor(0), "Continuous swapping test\n" + conditionString);
@@ -575,7 +571,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 						drawWaitSwapScreenData(this, ofColor::black, ofColor::white, 
 											   ofRectangle(0, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
-						BLOCKING_swapFrontAndBackBuffers();
+						swapBuffers();
 						swapTimes.push_back(Clock.now());
 						durationType.push_back("long");
 
@@ -586,14 +582,14 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 						Clock.wait(period * 2.5);
 
-						BLOCKING_swapFrontAndBackBuffers();
+						swapBuffers();
 						swapTimes.push_back(Clock.now());
 						durationType.push_back("short");
 
 						drawWaitSwapScreenData(this, ofColor::black, ofColor::white,
 											   ofRectangle(resolution.width * 2 / 3, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
-						BLOCKING_swapFrontAndBackBuffers();
+						swapBuffers();
 						swapTimes.push_back(Clock.now());
 						durationType.push_back("normal");
 					}
@@ -639,7 +635,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 		}
 	}
 
-	BLOCKING_setAutoSwapping(wasSwapping);
+	setAutomaticSwapping(wasSwapping);
 
 	return data;
 }

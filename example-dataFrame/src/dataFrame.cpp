@@ -154,7 +154,7 @@ void runExperiment (void) {
 	ofDrawBitmapString("Examine the console for various printouts that \ncorrespond to certain parts of the code.\n\n"
 					   "Press any key to exit.", ofPoint(20, 20));
 	Display.endDrawingToBackBuffer();
-	Display.BLOCKING_swapFrontAndBackBuffers();
+	Display.swapBuffers();
 
 	Input.setup(true, false);
 	while (!Input.pollEvents())

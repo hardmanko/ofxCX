@@ -73,14 +73,14 @@ void runExperiment (void) {
 	//If you want to just play single sounds (like this example), you are possibly better off
 	//just using ofSoundPlayer. More interesting uses of CX_SoundBuffers can be found below.
 	cout << "Playing the duck." << endl;
-	player.BLOCKING_setSoundBuffer( &duck );
+	player.setSoundBuffer( &duck );
 	player.play();
 	while (player.isPlaying())
 		;
 
 	cout << "Plying a fast duck (2x speed; not pitch corrected)" << endl;
 	duck.multiplySpeed(2);
-	//player.BLOCKING_setSound( &duck ); //This does not need to be called because the player already has a pointer to the duck sound.
+	//player.setSoundBuffer( &duck ); //This does not need to be called because the player already has a pointer to the duck sound.
 	player.play();
 	while (player.isPlaying())
 		;
@@ -97,7 +97,7 @@ void runExperiment (void) {
 	compoundSound.addSound(cow, 0);
 	compoundSound.addSound(duck, CX_Seconds(6));
 
-	player.BLOCKING_setSoundBuffer( &compoundSound );
+	player.setSoundBuffer( &compoundSound );
 
 	player.play();
 	while (player.isPlaying())
@@ -124,11 +124,11 @@ void runExperiment (void) {
 		//you can add the same sound to another sound buffer multiple times (you can even add a sound
 		//to itself).
 	
-	//Notice at no time is a local variable given to BLOCKING_setSound(). BLOCKING_setSound()
+	//Notice at no time is a local variable given to setSoundBuffer(). setSoundBuffer()
 	//takes the address of a CX_SoundBuffer and does not copy that buffer, it only uses the
 	//address of that buffer. Because of this, if you give it the address of a local variable 
 	//that falls out of scope, you will get errors when you try to play that sound later.
-	player.BLOCKING_setSoundBuffer( &compoundSound );
+	player.setSoundBuffer( &compoundSound );
 	player.play();
 	while (player.isPlaying())
 		;
