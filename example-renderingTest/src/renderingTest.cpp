@@ -154,12 +154,12 @@ void updateDrawings (void) {
 		mainFbo.end();
 
 		Display.beginDrawingToBackBuffer();
-		ofBackground(0);
 		ofSetColor(255);
 		mainFbo.draw(0,0);
 		Display.endDrawingToBackBuffer();
 				
-		//Display.copyFboToBackBuffer(mainFbo);
+		//Display.copyFboToBackBuffer(mainFbo); //You can use this function to copy directly to the back buffer. However,
+			//it can be slower (by quite a bit) than drawing the fbo as was done above.
 	} else 
 #endif
 	{

@@ -279,6 +279,36 @@ std::string CX_SoundStream::convertApiToString (RtAudio::Api api) {
 	return "NULL";
 }
 
+/*! Converts a string name of an RtAudio API to an RtAudio::Api enum constant. 
+\param apiString The name of the API as a string. Should be one of the following, with no surrounding whitespace:
+UNSPECIFIED, LINUX_ALSA, LINUX_PULSE, LINUX_OSS, UNIX_JACK, MACOSX_CORE, WINDOWS_ASIO, WINDOWS_DS, RTAUDIO_DUMMY
+\return The RtAudio::Api corresponding to the provided string. If the string is not one of the above values, 
+RtAudio::Api::UNSPECIFIED is returned.
+*/
+RtAudio::Api CX_SoundStream::convertStringToApi(std::string apiString) {
+	if (apiString == "UNSPECIFIED") {
+		return RtAudio::Api::UNSPECIFIED;
+	} else if (apiString == "LINUX_ALSA") {
+		return RtAudio::Api::LINUX_ALSA;
+	} else if (apiString == "LINUX_PULSE") {
+		return RtAudio::Api::LINUX_PULSE;
+	} else if (apiString == "LINUX_OSS") {
+		return RtAudio::Api::LINUX_OSS;
+	} else if (apiString == "UNIX_JACK") {
+		return RtAudio::Api::UNIX_JACK;
+	} else if (apiString == "MACOSX_CORE") {
+		return RtAudio::Api::MACOSX_CORE;
+	} else if (apiString == "WINDOWS_ASIO") {
+		return RtAudio::Api::WINDOWS_ASIO;
+	} else if (apiString == "WINDOWS_DS") {
+		return RtAudio::Api::WINDOWS_DS;
+	} else if (apiString == "RTAUDIO_DUMMY") {
+		return RtAudio::Api::RTAUDIO_DUMMY;
+	}
+
+	return RtAudio::Api::UNSPECIFIED; //This is a bit of an error code...
+}
+
 /*! This helper function converts a vector of RtAudio::Api to a string, with
 the specified delimiter between API names.
 \param apis The vector of RtAudio::Api to convert to string.

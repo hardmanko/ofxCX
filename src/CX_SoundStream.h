@@ -147,6 +147,7 @@ public:
 	static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);
 	static std::string convertApisToString (vector<RtAudio::Api> apis, std::string delim = "\r\n");
 	static std::string convertApiToString (RtAudio::Api api);
+	RtAudio::Api convertStringToApi(std::string apiString);
 
 	static std::vector<std::string> formatsToStrings (RtAudioFormat formats);
 	static std::string formatsToString (RtAudioFormat formats, std::string delim = "\r\n");
