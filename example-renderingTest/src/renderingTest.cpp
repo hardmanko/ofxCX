@@ -33,63 +33,6 @@ ofTrueTypeFont smallFont;
 ofTrueTypeFont largeFont;
 #endif
 
-/*! This function reads in a file containing information stored as key-value pairs. A file of this kind could look like:
-\code
-unleash_penguins=true
-Key=Value
-blue=0000FF
-\endcode
-This type of file is often used for configuration of a program. This function simply provides a simple way to read in such data.
-\param filename The name of the file containing key-value data.
-\param delimiter The string that separates the key from the value. In the example, it is "=".
-\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed.
-\param commentStr If commentStr is not the empty string, everything on a line following the first instance of commentStr will be ignored.
-\return A map<string, string>, where the keys are the keys to the map.
-*/
-std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=",  bool trimWhitespace = true, std::string commentStr = "//") {
-	std::map<std::string, std::string> rval;
-
-	ofBuffer buf = ofBufferFromFile(filename, false);
-	while (!buf.isLastLine()) {
-		std::string line = buf.getNextLine();
-
-		//Strip comments. Only // is supported for comments, not /* */.
-		if (commentStr != "") {
-			std::string::size_type commentStart = line.find(commentStr, 0);
-			if (commentStart != std::string::npos) {
-				line = line.erase(commentStart);
-			}
-		}
-
-		std::vector<std::string> parts = ofSplitString(line, delimiter, false, trimWhitespace);
-		if (parts.size() >= 2) {
-			rval[parts[0]] = parts[1];
-		}
-	}
-
-	return rval;
-}
-
-void configureFromKV(std::map<std::string, std::string> kv) {
-	//Display
-
-	if (kv.find("window_width") != kv.end()) {
-		int width = ofFromString<int>(kv.at("window_width"));
-		Display.setWindowResolution(width, Display.getResolution().height);
-	}
-
-	if (kv.find("window_height") != kv.end()) {
-		int height = ofFromString<int>(kv.at("window_height"));
-		Display.setWindowResolution(Display.getResolution().width, height);
-	}
-
-	if (kv.find("vsync") != kv.end()) {
-		bool hvs = ofFromString<bool>(kv["hardware_vsync"]);
-		Display.setVSync(hvs, false);
-	}
-
-}
-
 ofVbo rainbowVbo;
 
 bool drawingToFboFirst = false;
@@ -99,8 +42,6 @@ void updateDrawings(void);
 void drawStuff (void);
 
 void runExperiment(void) {
-
-	auto m = readKeyValueFile("KV test.txt", "=", true, "//");
 
 	Input.setup(true, true);
 
