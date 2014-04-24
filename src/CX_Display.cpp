@@ -525,7 +525,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 				} else {
 
-					Clock.wait(200);
+					Clock.delay(CX_Millis(200));
 
 					CX_Millis startTime = Clock.now();
 					while ((Clock.now() - startTime) < testSegmentDuration) {
@@ -580,7 +580,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 											   ofRectangle(resolution.width / 3, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
 
-						Clock.wait(period * 2.5);
+						Clock.delay(period * 2.5);
 
 						swapBuffers();
 						swapTimes.push_back(Clock.now());
