@@ -46,6 +46,7 @@ namespace CX {
 		template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
 
 		bool writeToFile(std::string filename, std::string data, bool append = true);
+		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
 
 		enum class CX_RoundingConfiguration {
 			ROUND_TO_NEAREST,

@@ -45,7 +45,7 @@ public:
 			outputDeviceId(CX_SOUND_STREAM_USE_DEFAULT_DEVICE)
 		{
 			//streamOptions.streamName = "CX_SoundStream";
-			streamOptions.numberOfBuffers = 2; //More buffers == higher latency but fewer glitches. Same applies to bufferSize.
+			streamOptions.numberOfBuffers = 2; //More buffers means higher latency but fewer glitches. Same applies to bufferSize.
 			streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME; // | RTAUDIO_HOG_DEVICE | RTAUDIO_MINIMIZE_LATENCY;
 			streamOptions.priority = 1;
 		}
@@ -56,9 +56,9 @@ public:
 						cannot be used, the nearest greater sample rate will be chosen. If there is no greater sample rate, the next
 						lower sample rate will be used. */
 
-		/*! The size of the audio data buffer to use. A larger buffer size means more latency but also a greater potential for audio glitches
-		(clicks and pops). Buffer size is per channel (i.e. if there are two channels and buffer size is set to 256, the actual buffer size
-		will be 512 samples). Defaults to 4096 samples. */
+		/*! The size of the audio data buffer to use, in sample frames. A larger buffer size means more latency 
+		but also a greater potential for audio glitches (clicks and pops). Buffer size is per channel (i.e. 
+		if there are two channels and buffer size is set to 256, the actual buffer size will be 512 samples). */
 		unsigned int bufferSize;
 
 		/*! This argument depends on your operating system. Using RtAudio::Api::UNSPECIFIED will pick an available API for 
@@ -147,7 +147,7 @@ public:
 	static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);
 	static std::string convertApisToString (vector<RtAudio::Api> apis, std::string delim = "\r\n");
 	static std::string convertApiToString (RtAudio::Api api);
-	RtAudio::Api convertStringToApi(std::string apiString);
+	static RtAudio::Api convertStringToApi(std::string apiString);
 
 	static std::vector<std::string> formatsToStrings (RtAudioFormat formats);
 	static std::string formatsToString (RtAudioFormat formats, std::string delim = "\r\n");
