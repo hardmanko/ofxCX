@@ -1,5 +1,7 @@
 ﻿#include "CX_Draw.h"
 
+#include "../libs/colorspace/colorspace.h"
+
 //using namespace CX::Draw;
 namespace CX {
 namespace Draw {
@@ -855,6 +857,87 @@ ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, 
 	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
 	vbo.setColorData(colors.data(), colors.size(), GL_STATIC_DRAW);
 	return vbo;
+}
+
+
+/*! Convert between two color spaces. This conversion uses this library internally: http://www.getreuer.info/home/colorspace
+\param conversionFormula A formula of the format "SRC -> DEST", where SRC and DEST are valid color spaces.
+For example, if you wanted to convert from HSL to RGB, you would use "HSL -> RGB" as the formula. The whitespace
+is immaterial, but the arrow must exist (the arrow can point either direction). See this page for options for 
+the color space: http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage.
+\param S1 Source coordinate 1. Corresponds to, e.g., R from RGB. S2 and S3 follow as expected.
+\return An vector of length 3 containing the converted coordinates in the destination color space.
+
+\code{.cpp}
+vector<double> hslValues = Draw::convertColors("XYZ -> HSL", .7, .4, .6);
+hslValues[0]; //Access the hue value.
+hslValues[2]; //Access the lightness value.
+\endcode
+
+\note The values returned by this function may not be in the allowed range for the destination color space. 
+Make sure they are clamped to reasonable values if they are to be used directly.
+
+\see CX::Draw::convertToRGB() is a convenience function for the most common conversion that will typically be done.
+*/
+std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3) {
+	std::vector<num> dest(3, 0);
+	colortransform cTrans;
+
+	if (((conversionFormula.find("->") == std::string::npos) && (conversionFormula.find("<-") == std::string::npos)) || 
+		!GetColorTransform(&cTrans, conversionFormula.c_str()))
+	{
+		CX::Instances::Log.error() << "CX::Draw::convertColors: Invalid syntax or unknown color space. The provided conversion formula was \"" << 
+			conversionFormula << "\"" << endl;
+		return dest;
+	}
+
+	ApplyColorTransform(cTrans, &dest[0], &dest[1], &dest[2], S1, S2, S3);
+
+	return dest;
+}
+
+/*! This function converts from a color space to the RGB color space. This is convenient, because in order
+to draw stimuli with a color, you need to have the color in the RGB space.
+\param inputColorSpace The color space to convert from. For example, if you wanted to convert from LAB
+coordinates, you would provde the string "LAB". See this page for more options for the color space:
+http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB title on that page).
+\param S1 Source coordinate 1. Corresponds to, e.g., R from RGB. S2 and S3 follow as expected.
+\return An ofFloatColor contaning the RGB coordinates.
+
+\code{.cpp}
+//This code snippet draws an isluminant color wheel to the screen using color conversion from LAB to RGB.
+void runExperiment(void) {
+
+	vector<ofFloatColor> wheelColors(100);
+	float L = 50; //Fix luminance value
+
+	for (int i = 0; i < wheelColors.size(); i++) {
+		//Take color values from a circle within the given luminance slice.
+		float angle = (float)i / wheelColors.size() * 2 * PI;
+		float A = sin(angle) * 30;
+		float B = cos(angle) * 30;
+
+		wheelColors[i] = Draw::convertToRGB("LAB", L, A, B); //Convert the L, A, and B components to the RGB color space.
+	}
+
+	Display.beginDrawingToBackBuffer();
+	ofBackground(0);
+	Draw::colorWheel(Display.getCenterOfDisplay(), wheelColors, 200, 70, 0);
+	Display.endDrawingToBackBuffer();
+	Display.swapBuffers();
+
+	Input.setup(true, false);
+	while (!Input.pollEvents())
+		;
+}
+\endcode
+*/
+ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3) {
+	std::string conversionFormula = inputColorSpace + " -> RGB";
+
+	std::vector<double> result = convertColors(conversionFormula, S1, S2, S3);
+
+	return ofFloatColor(result[0], result[1], result[2]);
 }
 
 }

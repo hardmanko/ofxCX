@@ -43,7 +43,7 @@ void CX_SoundBufferRecorder::setSoundBuffer(CX_SoundBuffer* so) {
 	so->setFromVector(vector<float>(), _soundStream.getConfiguration().inputChannels, _soundStream.getConfiguration().sampleRate);
 }
 
-/*! This function returns a pointer to the CX_SoundBuffer that is currently associated with this CX_SoundBufferRecorder. */
+/*! This function returns a pointer to the CX_SoundBuffer that is currently in use by the CX_SoundBufferRecorder. */
 CX_SoundBuffer* CX_SoundBufferRecorder::getSoundBuffer(void) {
 	if (_recording) {
 		CX::Instances::Log.warning("CX_SoundBufferRecorder") << "getSoundBuffer: Sound buffer pointer accessed while recording was in progress.";

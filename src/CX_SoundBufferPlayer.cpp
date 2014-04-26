@@ -34,6 +34,11 @@ Attempts to start playing the current CX_SoundBuffer associated with the player.
 \return True if the sound buffer associated with the player isReadyToPlay(), false otherwise.
 */
 bool CX_SoundBufferPlayer::play (void) {
+	if (!_soundStream.isStreamRunning()) {
+		Log.error("CX_SoundBufferPlayer") << "Could not start sound playback. The sound stream was not running.";
+		return false;
+	}
+
 	if ((_buffer != nullptr) && _buffer->isReadyToPlay()) {
 		_playing = true;
 		_soundPlaybackSampleFrame = 0;
@@ -139,6 +144,13 @@ bool CX_SoundBufferPlayer::setSoundBuffer(CX_SoundBuffer *sound) {
 
 }
 
+/*!This function provides direct access to the CX_SoundBuffer that is in use by the CX_SoundBufferPlayer. */
+CX_SoundBuffer* CX_SoundBufferPlayer::getSoundBuffer(void) {
+	if (_playing) {
+		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "getSoundBuffer: Sound buffer pointer accessed while playback was in progress.";
+	}
+	return _buffer;
+}
 
 bool CX_SoundBufferPlayer::_outputEventHandler (CX_SoundStream::OutputEventArgs &outputData) {
 	//This check is a bit strange, but if !_playing and _playbackStartQueued, then we are checking for playback start and not returning false.

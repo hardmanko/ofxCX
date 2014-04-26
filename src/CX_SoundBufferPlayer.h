@@ -52,6 +52,10 @@ namespace CX  {
 		Configuration getConfiguration(void) { return (Configuration)_soundStream.getConfiguration(); };
 		
 		bool setSoundBuffer (CX_SoundBuffer *sound);
+		CX_SoundBuffer* getSoundBuffer(void);
+
+		/*! This function provides direct access to the CX_SoundStream used by the CX_SoundBufferRecorder. */
+		CX_SoundStream& getSoundStream(void) { return _soundStream; };
 
 		void setTime(CX_Millis time);
 

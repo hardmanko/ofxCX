@@ -122,14 +122,16 @@ public:
 
 	bool start (void);
 	bool stop (void);
+
+	bool isStreamRunning(void) const;
 	
 	/*! Gets the configuration that was used on the last call to open(). Because some of the configuration
 	options are only suggestions, this function allows you to check what the actual configuration was.
 	\return A const reference to the configuration struct. */
-	const CX_SoundStream::Configuration& getConfiguration (void) { return _config; };
+	const CX_SoundStream::Configuration& getConfiguration (void) const { return _config; };
 	
 	/*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
-	uint64_t getSampleFrameNumber (void) { return _lastSampleNumber; };
+	uint64_t getSampleFrameNumber (void) const { return _lastSampleNumber; };
 
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
@@ -154,6 +156,8 @@ public:
 
 	static std::vector<RtAudio::DeviceInfo> getDeviceList (RtAudio::Api api);
 	static std::string listDevices (RtAudio::Api api);
+
+	static CX_SoundStream::Configuration readConfigurationFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
 
 private:
 

@@ -145,6 +145,15 @@ bool CX_SoundStream::start (void) {
 	return true;
 }
 
+/*! Check whether the sound stream is running. 
+\return false if the stream is not open or not running or if RtAudio has not been initialized. Returns true if the stream is running. */
+bool CX_SoundStream::isStreamRunning(void) const {
+	if (_rtAudio == nullptr) {
+		return false;
+	}
+	return _rtAudio->isStreamRunning();
+}
+
 /*! Stop the stream, if is running. If there is an error, a message will be logged.
 \return False if there was an error, true otherwise. */
 bool CX_SoundStream::stop (void) {
@@ -449,6 +458,94 @@ std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 	}
 	return rval.str();
 }
+
+/*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
+due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
+they are running. This function takes the file name of a specially constructed configuration file and reads the
+key-value pairs in that file in order to fill a CX_SoundStream::Configuration struct. The format of the file is
+provided in the example code below.
+
+Sample configuration file. Note that the "ss" prefix allows this configuration to be fairly safely embedded in
+a file that also performs other configuration functions. Note that the names of the data members match the names
+used in the \ref CX_SoundStream::Configuration struct and have a 1-to-1 relationship with those values.
+\code
+ss.api = WINDOWS_DS //See convertStringToApi() for valid API names.
+ss.sampleRate = 44100
+ss.bufferSize = 512
+ss.inputChannels = 0
+//ss.inputDeviceId ignored because no channels are used
+ss.outputChannels = 2
+ss.outputDeviceId = 0
+ss.streamOptions.numberOfBuffers = 4
+ss.streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME | RTAUDIO_MINIMIZE_LATENCY //The | is not needed,
+//but it matches the way these flags are used in code.
+\endcode
+
+Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
+\param filename The name of the file containing configuration data.
+\param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
+\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
+\param commentStr If commentStr is not the empty string (i.e. ""), everything on a line following the first instance of commentStr will be ignored.
+*/
+CX_SoundStream::Configuration CX_SoundStream::readConfigurationFromFile(std::string filename, std::string delimiter, 
+																		bool trimWhitespace, std::string commentStr) 
+{
+	std::map<std::string, std::string> kv = CX::Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentStr);
+	
+	CX_SoundStream::Configuration ssCon;
+
+	if (kv.find("ss.api") != kv.end()) {
+		ssCon.api = CX_SoundStream::convertStringToApi(kv["ss.api"]);
+	}
+	if (kv.find("ss.bufferSize") != kv.end()) {
+		ssCon.bufferSize = ofFromString<unsigned int>(kv["ss.bufferSize"]);
+	}
+	if (kv.find("ss.inputChannels") != kv.end()) {
+		ssCon.inputChannels = ofFromString<int>(kv["ss.inputChannels"]);
+	}
+	if (kv.find("ss.outputChannels") != kv.end()) {
+		ssCon.outputChannels = ofFromString<int>(kv["ss.outputChannels"]);
+	}
+	if (kv.find("ss.inputDeviceId") != kv.end()) {
+		ssCon.inputDeviceId = ofFromString<int>(kv["ss.inputDeviceId"]);
+	}
+	if (kv.find("ss.outputDeviceId") != kv.end()) {
+		ssCon.outputDeviceId = ofFromString<int>(kv["ss.outputDeviceId"]);
+	}
+	if (kv.find("ss.sampleRate") != kv.end()) {
+		ssCon.sampleRate = ofFromString<int>(kv["ss.sampleRate"]);
+	}
+	if (kv.find("ss.streamOptions.numberOfBuffers") != kv.end()) {
+		ssCon.streamOptions.numberOfBuffers = ofFromString<unsigned int>(kv["ss.streamOptions.numberOfBuffers"]);
+	}
+	if (kv.find("ss.streamOptions.priority") != kv.end()) {
+		ssCon.streamOptions.priority = ofFromString<int>(kv["ss.streamOptions.priority"]);
+	}
+
+	if (kv.find("ss.streamOptions.flags") != kv.end()) {
+		ssCon.streamOptions.flags = 0;
+		string flags = kv["ss.streamOptions.flags"];
+
+		if (flags.find("RTAUDIO_NONINTERLEAVED") != std::string::npos) {
+			ssCon.streamOptions.flags |= RTAUDIO_NONINTERLEAVED; //emit warning. Don't use this flag!
+		}
+		if (flags.find("RTAUDIO_MINIMIZE_LATENCY") != std::string::npos) {
+			ssCon.streamOptions.flags |= RTAUDIO_MINIMIZE_LATENCY;
+		}
+		if (flags.find("RTAUDIO_HOG_DEVICE") != std::string::npos) {
+			ssCon.streamOptions.flags |= RTAUDIO_HOG_DEVICE;
+		}
+		if (flags.find("RTAUDIO_ALSA_USE_DEFAULT") != std::string::npos) {
+			ssCon.streamOptions.flags |= RTAUDIO_ALSA_USE_DEFAULT;
+		}
+		if (flags.find("RTAUDIO_SCHEDULE_REALTIME") != std::string::npos) {
+			ssCon.streamOptions.flags |= RTAUDIO_SCHEDULE_REALTIME;
+		}
+	}
+
+	return ssCon;
+}
+
 
 int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
 

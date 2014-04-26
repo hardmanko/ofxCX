@@ -132,10 +132,13 @@ namespace CX {
 
 		template <typename ofColorType>	std::vector<ofColorType> getRGBSpectrum(unsigned int colorCount);
 
-		ofVbo colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle);
-		ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd);
-		void colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle);
-		void colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd);
+		ofVbo colorWheelToVbo(ofPoint center, std::vector<ofFloatColor> colors, float radius, float width, float angle);
+		ofVbo colorArcToVbo(ofPoint center, std::vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd);
+		void colorWheel(ofPoint center, std::vector<ofFloatColor> colors, float radius, float width, float angle);
+		void colorArc(ofPoint center, std::vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd);
+
+		std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
+		ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
 	}
 }
 
