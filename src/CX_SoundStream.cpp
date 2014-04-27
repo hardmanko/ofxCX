@@ -465,32 +465,37 @@ they are running. This function takes the file name of a specially constructed c
 key-value pairs in that file in order to fill a CX_SoundStream::Configuration struct. The format of the file is
 provided in the example code below.
 
-Sample configuration file. Note that the "ss" prefix allows this configuration to be fairly safely embedded in
-a file that also performs other configuration functions. Note that the names of the data members match the names
-used in the \ref CX_SoundStream::Configuration struct and have a 1-to-1 relationship with those values.
+Sample configuration file:
 \code
 ss.api = WINDOWS_DS //See convertStringToApi() for valid API names.
 ss.sampleRate = 44100
 ss.bufferSize = 512
 ss.inputChannels = 0
-//ss.inputDeviceId ignored because no channels are used
+//ss.inputDeviceId not used because no channels are used
 ss.outputChannels = 2
 ss.outputDeviceId = 0
 ss.streamOptions.numberOfBuffers = 4
 ss.streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME | RTAUDIO_MINIMIZE_LATENCY //The | is not needed,
 //but it matches the way these flags are used in code.
+//ss.streamOptions.priority is not used.
 \endcode
+All of the configuration keys are used in this example.
+Any values in the \ref CX_SoundStream::Configuration struct that do not have values provided in the configuration
+file will be left at default values. Note that the "ss" prefix allows this configuration to be embedded in
+a file that also performs other configuration functions. Note that the names of the data members match the names
+used in the \ref CX_SoundStream::Configuration struct and have a 1-to-1 relationship with those values.
 
 Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
 \param filename The name of the file containing configuration data.
 \param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
 \param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
-\param commentStr If commentStr is not the empty string (i.e. ""), everything on a line following the first instance of commentStr will be ignored.
+\param commentString If commentString is not the empty string (i.e. ""), everything on a line 
+following the first instance of commentString will be ignored.
 */
 CX_SoundStream::Configuration CX_SoundStream::readConfigurationFromFile(std::string filename, std::string delimiter, 
-																		bool trimWhitespace, std::string commentStr) 
+																		bool trimWhitespace, std::string commentString) 
 {
-	std::map<std::string, std::string> kv = CX::Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentStr);
+	std::map<std::string, std::string> kv = CX::Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
 	
 	CX_SoundStream::Configuration ssCon;
 

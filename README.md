@@ -3,13 +3,13 @@ ofxCX
 
 Introduction
 ------------
-ofxCX (hereafter referred to as CX) is a "total conversion mod" for openFrameworks (often abbreviated oF) that 
+ofxCX (hereafter referred to as CX) is a "total conversion mod" for [openFrameworks](www.openframeworks.cc) (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
-is a very good option for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
-free and open source, distributed under the MIT license.
+is a very good language for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
+free and open source.
 
-The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there (or try this link: https://sites.google.com/site/kylehardmancom/CX%20Manual.pdf?attredirects=0) or generate 
-other formats of the documentation by using Doxygen with the Doxyfile there.
+The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there (or try this link: https://sites.google.com/site/kylehardmancom/CX%20Manual.pdf?attredirects=0). You can generate 
+other formats of the documentation by using Doxygen with the Doxyfile given in the docs subfolder.
 
 License
 -------
@@ -31,7 +31,7 @@ Known issues
 ------------
 This is alpha/beta software, don't expect it to be bug-free.
 
-Loading sound files with CX_SoundBuffer uses FMOD, which is not available on Linux.
+Loading sound files with CX_SoundBuffer uses FMOD, which is not available on Linux. Other ways of playing sound are supported.
 
 Version history
 ------------

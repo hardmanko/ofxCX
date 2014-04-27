@@ -29,7 +29,7 @@ namespace CX {
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch);
 
-		unsigned int getMsaaSampleCount(void);
+		unsigned int getMsaaSampleCount(void); //Move to Draw ns?
 
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 
@@ -46,7 +46,7 @@ namespace CX {
 		template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
 
 		bool writeToFile(std::string filename, std::string data, bool append = true);
-		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
+		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 
 		enum class CX_RoundingConfiguration {
 			ROUND_TO_NEAREST,
@@ -61,7 +61,7 @@ namespace CX {
 
 		template <typename T> std::vector<T> unique(std::vector<T> vals);
 
-		void saveFboToFile(ofFbo& fbo, std::string filename);
+		void saveFboToFile(ofFbo& fbo, std::string filename); //Move to Draw ns?
 
 		template <typename T> T max(std::vector<T> vals);
 		template <typename T> T min(std::vector<T> vals);
@@ -69,6 +69,8 @@ namespace CX {
 		template <typename T_OUT, typename T_IN> T_OUT mean(std::vector<T_IN> vals);
 		template <typename T> T var(std::vector<T> vals);
 		template <typename T_OUT, typename T_IN> T_OUT var(std::vector<T_IN> vals);
+
+		float getAngleBetweenPoints(ofPoint p1, ofPoint p2);
 
 	}
 }

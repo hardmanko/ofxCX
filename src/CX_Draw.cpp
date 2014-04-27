@@ -15,7 +15,7 @@ The squircle will be centered on (0,0) in the ofPath.
 approximation of a squircle, but different amounts can give different sorts of shapes.
 \return An ofPath containing the squircle.
 */
-ofPath CX::Draw::squircleToPath(double radius, double amount) {
+ofPath squircleToPath(double radius, double amount) {
 	ofPath sq;
 	sq.setFilled(false);
 
@@ -49,7 +49,7 @@ ofPath::rotate().
 \param lineWidth The width of the lines used to draw the arrow (i.e. the distance between parallel strokes).
 \return An ofPath containing the arrow. The center of the arrow is at (0,0) in the ofPath.
 */
-ofPath CX::Draw::arrowToPath(float length, float headOffsets, float headSize, float lineWidth) {
+ofPath arrowToPath(float length, float headOffsets, float headSize, float lineWidth) {
 
 	headOffsets = (90 - headOffsets) * PI / 180;
 
@@ -85,7 +85,7 @@ the star hit.
 Positive values rotate the star counter-clockwise.
 \return A vector of points defining the vertices needed to draw the star. There will be 2 * numberOfPoints + 1
 vertices with the last vertex equal to the first vertex. The vertices are centered on (0, 0). */
-std::vector<ofPoint> CX::Draw::getStarVertices(unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg) {
+std::vector<ofPoint> getStarVertices(unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg) {
 	std::vector<ofPoint> vertices((2 * numberOfPoints) + 1);
 	bool inside = true;
 
@@ -116,7 +116,7 @@ the star hit.
 \param outerRadius The distance from the center of the star to the outer points of the star.
 \return An ofPath containing the star.
 */
-ofPath CX::Draw::starToPath(unsigned int numberOfPoints, float innerRadius, float outerRadius) {
+ofPath starToPath(unsigned int numberOfPoints, float innerRadius, float outerRadius) {
 	ofPath star;
 
 	std::vector<ofPoint> vertices = getStarVertices(numberOfPoints, innerRadius, outerRadius);
@@ -140,7 +140,7 @@ the star hit.
 \param rotationDeg The number of degrees to rotate the star. 0 degrees has one point of the star pointing up. 
 Positive values rotate the star counter-clockwise.
 */
-void CX::Draw::star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius,
+void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius,
 					ofColor fillColor, float rotationDeg)
 {
 
@@ -160,7 +160,7 @@ void CX::Draw::star(ofPoint center, unsigned int numberOfPoints, float innerRadi
 }
 
 /*! Equivalent to a call to CX::Draw::centeredString(ofPoint(x, y), s, font). */
-void CX::Draw::centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
+void centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
 	y -= (bb.y + bb.height / 2);
@@ -175,12 +175,12 @@ can descend below the line.
 \param s The string to draw.
 \param font A font that has already been prepared for use.
 */
-void CX::Draw::centeredString(ofPoint center, std::string s, ofTrueTypeFont &font) {
+void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font) {
 	Draw::centeredString(center.x, center.y, s, font);
 }
 
 
-ofPixels CX::Draw::greyscalePattern(const CX_PatternProperties_t& properties) {
+ofPixels greyscalePattern(const CX_PatternProperties_t& properties) {
 	float theta = properties.angle * PI / 180;
 	float radius = properties.width / 2; //Use width for radius.
 	float slope = tan(theta);
@@ -781,33 +781,6 @@ void colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float
 	ofVbo vbo = colorWheelToVbo(center, colors, radius, width, angle);
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 
-	/*
-	float d = width / 2;
-	angle *= -PI / 180;
-
-	colors = CX::Util::repeat(colors, 1, 2);
-
-	vector<ofPoint> vertices(colors.size(), center);
-
-	for (unsigned int i = 0; i < colors.size() / 2; i++) {
-
-		float rad = 2 * PI * (float)i / (colors.size() / 2) - (PI / 2) + angle;
-
-		vertices[2 * i] += ofPoint((radius + d) * cos(rad), (radius + d) * sin(rad));
-		vertices[2 * i + 1] += ofPoint((radius - d) * cos(rad), (radius - d) * sin(rad));
-	}
-
-	colors.push_back(colors[0]);
-	colors.push_back(colors[1]);
-
-	vertices.push_back(vertices[0]);
-	vertices.push_back(vertices[1]);
-
-	ofVbo vbo;
-	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
-	vbo.setColorData(colors.data(), colors.size(), GL_STATIC_DRAW);
-	vbo.draw(GL_TRIANGLE_STRIP, 0, vertices.size());
-	*/
 }
 
 /*! Draws an arc with specified colors. The precision of the arc is controlled by how many colors are supplied.

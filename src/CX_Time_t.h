@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "CX_Utilities.h"
+//#include "CX_Utilities.h"
 
 namespace CX {
 
@@ -288,31 +288,34 @@ namespace CX {
 			return t;
 		}
 
+		/*! This function calculates the sample standard deviation for a vector of time values. */
+		static CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
+
+			//because gcc is complete fucking garbage and cannot do fucking easy shit like function lookup within
+			//a namespace, this function has to be written out completely and can't use Util::var. It could be:
+			//std::vector<double> timeValues(vals.size());
+			//for (unsigned int i = 0; i < vals.size(); i++) {
+			//	timeValues[i] = vals[i].value();
+			//}
+			//return sqrt(var(timeValues));
+
+			//Implementation of single-pass variance: http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Incremental_Algorithm
+			double mean = 0;
+			double M2 = 0;
+
+			for (unsigned int i = 0; i < vals.size(); i++) {
+				double timeValue = vals[i].value();
+				double delta = timeValue - mean;
+				mean = mean + delta / (i + 1);
+				M2 = M2 + delta*(timeValue - mean);
+			}
+			return sqrt(M2 / (vals.size() - 1));
+		}
+
 	private:
 		long long _nanos;
 
 	};
-
-	namespace Util {
-		/*! This function calculates the sample standard deviation for a vector of time values. */
-		template <typename TimeUnit>
-		CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
-			std::vector<double> timeValues(vals.size());
-			for (unsigned int i = 0; i < vals.size(); i++) {
-				timeValues[i] = vals[i].value();
-			}
-			return sqrt(var(timeValues));
-			/*
-			CX_Time_t<TimeUnit> m = mean(vals);
-			double sum = 0;
-			for (unsigned int i = 0; i < vals.size(); i++) {
-				double dif = vals[i].value() - m.value();
-				sum += dif * dif;
-			}
-			return CX_Time_t<TimeUnit>(sqrt(sum / (vals.size() - 1))); //Sample variance has n - 1 for denominator
-			*/
-		}
-	}
 
 	/*! This is a standard stream operator for converting a CX_Time_t to a std::ostream.
 	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same

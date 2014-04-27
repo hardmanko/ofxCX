@@ -33,20 +33,17 @@ namespace CX {
 	*/
 	class CX_Display {
 	public:
-
 		CX_Display (void);
 		~CX_Display (void);
 
 		void setup (void);
+		void configureFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 
 		void setFullScreen (bool fullScreen);
 		bool isFullscreen(void);
-		void setVSync(bool useHardwareVSync, bool useSoftwareVSync);
+		void useHardwareVSync(bool b);
+		void useSoftwareVSync(bool b);
 		
-		void copyFboToBackBuffer (ofFbo &fbo);
-		void copyFboToBackBuffer (ofFbo &fbo, ofPoint destination);
-		void copyFboToBackBuffer (ofFbo &fbo, ofRectangle source, ofPoint destination);
-
 		void beginDrawingToBackBuffer (void);
 		void endDrawingToBackBuffer (void);
 		void swapBuffers (void);
@@ -54,16 +51,15 @@ namespace CX {
 
 		void setAutomaticSwapping (bool autoSwap);
 		bool isAutomaticallySwapping (void);
-		bool hasSwappedSinceLastCheck (void);
 
+		bool hasSwappedSinceLastCheck (void);
 		CX_Millis getLastSwapTime(void);
+		CX_Millis estimateNextSwapTime(void);
+		uint64_t getFrameNumber(void);
 		
 		void estimateFramePeriod(CX_Millis estimationInterval);
 		CX_Millis getFramePeriod(void);
 		CX_Millis getFramePeriodStandardDeviation(void);
-		CX_Millis estimateNextSwapTime(void); //Maybe, given the range of observed swaps, this could give an upper and lower bound?
-
-		uint64_t getFrameNumber(void);
 
 		void setWindowResolution (int width, int height);
 		void setWindowTitle(std::string title);
@@ -74,7 +70,12 @@ namespace CX {
 
 		CX_DataFrame testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
+		void copyFboToBackBuffer(ofFbo &fbo);
+		void copyFboToBackBuffer(ofFbo &fbo, ofPoint destination);
+		void copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination);
+
 	private:
+
 		ofPtr<ofGLProgrammableRenderer> _renderer;
 
 		Private::CX_VideoBufferSwappingThread *_swapThread;

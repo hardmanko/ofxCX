@@ -25,9 +25,14 @@ typedef struct
 	void (*Fun[2])(num*, num*, num*, num, num, num);
 } colortransform;
 
+//This file was modified in order to be able to link under gcc. Added external C linkage. -Kyle Hardman
+#if defined __cplusplus
+extern "C" {
+#endif
+
 int GetColorTransform(colortransform *Trans, const char *TransformString);
-void ApplyColorTransform(colortransform Trans, 
-	num *D0, num *D1, num *D2, num S0, num S1, num S2);
+void ApplyColorTransform(colortransform Trans,
+							num *D0, num *D1, num *D2, num S0, num S1, num S2);
 
 void Rgb2Yuv(num *Y, num *U, num *V, num R, num G, num B);
 void Yuv2Rgb(num *R, num *G, num *B, num Y, num U, num V);
@@ -68,5 +73,9 @@ void Rgb2Lch(num *L, num *C, num *H, num R, num G, num B);
 void Lch2Rgb(num *R, num *G, num *B, num L, num C, num H);
 void Rgb2Cat02lms(num *L, num *M, num *S, num R, num G, num B);
 void Cat02lms2Rgb(num *R, num *G, num *B, num L, num M, num S);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif  /* _COLORSPACE_H_ */

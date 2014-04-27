@@ -81,6 +81,8 @@ public:
 
 	void		setVerticalSync(bool bSync);
 
+	int			getCurrentMonitor();
+
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
 	Display* 	getX11Display();
 	Window  	getX11Window();
@@ -151,8 +153,6 @@ private:
 	int 			nFramesSinceWindowResized;
 	bool			bDoubleBuffered;
 	bool            bMultiWindowFullscreen;
-
-	int				getCurrentMonitor();
 
 	static CX_AppWindow	* instance;
 	static ofBaseApp *	ofAppPtr;

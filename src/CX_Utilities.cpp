@@ -126,10 +126,10 @@ namespace Util {
 	\param filename The name of the file containing key-value data.
 	\param delimiter The string that separates the key from the value. In the example, it is "=".
 	\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed.
-	\param commentStr If commentStr is not the empty string (i.e. ""), everything on a line following the first instance of commentStr will be ignored.
+	\param commentString If commentString is not the empty string (i.e. ""), everything on a line following the first instance of commentString will be ignored.
 	\return A map<string, string>, where the keys are the keys to the map.
 	*/
-	std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentStr) {
+	std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentString) {
 		std::map<std::string, std::string> rval;
 
 		if (!ofFile::doesFileExist(filename, true)) {
@@ -142,8 +142,8 @@ namespace Util {
 			std::string line = buf.getNextLine();
 
 			//Strip comments. Only // is supported for comments, not /* */.
-			if (commentStr != "") {
-				std::string::size_type commentStart = line.find(commentStr, 0);
+			if (commentString != "") {
+				std::string::size_type commentStart = line.find(commentString, 0);
 				if (commentStart != std::string::npos) {
 					line = line.erase(commentStart);
 				}
@@ -156,6 +156,39 @@ namespace Util {
 		}
 
 		return rval;
+	}
+
+
+	/*! Returns the angle in degrees "between" p1 and p2. If you take the difference between p2 and p1,
+	you get a resulting vector, V, that gives the displacement from p1 to p2. Imagine that you begin at
+	(0, 0) and move to (0, abs(V.y)), creating a line segment. Now if you "rotate" this line segment clockwise
+	until you reach V, the angle rotated through is the value returned by this function.
+
+	This is useful if you want to know, e.g., what angle you must travel on to get from some arbitrary point
+	on screen to where the mouse cursor is.
+
+	\param p1 The start point of the vector V.
+	\param p2 The end point of V. If p1 and p2 are reversed, the angle will be off by 180 degrees.
+	\return The angle between p1 and p2. */
+	float getAngleBetweenPoints(ofPoint p1, ofPoint p2) {
+		ofPoint p = p2 - p1;
+
+		float angle = 0;
+		if (p.x == 0) {
+			if (p.y >= 0) {
+				angle = PI / 2;
+			} else {
+				angle = -PI / 2;
+			}
+		} else {
+			angle = atan(p.y / p.x);
+		}
+
+		if (p.x < 0) {
+			angle += PI;
+		}
+
+		return fmod(360 + angle * 180 / PI, 360);
 	}
 
 }

@@ -26,18 +26,102 @@ void CX_Display::setup (void) {
 	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos 
 		//are really verbose when allocated and it is a lot of gibberish.
 
-	//setFullScreen(false); //Default to windowed mode (for development). This has no effect, because it is in windowed mode already.
-
 	_renderer = ofGetGLProgrammableRenderer();
-	if (!_renderer) {
+	//if (!_renderer) {
 		//Log.warning("CX_Display") << "Programmable renderer not available. Standard renderer will be used instead.";
-	}
+	//}
 
 	_swapThread = new Private::CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
 		//what too early means) or else there will be a crash.
 
 	estimateFramePeriod( CX_Millis(500) );
+}
+
+/*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
+due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
+they are running. This function takes the file name of a specially constructed configuration file and reads the
+key-value pairs in that file in order to configure the CX_Display. The format of the file is
+provided in the example code below.
+
+Sample configuration file:
+\code
+display.windowWidth = 600
+display.windowHeight = 300
+display.windowTitle = My Neat Name
+display.fullscreen = false
+display.hardwareVSync = true
+//display.softwareVSync = false //Commented out: no change
+//display.swapAutomatically = false //Commented out: no change
+\endcode
+All of the configuration keys are used in this example.
+Configuration options can be ignored. Ignored options result in no change in the configuration of the CX_Display.
+Note that the "display" prefix allows this configuration to be embedded in a file that also performs other configuration functions.
+
+Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
+\param filename The name of the file containing configuration data.
+\param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
+\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
+\param commentString If commentString is not the empty string (i.e. ""), everything on a line
+following the first instance of commentString will be ignored.
+*/
+void CX_Display::configureFromFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentString) {
+	//Helper function
+	auto stringToBooleint = [](std::string s) -> int {
+		s = ofToLower(s);
+		if ((s == "false") || (s.front() == '0')) {
+			return 0;
+		} else if ((s == "true") || (s.front() == '1')) {
+			return 1;
+		} else {
+			CX::Instances::Log.error("CX_Display") << "configureFromFile: Invalid boolean value given: \"" << s << "\"";
+			return -1;
+		}
+	};
+
+	std::map<std::string, std::string> kv = Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
+
+	if (kv.find("display.fullscreen") != kv.end()) {
+		int result = stringToBooleint(kv["display.fullscreen"]);
+		if (result != -1) {
+			this->setFullScreen(result == 1);
+		}
+	}
+
+	if (kv.find("display.windowWidth") != kv.end()) {
+		int width = ofFromString<int>(kv.at("display.windowWidth"));
+		this->setWindowResolution(width, this->getResolution().height);
+	}
+
+	if (kv.find("display.windowHeight") != kv.end()) {
+		int height = ofFromString<int>(kv.at("display.windowHeight"));
+		this->setWindowResolution(this->getResolution().width, height);
+	}
+
+	if (kv.find("display.windowTitle") != kv.end()) {
+		this->setWindowTitle(kv["display.windowTitle"]);
+	}
+
+	if (kv.find("display.hardwareVSync") != kv.end()) {
+		int result = stringToBooleint(kv["display.hardwareVSync"]);
+		if (result != -1) {
+			this->useHardwareVSync(result == 1);
+		}
+	}
+
+	if (kv.find("display.softwareVSync") != kv.end()) {
+		int result = stringToBooleint(kv["display.softwareVSync"]);
+		if (result != -1) {
+			this->useSoftwareVSync(result == 1);
+		}
+	}
+
+	if (kv.find("display.swapAutomatically") != kv.end()) {
+		int result = stringToBooleint(kv["display.swapAutomatically"]);
+		if (result != -1) {
+			this->setAutomaticSwapping(result == 1);
+		}
+	}
 }
 
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
@@ -180,7 +264,8 @@ void CX_Display::waitForOpenGL (void) {
 	*/
 }
 
-/*! Returns the resolution of the current window, not the resolution of the monitor (unless you are in full screen mode).
+/*! Returns the resolution of the current display area. If in windowed mode, this will return the resolution
+of the window. If in full screen mode, this will return the resolution of the monitor.
 \return An ofRectangle containing the resolution. The width in pixels is stored in both the width
 and x members and the height in pixles is stored in both the height and y members, so you can
 use whichever makes the most sense to you. */
@@ -202,6 +287,12 @@ Sets the resolution of the window. Has no effect if called while in full screen 
 \param height The desired height of the window, in pixels.
 */
 void CX_Display::setWindowResolution (int width, int height) {
+	if (width <= 0 || height <= 0) {
+		CX::Instances::Log.error("CX_Display") << "setWindowResolution: width and height must be > 0. Given width == " << 
+			width << " and height == " << height << ".";
+		return;
+	}
+
 	if (ofGetWindowMode() == OF_WINDOW) {
 		ofSetWindowShape( width, height );
 	}
@@ -246,11 +337,12 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			durations[i - 1] = swapTimes[i] - swapTimes[i - 1];
 		}
-		_framePeriodStandardDeviation = CX::Util::standardDeviation(durations);
+		
+		_framePeriodStandardDeviation = CX_Millis::standardDeviation(durations);
 		_framePeriod = Util::mean(durations);
 		
 	} else {
-		Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occured during the " << estimationInterval << " ms estimation interval.";
+		Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occurred during the " << estimationInterval << " ms estimation interval.";
 	}
 	
 	setAutomaticSwapping(wasSwapping);
@@ -261,15 +353,7 @@ the resolution may not be the same as the resolution of display in windowed mode
 versa.
 */
 void CX_Display::setFullScreen (bool fullScreen) {
-	//ofSetFullscreen( fullScreen );
 	Private::window->setFullscreen(fullScreen);
-	/*
-	if (fullScreen) {
-		setVSync(true);
-	} else {
-		setVSync(false); //No v-sync in windowed mode
-	}
-	*/
 }
 
 /*! \brief Returns true if the display is in full screen mode. */
@@ -277,28 +361,35 @@ bool CX_Display::isFullscreen(void) {
 	return (CX::Private::window->getWindowMode() == OF_FULLSCREEN);
 }
 
-/*! Sets whether the display is using Vsync to control frame presentation.
-Without Vsync, vertical tearing can occur.
-\param useHardwareVSync If true, "hardware" Vsync will be used.
-\param useSoftwareVSync If true, instead of trying to use hardware to control Vsync,
-the display will attempt to do Vsync in software.
+/*! Sets whether the display is using hardware VSync to control frame presentation. 
+Without some form of Vsync, vertical tearing can occur.
+\param b If true, hardware VSync will be enabled in the video card driver. If false, it will be disabled.
 \note This may not work, depending on your video card settings. Modern video card
-drivers allow you to contorl whether Vsync is used for all applications or not,
+drivers allow you to control whether Vsync is used for all applications or not,
 or whether the applications are allowed to choose from themselves whether to use
 Vsync. If your drivers are set to force Vsync to a particular setting, this function
-is unlikely to have an effect. Even when the drivers allow applications to choose 
-a Vsync setting, it is still possible that this function will have no effect.
-\see \ref framebufferSwapping for information on what Vsync is.
-*/
-void CX_Display::setVSync(bool useHardwareVSync, bool useSoftwareVSync) {
-	if (useHardwareVSync) {
+is unlikely to have an effect. Even when the drivers allow applications to choose
+a Vsync setting, it is still possible that this function will have not have the 
+expected effect. OpenGL seems to struggle with VSync.
+\see See \ref framebufferSwapping for information on what VSync is. */
+void CX_Display::useHardwareVSync(bool b) {
+	if (b) {
 		glfwSwapInterval(1);
 	} else {
 		glfwSwapInterval(0);
 	}
-	
-	_softVSyncWithGLFinish = useSoftwareVSync;
-	_swapThread->setGLFinishAfterSwap(useSoftwareVSync);
+}
+
+/*! Sets whether the display is using software VSync to control frame presentation.
+Without some form of Vsync, vertical tearing can occur. Hardware VSync, if available,
+is generally preferable to software VSync, so see useHardwareVSync() as well. However,
+software and hardware VSync are not mutally exclusive, sometimes using both together works
+better than only using one.
+\param b If true, the display will attempt to do VSync in software.
+\see See \ref framebufferSwapping for information on what Vsync is. */
+void CX_Display::useSoftwareVSync(bool b) {
+	_softVSyncWithGLFinish = b;
+	_swapThread->setGLFinishAfterSwap(b);
 }
 
 /*! Copies an ofFbo to the back buffer using an efficient blitting operation. This overwrites
@@ -401,10 +492,11 @@ are some modes that don't work correctly and some that work well for the tested 
 
 In the resulting CX_DataFrame, there are three columns that give the test conditions. "thread" indicates
 whether the main thread or a secondary thread was used. "hardVSync" and "softVSync" indicate whether
-hardware or software Vsync were enabled for the test (see \ref setVSync()). Other columns, giving data
-from the tests, are explained below. Whatever combination of Vsync works best can be chosen for use in
-experiments using setVSync(). The threading mode is primarily used by CX_SlidePresenter in the 
-CX::CX_SlidePresenter::Configuration::SwappingMode setting.
+hardware or software Vsync were enabled for the test (see useHardwareVSync() and useSoftwareVSync()). 
+Other columns, giving data from the tests, are explained below. Whatever combination of Vsync works 
+best can be chosen for use in experiments using useHardwareVSync() and useSoftwareVSync(). The 
+threading mode is primarily used by CX_SlidePresenter with the CX::CX_SlidePresenter::Configuration::SwappingMode 
+setting.
 
 Continuous swapping test
 --------------------------------
@@ -498,7 +590,8 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				row["softVSync"] = softV;
 
 				//Configure V-Sync for the current test.
-				setVSync(hardV == 1, softV == 1);
+				useHardwareVSync(hardV == 1);
+				useSoftwareVSync(softV == 1);
 		
 				std::stringstream ss;
 				ss << "Thread: " << row["thread"].toString() << "\nHardV: " << hardV << "\nSoftV: " << softV;
@@ -544,7 +637,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 				row["csDurations"] = durations;
 				row["csDurationMean"] = Util::mean(durations);
-				row["csDurationStdDev"] = CX::Util::standardDeviation(durations);
+				row["csDurationStdDev"] = CX_Millis::standardDeviation(durations);
 
 				
 				////////////////////

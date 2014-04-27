@@ -70,7 +70,6 @@ void CX::reopenWindow(CX_WindowConfiguration_t config) {
 	Private::window->setOpenGLVersion(tempGLVersion.major, tempGLVersion.minor);
 	Private::window->setNumSamples(Util::getMsaaSampleCount());
 
-
 	if (config.desiredRenderer) {
 		if (config.desiredRenderer->getType() == ofGLProgrammableRenderer::TYPE) {
 			if (Private::glCompareVersions(tempGLVersion, Private::CX_GLVersion(3,2,0)) >= 0) {
