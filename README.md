@@ -8,7 +8,7 @@ is designed to be used used for creating psychology experiments. OpenFrameworks 
 is a very good language for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
 free and open source.
 
-The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there (or try this link: https://sites.google.com/site/kylehardmancom/CX%20Manual.pdf?attredirects=0). You can generate 
+The documentation for CX can be found in the docs subfolder. You can use "CX Manual.pdf" there (or try [this link](https://sites.google.com/site/kylehardmancom/CX%20Manual.pdf?attredirects=0)). You can generate 
 other formats of the documentation by using Doxygen with the Doxyfile given in the docs subfolder.
 
 License
@@ -23,7 +23,7 @@ and how to use the examples for CX.
 
 Compatibility
 ------------
-CX only works with oF version 0.8.0. It has only been tested on Windows, but may work completely on OSx. Some functionality is missing on Linux.
+CX only works with oF version 0.8.0, so make sure you are using that varsion and no the latest version. It has only been tested on Windows, but may work completely on OSx. Some functionality is missing on Linux.
 
 As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2013 and Code::Blocks for Windows using GCC.
 
