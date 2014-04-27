@@ -3,7 +3,7 @@ ofxCX
 
 Introduction
 ------------
-ofxCX (hereafter referred to as CX) is a "total conversion mod" for [openFrameworks](www.openframeworks.cc) (often abbreviated oF) that 
+ofxCX (hereafter referred to as CX) is a "total conversion mod" for [openFrameworks](http://www.openframeworks.cc) (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
 is a very good language for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
 free and open source.
