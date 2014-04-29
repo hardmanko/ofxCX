@@ -119,13 +119,13 @@ std::vector<unsigned int> CX_RandomNumberGenerator::sampleBinomialRealizations(u
 	return this->sampleRealizations(count, std::binomial_distribution<unsigned int>(trials, probSuccess));
 }
 
-/*! This function returns a reference to the PRNG used by the CX_RandomNumberGenerator.
+/*! This function returns a reference to the standard library PRNG used by the CX_RandomNumberGenerator.
 This can be used for various things, including sampling from some of the other distributions
 provided by the standard library: http://en.cppreference.com/w/cpp/numeric/random
 \code{.cpp}
 std::poisson_distribution<int> pois(4);
 int deviate = pois(RNG.getGenerator());
-\endcode*/
+\endcode */
 std::mt19937_64& CX_RandomNumberGenerator::getGenerator(void) { 
 	return _mersenneTwister; 
 }

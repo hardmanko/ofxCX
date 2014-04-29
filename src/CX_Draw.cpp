@@ -668,7 +668,7 @@ void line(ofPoint p1, ofPoint p2, float width) {
 	vbo.draw(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-/*! This function draws a ring, i.e. an unfilled circle.
+/*! This function draws a ring, i.e. an unfilled circle. The filled area of the ring is between `radius + width/2` and `radius - width/2`.
 \param center The center of the ring.
 \param radius The radius of the ring.
 \param width The radial width of the ring.
@@ -678,12 +678,14 @@ void line(ofPoint p1, ofPoint p2, float width) {
 because the line width of the unfilled circle cannot be set to a value greater than 1.
 */
 void ring(ofPoint center, float radius, float width, unsigned int resolution) {
+	float halfWidth = width / 2;
+
 	ofPath path;
 	path.setCircleResolution(resolution);
-	path.moveTo(center + ofPoint(radius, 0));
-	path.circle(center, radius);
-	path.moveTo(center + ofPoint(radius - width, 0));
-	path.circle(center, radius - width);
+	path.moveTo(center + ofPoint(radius + halfWidth, 0));
+	path.circle(center, radius + halfWidth);
+	path.moveTo(center + ofPoint(radius - halfWidth, 0));
+	path.circle(center, radius - halfWidth);
 	
 	ofMesh tess = path.getTessellation();
 	tess.draw(ofPolyRenderMode::OF_MESH_FILL);

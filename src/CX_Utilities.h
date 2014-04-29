@@ -60,6 +60,7 @@ namespace CX {
 		template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
 
 		template <typename T> std::vector<T> unique(std::vector<T> vals);
+		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
 
 		void saveFboToFile(ofFbo& fbo, std::string filename); //Move to Draw ns?
 
@@ -378,4 +379,15 @@ template <typename T> std::vector<T> CX::Util::unique(std::vector<T> vals) {
 		uniqueVals.push_back(*it);
 	}
 	return uniqueVals;
+}
+
+/*! Concatenates together two vectors A and B.
+\param A The first vector of values.
+\param B The second vector of values.
+\return The concatenation of A and B, being a vector containing {A1, A2, ... An, B1, B2, ... Bn}. */
+template <typename T>
+std::vector<T> CX::Util::concatenate(const std::vector<T>& A, const std::vector<T>& B) {
+	vector<T> C(A.begin(), A.end());
+	C.insert(C.end(), B.begin(), B.end());
+	return C;
 }

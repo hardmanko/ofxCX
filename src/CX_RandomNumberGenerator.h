@@ -56,11 +56,6 @@ namespace CX {
 
 		double randomDouble (double lowerBound_closed, double upperBound_open);
 
-		template <typename stdDist>	std::vector<typename stdDist::result_type> sampleRealizations(unsigned int count, stdDist dist);
-		std::vector<double> sampleUniformRealizations (unsigned int count, double lowerBound_closed, double upperBound_open);
-		std::vector<unsigned int> sampleBinomialRealizations (unsigned int count, unsigned int trials, double probSuccess);
-		std::vector<double> sampleNormalRealizations(unsigned int count, double mean, double standardDeviation);
-
 		template <typename T> void shuffleVector(std::vector<T> *v);
 		template <typename T> std::vector<T> shuffleVector(std::vector<T> v);
 
@@ -68,11 +63,15 @@ namespace CX {
 		template <typename T> std::vector<T> sample(unsigned int count, const std::vector<T> &source, bool withReplacement);
 		std::vector<int> sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
+		template <typename T> T sampleExclusive(const std::vector<T> &values, const T& exclude);
+		template <typename T> T sampleExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
 
 		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& valueSet, unsigned int blocksToSample);
 
-		template <typename T> T randomExclusive(const std::vector<T> &values, const T& exclude);
-		template <typename T> T randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
+		template <typename stdDist>	std::vector<typename stdDist::result_type> sampleRealizations(unsigned int count, stdDist dist);
+		std::vector<double> sampleUniformRealizations(unsigned int count, double lowerBound_closed, double upperBound_open);
+		std::vector<unsigned int> sampleBinomialRealizations(unsigned int count, unsigned int trials, double probSuccess);
+		std::vector<double> sampleNormalRealizations(unsigned int count, double mean, double standardDeviation);
 
 		std::mt19937_64& getGenerator(void);
 
@@ -149,43 +148,70 @@ namespace CX {
 		return values[ randomInt(0, values.size() - 1) ];
 	}
 
-	/*! Get a random value from a vector, without the possibility of getting the excluded value.
+	/*! Sample a random value from a vector, without the possibility of getting the excluded value.
 	\param values The vectors of values to sample from.
 	\param exclude The value to exclude from sampling. 
 	\return The sampled value. 
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::randomExclusive(const std::vector<T> &values, const T &exclude) {
+	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T> &values, const T &exclude) {
 		std::vector<T> excludes(1, exclude);
-		return randomExclusive(values, excludes);
+		return sampleExclusive(values, excludes);
 	}
 
-	/*! Get a random value from a vector without the possibility of getting any of the excluded values.
+	/*! Sample a random value from a vector without the possibility of getting any of the excluded values.
 	\param values The vector of values to sample from.
 	\param exclude The vector of values to exclude from sampling.
 	\return The sampled value.
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::randomExclusive(const std::vector<T> &values, const std::vector<T> &exclude) {
-		std::set<T> s(exclude.begin(), exclude.end());
+	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T> &values, const std::vector<T> &exclude) {
+		
+		//This version of the function might improve worst-case behavior when almost all values are excluded from a large vector.
+		vector<T> nonExcluded;
+		for (unsigned int i = 0; i < values.size(); i++) {
+			bool valueExcluded = false;
+			for (unsigned int j = 0; j < exclude.size(); j++) {
+				if (values[i] == exclude[j]) {
+					valueExcluded = true;
+				}
+			}
 
-		if (values.size() == exclude.size()) {
+			if (!valueExcluded) {
+				nonExcluded.push_back(values[i]);
+			}
+
+		}
+
+		if (nonExcluded.size() == 0) {
+			CX::Instances::Log.error("CX_RandomNumberGenerator") << "sampleExclusive: All values are excluded.";
+			return T();
+		}
+
+		return this->sample(nonExcluded);
+		
+
+		/*
+		std::set<T> excluded(exclude.begin(), exclude.end());
+
+		if (values.size() <= exclude.size()) {
 			bool allExcluded = true;
 			for (typename std::vector<T>::size_type i = 0; i < values.size(); i++) {
-				if (s.find(values[i]) == s.end()) {
+				if (excluded.find(values[i]) == excluded.end()) {
 					allExcluded = allExcluded && false;
 				}
 			}
 
 			if (allExcluded) {
-				CX::Instances::Log.error("CX_RandomNumberGenerator") << "randomExclusive: All values are excluded.";
+				CX::Instances::Log.error("CX_RandomNumberGenerator") << "sampleExclusive: All values are excluded.";
 				return T();
 			}
 		}
 
 		T attempt;
 		do {
-			attempt = sample(values);
-		} while (s.find(attempt) != s.end());
+			attempt = this->sample(values);
+		} while (excluded.find(attempt) != excluded.end());
 		return attempt;
+		*/
 	}
 
 	/*! Draws `count` samples from a distribution `dist` that is provided by the user.

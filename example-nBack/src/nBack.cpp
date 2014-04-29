@@ -215,7 +215,7 @@ void generateTrials(int numberOfTrials) {
 			df(i, "letter") = df(i - nBack, "letter").toString();
 		} else {
 			df(i, "trialType") = "nonTarget";
-			df(i, "letter") = RNG.randomExclusive(letters, df(i - nBack, "letter").toString());
+			df(i, "letter") = RNG.sampleExclusive(letters, df(i - nBack, "letter").toString());
 		}
 	}
 
