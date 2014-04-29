@@ -59,14 +59,14 @@ namespace CX {
 		template <typename T> void shuffleVector(std::vector<T> *v);
 		template <typename T> std::vector<T> shuffleVector(std::vector<T> v);
 
-		template <typename T> T sample(std::vector<T> values);
+		template <typename T> T sample(const std::vector<T>& values);
 		template <typename T> std::vector<T> sample(unsigned int count, const std::vector<T> &source, bool withReplacement);
 		std::vector<int> sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement);
 
-		template <typename T> T sampleExclusive(const std::vector<T> &values, const T& exclude);
-		template <typename T> T sampleExclusive(const std::vector<T> &values, const std::vector<T> &exclude);
+		template <typename T> T sampleExclusive(const std::vector<T>& values, const T& exclude);
+		template <typename T> T sampleExclusive(const std::vector<T>& values, const std::vector<T>& exclude);
 
-		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& valueSet, unsigned int blocksToSample);
+		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& values, unsigned int blocksToSample);
 
 		template <typename stdDist>	std::vector<typename stdDist::result_type> sampleRealizations(unsigned int count, stdDist dist);
 		std::vector<double> sampleUniformRealizations(unsigned int count, double lowerBound_closed, double upperBound_open);
@@ -140,7 +140,7 @@ namespace CX {
 	/*! Returns a single value sampled randomly from values.
 	\return The sampled value.
 	\note If values.size() == 0, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::sample(std::vector<T> values) {
+	template <typename T> T CX_RandomNumberGenerator::sample(const std::vector<T>& values) {
 		if (values.size() == 0) {
 			Instances::Log.error("CX_RandomNumberGenerator") << "sample: Empty vector given to sample from.";
 			return T();
@@ -153,7 +153,7 @@ namespace CX {
 	\param exclude The value to exclude from sampling. 
 	\return The sampled value. 
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T> &values, const T &exclude) {
+	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T>& values, const T& exclude) {
 		std::vector<T> excludes(1, exclude);
 		return sampleExclusive(values, excludes);
 	}
@@ -163,7 +163,7 @@ namespace CX {
 	\param exclude The vector of values to exclude from sampling.
 	\return The sampled value.
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
-	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T> &values, const std::vector<T> &exclude) {
+	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T>& values, const std::vector<T>& exclude) {
 		
 		//This version of the function might improve worst-case behavior when almost all values are excluded from a large vector.
 		vector<T> nonExcluded;
@@ -244,19 +244,19 @@ namespace CX {
 	For example, if you want to	present a number of trials in four different conditions,
 	where the conditions are intermixed, but you want to observe all four trial types
 	in every block of four trials, you would use this function.
-	\param valueSet The set of values to sample from.
+	\param values The set of values to sample from.
 	\param blocksToSample The number of blocks to sample.
 	\return A vector with `valueSize.size() * blocksToSample` elements.
 	*/
 	template <typename T>
-	std::vector<T> CX_RandomNumberGenerator::sampleBlocks(const std::vector<T>& valueSet, unsigned int blocksToSample) {
-		std::vector<T> rval(valueSet.size() * blocksToSample);
-		std::vector<unsigned int> indices = CX::Util::intVector<unsigned int>(0, valueSet.size() - 1);
+	std::vector<T> CX_RandomNumberGenerator::sampleBlocks(const std::vector<T>& values, unsigned int blocksToSample) {
+		std::vector<T> rval(values.size() * blocksToSample);
+		std::vector<unsigned int> indices = CX::Util::intVector<unsigned int>(0, values.size() - 1);
 
 		for (unsigned int b = 0; b < blocksToSample; b++) {
 			this->shuffleVector(&indices);
 			for (unsigned int i = 0; i < indices.size(); i++) {
-				rval[(b * indices.size()) + i] = valueSet[indices[i]];
+				rval[(b * indices.size()) + i] = values[indices[i]];
 			}
 		}
 
