@@ -285,7 +285,7 @@ void drawTestArray (const TrialData_t &tr) {
 
 /*
 This function is here to show how sucky outputting data is when you have a user-defined struct to store data
-becuase of the lack of reflection in c++. Then, a better solution is suggested. The main problems are:
+because of the lack of reflection in c++. Then, a possibly better solution is suggested. The main problems are:
 
 1) Making errors because the column names must line up with the data, but are output at different places (one block
 of code outputs the headers, another block outputs the data), so it is really easy to make an error in the naming of
@@ -297,7 +297,7 @@ Even for an experiment as simple as this example, making sure that nothing was m
 You have to make sure that you always include the delimiter between items, that line endings are in the right place, etc. This
 is all a waste of time.
 
-There is an example called advancedChangeDetectionTask than shows how using a CX_DataFrame allows you to totally
+There is an example called advancedChangeDetection.cpp than shows how using a CX_DataFrame allows you to totally
 bypass all of these problems and output all of the data stored in the data frame with one trivial function call
 (e.g. myDataFrame.printToFile("filename.txt")).
 */

@@ -12,7 +12,7 @@
 namespace CX {
 
 	/*! This class is a very useful abstraction that presents slides (typically a full display) of visual stimuli for fixed durations.
-	See the basicChangeDetectionTask.cpp, advancedChangeDetectionTask.cpp, and nBack.cpp examples for the usage of this class.
+	See the changeDetection and nBack examples for the usage of this class.
 
 	A brief example:
 

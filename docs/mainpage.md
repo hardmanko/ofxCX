@@ -60,11 +60,12 @@ files, combining sounds, and playing them.
 
 Experiments:
 ------------------------
-+ basicChangeDetection - A very straightforward change-detection task demonstrating some of the features of CX 
++ changeDetection - A very straightforward change-detection task demonstrating some of the features of CX 
 like presentation of time-locked stimuli, keyboard response collection, and use of the CX_RandomNumberGenerator.
-+ advancedChangeDetection - This example expands on basicChangeDetection, including CX_DataFrame and CX_TrialController 
-in order to simplify the experiment.
-+ nBack - Demonstrates advanced use of CX_SlidePresenter in the implementation of an N-Back task.
+There is also an advanced version of the changeDetection task that shows how to do data storage and output with a CX_DataFrame 
+and how to use a custom coordinate system with visual stimuli so that you don't have to work in pixels.
++ nBack - Demonstrates advanced use of CX_SlidePresenter in the implementation of an N-Back task. An advanced version of this
+example contrasts two methods of rendering stimuli with a CX_SlidePresenter, demonstrating the advantages of each.
 
 Misc.:
 -----------------------
@@ -92,7 +93,7 @@ Topics
 
 The best way to get an overview of how CX works is to look at the \ref examplesAndTutorials.
 
-+ To learn about presenting visual stimuli, go to the \ref video page or see the renderingTest or animation examples or the N-Back or change detection example experiments.
++ To learn about presenting visual stimuli, go to the \ref video page or see the renderingTest or animation examples or the nBack or changeDetection example experiments.
 + To learn about playing, recording, and generating sounds, go to the \ref sound page or see the soundObject or modularSynth examples.
 + To learn how to store and output experiment data, see the \ref dataManagement page or see the dataFrame example.
 + To learn about random number generation, see the \ref randomNumberGeneration page.

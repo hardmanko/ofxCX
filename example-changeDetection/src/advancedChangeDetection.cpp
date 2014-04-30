@@ -2,7 +2,7 @@
 
 /*! \file
 This example is a more advanced version of the change detection task presented in
-the basicChangeDetectionTask example. It is not "advanced" because it is more complex,
+the basicChangeDetection example. It is not "advanced" because it is more complex,
 but because it uses more features of CX. It actually ends up being simpler because 
 of how it uses features of CX.
 

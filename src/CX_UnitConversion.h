@@ -97,7 +97,7 @@ namespace Util {
 	ofCircle(conv(0, 100), 20);
 	\endcode
 
-	Another example can be found in the advancedChangeDetectionTask example experiment.
+	Another example can be found in the advancedChangeDetection example experiment.
 
 	\ingroup utility */
 	class CX_CoordinateConverter {
