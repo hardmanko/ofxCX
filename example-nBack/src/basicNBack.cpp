@@ -5,7 +5,8 @@ This example shows how to implement an N-Back task using an advanced feature of 
 (SP). There is a feature of the SP that allows you to give it a pointer to a function that will be 
 called every time the SP has just presented the final slide that it currently has. In your function,
 you can add more slides to the SP, which will allow it to continue presenting slides. If you don't
-add any more slides, slide presentation will stop with the currently presented slide.
+add any more slides, slide presentation will stop with the currently presented slide. The applicability
+of this feature to an N-Back task should be fairly clear.
 
 For this N-Back task, the presentation of stimuli will follow the pattern stimulus-blank-stimulus-blank 
 etc. The idea is that you will load up the SP with the first few stimuli and blanks. The SP will be started
