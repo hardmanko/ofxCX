@@ -31,9 +31,9 @@ namespace CX {
 	error (because of the console setting).
 	\ingroup errorLogging
 	*/
-	//These rely on ordering; do not change it.
+	//These rely on ordering: do not change it.
 	enum class CX_LogLevel {
-		LOG_ALL, //This is functionally identical to LOG_VERBOSE, but it is more obvious about what it does
+		LOG_ALL, //This is functionally identical to LOG_VERBOSE, but it is more explicit about what it does.
 		LOG_VERBOSE,
 		LOG_NOTICE,
 		LOG_WARNING,
@@ -42,20 +42,27 @@ namespace CX {
 		LOG_NONE
 	};
 
-	//Forward declarations of internally used structs
-	struct CX_LogMessage;
-	struct CX_LoggerTargetInfo;
-
+	/*! If a user function is listening for flush callbacks by using setMessageFlushCallback(), the user
+	function gets a reference to an instance of this struct containing the given information. */
 	struct CX_MessageFlushData {
-		CX_MessageFlushData (string message_, CX_LogLevel level_, string module_) :
+		CX_MessageFlushData(void) :
+			message(""),
+			level(CX_LogLevel::LOG_FATAL_ERROR),
+			module("")
+		{}
+		CX_MessageFlushData(std::string message_, CX_LogLevel level_, std::string module_) :
 			message(message_),
 			level(level_),
 			module(module_)
 		{}
-		string message;
-		CX_LogLevel level;
-		string module;
+		std::string message; //!< A string containing the logged message.
+		CX_LogLevel level; //!< The log level of the message.
+		std::string module; //!< The module associated with the message.
 	};
+
+	//Forward declarations of internally used structs
+	struct CX_LogMessage;
+	struct CX_LoggerTargetInfo;
 
 	/*! This class is used for logging messages throughout the CX backend code. It can also be used
 	in user code to log messages. Rather than instantiating your own copy of CX_Logger, it is probably
@@ -87,7 +94,7 @@ namespace CX {
 
 		void timestamps(bool logTimestamps, std::string format = "%H:%M:%S.%i");
 
-		void setMessageFlushCallback (std::function<void(CX_MessageFlushData&)> f);
+		void setMessageFlushCallback(std::function<void(CX_MessageFlushData&)> f);
 
 		void captureOFLogMessages(void);
 
