@@ -17,25 +17,24 @@ namespace CX {
 
 		/*! This struct contains the results of a keyboard event, whether it be a key press or release, or key repeat. */
 		struct Event {
-			int key; /*!< The key involved in this event. The value of this can be compared with character literals for many of
-					 the standard keyboard keys. For example, you could use `(myKeyEvent.key == 'e')` to test if the key was the E key.
-					 Note that if shift is held when the key is pressed, the letter will be uppercase, so you may want to check for both 'e' and 'E'.
+			/*! The value created by the key involved in this event. The value of this can be compared with character literals for many of
+			the standard keyboard keys. For example, you could use `(myKeyEvent.key == 'e')` to test if the key was the E key.
 
-					 For special keys, `key` can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
+			For special keys, `key` can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
 
-					 Note that for the modifier keys (shift, ctrl, alt, and super) are treated a little unusually. For
-					 those keys, you can check for a specific key using, for example, `OF_KEY_RIGHT_CONTROL` or `OF_KEY_LEFT_CONTROL`.
-					 However, you can alternately check to see if `key` is any of the control keys by performing a bitwise AND with
-					 `OF_KEY_CONTROL` and checking that the result of the AND is still `OF_KEY_CONTROL`. For example:
-					 \code{.cpp}
-					 if ((myKeyEvent.key & OF_KEY_CONTROL) == OF_KEY_CONTROL) {
-					 //...
-					 }
-					 \endcode
-					 This works the same way for all of the modifier keys.
-					 */
+			Note that the modifier keys (shift, ctrl, alt, and super) are treated a little unusually. For
+			those keys, you can check for a specific key using, for example, `OF_KEY_RIGHT_CONTROL` or `OF_KEY_LEFT_CONTROL`.
+			However, you can alternately check to see if `key` is either of the control keys by performing a bitwise AND (`&`) with
+			`OF_KEY_CONTROL` and checking that the result of the AND is still `OF_KEY_CONTROL`. For example:
+			\code{.cpp}
+			if ((myKeyEvent.key & OF_KEY_CONTROL) == OF_KEY_CONTROL) {
+			//...
+			}
+			\endcode
+			This works the same way for all of the modifier keys. */
+			int key;
 
-			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
 			enum KeyboardEventType {
@@ -53,14 +52,7 @@ namespace CX {
 		CX_Keyboard::Event getNextEvent (void);
 		void clearEvents (void);
 
-		/*! This function checks to see if the given key is pressed.
-		\param key The key code for key you are interested in. See the documentation for the `key` member of CX_Keyboard::Event 
-		for more information about this value.
-		\return True if the given key is held.
-		*/
-		bool isKeyPressed(int key) {
-			return ofGetKeyPressed(key);
-		}
+		bool isKeyPressed(int key);
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime

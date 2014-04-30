@@ -23,7 +23,7 @@ namespace CX {
 			int axisIndex; //!< If eventType is AXIS_POSITION_CHANGE, this contains the index of the axis which changed.
 			float axisPosition; //!< If eventType is AXIS_POSITION_CHANGE, this contains the amount by which the axis changed.
 
-			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
 			enum JoystickEventType {

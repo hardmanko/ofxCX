@@ -19,16 +19,27 @@ int CX_Keyboard::availableEvents (void) {
 /*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
 from the input device. */
 CX_Keyboard::Event CX_Keyboard::getNextEvent (void) {
-	CX_Keyboard::Event front = _keyEvents.front();
+	CX_Keyboard::Event nextEvent = _keyEvents.front();
 	_keyEvents.pop();
-	return front;
+	return nextEvent;
 }
 
-/*! Clear (delete) all events from this input device. */
+/*! Clear (delete) all events from this input device.
+\note This function only clears already existing events from the device, which means that 
+responses made between a call to CX_InputManager::pollEvents() and a subsequent call to 
+clearEvents() will not be removed by calling clearEvents(). */
 void CX_Keyboard::clearEvents (void) {
 	while (!_keyEvents.empty()) {
 		_keyEvents.pop();
 	}
+}
+
+/*! This function checks to see if the given key is pressed.
+\param key The key code or character for the key you are interested in. See the 
+documentation for \ref CX_Keyboard::Event::key for more information about this value.
+\return True iff the given key is held. */
+bool CX_Keyboard::isKeyPressed(int key) {
+	return (_heldKeys.find(key) != _heldKeys.end());
 }
 
 void CX_Keyboard::_listenForEvents(bool listen) {
@@ -78,6 +89,11 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		return; //These keys are reported by oF twice: once as OF_KEY_X and again as OF_KEY_RIGHT_X or OF_KEY_LEFT_X. We ignore the generic version.
 	}
 
+	//Make all keys lower (counteract oF behavior of uppcasing letter keys if shift is held).
+	if (ev.key <= std::numeric_limits<unsigned char>::max()) {
+		ev.key = ::tolower(ev.key);
+	}
+
 	ev.eventTime = CX::Instances::Clock.now();
 	ev.uncertainty = ev.eventTime - _lastEventPollTime;
 
@@ -89,13 +105,11 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		_heldKeys.erase(ev.key);
 		break;
 	case CX_Keyboard::Event::REPEAT:
-
 		break;
 	}
 
 	_keyEvents.push( ev );
 }
-
 
 std::ostream& CX::operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
 	string dlm = ", ";

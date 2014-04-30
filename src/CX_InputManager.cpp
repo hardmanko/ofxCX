@@ -78,4 +78,3 @@ bool CX_InputManager::pollEvents (void) {
 	}
 	return false;
 }
-

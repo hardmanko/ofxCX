@@ -39,7 +39,7 @@ namespace CX {
 			//	double y;
 			//} scroll;
 
-			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::getTime().
+			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
 			enum MouseEventType {
