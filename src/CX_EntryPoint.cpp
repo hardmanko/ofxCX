@@ -9,9 +9,6 @@
 \ingroup entryPoint */
 CX::CX_Display CX::Instances::Display;
 
-/*! An instance of CX_InputManager that is very lightly hooked into the CX backend.
-\ingroup entryPoint */
-CX::CX_InputManager CX::Instances::Input;
 
 namespace CX {
 	namespace Private {

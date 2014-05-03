@@ -10,37 +10,36 @@ This namespace contains instances of some classes that are fundamental to the fu
 
 #include "ofMain.h" //Include all of the oF stuff.
 
+
 #include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Instances::Clock
 #include "CX_TimeUtilities.h"
+
+#include "CX_DataFrame.h"
+
+#include "CX_Display.h"
+#include "CX_Draw.h"
+#include "CX_UnitConversion.h"
+#include "CX_SlidePresenter.h"
+
+#include "CX_InputManager.h" //Includes CX::Instances::Input
 #include "CX_Logger.h" //Includes an instance called CX::Instances::Log
 #include "CX_RandomNumberGenerator.h" //Includes an instance called CX::Instances::RNG
-
-//Make instances of these
-#include "CX_Display.h"
-#include "CX_SlidePresenter.h"
-#include "CX_InputManager.h"
-
-//Do not instantiate these, just include the header.
-#include "CX_TrialController.h" 
-#include "CX_TrialController_Class.h"
 
 #include "CX_SoundBufferPlayer.h"
 #include "CX_SoundBufferRecorder.h"
 #include "CX_ModularSynth.h"
 
-#include "CX_DataFrame.h"
-
 #include "CX_Algorithm.h"
 #include "CX_Utilities.h"
-#include "CX_UnitConversion.h"
-#include "CX_Draw.h"
+
+#include "CX_TrialController.h" 
+#include "CX_TrialController_Class.h"
 
 #include "CX_Private.h"
 
 namespace CX {
 	namespace Instances {
 		extern CX_Display Display;
-		extern CX_InputManager Input;
 	}
 
 	/*! This structure is used to configure windows opened with CX::reopenWindow(). */

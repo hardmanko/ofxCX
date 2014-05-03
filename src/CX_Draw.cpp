@@ -852,7 +852,8 @@ hslValues[2]; //Access the lightness value.
 \note The values returned by this function may not be in the allowed range for the destination color space. 
 Make sure they are clamped to reasonable values if they are to be used directly.
 
-\see CX::Draw::convertToRGB() is a convenience function for the most common conversion that will typically be done.
+\see CX::Draw::convertToRGB() is a convenience function for the most common conversion that will typically be done
+(something to RGB).
 */
 std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3) {
 	std::vector<num> dest(3, 0);
@@ -880,6 +881,7 @@ http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB tit
 \return An ofFloatColor contaning the RGB coordinates.
 
 \code{.cpp}
+#include "CX_EntryPoint.h"
 //This code snippet draws an isluminant color wheel to the screen using color conversion from LAB to RGB.
 void runExperiment(void) {
 

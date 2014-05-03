@@ -127,6 +127,24 @@ void CX_SlidePresenter::stopSlidePresentation(void) {
 	}
 }
 
+/*! Performs a "standard" slide presentation in a single function call as a convenience. 
+This function calls startSlidePresentation() to begin the presentation and then calls update() and 
+CX::Instances::Input.pollEvents() continuously as long as isPresentingSlides() returns true. 
+\return True if the slide presentation completed successfully or false if the slide presentation 
+could not be started. */
+bool CX_SlidePresenter::presentSlides(void) {
+	if (!this->startSlidePresentation()) {
+		return false;
+	}
+
+	while (this->isPresentingSlides()) {
+		this->update();
+		CX::Instances::Input.pollEvents();
+	}
+
+	return true;
+}
+
 
 /*! Prepares the framebuffer of the next slide for drawing so that any drawing
 commands given between a call to beginDrawingNextSlide() and endDrawingCurrentSlide()
@@ -328,6 +346,26 @@ was that slide presented?).
 */
 std::vector<CX_SlidePresenter::Slide>& CX_SlidePresenter::getSlides (void) {
 	return _slides;
+}
+
+/*! Gets a reference to the slide with the given name, if found. If the named slide is not found,
+a std::out_of_range exception is thrown and an error is logged (although you will never see the log
+message unless the exception is caught).
+\param name The name of the slide to get.
+\return A reference to the named slide. 
+\note Because the user supplies slide names, there is no guarantee that any given slide name will
+be unique. Because of this, this function simply returns a reference to the first slide for which
+the name matches.
+*/
+CX_SlidePresenter::Slide& CX_SlidePresenter::getSlideByName(std::string name) {
+	for (unsigned int i = 0; i < _slides.size(); i++) {
+		if (_slides[i].slideName == name) {
+			return _slides[i];
+		}
+	}
+	std::string errorString = "Slide named \"" + name + "\" not found in CX_SlidePresenter::getSlideByName().";
+	CX::Instances::Log.error("CX_SlidePresenter") << errorString;
+	throw(std::out_of_range(errorString.c_str()));
 }
 
 /* Get a reference to the slide at a given index.
@@ -883,4 +921,3 @@ unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Millis duration) {
 	framesInDuration = CX::Util::round(framesInDuration, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
 	return (unsigned int)framesInDuration;
 }
-

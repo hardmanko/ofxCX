@@ -53,4 +53,8 @@ namespace CX {
 		bool _usingMouse;
 		bool _usingJoystick;
 	};
+
+	namespace Instances {
+		extern CX_InputManager Input;
+	}
 }

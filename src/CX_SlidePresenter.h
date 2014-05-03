@@ -8,6 +8,7 @@
 #include "CX_Logger.h"
 #include "CX_Utilities.h"
 #include "CX_Display.h"
+#include "CX_InputManager.h"
 
 namespace CX {
 
@@ -220,6 +221,7 @@ namespace CX {
 
 		bool startSlidePresentation (void);
 		void stopSlidePresentation (void);
+		bool presentSlides(void);
 
 		//! Returns true if slide presentation is in progress, even if the first slide has not yet been presented.
 		bool isPresentingSlides (void) const { return _presentingSlides || _synchronizing; };
@@ -227,6 +229,7 @@ namespace CX {
 		void clearSlides (void);
 
 		std::vector<CX_SlidePresenter::Slide>& getSlides(void);
+		CX_SlidePresenter::Slide& getSlideByName(std::string name);
 
 		std::vector<CX_Millis> getActualPresentationDurations(void);
 		std::vector<unsigned int> getActualFrameCounts(void);
