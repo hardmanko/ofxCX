@@ -286,7 +286,13 @@ T CX::Util::clamp(T val, T minimum, T maximum) {
 	return std::min(std::max(val, minimum), maximum);
 }
 
-template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum) {
+/*! Clamps a vector of values. See \ref CX::Util::clamp().
+\param vals The values to clamp.
+\param minimum The lower bound. Must be less than or equal to maximum.
+\param maximum The upper bound. Must be greater than or equal to minimum.
+\return The clamped values. */
+template <typename T> 
+std::vector<T> CX::Util::clamp(std::vector<T> vals, T minimum, T maximum) {
 	std::vector<T> rval(vals.size());
 	for (unsigned int i = 0; i < vals.size(); i++) {
 		rval[i] = clamp<T>(vals[i], minimum, maximum);

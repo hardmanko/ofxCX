@@ -65,9 +65,12 @@ namespace CX {
 		//void squircle(ofPoint center, double radius, double rotationDeg = 0, double amount = 0.9);
 
 		ofPath starToPath(unsigned int numberOfPoints, float innerRadius, float outerRadius);
-		void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius,
-				  ofColor fillColor, float rotationDeg = 0);
+		void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg = 0);
 		std::vector<ofPoint> getStarVertices(unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg = 0);
+
+		std::vector<ofPoint> getFixationCrossVertices(float longDimension, float shortDimension);
+		ofPath fixationCrossToPath(float armLength, float armWidth);
+		void fixationCross(ofPoint location, float armLength, float armWidth);
 
 		void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
 		void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font);
@@ -139,6 +142,7 @@ namespace CX {
 
 		std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 		ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
+
 	}
 }
 
@@ -148,8 +152,7 @@ beginning with red, continue through yellow, green, cyan, blue, violet, and almo
 \param colorCount The number of colors to draw from the RGB spectrum, which will be rounded
 up to the next power of 6.
 \return A vector containing the sampled colors with a number of colors equal to colorCount
-rounded up to the next power of 6.
-*/
+rounded up to the next power of 6. */
 template <typename ofColorType>
 std::vector<ofColorType> CX::Draw::getRGBSpectrum(unsigned int colorCount) {
 

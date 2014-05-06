@@ -136,15 +136,11 @@ This draws an N-pointed star.
 \param innerRadius The distance from the center of the star to where the inner points of
 the star hit.
 \param outerRadius The distance from the center of the star to the outer points of the star.
-\param fillColor The color used to fill in the center of the star.
 \param rotationDeg The number of degrees to rotate the star. 0 degrees has one point of the star pointing up. 
 Positive values rotate the star counter-clockwise.
 */
-void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius,
-					ofColor fillColor, float rotationDeg)
-{
+void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg) {
 
-	ofSetColor(fillColor);
 	std::vector<ofPoint> vertices = getStarVertices(numberOfPoints, innerRadius, outerRadius, rotationDeg);
 
 	for (unsigned int i = 0; i < vertices.size(); i++) {
@@ -156,6 +152,7 @@ void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float 
 	ofVbo vbo;
 	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
 
+	//ofSetColor(ofGetStyle().color);
 	vbo.draw(GL_TRIANGLE_FAN, 0, vertices.size());
 }
 
@@ -652,7 +649,7 @@ void lines(std::vector<ofPoint> points, float lineWidth) {
 
 /*! This function draws a line from p1 to p2 with the given width.
 \note This function supersedes ofLine because the line width of the line drawn
-with ofLine cannot be set to a value greater than 1.
+with ofLine cannot currently be set to a value greater than 1.
 */
 void line(ofPoint p1, ofPoint p2, float width) {
 	std::vector<LineSegment> ls = getParallelLineSegments(LineSegment(p1, p2), width/2);
@@ -915,6 +912,64 @@ ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, dou
 	std::vector<double> result = convertColors(conversionFormula, S1, S2, S3);
 
 	return ofFloatColor(result[0], result[1], result[2]);
+}
+
+
+/*! Gets teh vertices defining the perimeter of a standard fixation cross (plus sign).
+\param armLength The length of the arms of the cross (end to end, not from the center).
+\param armWidth The width of the arms.
+\return A vector with the 12 needed vertices. */
+std::vector<ofPoint> getFixationCrossVertices(float armLength, float armWidth) {
+	float w = armWidth / 2;
+	float l = armLength / 2;
+
+	std::vector<ofPoint> points(12);
+
+	points[0] = ofPoint(w, l);
+	points[1] = ofPoint(-w, l);
+	points[2] = ofPoint(-w, w);
+
+	points[3] = ofPoint(-l, w);
+	points[4] = ofPoint(-l, -w);
+	points[5] = ofPoint(-w, -w);
+
+	points[6] = ofPoint(-w, -l);
+	points[7] = ofPoint(w, -l);
+	points[8] = ofPoint(w, -w);
+
+	points[9] = ofPoint(l, -w);
+	points[10] = ofPoint(l, w);
+	points[11] = ofPoint(w, w);
+
+	return points;
+}
+
+/*! Draws a standard fixation cross (plus sign) to an ofPath. The fixation cross will be centered on (0,0) in the ofPath.
+\param armLength The length of the arms of the cross (end to end, not from the center).
+\param armWidth The width of the arms.
+\return An ofPath containing the fixation cross. */
+ofPath fixationCrossToPath(float armLength, float armWidth) {
+	std::vector<ofPoint> points = getFixationCrossVertices(armLength, armWidth);
+
+	ofPath path;
+	path.moveTo(points.back());
+	for (auto p : points) {
+		path.lineTo(p);
+	}
+
+	path.setFilled(true);
+	path.setStrokeWidth(0);
+	return path;
+}
+
+/*! Draws a standard fixation cross (plus sign).
+\param location Where to draw the fixation cross.
+\param armLength The length of the arms of the cross (end to end, not from the center).
+\param armWidth The width of the arms. */
+void fixationCross(ofPoint location, float armLength, float armWidth) {
+	ofPath path = fixationCrossToPath(armLength, armWidth);
+	path.setColor(ofGetStyle().color);
+	path.draw(location.x, location.y);
 }
 
 }
