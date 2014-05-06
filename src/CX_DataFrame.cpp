@@ -67,7 +67,7 @@ CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 }
 
 /*! Reduced argument version of print(). Prints all rows and columns. */
-std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) {
+std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) const {
 	if (getRowCount() == 0) {
 		return "No rows to print.";
 	}
@@ -75,7 +75,7 @@ std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) {
 }
 
 /*! Reduced argument version of print(). Prints all rows and the selected columns. */
-std::string CX_DataFrame::print(const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) {
+std::string CX_DataFrame::print(const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
 	if (getRowCount() == 0) {
 		return "No rows to print.";
 	}
@@ -83,9 +83,9 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, std::strin
 }
 
 /*! Reduced argument version of print(). Prints all columns and the selected rows. */
-std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
+std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
 	set<string> columns;
-	vector<string> names = columnNames();
+	vector<string> names = getColumnNames();
 	for (rowIndex_t i = 0; i < names.size(); i++) {
 		columns.insert(names[i]);
 	}
@@ -110,7 +110,9 @@ being the selected row indices. If false, no row numbers will be printed.
 
 \note This function may be \ref blockingCode if the data frame is large enough.
 */
-std::string CX_DataFrame::print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
+std::string CX_DataFrame::print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, 
+								std::string delimiter, bool printRowNumbers) const 
+{
 	if (getRowCount() == 0) {
 		return "No rows to print.";
 	}
@@ -130,7 +132,7 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 		output << "rowNumber" << delimiter;
 	}
 
-	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+	for (map<string, vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
 		if (validColumns.find(it->first) != validColumns.end()) {
 			if (it != _data.begin()) {
 				output << delimiter;
@@ -151,7 +153,7 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 			output << rows[i] << delimiter;
 		}
 
-		for (map<string, vector<CX_DataFrameCell> >::iterator it = _data.begin(); it != _data.end(); it++) {
+		for (map<string, vector<CX_DataFrameCell> >::const_iterator it = _data.begin(); it != _data.end(); it++) {
 			if (validColumns.find(it->first) != validColumns.end()) {
 				if (it != _data.begin()) {
 					output << delimiter;
@@ -166,17 +168,17 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 }
 
 /*! Reduced argument version of printToFile(). Prints all rows and columns. */
-bool CX_DataFrame::printToFile(std::string filename, std::string delimiter, bool printRowNumbers) {
+bool CX_DataFrame::printToFile(std::string filename, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
 }
 
 /*! Reduced argument version of printToFile(). Prints all rows and the selected columns. */
-bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) {
+bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
 /*! Reduced argument version of printToFile(). Prints all columns and the selected rows. */
-bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
+bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }
 
@@ -187,7 +189,9 @@ printed contents of the data frame, the string is printed to a file. If the file
 a local path, the file will be placed relative to the data directory of the project.
 \return True for success, false if there was some problem writing to the file (insufficient permissions, etc.)
 */
-bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) {
+bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, 
+							   std::string delimiter, bool printRowNumbers) const 
+{
 	return CX::Util::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
 }
 
@@ -320,9 +324,9 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 
 /*! Returns a vector containing the names of the columns in the data frame.
 \return Vector of strings with the column names. */
-std::vector<std::string> CX_DataFrame::columnNames(void) {
+std::vector<std::string> CX_DataFrame::getColumnNames(void) const {
 	vector<string> names;
-	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+	for (map<string, vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
 		names.push_back(it->first);
 	}
 	return names;
@@ -346,7 +350,7 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 		}
 	}
 
-	vector<string> names = this->columnNames();
+	vector<string> names = this->getColumnNames();
 
 	for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
 		
@@ -389,7 +393,7 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 
 	CX_DataFrame copyDf;
 
-	vector<string> columnNames = this->columnNames();
+	vector<string> columnNames = this->getColumnNames();
 	for (vector<string>::iterator col = columnNames.begin(); col != columnNames.end(); col++) {
 		//copyDf._data[*col].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
 		//next columns, they will be resized to the proper size when they are created.
@@ -468,6 +472,14 @@ void CX_DataFrame::addColumn(std::string columnName) {
 		return;
 	}
 	_data[columnName].resize(_rowCount);
+}
+
+/*! Appends a data frame to this data frame. appendRow() is used to copy over the rows of `df`.
+\param df The CX_DataFrame to append. */
+void CX_DataFrame::append(CX_DataFrame df) {
+	for (rowIndex_t i = 0; i < df.getRowCount(); i++) {
+		this->appendRow(df[i]);
+	}
 }
 
 void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
@@ -565,7 +577,7 @@ CX_DataFrameCell CX_DataFrameRow::operator[] (std::string column) {
 
 vector<std::string> CX_DataFrameRow::names(void) {
 	if (_df) {
-		return _df->columnNames();
+		return _df->getColumnNames();
 	} else {
 		std::vector<std::string> names;
 		for (map<std::string, CX_DataFrameCell>::iterator it = _data.begin(); it != _data.end(); it++) {
@@ -577,7 +589,7 @@ vector<std::string> CX_DataFrameRow::names(void) {
 
 void CX_DataFrameRow::clear(void) {
 	if (_df) {
-		std::vector<std::string> names = _df->columnNames();
+		std::vector<std::string> names = _df->getColumnNames();
 		for (unsigned int i = 0; i < names.size(); i++) {
 			_df->operator()(names[i], _rowNumber) = "";
 		}

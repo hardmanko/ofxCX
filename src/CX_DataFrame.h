@@ -73,15 +73,17 @@ public:
 	void setRowCount(rowIndex_t rowCount);
 	void addColumn(std::string columnName);
 
-	std::string print (std::string delimiter = "\t", bool printRowNumbers = true);
-	std::string print (const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true);
-	std::string print (const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
-	std::string print (const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
+	void append(CX_DataFrame df);
 
-	bool printToFile (std::string filename, std::string delimiter = "\t", bool printRowNumbers = true);
-	bool printToFile (std::string filename, const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true);
-	bool printToFile (std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
-	bool printToFile (std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true);
+	std::string print (std::string delimiter = "\t", bool printRowNumbers = true) const;
+	std::string print(const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	std::string print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+
+	bool printToFile(std::string filename, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	bool printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	bool printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
 
 	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"");
 
@@ -89,9 +91,9 @@ public:
 	bool deleteColumn (std::string columnName);
 	bool deleteRow (rowIndex_t row);
 
-	std::vector<std::string> columnNames (void);
+	std::vector<std::string> getColumnNames(void) const;
 	//! Returns the number of rows in the data frame.
-	rowIndex_t getRowCount (void) { return _rowCount; };
+	rowIndex_t getRowCount(void) const { return _rowCount; };
 
 	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
 	CX_DataFrame copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder);
@@ -99,7 +101,7 @@ public:
 	void shuffleRows (void);
 	void shuffleRows (CX_RandomNumberGenerator &rng);
 
-	template <typename T> std::vector<T> copyColumn(std::string column);
+	template <typename T> std::vector<T> copyColumn(std::string column) const;
 
 	
 
@@ -121,7 +123,7 @@ protected:
 (such a conversion must be possible).
 \param column The name of the column to copy data from.
 \return A vector containing the copied data. */
-template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column) {
+template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column) const {
 	_resizeToFit(column);
 	vector<T> rval;
 	for (unsigned int i = 0; i < _data[column].size(); i++) {

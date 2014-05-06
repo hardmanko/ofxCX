@@ -76,7 +76,7 @@ void runExperiment (void) {
 	vector<unsigned int> printRow = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, 1);
 	cout << endl << "Only selected rows and columns: " << endl << df.print( printCol, printRow, "\t" ); 
 
-	//If you want to iterate over the contents of the data frame, use df.columnNames() and df.getRowCount() to get the
+	//If you want to iterate over the contents of the data frame, use df.getColumnNames() and df.getRowCount() to get the
 	//the information needed. Rows in a CX_DataFrame are always numbered from 0.
 
 	vector<int> intVector = df.copyColumn<int>("ints"); //You can copy the data in a column out of the data frame, as long as you
