@@ -61,6 +61,7 @@ namespace CX {
 
 		template <typename T> std::vector<T> unique(std::vector<T> vals);
 		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
+		template <typename T> std::vector<T> exclude(const std::vector<T>& A, const std::vector<T>& B);
 
 		void saveFboToFile(ofFbo& fbo, std::string filename); //Move to Draw ns?
 
@@ -393,7 +394,33 @@ template <typename T> std::vector<T> CX::Util::unique(std::vector<T> vals) {
 \return The concatenation of A and B, being a vector containing {A1, A2, ... An, B1, B2, ... Bn}. */
 template <typename T>
 std::vector<T> CX::Util::concatenate(const std::vector<T>& A, const std::vector<T>& B) {
-	vector<T> C(A.begin(), A.end());
+	std::vector<T> C(A.begin(), A.end());
 	C.insert(C.end(), B.begin(), B.end());
 	return C;
+}
+
+/*! Gets the values from `values` that do not match the values in `exclude`.
+\param values The set of values to select from.
+\param exclude The set of values to exclude from `values`.
+\return A vector containing the values that were not excluded. This vector may be empty. */
+template <typename T> 
+std::vector<T> CX::Util::exclude(const std::vector<T>& values, const std::vector<T>& exclude) {
+	std::vector<T> kept;
+
+	std::vector<T> uniqueExclude = unique(exclude);
+
+	for (T val : values) {
+		bool valueExcluded = false;
+		for (T ex : uniqueExclude) {
+			if (val == ex) {
+				valueExcluded = true;
+				break;
+			}
+		}
+
+		if (!valueExcluded) {
+			kept.push_back(val);
+		}
+	}
+	return kept;
 }

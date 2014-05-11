@@ -166,54 +166,7 @@ namespace CX {
 	\return The sampled value.
 	\note If all of the values are excluded, an error will be logged and T() will be returned. */
 	template <typename T> T CX_RandomNumberGenerator::sampleExclusive(const std::vector<T>& values, const std::vector<T>& exclude) {
-		
-		//This version of the function might improve worst-case behavior when almost all values are excluded from a large vector.
-		vector<T> nonExcluded;
-		for (unsigned int i = 0; i < values.size(); i++) {
-			bool valueExcluded = false;
-			for (unsigned int j = 0; j < exclude.size(); j++) {
-				if (values[i] == exclude[j]) {
-					valueExcluded = true;
-				}
-			}
-
-			if (!valueExcluded) {
-				nonExcluded.push_back(values[i]);
-			}
-
-		}
-
-		if (nonExcluded.size() == 0) {
-			CX::Instances::Log.error("CX_RandomNumberGenerator") << "sampleExclusive: All values are excluded.";
-			return T();
-		}
-
-		return this->sample(nonExcluded);
-		
-
-		/*
-		std::set<T> excluded(exclude.begin(), exclude.end());
-
-		if (values.size() <= exclude.size()) {
-			bool allExcluded = true;
-			for (typename std::vector<T>::size_type i = 0; i < values.size(); i++) {
-				if (excluded.find(values[i]) == excluded.end()) {
-					allExcluded = allExcluded && false;
-				}
-			}
-
-			if (allExcluded) {
-				CX::Instances::Log.error("CX_RandomNumberGenerator") << "sampleExclusive: All values are excluded.";
-				return T();
-			}
-		}
-
-		T attempt;
-		do {
-			attempt = this->sample(values);
-		} while (excluded.find(attempt) != excluded.end());
-		return attempt;
-		*/
+		return this->sampleExclusive(1, values, exclude, false).front();
 	}
 
 	/*! Sample some number of random values, with or without replacement, from a vector without the possibility of getting the excluded value.
@@ -225,8 +178,7 @@ namespace CX {
 	\note If all of the values are excluded, an error will be logged and an empty vector will be returned. */
 	template <typename T> 
 	std::vector<T> CX_RandomNumberGenerator::sampleExclusive(unsigned int count, const std::vector<T>& values, const T& exclude, bool withReplacement) {
-		std::vector<T> excluded;
-		excluded.push_back(exclude);
+		std::vector<T> excluded(1, exclude);
 		return this->sampleExclusive<T>(count, values, excluded, withReplacement);
 	}
 
@@ -240,28 +192,14 @@ namespace CX {
 	template <typename T> 
 	std::vector<T> CX_RandomNumberGenerator::sampleExclusive(unsigned int count, const std::vector<T>& values, const std::vector<T>& exclude, bool withReplacement) {
 
-		//This version of the function might improve worst-case behavior when almost all values are excluded from a large vector.
-		vector<T> nonExcluded;
-		for (unsigned int i = 0; i < values.size(); i++) {
-			bool valueExcluded = false;
-			for (unsigned int j = 0; j < exclude.size(); j++) {
-				if (values[i] == exclude[j]) {
-					valueExcluded = true;
-				}
-			}
+		std::vector<T> keptValues = Util::exclude(values, exclude);
 
-			if (!valueExcluded) {
-				nonExcluded.push_back(values[i]);
-			}
-
-		}
-
-		if (((nonExcluded.size() < count) && !withReplacement) || (nonExcluded.size() == 0)) {
+		if ((!withReplacement && (keptValues.size() < count)) || (keptValues.size() == 0)) {
 			CX::Instances::Log.error("CX_RandomNumberGenerator") << "sampleExclusive: Too many values excluded.";
 			return std::vector<T>();
 		}
 
-		return this->sample(count, nonExcluded, withReplacement);
+		return this->sample(count, keptValues, withReplacement);
 	}
 
 	/*! Draws `count` samples from a distribution `dist` that is provided by the user.
