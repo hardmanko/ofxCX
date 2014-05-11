@@ -65,6 +65,8 @@ namespace CX {
 
 		template <typename T> T sampleExclusive(const std::vector<T>& values, const T& exclude);
 		template <typename T> T sampleExclusive(const std::vector<T>& values, const std::vector<T>& exclude);
+		template <typename T> std::vector<T> sampleExclusive(unsigned int count, const std::vector<T>& values, const T& exclude, bool withReplacement);
+		template <typename T> std::vector<T> sampleExclusive(unsigned int count, const std::vector<T>& values, const std::vector<T>& exclude, bool withReplacement);
 
 		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& values, unsigned int blocksToSample);
 
@@ -212,6 +214,54 @@ namespace CX {
 		} while (excluded.find(attempt) != excluded.end());
 		return attempt;
 		*/
+	}
+
+	/*! Sample some number of random values, with or without replacement, from a vector without the possibility of getting the excluded value.
+	\param count The number of values to sample.
+	\param values The vector of values to sample from.
+	\param exclude The vector of values to exclude from sampling.
+	\param withReplacement If true, values will be sampled with replacement (i.e. the same value can be sampled more than once).
+	\return The sampled values, of equal number to count, unless an error has occurred.
+	\note If all of the values are excluded, an error will be logged and an empty vector will be returned. */
+	template <typename T> 
+	std::vector<T> CX_RandomNumberGenerator::sampleExclusive(unsigned int count, const std::vector<T>& values, const T& exclude, bool withReplacement) {
+		std::vector<T> excluded;
+		excluded.push_back(exclude);
+		return this->sampleExclusive<T>(count, values, excluded, withReplacement);
+	}
+
+	/*! Sample some number of random values, with or without replacement, from a vector without the possibility of getting any of the excluded values.
+	\param count The number of values to sample.
+	\param values The vector of values to sample from.
+	\param exclude The vector of values to exclude from sampling.
+	\param withReplacement If true, values will be sampled with replacement (i.e. the same value can be sampled more than once).
+	\return The sampled values, of equal number to count, unless an error has occurred.
+	\note If all of the values are excluded, an error will be logged and an empty vector will be returned. */
+	template <typename T> 
+	std::vector<T> CX_RandomNumberGenerator::sampleExclusive(unsigned int count, const std::vector<T>& values, const std::vector<T>& exclude, bool withReplacement) {
+
+		//This version of the function might improve worst-case behavior when almost all values are excluded from a large vector.
+		vector<T> nonExcluded;
+		for (unsigned int i = 0; i < values.size(); i++) {
+			bool valueExcluded = false;
+			for (unsigned int j = 0; j < exclude.size(); j++) {
+				if (values[i] == exclude[j]) {
+					valueExcluded = true;
+				}
+			}
+
+			if (!valueExcluded) {
+				nonExcluded.push_back(values[i]);
+			}
+
+		}
+
+		if (((nonExcluded.size() < count) && !withReplacement) || (nonExcluded.size() == 0)) {
+			CX::Instances::Log.error("CX_RandomNumberGenerator") << "sampleExclusive: Too many values excluded.";
+			return std::vector<T>();
+		}
+
+		return this->sample(count, nonExcluded, withReplacement);
 	}
 
 	/*! Draws `count` samples from a distribution `dist` that is provided by the user.
