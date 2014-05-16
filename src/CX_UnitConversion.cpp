@@ -93,7 +93,17 @@ namespace Util {
 		return length;
 	}
 
-	/*! Constructs a coordinate converter with the given settings.
+	/*! Constructs a CX_CoordinateConverter with the default settings. The settings can be changed later with
+	setAxisInversion(), setOrigin(), setMultiplier(), and/or setUnitConverter(). */
+	CX_CoordinateConverter::CX_CoordinateConverter(void) :
+		_origin(ofPoint(0,0)),
+		_conv(nullptr),
+		_multiplier(1.0)
+	{
+		setAxisInversion(false, false, false);
+	}
+
+	/*! Constructs a CX_CoordinateConverter with the given settings.
 	\param origin The location within the standard coordinate system at which the origin (the point at which the x,
 	y, and z values are 0) of the user-defined coordinate system is located.
 	If, for example, you want the center of the display to be the origin within your user-defined coordinate system, 
@@ -101,8 +111,8 @@ namespace Util {
 	\param invertX Invert the x-axis from the default, which is that x increases to the right.
 	\param invertY Invert the y-axis from the default, which is that y increases downward.
 	\param invertZ Invert the z-axis from the default, which is that z increases toward the user
-	(i.e. pointing out of the front of the screen).
-	*/
+	(i.e. pointing out of the front of the screen). The other way of saying this is that smaller 
+	(increasingly negative) values are farther away. */
 	CX_CoordinateConverter::CX_CoordinateConverter(ofPoint origin, bool invertX, bool invertY, bool invertZ) :
 		_origin(origin),
 		_conv(nullptr),

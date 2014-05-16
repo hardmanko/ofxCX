@@ -16,10 +16,10 @@ namespace Util {
 	class CX_BaseUnitConverter {
 	public:
 		virtual float operator() (float x) {
-			return (5 * x) - 2;
+			return (5 * x) - 2; //y = 5x - 2
 		};
 		virtual float inverse(float y) {
-			return (y + 2) / 5;
+			return (y + 2) / 5; //x = (y + 2)/5
 		}
 	};
 
@@ -97,12 +97,13 @@ namespace Util {
 	ofCircle(conv(0, 100), 20);
 	\endcode
 
-	Another example can be found in the advancedChangeDetection example experiment.
+	Another example of the use of this class can be found in the advancedChangeDetection example experiment.
 
 	\ingroup utility */
 	class CX_CoordinateConverter {
 	public:
 
+		CX_CoordinateConverter(void);
 		CX_CoordinateConverter(ofPoint origin, bool invertX, bool invertY, bool invertZ = false);
 
 		ofPoint operator() (ofPoint p);
@@ -114,7 +115,6 @@ namespace Util {
 		void setAxisInversion(bool invertX, bool invertY, bool invertZ = false);
 		void setOrigin(ofPoint newOrigin);
 		void setMultiplier(float multiplier);
-
 		void setUnitConverter(CX_BaseUnitConverter *converter);
 
 	private:
