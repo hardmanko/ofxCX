@@ -38,7 +38,10 @@ namespace Util {
 	\ingroup utility */
 	class CX_DegreeToPixelConverter : public CX_BaseUnitConverter {
 	public:
+		CX_DegreeToPixelConverter(void);
 		CX_DegreeToPixelConverter(float pixelsPerUnit, float viewingDistance, bool roundResult = false);
+
+		void setup(float pixelsPerUnit, float viewingDistance, bool roundResult = false);
 
 		float operator() (float degrees) override;
 		float inverse(float pixels) override;
@@ -65,7 +68,11 @@ namespace Util {
 	\ingroup utility */
 	class CX_LengthToPixelConverter : public CX_BaseUnitConverter {
 	public:
+		CX_LengthToPixelConverter(void);
 		CX_LengthToPixelConverter(float pixelsPerUnit, bool roundResult = false);
+
+		void setup(float pixelsPerUnit, bool roundResult = false);
+
 		float operator() (float length) override;
 		float inverse(float pixels) override;
 
@@ -106,22 +113,19 @@ namespace Util {
 		CX_CoordinateConverter(void);
 		CX_CoordinateConverter(ofPoint origin, bool invertX, bool invertY, bool invertZ = false);
 
+		void setAxisInversion(bool invertX, bool invertY, bool invertZ = false);
+		void setOrigin(ofPoint newOrigin);
+		void setMultiplier(float multiplier);
+		void setUnitConverter(CX_BaseUnitConverter *converter);
+
 		ofPoint operator() (ofPoint p);
 		ofPoint operator() (float x, float y, float z = 0);
 
 		ofPoint inverse(ofPoint p);
 		ofPoint inverse(float x, float y, float z = 0);
 
-		void setAxisInversion(bool invertX, bool invertY, bool invertZ = false);
-		void setOrigin(ofPoint newOrigin);
-		void setMultiplier(float multiplier);
-		void setUnitConverter(CX_BaseUnitConverter *converter);
-
 	private:
 		ofPoint _origin;
-		//bool _invertX;
-		//bool _invertY;
-		//bool _invertZ;
 		ofPoint _inversionCoefficients;
 
 		float _multiplier;

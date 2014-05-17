@@ -25,18 +25,30 @@ namespace Util {
 	}
 
 
-	/*! Constructs an instance of a CX_DegreeToPixelConverter using the given settings.
+	CX_DegreeToPixelConverter::CX_DegreeToPixelConverter(void) :
+		_pixelsPerUnit(0),
+		_viewingDistance(0),
+		_roundResult(false)
+	{}
+
+	/*! Constructs an instance of a CX_DegreeToPixelConverter with the given configuration. See setup() for the
+	meaning of the parameters. */
+	CX_DegreeToPixelConverter::CX_DegreeToPixelConverter(float pixelsPerUnit, float viewingDistance, bool roundResult) {
+		setup(pixelsPerUnit, viewingDistance, roundResult);
+	}
+
+	/*! Sets up a CX_DegreeToPixelConverter with the given configuration.
 	\param pixelsPerUnit The number of pixels within one length unit (e.g. inches, centimeters). This can
-	be measured by drawing a ~100-1000 pixel square on the screen and measuring the length of a side and dividing
+	be measured by drawing an object with a known size on the screen and measuring the length of a side and dividing
 	the number of pixels by the total length measured.
 	\param viewingDistance The distance from the monitor that the participant will be viewing the screen from.
 	\param roundResult If true, the result of conversions will be rounded to the nearest integer (i.e. pixel).
 	For drawing certain kinds of stimuli (especially text) it can be helpful to draw on pixel boundaries. */
-	CX_DegreeToPixelConverter::CX_DegreeToPixelConverter(float pixelsPerUnit, float viewingDistance, bool roundResult) :
-		_pixelsPerUnit(pixelsPerUnit),
-		_viewingDistance(viewingDistance),
-		_roundResult(roundResult)
-	{}
+	void CX_DegreeToPixelConverter::setup(float pixelsPerUnit, float viewingDistance, bool roundResult) {
+		_pixelsPerUnit = pixelsPerUnit;
+		_viewingDistance = viewingDistance;
+		_roundResult = roundResult;
+	}
 
 	/*! Converts the degrees to pixels based on the settings given during construction.
 	\param degrees The number of degrees of visual angle to convert to pixels.
@@ -60,16 +72,27 @@ namespace Util {
 		return deg;
 	}
 
-	/*! Constructs a CX_LengthToPixelConverter with the given configuration.
+
+	CX_LengthToPixelConverter::CX_LengthToPixelConverter(void) :
+		_pixelsPerUnit(0),
+		_roundResult(false)
+	{}
+
+	/*! Constructs a CX_LengthToPixelConverter with the given configuration. See setup() for the meaning of the parameters. */
+	CX_LengthToPixelConverter::CX_LengthToPixelConverter(float pixelsPerUnit, bool roundResult) {
+		setup(pixelsPerUnit, roundResult);
+	}
+
+	/*! Sets up a CX_LengthToPixelConverter with the given configuration.
 	\param pixelsPerUnit The number of pixels per one length unit. This can
 	be measured by drawing a ~100-1000 pixel square on the screen and measuring the length of a side and dividing
 	the number of pixels by the total length measured.
 	\param roundResult If true, the result of conversions will be rounded to the nearest integer (i.e. pixel).
 	For drawing certain kinds of stimuli (especially text) it can be helpful to draw on pixel boundaries. */
-	CX_LengthToPixelConverter::CX_LengthToPixelConverter(float pixelsPerUnit, bool roundResult) :
-		_pixelsPerUnit(pixelsPerUnit),
-		_roundResult(roundResult)
-	{}
+	void CX_LengthToPixelConverter::setup(float pixelsPerUnit, bool roundResult) {
+		_pixelsPerUnit = pixelsPerUnit;
+		_roundResult = roundResult;
+	}
 
 	/*! Converts the length to pixels based on the settings given during construction.
 	\param length The length to convert to pixels.
