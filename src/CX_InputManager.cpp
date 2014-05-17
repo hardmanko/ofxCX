@@ -53,8 +53,8 @@ namespace CX {
 	This function polls for new events on all of the configured input devices (see setup()). After a call to this function,
 	new events for the input devices can be found by checking the availableEvents() function for each device.
 	\return True if there are any events available for enabled devices, false otherwise. The events do not neccessarily
-	need to be new events. If there are events that were already stored in Mouse, Keyboard, or Joystick but had not been
-	processed by user code, this function will return true.
+	need to be new events. If there were events that were already stored in Mouse, Keyboard, or Joystick that had not been
+	processed by user code at the time this function was called, this function will return true.
 	*/
 	bool CX_InputManager::pollEvents(void) {
 
@@ -81,6 +81,18 @@ namespace CX {
 			return true;
 		}
 		return false;
+	}
+
+	/*! This function clears all events on all input devices.
+	\param poll If true, events are polled before they are cleared, so that events that hadn't yet
+	made it into the device specific queues (e.g. the Keyboard queue) are cleared as well. */
+	void CX_InputManager::clearAllEvents(bool poll) {
+		if (poll) {
+			pollEvents();
+		}
+		Keyboard.clearEvents();
+		Mouse.clearEvents();
+		Joystick.clearEvents();
 	}
 
 }
