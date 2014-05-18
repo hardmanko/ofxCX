@@ -7,6 +7,8 @@
 #include "ofShader.h"
 
 #include "CX_Utilities.h"
+#include "CX_RandomNumberGenerator.h"
+#include "CX_Algorithm.h"
 
 namespace CX {
 
@@ -50,7 +52,7 @@ namespace CX {
 			STRAIGHT_LINE,
 			ARC //unimplemented
 		};
-		ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCornerMode cornerMode);
+		ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode);
 		void lines(std::vector<ofPoint> points, float lineWidth);
 		void line(ofPoint p1, ofPoint p2, float width);
 
@@ -102,8 +104,8 @@ namespace CX {
 
 			/*! The intensity of each pixel is decreased slightly based on how far from the center of the pattern
 			that pixel is, depending on the value of fallOffPower. By default, there is no falloff. A value of 1
-			produces a falloff. The falloff is computed as (cos((d/r)^falloffPower * PI) + 1)/2, where d is the 
-			distance of the current pixel from the origin and r is the radius of the pattern. */
+			produces a standard cosine falloff. The falloff is computed as `(cos((d/r)^falloffPower * PI) + 1)/2`, 
+			where d is the distance of the current pixel from the origin and r is the radius of the pattern. */
 			float fallOffPower;
 
 			enum {
@@ -143,6 +145,7 @@ namespace CX {
 		std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 		ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
 
+		ofFbo patternMaskToFbo(unsigned int width, unsigned int height, float squareSize = 1.0, std::vector<ofColor> colors = std::vector<ofColor>(0));
 	}
 }
 

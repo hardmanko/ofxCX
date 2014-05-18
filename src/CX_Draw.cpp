@@ -447,7 +447,7 @@ struct CornerPoint {
 	Type type;
 };
 
-ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCornerMode cornerMode) {
+ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode) {
 	bool isClosed = (points.front() == points.back());
 
 	
@@ -567,10 +567,8 @@ ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCorner
 
 	
 	ofPath path;
-	path.setColor(color);
-	path.setStrokeColor(ofColor::white);
 	path.setFilled(true);
-	path.setStrokeWidth(1);
+	path.setStrokeWidth(0);
 	path.setPolyWindingMode(ofPolyWindingMode::OF_POLY_WINDING_NONZERO);
 
 	if (cornerMode == LineCornerMode::OUTER_POINT) {
@@ -628,7 +626,8 @@ ofPath lines(std::vector<ofPoint> points, ofColor color, float width, LineCorner
 
 /*! This function draws a series of line segments to connect the given points.
 At each point, the line segments are joined with a circle, which results in overdraw.
-As a result, this function does not work well with transparency.
+As a result, this function does not work well with transparency. A workaround is to
+draw with max alpha into an fbo and then draw the fbo with transparency.
 \param points The points to connect with lines.
 \param lineWidth The width of the line.
 \note If the last point is the same as the first point, the final line segment 
@@ -725,13 +724,13 @@ void arc(ofPoint center, float radiusX, float radiusY, float width, float angleB
 of control points. Uses de Casteljau's algorithm to calculate the curve points. See this awesome guide: 
 http://pomax.github.io/bezierinfo/
 \param controlPoints Control points for the bezier.
-\param width The width of the lines to be drawn. Uses CX::Draw::lines internally to draw the connecting lines.
+\param width The width of the lines to be drawn. Uses CX::Draw::lines(std::vector<ofPoint>, float) internally to draw the connecting lines.
 \param resolution Controls the approximation of the bezier curve. There will be `resolution` line segments drawn to 
 complete the curve.
 */
 void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution) {
 
-	vector<vector<LineSegment>> segs(controlPoints.size() - 1);
+	std::vector< std::vector<LineSegment> > segs(controlPoints.size() - 1);
 	for (unsigned int i = 0; i < segs.size(); i++) {
 		segs[i].resize(controlPoints.size() - i - 1);
 	}
@@ -768,7 +767,7 @@ void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolu
 }
 
 
-/*! Draws a color wheel with specified colors.
+/*! Draws a color wheel (really, a ring) with specified colors.
 \param center The center of the color wheel.
 \param colors The colors to use in the color wheel.
 \param radius The radius of the color wheel.
@@ -797,12 +796,14 @@ void colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float 
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 }
 
+/*! See CX::Draw::colorWheel() for documentation. */
 ofVbo colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
 	colors.push_back(colors.front());
 
 	return CX::Draw::colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
 }
 
+/*! See CX::Draw::colorArc() for documentation. */
 ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
 	float d = width / 2;
 
@@ -837,11 +838,13 @@ ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, 
 For example, if you wanted to convert from HSL to RGB, you would use "HSL -> RGB" as the formula. The whitespace
 is immaterial, but the arrow must exist (the arrow can point either direction). See this page for options for 
 the color space: http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage.
-\param S1 Source coordinate 1. Corresponds to, e.g., R from RGB. S2 and S3 follow as expected.
+\param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB. S2 and S3 follow as expected.
 \return An vector of length 3 containing the converted coordinates in the destination color space.
+The value at index 0 corresponds to the first letter in the resulting color space and the next two
+indices proceed as expected.
 
 \code{.cpp}
-vector<double> hslValues = Draw::convertColors("XYZ -> HSL", .7, .4, .6);
+vector<double> hslValues = Draw::convertColors("XYZ -> HSL", .7, .4, .6); //Convert x=.7, y=.4, z=.6 to HSL values.
 hslValues[0]; //Access the hue value.
 hslValues[2]; //Access the lightness value.
 \endcode
@@ -869,13 +872,14 @@ std::vector<double> convertColors(std::string conversionFormula, double S1, doub
 	return dest;
 }
 
-/*! This function converts from a color space to the RGB color space. This is convenient, because in order
-to draw stimuli with a color, you need to have the color in the RGB space.
+/*! This function converts from an arbitrary color space to the RGB color space. This is convenient, 
+because in order to draw stimuli with a color, you need to have the color in the RGB space.
 \param inputColorSpace The color space to convert from. For example, if you wanted to convert from LAB
 coordinates, you would provde the string "LAB". See this page for more options for the color space:
 http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB title on that page).
-\param S1 Source coordinate 1. Corresponds to, e.g., R from RGB. S2 and S3 follow as expected.
-\return An ofFloatColor contaning the RGB coordinates.
+\param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB. S2 and S3 follow as expected.
+\return An ofFloatColor contaning the RGB coordinates. Instances of ofFloatColor can be implicitly 
+converted to ofColor in assignment.
 
 \code{.cpp}
 #include "CX_EntryPoint.h"
@@ -970,6 +974,49 @@ void fixationCross(ofPoint location, float armLength, float armWidth) {
 	ofPath path = fixationCrossToPath(armLength, armWidth);
 	path.setColor(ofGetStyle().color);
 	path.draw(location.x, location.y);
+}
+
+/*! This function draws a pattern mask created with a large number of small squares, to an ofFbo.
+\param width The width of the resulting fbo in pixels.
+\param height The height of the resulting fbo in pixels.
+\param pixelSize The size of each small square making up the shape.
+\param colors Optional. If a vector of colors is provided, colors will be sampled in blocks
+using an Algo::BlockSampler from the provided colors. If no colors are provided, each color will
+be chosen randomly by sampling a hue value in the HSB color space, with the S and B held constant
+at maximum values (i.e. each color will be a bright, fully saturated color).
+\return An ofFbo containing the pattern mask. */
+ofFbo patternMaskToFbo(unsigned int width, unsigned int height, float squareSize, std::vector<ofColor> colors) {
+
+	squareSize = abs(squareSize);
+
+	ofFbo fbo;
+	fbo.allocate(width, height, GL_RGB);
+
+	ofRectangle pos(0, 0, squareSize, squareSize);
+
+	CX::Algo::BlockSampler<ofColor> bs(&CX::Instances::RNG, colors);
+
+	fbo.begin();
+	while (pos.x < width) {
+		while (pos.y < height) {
+
+			ofColor col;
+			if (colors.size() == 0) {
+				col = ofColor::fromHsb(CX::Instances::RNG.randomDouble(0, ofColor::limit()), ofColor::limit(), ofColor::limit());
+			} else {
+				col = bs.getNextValue();
+			}
+
+			ofSetColor(col);
+			ofRect(pos);
+			pos.y += squareSize;
+		}
+		pos.x += squareSize;
+		pos.y = 0;
+	}
+	fbo.end();
+
+	return fbo;
 }
 
 }
