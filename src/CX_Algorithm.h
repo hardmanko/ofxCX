@@ -16,7 +16,7 @@ namespace CX {
 
 		/*! This class provides a way to work with Latin squares in a relatively easy way. 
 		\code{.cpp}
-		Algo::LatinSquare ls(4);
+		Algo::LatinSquare ls(4); //Construct a standard 4x4 LatinSquare.
 		cout << "This latin square has " << ls.rows() << " rows and " << ls.columns() << " columns." << endl;
 		cout << ls.print() << endl;
 
@@ -85,31 +85,61 @@ namespace CX {
 		with the constraint that each block of V samples should have each value in the set.
 		For example, if you want to	present a number of trials in four different conditions, 
 		where the conditions are intermixed, but you want to observe all four trial types 
-		every four trials, you would use this class.
+		every four trials, you could use this class.
 
 		\code{.cpp}
-		Algo::BlockSampler<int> bs(&RNG, Util::intVector(1, 4));
+		#include "CX_EntryPoint.h"
 
-		cout << "Block, Position, Value" << endl;
-		while (bs.getBlockNumber() < 4) { //Generate 4 blocks of values
-			cout << bs.getBlockNumber() << ", " << bs.getBlockPosition() << ", ";
-			cout << bs.getNextValue() << endl;
+		void runExperiment(void) {
+			//Construct a BlockSampler using RNG as the random number generator
+			//and integer values 1 to 4 as the data to sample from.
+			Algo::BlockSampler<int> bs(&RNG, Util::intVector(1, 4)); 
+				
+			//Generate 4 blocks of values and print those values along with information about the block and position
+			cout << "Block, Position: Value" << endl;
+			while (bs.getBlockNumber() < 4) {
+				cout << bs.getBlockNumber() << ", " << bs.getBlockPosition() << ": ";
+				cout << bs.getNextValue() << endl;
+			}
 		}
 		\endcode
+
+		\note Another way of getting blocked random samples is to use CX::CX_RandomNumberGenerator::sampleBlocks().
 		*/
 		template <typename T>
 		class BlockSampler {
 		public:
 
-			BlockSampler(CX_RandomNumberGenerator* rng, const std::vector<T>& values) :
-				_rng(rng),
-				_values(values)
-			{
-				_blockIndices = Util::intVector<unsigned int>(0, _values.size() - 1);
-				resetBlocks();
+			BlockSampler(void) :
+				_rng(nullptr)
+			{}
+
+			/*! Constructs a BlockSampler with the given settings. See setup() for the meaning of the parameters. */
+			BlockSampler(CX_RandomNumberGenerator* rng, const std::vector<T>& values) {
+				setup(rng, values);
 			}
 
+			/*! Set up the BlockSampler.
+			\param rng A pointer to a CX_RandomNumberGenerator that will be used to randomize the sampled data.
+			\param values A vector of values from which to sample.
+			*/
+			void setup(CX_RandomNumberGenerator* rng, const std::vector<T>& values) {
+				_rng = rng;
+				_values = values;
+				_blockIndices = Util::intVector<unsigned int>(0, _values.size() - 1);
+				restartSampling();
+			}
+
+			/*! Get the next value sampled from the provided data.
+			\return An element sampled from the provided values, or if there were no values provided, 
+			a warning will be logged and a default-constructed instance of T will be returned. */
 			T getNextValue(void) {
+				if (_values.size() == 0) {
+					CX::Instances::Log.warning("BlockSampler") << "getNextValue: Value requested but no values avaiable to sample from."
+						"Did you provide a vector of values to the BlockSampler?";
+					return T();
+				}
+
 				T rval = _values[_blockIndices[_blockPosition]];
 				if (++_blockPosition >= _blockIndices.size()) {
 					_blockPosition = 0;
@@ -119,14 +149,25 @@ namespace CX {
 				return rval;
 			}
 
-			void resetBlocks(void) {
+			/*! Restarts sampling to be at the beginning of a block of samples. Also resets the block number (  */
+			void restartSampling(void) {
 				_blockPosition = 0;
 				_blockNumber = 0;
 				_rng->shuffleVector(&_blockIndices);
 			}
 
-			unsigned int getBlockNumber(void) { return _blockNumber; };
-			unsigned int getBlockPosition(void) { return _blockPosition; };
+			/*! Returns the index of the block that is currently being sampled. Because it is zero-indexed, 
+			you can alternately think of the value as the number of completed blocks. */
+			unsigned int getBlockNumber(void) const {
+				return _blockNumber;
+			}
+
+			/*! Returns the index of the sample that will be taken the next time getNextValue() is called. If 0,
+			it means that a block of samples was just finished. 
+			If within the current block 4 samples had already been taken, this will return 4 */
+			unsigned int getBlockPosition(void) const {
+				return _blockPosition;
+			}
 
 		private:
 			CX_RandomNumberGenerator* _rng;

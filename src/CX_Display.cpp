@@ -392,8 +392,8 @@ void CX_Display::useSoftwareVSync(bool b) {
 	_swapThread->setGLFinishAfterSwap(b);
 }
 
-/*! Copies an ofFbo to the back buffer using an efficient blitting operation. This overwrites
-the contents of the back buffer, it does not draw over them. For this reason, transparaency
+/*! Copies an ofFbo to the back buffer using a potentially slow but pixel-perfect blitting operation. 
+This overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
 is ignored.
 \param fbo The framebuffer to copy. It will be drawn starting from (0, 0) and will be drawn at
 the full dimensions of the fbo (whatever size was chosen at allocation of the fbo).
@@ -402,7 +402,9 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
 	copyFboToBackBuffer(fbo, ofPoint(0, 0));
 }
 
-/*! Copies an ofFbo to the back buffer using an efficient blitting operation.
+/*! Copies an ofFbo to the back buffer using a potentially slow but pixel-perfect blitting operation.
+This overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
+is ignored.
 \param fbo The framebuffer to copy.
 \param destination The point on the back buffer where the fbo will be placed.
 */
@@ -419,7 +421,9 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
 	_blitFboToBackBuffer(fbo, source, dest);
 }
 
-/*! Copies an ofFbo to the back buffer using an efficient blitting operation.
+/*! Copies an ofFbo to the back buffer using a potentially slow but pixel-perfect blitting operation.
+This overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
+is ignored.
 \param fbo The framebuffer to copy.
 \param source A rectangle giving an area of the fbo to copy.
 \param destination The point on the back buffer where the area of the fbo will be placed.
@@ -428,7 +432,7 @@ If this function does not provide enough flexibility, you can always draw ofFbo'
 technique, which allows for transparency:
 \code{.cpp}
 Display.beginDrawingToBackBuffer();
-ofSetColor( 255 );
+ofSetColor( 255 ); //If the color is not set to white, the fbo will be drawn mixed with whatever the current color is.
 fbo.draw( x, y, width, height ); //Replace these variables with the destination location (x,y) and dimensions of the FBO.
 Display.endDrawingToBackBuffer();
 \endcode

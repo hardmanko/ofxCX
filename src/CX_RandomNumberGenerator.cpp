@@ -1,7 +1,5 @@
 #include "CX_RandomNumberGenerator.h"
 
-#include <stdint.h>
-
 using namespace CX;
 
 /*! An instance of CX_RandomNumberGenerator that is (lightly) hooked into the CX backend.
@@ -34,6 +32,18 @@ void CX_RandomNumberGenerator::setSeed (unsigned long seed) {
 	_seed = seed; //Store the seed for reference.
 
 	_mersenneTwister.seed( _seed );
+}
+
+/*! This function provides a method of setting the seed using an arbitrary string
+(e.g. date-time and participant number) as the seed. A CRC32 checksum is used 
+to convert the string into an unsinged long, which is then used as the seed for 
+the CX_RandomNumberGenerator. You can retrieve the seed with getSeed().
+\param seedString The string from which the new seed will be calculated. 
+*/
+void CX_RandomNumberGenerator::setSeed(const std::string& seedString) {
+	Poco::Checksum cs(Poco::Checksum::TYPE_CRC32);
+	cs.update(seedString);
+	this->setSeed(cs.checksum());
 }
 
 /*! Get the seed used to seed the random number generator. 

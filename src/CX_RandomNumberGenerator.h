@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "./Poco/Checksum.h"
+
 #include "CX_Utilities.h"
 
 /*! \defgroup randomNumberGeneration Randomization 
@@ -45,7 +47,8 @@ namespace CX {
 
 		CX_RandomNumberGenerator (void);
 
-		void setSeed (unsigned long seed);
+		void setSeed(unsigned long seed);
+		void setSeed(const std::string& s);
 		unsigned long getSeed (void);
 	
 		CX_RandomInt_t getMinimumRandomInt(void);
@@ -54,7 +57,7 @@ namespace CX {
 		CX_RandomInt_t randomInt(void);
 		CX_RandomInt_t randomInt(CX_RandomInt_t rangeLower, CX_RandomInt_t rangeUpper);
 
-		double randomDouble (double lowerBound_closed, double upperBound_open);
+		double randomDouble(double lowerBound_closed, double upperBound_open);
 
 		template <typename T> void shuffleVector(std::vector<T> *v);
 		template <typename T> std::vector<T> shuffleVector(std::vector<T> v);

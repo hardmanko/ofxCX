@@ -224,4 +224,3 @@ std::vector<unsigned int> LatinSquare::getRow(unsigned int row) const {
 
 	return square[row];
 }
-
