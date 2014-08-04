@@ -56,6 +56,7 @@ void CompatGLReadyCallback(bool checkGLSLVersion) {
 #endif
 
 	ofLogVerbose("ofAppRunner") << "GL ready";
+	/*
 	ofLogVerbose("ofAppRunner") << "Vendor:   " << (char*)glGetString(GL_VENDOR);
 	ofLogVerbose("ofAppRunner") << "Renderer: " << (char*)glGetString(GL_RENDERER);
 	ofLogVerbose("ofAppRunner") << "Version:  " << (char*)glGetString(GL_VERSION);
@@ -63,6 +64,18 @@ void CompatGLReadyCallback(bool checkGLSLVersion) {
 	if (checkGLSLVersion) {
 		ofLogVerbose("ofAppRunner") << "GLSL:     " << (char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 	}
+	*/
+	char* glVendor = (char*)glGetString(GL_VENDOR);
+	ofLogVerbose("ofAppRunner") << "Vendor:   " << (glVendor ? glVendor : "Error getting vendor info.");
+
+	char* glRenderer = (char*)glGetString(GL_RENDERER);
+	ofLogVerbose("ofAppRunner") << "GLSL:     " << (glRenderer ? glRenderer : "Error getting renderer info.");
+
+	char* glVer = (char*)glGetString(GL_VERSION);
+	ofLogVerbose("ofAppRunner") << "Version:  " << (glVer ? glVer : "Error getting GL version.");
+
+	char* glslVer = (char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
+	ofLogVerbose("ofAppRunner") << "GLSL:     " << (glslVer ? glslVer : "Error getting GLSL version.");
 
     if(ofGetGLProgrammableRenderer()){
     	ofGetGLProgrammableRenderer()->setup();

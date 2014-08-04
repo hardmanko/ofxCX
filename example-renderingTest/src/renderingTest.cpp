@@ -262,7 +262,8 @@ void drawStuff (void) {
 	arrowPath.draw(650, 400);
 
 	//The size of this star can be changed with the mouse wheel
-	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize, ofColor::turquoise);
+	ofSetColor(ofColor::turquoise);
+	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize);
 #endif
 
 #ifdef CX_RT_USE_TEXTURE
