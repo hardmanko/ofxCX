@@ -158,7 +158,16 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 				if (it != _data.begin()) {
 					output << delimiter;
 				}
-				output << it->second[rows[i]].toString();
+
+				//TODO: Update this to be more sensible/allow configuration.
+				string s;
+				if (it->second[rows[i]].isVector()) {
+					vector<string> v = it->second[rows[i]].toVector<string>();
+					s = "\"" + CX::Util::vectorToString(v, ";") + "\"";
+				} else {
+					s = it->second[rows[i]].to<string>();
+				}
+				output << s;
 			}
 		}
 	}
@@ -207,7 +216,8 @@ It does not treat consecutive delimiters as a single delimiter.
 \param cellDelimiter A string containing the delimiter between cells of the data frame.
 \param vectorEncloser A string containing the characters that surround cell that contain a vector of data. By default,
 vectors are enclosed in double quotes. This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
-if it finds a delimiter within the quotes, it should not split there, but wait until out of the quotes.
+if it finds a delimiter within the quotes, it should not split there, but wait until out of the quotes. If vectorEncloser is the empty
+string, this function will not attempt to read in vectors: everything that looks like a vector will just be treated as a string.
 \return False if an error occurred, true otherwise.
 
 \note The contents of the data frame will be deleted before attempting to read in the file.
@@ -215,7 +225,7 @@ if it finds a delimiter within the quotes, it should not split there, but wait u
 deleteColumn("rowNumber").
 \note This function may be \ref blockingCode if the read in data frame is large enough.
 */
-bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter, std::string vectorEncloser) {
+bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter, std::string vectorEncloser, std::string vectorElementDelimiter) {
 
 	filename = ofToDataPath(filename);
 	ofBuffer file = ofBufferFromFile(filename, false);
@@ -233,39 +243,65 @@ bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter
 	do {
 		string line = file.getNextLine();
 
-		vector<string> parts;
+		vector<string> rowCells;
+		vector<bool> isVector;
 		unsigned int cellStart = 0;
 
 		for (unsigned int i = 0; i < line.size(); i++) {
 
-			if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
+			bool enclosed = false;
+
+			if ((vectorEncloser != "") && (line.substr(i, vectorEncloser.size()) == vectorEncloser)) {
 				i += vectorEncloser.size();
 				for (/* */; i < line.size(); i++) {
 					if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
+						enclosed = true;
+						
 						break;
 					}
 				}
 			}
 
 			if (line.substr(i, cellDelimiter.size()) == cellDelimiter) {
-				parts.push_back( line.substr(cellStart, i - cellStart) );
+				rowCells.push_back( line.substr(cellStart, i - cellStart) );
+				isVector.push_back(enclosed);
 				i += cellDelimiter.size() - 1;
 				cellStart = i + 1;
 			} 
 				
 			if (i == (line.size() - 1)) {
-				parts.push_back( line.substr(cellStart, i + 1 - cellStart) );
+				rowCells.push_back( line.substr(cellStart, i + 1 - cellStart) );
+				isVector.push_back(enclosed);
 			}
 		}
 
-		if (parts.size() != headers.size()) {
-			this->clear();
+		if (rowCells.size() != headers.size()) {
 			Instances::Log.error("CX_DataFrame") << "Error while loading file " << filename << 
-				": Row column count (" << parts.size() << ") does not match header column count (" << headers.size() << "). On row " << rowNumber;
+				": Row column count (" << rowCells.size() << ") does not match header column count (" << headers.size() << "). On row " << rowNumber;
+
+			this->clear();
 			return false;
 		} else {
 			for (unsigned int i = 0; i < headers.size(); i++) {
-				this->operator()(headers[i], rowNumber) = parts[i];
+
+				if (isVector[i]) {
+					string s = rowCells[i];
+					string::size_type first = s.find_first_of(vectorEncloser);
+					string::size_type last = s.find_last_of(vectorEncloser);
+
+					std::vector<std::string> parts;
+					if (first != string::npos && last != string::npos) {
+						s = s.substr(first + vectorEncloser.size(), last - first + vectorEncloser.size() - 2);
+						parts = ofSplitString(s, vectorElementDelimiter, true, true);
+					} else {
+						//Error: Marked as vector but not within enclosers
+					}
+										
+					this->operator()(headers[i], rowNumber) = parts;
+				} else {
+					this->operator()(headers[i], rowNumber) = rowCells[i];
+				}
+				this->operator()(headers[i], rowNumber).deleteStoredType();
 			}
 			rowNumber++;
 		}

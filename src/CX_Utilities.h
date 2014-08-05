@@ -44,6 +44,7 @@ namespace CX {
 		template <typename T> std::vector<T> repeat(std::vector<T> values, std::vector<unsigned int> each, unsigned int times = 1);
 
 		template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
+		template <typename T> std::vector<T> stringToVector(std::string s, std::string delimiter);
 
 		bool writeToFile(std::string filename, std::string data, bool append = true);
 		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
@@ -159,16 +160,24 @@ std::string CX::Util::vectorToString(std::vector<T> values, std::string delimite
 	return s.str();
 }
 
-/*
-template <typename T> std::string vectorToString (std::vector<T> value, std::string elementStart, std::string elementEnd, int significantDigits) {
-	std::stringstream s;
-	s << std::fixed << std::setprecision(significantDigits);
-	for (unsigned int i = 0; i < values.size(); i++) {
-		s << elementStart << values[i] << elementEnd;
-	}
-	return s.str();
-}
+/*! This function takes a string, splits it on the delimiter, and converts each delimited part of
+the string to T, returning a vector<T>. 
+\tparam T The type of the data encoded in the string.
+\param s The string containing the encoded data.
+\param delimiter The string that delimits the elements of the data.
+\return A vector of the encoded data converted to T.
 */
+template <typename T>
+std::vector<T> CX::Util::stringToVector(std::string s, std::string delimiter) {
+	std::vector< std::string > parts = ofSplitString(s, delimiter, true, true);
+	std::vector<T> rval;
+	rval.resize( parts.size() );
+	for (unsigned int i = 0; i < parts.size(); i++) {
+		rval[i] = ofFromString( parts[i] );
+	}
+	return rval;
+}
+
 
 /*!
 Creates a sequence of numbers from start to end by steps of size stepSize. start may be geater than end, but only if

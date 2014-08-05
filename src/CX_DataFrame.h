@@ -85,7 +85,7 @@ public:
 	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
 	bool printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
 
-	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"");
+	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
 
 	void clear (void);
 	bool deleteColumn (std::string columnName);
@@ -121,13 +121,20 @@ protected:
 
 /*! Makes a copy of the data contained in the named column, converting it to the specified type
 (such a conversion must be possible).
+\tparam T The type of data to extract. Must not be std::vector<C>, where C is any type.
 \param column The name of the column to copy data from.
 \return A vector containing the copied data. */
 template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column) const {
-	_resizeToFit(column);
+	//_resizeToFit(column);
 	vector<T> rval;
-	for (unsigned int i = 0; i < _data[column].size(); i++) {
-		rval.push_back(ofFromString<T>(_data[column][i]));
+	if (_data.find(column) == _data.end()) {
+		CX::Instances::Log.error("CX_DataFrame") << "copyColumn() given nonexistent column name.";
+		return rval;
+	}
+
+	for (unsigned int i = 0; i < _data.at(column).size(); i++) {
+		const CX_DataFrameCell& c = _data.at(column).at(i);
+		rval.push_back(c.to<T>());
 	}
 	return rval;
 }

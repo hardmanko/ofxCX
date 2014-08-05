@@ -132,14 +132,15 @@ void runExperiment (void) {
 
 
 	//You can copy rows from a data frame into a new data frame. You can specify which rows
-	//to copy. You can even copy the same row multiple times.
+	//to copy and the order in which they are copied. In this case they are copied in reverse order.
 	vector<CX_DataFrame::rowIndex_t> copyOrder = CX::Util::intVector<CX_DataFrame::rowIndex_t>(2, 0);
-	copyOrder.push_back(0); //Copy the first row twice.
+	copyOrder.push_back(1); //You can even copy the same row multiple times. Copy the second row twice.
 	CX_DataFrame copyDf = df.copyRows(copyOrder);
 
-	cout << endl << copyDf.print() << endl;
+	cout << endl << "Copy of the read in data frame: " << endl << copyDf.print() << endl;
 
-	//You can also copy columns out into a new data frame. Unlike rows, you cannot copy the same column multiple times.
+	//You can also copy columns out into a new data frame. Unlike rows, you cannot copy the same column multiple times
+	//because then more than one column would have the same name.
 	vector<string> columns;
 	columns.push_back("dwellings");
 	columns.push_back("ints");

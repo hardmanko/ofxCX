@@ -40,10 +40,9 @@ public:
 
 	template <typename T> void store(const T& value);
 
-	template <typename T> T to(void) const; 
+	template <typename T> T to(void) const;
 
-	//! Returns a copy of the stored data in the internal string representation. Type checking is not done because this is a lossless operation.
-	std::string toString(void) const { return *_str; };
+	std::string toString(void) const;
 
 	//! Returns a copy of the stored data converted to bool. Equivalent to to<bool>().
 	bool toBool(void) const { return this->to<bool>(); };
@@ -62,10 +61,17 @@ public:
 	std::string getStoredType (void) const;
 	void deleteStoredType(void);
 
+	bool isVector(void) const {
+		return _data->size() > 1;
+	}
+	
 private:
-	std::shared_ptr<std::string> _str;
+
+	std::shared_ptr<std::vector<std::string>> _data;
+
+	//std::shared_ptr<std::string> _str;
 	std::shared_ptr<std::string> _type;
-	std::shared_ptr<bool> _dataIsVector;
+	//std::shared_ptr<bool> _dataIsVector;
 	std::shared_ptr<bool> _ignoreStoredType;
 	//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
 	/*
@@ -101,18 +107,6 @@ private:
 		return 16;
 	}
 
-	std::string _getVectorElementDelimiter(void) const {
-		return ";";
-	}
-
-	std::string _getVectorStartString(void) const {
-		return std::string("\"");
-	}
-
-	std::string _getVectorEndString(void) const {
-		return std::string("\"");
-	}
-
 	template <typename T>
 	std::string _toString (const T& value) {
 		return ofToString<T>(value, _getFloatingPointPrecision());
@@ -120,20 +114,6 @@ private:
 
 	void _allocatePointers(void);
 
-	/*
-	template <typename T>
-	std::string _vectorToString (std::vector<T> values, std::string delimiter, int significantDigits) {
-		std::stringstream s;
-		s << std::fixed << std::setprecision(significantDigits);
-		for (unsigned int i = 0; i < values.size(); i++) {
-			s << _toString(values[i]);
-			if (i != values.size() - 1) {
-				s << delimiter;
-			}
-		}
-		return s.str();
-	}
-	*/
 };
 
 template <typename T> 
@@ -181,16 +161,22 @@ cell, a warning will be logged.
 template <typename T> 
 T CX_DataFrameCell::to (void) const {
 
-	if (*_dataIsVector) {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "to: Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
+	if (_data->size() == 0) {
+		CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
+		return T();
+	}
+
+	if (_data->size() > 1) {
+		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
 	}
 
 	std::string typeName = typeid(T).name();
 	if (*_type != typeName) {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "to: Attempt to extract data of different type than was inserted:" << 
+		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract data of different type than was inserted:" << 
 			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << typeName << "\".";
 	}
-	return ofFromString<T>(*_str);
+
+	return ofFromString<T>(_data->at(0));
 }
 
 /*! Returns a copy of the contents of the cell converted to a vector of the given type. If the type
@@ -203,34 +189,18 @@ template <typename T>
 std::vector<T> CX_DataFrameCell::toVector (void) const {
 	std::string extractedTypeName = typeid(T).name();
 
-	if (!(*_dataIsVector)) {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract a vector when the stored data was a scalar. The returned vector will be of length one.";
+	if (_data->size() == 1) {
+		CX::Instances::Log.notice("CX_DataFrameCell") << "toVector(): Attempt to extract a vector when the stored data was a scalar. The returned vector will be of length one.";
 	}
 
 	if (*_type != extractedTypeName) {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract data of different type than was inserted:" <<
+		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector(): Attempt to extract data of different type than was inserted:" <<
 			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << extractedTypeName << "\".";
 	}
 
-	/*
-	if (*_type != "vector<" + typeName + ">") {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "toVector: Attempt to extract data of different type than was inserted:" <<
-			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"vector<" + typeName + ">" << "\".";
-	}
-	*/
-
-	std::string encodedVect = *_str;
-
-	int startSize = _getVectorStartString().size();
-	int endSize = _getVectorEndString().size();
-
-	encodedVect = encodedVect.substr(startSize, encodedVect.size() - startSize - endSize); //Strip off the characters at either end. ofStringReplace(encodedVect, "\"", "");
-
-	std::vector<std::string> parts = ofSplitString(encodedVect, _getVectorElementDelimiter());
-
 	std::vector<T> values;
-	for (unsigned int i = 0; i < parts.size(); i++) {
-		values.push_back( ofFromString<T>( parts[i] ) );
+	for (unsigned int i = 0; i < _data->size(); i++) {
+		values.push_back( ofFromString<T>( (*_data)[i] ) );
 	}
 	return values;
 }
@@ -240,10 +210,16 @@ If the data to be stored are strings containing semicolons, the data will not be
 \param values A vector of values to store.
 */
 template <typename T> 
-void CX_DataFrameCell::storeVector (std::vector<T> values) {
-	*_str = _getVectorStartString() + CX::Util::vectorToString(values, _getVectorElementDelimiter(), _getFloatingPointPrecision()) + _getVectorEndString();
+void CX_DataFrameCell::storeVector(std::vector<T> values) {
+	//*_str = _getVectorStartString() + CX::Util::vectorToString(values, _getVectorElementDelimiter(), _getFloatingPointPrecision()) + _getVectorEndString();
+
+	_data->clear();
+	for (unsigned int i = 0; i < values.size(); i++) {
+		_data->push_back( ofToString<T>( values[i] ) );
+	}
+
 	*_type = typeid(T).name();
-	*_dataIsVector = true;
+	//*_dataIsVector = true;
 	*_ignoreStoredType = false;
 }
 
@@ -253,9 +229,12 @@ state the type of the data you are storing into the cell if, for example, it is 
 \param value The value to store.
 */
 template <typename T> void CX_DataFrameCell::store(const T& value) {
-	*_str = ofToString<T>(value);
+	_data->clear();
+	_data->push_back( ofToString<T>(value) );
+
+	//*_str = ofToString<T>(value);
 	*_type = typeid(T).name();
-	*_dataIsVector = false;
+	//*_dataIsVector = false;
 	*_ignoreStoredType = false;
 }
 
@@ -263,6 +242,8 @@ template <typename T> void CX_DataFrameCell::store(const T& value) {
 \return A copy of the stored data encoded as a string.
 */
 template<> std::string CX_DataFrameCell::to(void) const;
+
+template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const;
 
 std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);
 
