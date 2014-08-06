@@ -68,17 +68,11 @@ CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 
 /*! Reduced argument version of print(). Prints all rows and columns. */
 std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) const {
-	if (getRowCount() == 0) {
-		return "No rows to print.";
-	}
 	return print(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
 /*! Reduced argument version of print(). Prints all rows and the selected columns. */
 std::string CX_DataFrame::print(const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
-	if (getRowCount() == 0) {
-		return "No rows to print.";
-	}
 	return print(columns, CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
 }
 
@@ -92,11 +86,9 @@ std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string
 	return print(columns, rows, delimiter, printRowNumbers);
 }
 
-/*!
-Prints the selected rows and columns of the data frame to a string. Each cell of the data frame will be separated with the selected
-delimiter.
-
-Each row of the data frame will be ended with a new line (whatever std::endl evaluates to, typically "\r\n").
+/*! Prints the selected rows and columns of the data frame to a string. Each cell of the data frame will be 
+separated with the selected delimiter. Each row of the data frame will be ended with a new line (whatever 
+std::endl evaluates to, typically "\n").
 
 \param columns Columns to print. Column names not found in the data frame will be ignored with a warning.
 \param rows Rows to print. Row indices not found in the data frame will be ignored with a warning.
@@ -113,59 +105,78 @@ being the selected row indices. If false, no row numbers will be printed.
 std::string CX_DataFrame::print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, 
 								std::string delimiter, bool printRowNumbers) const 
 {
-	if (getRowCount() == 0) {
-		return "No rows to print.";
+	OutputOptions oOpt;
+	oOpt.cellDelimiter = delimiter;
+	oOpt.printRowNumbers = printRowNumbers;
+	oOpt.columnsToPrint = columns;
+	oOpt.rowsToPrint = rows;
+	return print(oOpt);
+}
+
+std::string CX_DataFrame::print(OutputOptions oOpt) const {
+
+	if (oOpt.columnsToPrint.empty()) {
+		vector<string> names = getColumnNames();
+		for (rowIndex_t i = 0; i < names.size(); i++) {
+			oOpt.columnsToPrint.insert(names[i]);
+		}
+	}
+
+	if (oOpt.rowsToPrint.empty()) {
+		oOpt.rowsToPrint = Util::intVector<rowIndex_t>(0, this->getRowCount() - 1);
 	}
 
 	//Get rid of invalid columns
-	set<string> validColumns = columns;
-	for (set<string>::iterator it = columns.begin(); it != columns.end(); it++) {
+	set<string> validColumns = oOpt.columnsToPrint;
+	for (set<string>::iterator it = oOpt.columnsToPrint.begin(); it != oOpt.columnsToPrint.end(); it++) {
 		if (_data.find(*it) == _data.end()) {
-			Instances::Log.warning("CX_DataFrame") << "Invalid column name requested for printing: " << *it;
+			Instances::Log.warning("CX_DataFrame") << "Invalid column name requested for printing was ignored: " << *it;
 			validColumns.erase(*it);
 		}
 	}
 
 	stringstream output;
 
-	if (printRowNumbers) {
-		output << "rowNumber" << delimiter;
+	//Output the headers
+	if (oOpt.printRowNumbers) {
+		output << "rowNumber" << oOpt.cellDelimiter;
 	}
 
 	for (map<string, vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
 		if (validColumns.find(it->first) != validColumns.end()) {
 			if (it != _data.begin()) {
-				output << delimiter;
+				output << oOpt.cellDelimiter;
 			}
 			output << it->first;
 		}
 	}
 
-	for (rowIndex_t i = 0; i < rows.size(); i++) {
+	//Output the rows of data
+	for (rowIndex_t i = 0; i < oOpt.rowsToPrint.size(); i++) {
 		//Skip invalid row numbers
-		if (rows[i] >= _rowCount) {
-			Instances::Log.warning("CX_DataFrame") << "Invalid row index requested for printing: " << rows[i];
+		if (oOpt.rowsToPrint[i] >= _rowCount) {
+			Instances::Log.warning("CX_DataFrame") << "Invalid row index requested for printing: " << oOpt.rowsToPrint[i];
 			continue;
 		}
 
 		output << endl;
-		if (printRowNumbers) {
-			output << rows[i] << delimiter;
+		if (oOpt.printRowNumbers) {
+			output << oOpt.rowsToPrint[i] << oOpt.cellDelimiter;
 		}
 
 		for (map<string, vector<CX_DataFrameCell> >::const_iterator it = _data.begin(); it != _data.end(); it++) {
 			if (validColumns.find(it->first) != validColumns.end()) {
 				if (it != _data.begin()) {
-					output << delimiter;
+					output << oOpt.cellDelimiter;
 				}
 
 				//TODO: Update this to be more sensible/allow configuration.
 				string s;
-				if (it->second[rows[i]].isVector()) {
-					vector<string> v = it->second[rows[i]].toVector<string>();
-					s = "\"" + CX::Util::vectorToString(v, ";") + "\"";
+				if (it->second[oOpt.rowsToPrint[i]].isVector()) {
+					vector<string> v = it->second[oOpt.rowsToPrint[i]].toVector<string>();
+					s = oOpt.vectorEncloser + CX::Util::vectorToString(v, oOpt.vectorElementDelimiter) + oOpt.vectorEncloser;
 				} else {
-					s = it->second[rows[i]].to<string>();
+					s = it->second[oOpt.rowsToPrint[i]].to<string>();
 				}
 				output << s;
 			}
@@ -191,17 +202,20 @@ bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_
 	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }
 
-/*!
-This function is equivalent in behavior to print() except that instead of returning a string containing the
+/*! This function is equivalent in behavior to print() except that instead of returning a string containing the
 printed contents of the data frame, the string is printed to a file. If the file exists, it will be overwritten.
+All paramters expect for filename behave in the same way an in print().
 \param filename Name of the file to print to. If it is an absolute path, the file will be put there. If it is
 a local path, the file will be placed relative to the data directory of the project.
-\return True for success, false if there was some problem writing to the file (insufficient permissions, etc.)
-*/
+\return True for success, false if there was some problem writing to the file (insufficient permissions, etc.) */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, 
 							   std::string delimiter, bool printRowNumbers) const 
 {
 	return CX::Util::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
+}
+
+bool CX_DataFrame::printToFile(std::string filename, OutputOptions oOpt) const {
+	return CX::Util::writeToFile(filename, this->print(oOpt), false);
 }
 
 /*! Deletes the contents of the data frame. Resizes the data frame to have no rows and no columns. */
@@ -213,9 +227,9 @@ void CX_DataFrame::clear (void) {
 /*! Reads data from the given file into the data frame. This function assumes that there will be a row of column names as the first row of the file.
 It does not treat consecutive delimiters as a single delimiter.
 \param filename The name of the file to read data from. If it is a relative path, the file will be read relative to the data directory.
-\param cellDelimiter A string containing the delimiter between cells of the data frame.
-\param vectorEncloser A string containing the characters that surround cell that contain a vector of data. By default,
-vectors are enclosed in double quotes. This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
+\param cellDelimiter A string containing the delimiter between cells of data in the input file.
+\param vectorEncloser A string containing the character(s) that surround cells that contain a vector of data in the input file. By default,
+vectors are enclosed in double quotes (""). This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
 if it finds a delimiter within the quotes, it should not split there, but wait until out of the quotes. If vectorEncloser is the empty
 string, this function will not attempt to read in vectors: everything that looks like a vector will just be treated as a string.
 \return False if an error occurred, true otherwise.
@@ -226,7 +240,20 @@ deleteColumn("rowNumber").
 \note This function may be \ref blockingCode if the read in data frame is large enough.
 */
 bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter, std::string vectorEncloser, std::string vectorElementDelimiter) {
+	InputOptions iOpt;
+	iOpt.cellDelimiter = cellDelimiter;
+	iOpt.vectorEncloser = vectorEncloser;
+	iOpt.vectorElementDelimiter = vectorElementDelimiter;
 
+	return readFromFile(filename, iOpt);
+}
+
+/*! Equivalent to a call to readFromFile(string, string, string, string), except that the last three arguments are
+taken from iOpt.
+\param filename The name of the file to read data from. If it is a relative path, the file will be read relative to the data directory.
+\param iOpt Input options, such as the delimiter between cells in the input file.
+*/
+bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 	filename = ofToDataPath(filename);
 	ofBuffer file = ofBufferFromFile(filename, false);
 
@@ -236,8 +263,8 @@ bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter
 	}
 
 	this->clear();
-	
-	vector<string> headers = ofSplitString(file.getFirstLine(), cellDelimiter, false, false);
+
+	vector<string> headers = ofSplitString(file.getFirstLine(), iOpt.cellDelimiter, false, false);
 	rowIndex_t rowNumber = 0;
 
 	do {
@@ -251,32 +278,31 @@ bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter
 
 			bool enclosed = false;
 
-			if ((vectorEncloser != "") && (line.substr(i, vectorEncloser.size()) == vectorEncloser)) {
-				i += vectorEncloser.size();
+			if ((iOpt.vectorEncloser != "") && (line.substr(i, iOpt.vectorEncloser.size()) == iOpt.vectorEncloser)) {
+				i += iOpt.vectorEncloser.size();
 				for (/* */; i < line.size(); i++) {
-					if (line.substr(i, vectorEncloser.size()) == vectorEncloser) {
+					if (line.substr(i, iOpt.vectorEncloser.size()) == iOpt.vectorEncloser) {
 						enclosed = true;
-						
 						break;
 					}
 				}
 			}
 
-			if (line.substr(i, cellDelimiter.size()) == cellDelimiter) {
-				rowCells.push_back( line.substr(cellStart, i - cellStart) );
+			if (line.substr(i, iOpt.cellDelimiter.size()) == iOpt.cellDelimiter) {
+				rowCells.push_back(line.substr(cellStart, i - cellStart));
 				isVector.push_back(enclosed);
-				i += cellDelimiter.size() - 1;
+				i += iOpt.cellDelimiter.size() - 1;
 				cellStart = i + 1;
-			} 
-				
+			}
+
 			if (i == (line.size() - 1)) {
-				rowCells.push_back( line.substr(cellStart, i + 1 - cellStart) );
+				rowCells.push_back(line.substr(cellStart, i + 1 - cellStart));
 				isVector.push_back(enclosed);
 			}
 		}
 
 		if (rowCells.size() != headers.size()) {
-			Instances::Log.error("CX_DataFrame") << "Error while loading file " << filename << 
+			Instances::Log.error("CX_DataFrame") << "Error while loading file " << filename <<
 				": Row column count (" << rowCells.size() << ") does not match header column count (" << headers.size() << "). On row " << rowNumber;
 
 			this->clear();
@@ -286,17 +312,17 @@ bool CX_DataFrame::readFromFile (std::string filename, std::string cellDelimiter
 
 				if (isVector[i]) {
 					string s = rowCells[i];
-					string::size_type first = s.find_first_of(vectorEncloser);
-					string::size_type last = s.find_last_of(vectorEncloser);
+					string::size_type first = s.find_first_of(iOpt.vectorEncloser);
+					string::size_type last = s.find_last_of(iOpt.vectorEncloser);
 
 					std::vector<std::string> parts;
 					if (first != string::npos && last != string::npos) {
-						s = s.substr(first + vectorEncloser.size(), last - first + vectorEncloser.size() - 2);
-						parts = ofSplitString(s, vectorElementDelimiter, true, true);
+						s = s.substr(first + iOpt.vectorEncloser.size(), last - first + iOpt.vectorEncloser.size() - 2);
+						parts = ofSplitString(s, iOpt.vectorElementDelimiter, true, true);
 					} else {
 						//Error: Marked as vector but not within enclosers
 					}
-										
+
 					this->operator()(headers[i], rowNumber) = parts;
 				} else {
 					this->operator()(headers[i], rowNumber) = rowCells[i];
@@ -366,6 +392,11 @@ std::vector<std::string> CX_DataFrame::getColumnNames(void) const {
 		names.push_back(it->first);
 	}
 	return names;
+}
+
+/*! Returns the number of rows in the data frame. */
+CX_DataFrame::rowIndex_t CX_DataFrame::getRowCount(void) const {
+	return _rowCount; 
 }
 
 /*! Re-orders the rows in the data frame.

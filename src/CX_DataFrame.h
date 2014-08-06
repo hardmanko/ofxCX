@@ -56,6 +56,34 @@ public:
 
 	typedef std::vector<CX_DataFrameCell>::size_type rowIndex_t;
 
+	/*! \class IoOptions
+	Options for the format of files that are output to or input from a CX_DataFrame.
+	*/
+	struct IoOptions {
+		IoOptions(void) :
+			cellDelimiter("\t"),
+			vectorEncloser("\""),
+			vectorElementDelimiter(";")
+		{}
+		std::string cellDelimiter; //!< The delimiter between cells of the data frame when in file format. Defaults to tab.
+		std::string vectorEncloser;
+		std::string vectorElementDelimiter;
+	};
+
+	struct OutputOptions : public IoOptions {
+		OutputOptions(void) :
+			printRowNumbers(true)
+		{}
+
+		bool printRowNumbers;
+		std::vector<rowIndex_t> rowsToPrint;
+		std::set<std::string> columnsToPrint;
+	};
+
+	struct InputOptions : public IoOptions {};
+
+	
+
 	CX_DataFrame (void);
 
 	CX_DataFrame& operator= (CX_DataFrame& df);
@@ -75,16 +103,19 @@ public:
 
 	void append(CX_DataFrame df);
 
-	std::string print (std::string delimiter = "\t", bool printRowNumbers = true) const;
+	std::string print(std::string delimiter = "\t", bool printRowNumbers = true) const;
 	std::string print(const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true) const;
 	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
 	std::string print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	std::string print(OutputOptions oOpt) const;
 
 	bool printToFile(std::string filename, std::string delimiter = "\t", bool printRowNumbers = true) const;
 	bool printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true) const;
 	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
 	bool printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	bool printToFile(std::string filename, OutputOptions oOpt) const;
 
+	bool readFromFile(std::string filename, InputOptions iOpt);
 	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
 
 	void clear (void);
@@ -92,8 +123,7 @@ public:
 	bool deleteRow (rowIndex_t row);
 
 	std::vector<std::string> getColumnNames(void) const;
-	//! Returns the number of rows in the data frame.
-	rowIndex_t getRowCount(void) const { return _rowCount; };
+	rowIndex_t getRowCount(void) const;
 
 	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
 	CX_DataFrame copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder);
@@ -111,6 +141,7 @@ protected:
 
 	std::map <std::string, vector<CX_DataFrameCell>> _data;
 	rowIndex_t _rowCount;
+	IoOptions _ioOptions;
 
 	void _resizeToFit (std::string column, rowIndex_t row);
 	void _resizeToFit (rowIndex_t row);
