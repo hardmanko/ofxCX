@@ -380,7 +380,6 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 		_data[names[i]].resize(_rowCount);
 		row[names[i]].copyCellTo( &_data[names[i]].back() ); //Copy the cell in the row into the data frame.
 	}
-
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
 }
 
@@ -550,6 +549,8 @@ void CX_DataFrame::append(CX_DataFrame df) {
 }
 
 void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
+	//Check the size of the column. If it is a new column, it will have size 0. 
+	//If it is an old column but too short, then it needs to be lengthened.
 	if (_data[column].size() <= row) {
 		_rowCount = std::max(_rowCount, row + 1);
 		for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
