@@ -55,7 +55,7 @@ namespace CX {
 			ROUND_DOWN,
 			ROUND_TOWARD_ZERO
 		};
-		double round(double d, int roundingPower, CX_RoundingConfiguration c);
+		double round(double d, int roundingPower, CX_RoundingConfiguration c = CX_RoundingConfiguration::ROUND_TO_NEAREST);
 
 		template <typename T> T clamp(T val, T minimum, T maximum);
 		template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
@@ -74,6 +74,7 @@ namespace CX {
 		template <typename T_OUT, typename T_IN> T_OUT var(std::vector<T_IN> vals);
 
 		float getAngleBetweenPoints(ofPoint p1, ofPoint p2);
+		ofPoint getRelativePointFromDistanceAndAngle(ofPoint start, float distance, float angle);
 
 	}
 }

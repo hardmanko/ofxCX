@@ -59,6 +59,7 @@ namespace CX {
 		void ring(ofPoint center, float radius, float width, unsigned int resolution);
 		void arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution);
 
+		std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsigned int resolution);
 		void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution);
 
 		ofPath arrowToPath(float length, float headOffsets, float headSize, float lineWidth);
@@ -70,13 +71,17 @@ namespace CX {
 		void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg = 0);
 		std::vector<ofPoint> getStarVertices(unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg = 0);
 
-		std::vector<ofPoint> getFixationCrossVertices(float longDimension, float shortDimension);
+		std::vector<ofPoint> getFixationCrossVertices(float armLength, float armWidth);
 		ofPath fixationCrossToPath(float armLength, float armWidth);
 		void fixationCross(ofPoint location, float armLength, float armWidth);
 
 		void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
 		void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font);
 
+		/*! \class CX_PatternProperties_t
+		This structure contains settings controlling the creation of greyscale patterns using CX::Draw::greyscalePatternToPixels().
+		The pattern that is created looks like a simple gabor pattern.
+		*/
 		struct CX_PatternProperties_t {
 			CX_PatternProperties_t(void) :
 				minValue(0),
@@ -91,33 +96,43 @@ namespace CX {
 				fallOffPower(std::numeric_limits<float>::min())
 			{}
 
-			unsigned char minValue;
-			unsigned char maxValue;
+			unsigned char minValue; //!< The minimum value that will be used in the pattern.
+			unsigned char maxValue; //!< The maximum value that will be used in the pattern.
 			
-			float angle;
+			
 
-			float width; //If AP_CIRCLE is used, the diameter of the circle is specified by width
+			/*! The width of the pattern, or if `apertureType` is `AP_CIRCLE`, the diameter of the circle enclosing the pattern. */
+			float width;
+
+			/*! The height of the pattern. ignored if `apertureType` is `AP_CIRCLE`. */
 			float height;
 
-			float period;
-			float phase;
+			/*! The angle at which the waves are oriented. */
+			float angle;
 
-			/*! The intensity of each pixel is decreased slightly based on how far from the center of the pattern
-			that pixel is, depending on the value of fallOffPower. By default, there is no falloff. A value of 1
-			produces a standard cosine falloff. The falloff is computed as `(cos((d/r)^falloffPower * PI) + 1)/2`, 
-			where d is the distance of the current pixel from the origin and r is the radius of the pattern. */
-			float fallOffPower;
+			float period; //!< The distance, in pixels, between the center of each wave within the pattern.
+			float phase; //!< The offset, in degrees, of the waves.
 
+			/*! The type of waves that will be used in the pattern. */
 			enum {
 				SINE_WAVE,
 				SQUARE_WAVE,
 				TRIANGLE_WAVE
 			} maskType;
 
+			/*! Because the pattern created with these settings extends to infinity in every direction,
+			an aperture through which it is to be viewed must be specified. The aperture can either be a circle or a rectangle. */
 			enum {
 				AP_CIRCLE,
 				AP_RECTANGLE
 			} apertureType;
+
+			/*! The intensity of each pixel is decreased slightly based on how far from the center of the pattern
+			that pixel is, depending on the value of `fallOffPower`. By default, there is no falloff. A value of 1
+			produces a standard cosine falloff. The falloff is computed as `(cos((d/r)^falloffPower * PI) + 1)/2`,
+			where `d` is the distance of the current pixel from the center of the pattern and `r` is the radius of
+			the pattern. */
+			float fallOffPower;
 		};
 
 		struct CX_GaborProperties_t {
@@ -129,11 +144,11 @@ namespace CX {
 			CX_PatternProperties_t pattern;
 		};
 
-		ofPixels greyscalePattern(const CX_PatternProperties_t& patternProperties);
+		ofPixels greyscalePatternToPixels(const CX_PatternProperties_t& patternProperties);
 
 		ofPixels gaborToPixels (const CX_GaborProperties_t& properties);
 		ofTexture gaborToTexture (const CX_GaborProperties_t& properties);
-		void gabor (ofPoint p, const CX_GaborProperties_t& properties);
+		void gabor (ofPoint center, const CX_GaborProperties_t& properties);
 
 		template <typename ofColorType>	std::vector<ofColorType> getRGBSpectrum(unsigned int colorCount);
 
@@ -153,9 +168,9 @@ namespace CX {
 beginning with red, continue through yellow, green, cyan, blue, violet, and almost, but not quite, back to red.
 \tparam ofColorType An oF color type. One of: ofColor, ofFloatColor, or ofShortColor.
 \param colorCount The number of colors to draw from the RGB spectrum, which will be rounded
-up to the next power of 6.
+up to the next multiple of 6.
 \return A vector containing the sampled colors with a number of colors equal to colorCount
-rounded up to the next power of 6. */
+rounded up to the next multiple of 6. */
 template <typename ofColorType>
 std::vector<ofColorType> CX::Draw::getRGBSpectrum(unsigned int colorCount) {
 

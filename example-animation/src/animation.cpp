@@ -28,12 +28,13 @@ double angles[3] = { 0, 0, 0 };
 double angleMultiplier[3] = { 1, 2, 3 };
 int directions[3] = { 1, 1, 1 };
 double distancesFromCenter[3] = { 75, 150, 225 };
+ofColor colors[3] = { ofColor::red, ofColor::green, ofColor::blue };
 double distanceMultiplier = 1;
 CX_Millis lastAnimationDrawTime = 0;
 
 void updateAnimation (void);
 void drawNextFrameOfAnimation (void);
-ofPoint calculateObjectCenter(double angleDeg, double distanceFromCenter);
+ofPoint getCircleLocation(int circleIndex);
 
 void runExperiment (void) {
 	//Use mouse, but not keyboard.
@@ -79,8 +80,7 @@ void updateAnimation (void) {
 		//Check to see if a circle was clicked on
 		if (mev.eventType == CX_Mouse::Event::PRESSED) {
 			for (int i = 0; i < 3; i++) {
-				ofPoint circleCenter = calculateObjectCenter(angles[i], distancesFromCenter[i]);
-				if (circleCenter.distance(ofPoint(mev.x, mev.y)) <= circleRadius) {
+				if (getCircleLocation(i).distance(ofPoint(mev.x, mev.y)) <= circleRadius) {
 					directions[i] *= -1;
 				}
 			}
@@ -89,19 +89,12 @@ void updateAnimation (void) {
 		//If the mouse was scrolled, change the distance of the circles from the center.
 		if (mev.eventType == CX_Mouse::Event::SCROLLED) {
 			distanceMultiplier += mev.y * .02; //The y component of the scroll wheel is the typical scroll wheel on most mice
-			if (distanceMultiplier > 1.5) {
-				distanceMultiplier = 1.5;
-			}
-			if (distanceMultiplier < -1.5) {
-				distanceMultiplier = -1.5;
-			}
+			distanceMultiplier = Util::clamp(distanceMultiplier, -1.5, 1.5);
 		}
 	}
 }
 
 void drawNextFrameOfAnimation (void) {
-	ofColor colors[3] = { ofColor::red, ofColor::green, ofColor::blue };
-
 	ofBackground(0);
 
 	ofSetColor(255);
@@ -118,11 +111,13 @@ void drawNextFrameOfAnimation (void) {
 	for (int i = 0; i < 3; i++) {
 		angles[i] += elapsedTime.seconds()/5 * mouseX * directions[i] * angleMultiplier[i];
 		ofSetColor(colors[i]);
-		ofCircle(calculateObjectCenter(angles[i], distancesFromCenter[i]), circleRadius);
+		ofCircle(getCircleLocation(i), circleRadius);
 	}
+
 }
 
-ofPoint calculateObjectCenter(double angleDeg, double distanceFromCenter) {
-	return ofPoint(Display.getCenterOfDisplay().x + cos(angleDeg * PI / 180) * distanceFromCenter * distanceMultiplier,
-				   Display.getCenterOfDisplay().y + sin(angleDeg * PI / 180) * distanceFromCenter * distanceMultiplier);
+ofPoint getCircleLocation(int circleIndex) {
+	return Util::getRelativePointFromDistanceAndAngle(Display.getCenterOfDisplay(), 
+													  distancesFromCenter[circleIndex] * distanceMultiplier, 
+													  angles[circleIndex]);
 }

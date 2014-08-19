@@ -235,7 +235,7 @@ void drawStuff (void) {
 	patternProps.phase = 360.0 * fmod(Clock.now().seconds(), 1);
 	patternProps.apertureType = Draw::CX_PatternProperties_t::AP_RECTANGLE;
 	patternProps.angle = 15;
-	ofPixels birdPattern = CX::Draw::greyscalePattern(patternProps);
+	ofPixels birdPattern = CX::Draw::greyscalePatternToPixels(patternProps);
 
 	//The bird image may not have any transparency data, so set it to have an alpha channel
 	birds.setImageType(ofImageType::OF_IMAGE_COLOR_ALPHA);

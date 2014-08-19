@@ -176,8 +176,16 @@ void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font) {
 	Draw::centeredString(center.x, center.y, s, font);
 }
 
+/*! This function draws a greyscale pattern, like a gabor, to an ofPixels object.
+The results of this function are not intended to be used directly, but to be applied
+to an image, for example. The pattern lacks color information, but can be used as an alpha mask
+or used to control color intensity, or otherwise.
+\param properties The properties that will be used to create the pattern.
+\return An ofPixels object containing the pattern.
 
-ofPixels greyscalePattern(const CX_PatternProperties_t& properties) {
+\see CX::Draw::gabor() can be used to draw a gabor patch with color and transparency, based on a greyscale pattern.
+*/
+ofPixels greyscalePatternToPixels(const CX_PatternProperties_t& properties) {
 	float theta = properties.angle * PI / 180;
 	float radius = properties.width / 2; //Use width for radius.
 	float slope = tan(theta);
@@ -266,7 +274,7 @@ ofPixels greyscalePattern(const CX_PatternProperties_t& properties) {
 }
 
 ofPixels gaborToPixels (const CX_GaborProperties_t& properties) {
-	ofPixels pattern = greyscalePattern(properties.pattern);
+	ofPixels pattern = greyscalePatternToPixels(properties.pattern);
 	
 	ofPixels pix;
 	pix.allocate(pattern.getWidth(), pattern.getHeight(), ofImageType::OF_IMAGE_COLOR_ALPHA);
@@ -284,11 +292,17 @@ ofTexture gaborToTexture (const CX_GaborProperties_t& properties) {
 	return tex;
 }
 
-void gabor (ofPoint p, const CX_GaborProperties_t& properties) {
+/*! Draws a gabor pattern with the specified properties.
+\param center The location of the center of the pattern.
+\param properties The settings to be used to generate the pattern.
+*/
+void gabor(ofPoint center, const CX_GaborProperties_t& properties) {
 	ofTexture tex = gaborToTexture(properties);
 	ofSetColor(255);
-	tex.draw(p.x - tex.getWidth()/2, p.y - tex.getHeight()/2); //Draws centered
+	tex.draw(center.x - tex.getWidth() / 2, center.y - tex.getHeight() / 2); //Draws centered
 }
+
+
 
 
 bool isPointInRegion(ofPoint p, ofPoint r1, ofPoint r2, float tolerance) {
@@ -362,9 +376,15 @@ struct LineStandardCoefs {
 	}
 
 	void findCoefs(float m, float b) {
-		C = 1;
-		B = C / b;
-		A = -B * m;
+		if (b == 0) {
+			B = 1;
+			C = b * B;
+			A = -B * m;
+		} else {
+			C = 1;
+			B = C / b;
+			A = -B * m;
+		}
 	}
 
 	float A;
@@ -718,18 +738,9 @@ void arc(ofPoint center, float radiusX, float radiusY, float width, float angleB
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vertices.size());
 }
 
-
-
-/*! Draws a bezier curve with an arbitrary number of control points. May become slow with a large number
-of control points. Uses de Casteljau's algorithm to calculate the curve points. See this awesome guide: 
-http://pomax.github.io/bezierinfo/
-\param controlPoints Control points for the bezier.
-\param width The width of the lines to be drawn. Uses CX::Draw::lines(std::vector<ofPoint>, float) internally to draw the connecting lines.
-\param resolution Controls the approximation of the bezier curve. There will be `resolution` line segments drawn to 
-complete the curve.
-*/
-void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution) {
-
+/*! Gets the vertices needed to draw a bezier curve. See CX::Draw::bezier() for parameter meanings.
+\return A vector of points created based on the `controlPoints`. */
+std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsigned int resolution) {
 	std::vector< std::vector<LineSegment> > segs(controlPoints.size() - 1);
 	for (unsigned int i = 0; i < segs.size(); i++) {
 		segs[i].resize(controlPoints.size() - i - 1);
@@ -762,8 +773,19 @@ void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolu
 			}
 		}
 	}
+	return outputPoints;
+}
 
-	Draw::lines(outputPoints, width);
+/*! Draws a bezier curve with an arbitrary number of control points. May become slow with a large number
+of control points. Uses de Casteljau's algorithm to calculate the curve points. See this awesome guide: 
+http://pomax.github.io/bezierinfo/
+\param controlPoints Control points for the bezier.
+\param width The width of the lines to be drawn. Uses CX::Draw::lines(std::vector<ofPoint>, float) internally to draw the connecting lines.
+\param resolution Controls the approximation of the bezier curve. There will be `resolution` line segments drawn to 
+complete the curve (`resolution + 1` points).
+*/
+void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution) {
+	Draw::lines(getBezierVertices(controlPoints, resolution), width);
 }
 
 
@@ -773,8 +795,10 @@ void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolu
 \param radius The radius of the color wheel.
 \param width The width of the color wheel. The color wheel will extend half of the width
 in either direction from the radius.
-\param angle The amount to rotate the color wheel. */
-void colorWheel(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
+\param angle The amount to rotate the color wheel. 
+
+\see The documentation for convertToRGB() includes an example of the use of this function. */
+void colorWheel(ofPoint center, std::vector<ofFloatColor> colors, float radius, float width, float angle) {
 
 	ofVbo vbo = colorWheelToVbo(center, colors, radius, width, angle);
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
@@ -791,20 +815,20 @@ in either direction from the radii.
 \param angleBegin The angle at which to begin the arc, in degrees.
 \param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
 */
-void colorArc(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+void colorArc(ofPoint center, std::vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
 	ofVbo vbo = colorArcToVbo(center, colors, radiusX, radiusY, width, angleBegin, angleEnd);
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 }
 
 /*! See CX::Draw::colorWheel() for documentation. */
-ofVbo colorWheelToVbo(ofPoint center, vector<ofFloatColor> colors, float radius, float width, float angle) {
+ofVbo colorWheelToVbo(ofPoint center, std::vector<ofFloatColor> colors, float radius, float width, float angle) {
 	colors.push_back(colors.front());
 
 	return CX::Draw::colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
 }
 
 /*! See CX::Draw::colorArc() for documentation. */
-ofVbo colorArcToVbo(ofPoint center, vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+ofVbo colorArcToVbo(ofPoint center, std::vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
 	float d = width / 2;
 
 	angleBegin *= -PI / 180;
@@ -883,7 +907,7 @@ converted to ofColor in assignment.
 
 \code{.cpp}
 #include "CX_EntryPoint.h"
-//This code snippet draws an isluminant color wheel to the screen using color conversion from LAB to RGB.
+//This code snippet draws an isoluminant color wheel to the screen using color conversion from LAB to RGB.
 void runExperiment(void) {
 
 	vector<ofFloatColor> wheelColors(100);

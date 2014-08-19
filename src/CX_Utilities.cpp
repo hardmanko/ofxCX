@@ -67,9 +67,9 @@ namespace Util {
 	/*!
 	Rounds the given double to the given power of 10.
 	\param d The number to be rounded.
-	\param roundingPower The power of 10 to round d to. For example, if roundingPower is 0, d is rounded to the one's place (10^0 == 1).
-	If roundingPower is -3, d is rounded to the thousandth's place (10^-3 = .001). If roundingPower is 1, d is rounded to the ten's place.
-	\param c The type of rounding to do, from the CX::Util::CX_RoundingConfiguration enum. You can round up, down, to nearest, and toward zero.
+	\param roundingPower The power of 10 to round `d` to. For the value 34.56, the results with different rounding powers 
+	(and `c = ROUND_TO_NEAREST`) are as follows: `RP = 0 -> 35; RP = 1 -> 30; RP = -1 -> 34.6`.
+	\param c The type of rounding to do, from the CX::Util::CX_RoundingConfiguration enum. You can round up, down, to nearest (default), and toward zero.
 	\return The rounded value.
 	*/
 	double round(double d, int roundingPower, CX::Util::CX_RoundingConfiguration c) {
@@ -161,16 +161,21 @@ namespace Util {
 
 	/*! Returns the angle in degrees "between" p1 and p2. If you take the difference between p2 and p1,
 	you get a resulting vector, V, that gives the displacement from p1 to p2. Imagine that you begin at
-	(0, 0) and move to (0, abs(V.y)), creating a line segment. Now if you "rotate" this line segment clockwise
-	until you reach V, the angle rotated through is the value returned by this function.
+	(0, 0) and move to (abs(V.x), 0), creating a line segment. Now if you "rotate" this line segment clockwise,
+	like the hand of a clock, until you reach V, the angle rotated through is the value returned by this function.
 
 	This is useful if you want to know, e.g., what angle you must travel on to get from some arbitrary point
 	on screen to where the mouse cursor is.
 
 	\param p1 The start point of the vector V.
 	\param p2 The end point of V. If p1 and p2 are reversed, the angle will be off by 180 degrees.
-	\return The angle between p1 and p2. */
+	\return The angle in degrees between p1 and p2. */
 	float getAngleBetweenPoints(ofPoint p1, ofPoint p2) {
+		if (p1 == p2) {
+			CX::Instances::Log.error("Util") << "getAngleBetweenPoints: Points are equal.";
+			return std::numeric_limits<float>::infinity();
+		}
+
 		ofPoint p = p2 - p1;
 
 		float angle = 0;
@@ -189,6 +194,17 @@ namespace Util {
 		}
 
 		return fmod(360 + angle * 180 / PI, 360);
+	}
+
+	/*! This function begins at point `start`, travels `distance` from that point along `angle`, and returns the resulting point.
+	\param start The starting point.
+	\param distance The distance to travel.
+	\param angle The angle to travel on, in degrees. */
+	ofPoint getRelativePointFromDistanceAndAngle(ofPoint start, float distance, float angle) {
+		angle = ofDegToRad(angle);
+		start.x += distance * cos(angle);
+		start.y += distance * sin(angle);
+		return start;
 	}
 
 }

@@ -11,8 +11,8 @@ namespace Util {
 	float pixelsToDegrees(float pixels, float pixelsPerUnit, float viewingDistance);
 
 	/*! This class should be inherited from by any unit converters. You should override 
-	both operator() and inverse(). inverse() should	perform the mathematical inverse of 
-	the operation performed by operator(). */
+	both `operator()` and `inverse()`. `inverse()` should perform the mathematical inverse of 
+	the operation performed by `operator()`. */
 	class CX_BaseUnitConverter {
 	public:
 		virtual float operator() (float x) {
