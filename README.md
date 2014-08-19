@@ -23,13 +23,13 @@ and how to use the examples for CX.
 
 Compatibility
 ------------
-CX only works with oF version 0.8.0, so make sure you are using that varsion and no the latest version. It has only been tested on Windows, but may work completely on OSx. Some functionality is missing on Linux.
+CX only works with oF version 0.8.0, so make sure you are using that version and not the latest version. It has only been tested on Windows, but may work completely on OSx. Some functionality is missing on Linux.
 
-As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2013 and Code::Blocks for Windows using GCC.
+As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2013 with the VS2012 compiler and Code::Blocks for Windows using GCC.
 
 Known issues
 ------------
-This is alpha/beta software, don't expect it to be bug-free.
+This is alpha/beta software, don't expect it to be bug-free. Please report any issues you have in the issue tracker.
 
 Loading sound files with CX_SoundBuffer uses FMOD, which is not available on Linux. Other ways of playing sound are supported.
 
