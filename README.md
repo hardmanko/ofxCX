@@ -8,7 +8,7 @@ is designed to be used used for creating psychology experiments. OpenFrameworks 
 is a very good language for anything requiring a high degree of timing precision. OpenFrameworks and CX are both
 free and open source. See [this page](http://www.kylehardman.com/psychology/c-experiment-software) for a summary of the features of CX.
 
-The documentation for CX can be found in the docs subfolder and in the code files. A generally fairly up-to-date pdf version of the documentation is contained in docs/CX Manual.pdf (or try [this link](https://sites.google.com/site/kylehardmancom/files/CX_Manual.pdf?attredirects=0&d=1)). You can generate 
+The documentation for CX can be found in the docs subfolder and in the code files. A generally fairly up-to-date pdf version of the documentation is contained in docs/CX_Manual.pdf (or try [this link](https://sites.google.com/site/kylehardmancom/files/CX_Manual.pdf?attredirects=0&d=1)). You can generate 
 other formats of the documentation by using Doxygen with the Doxyfile given in the docs subfolder.
 
 License
