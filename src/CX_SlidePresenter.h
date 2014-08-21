@@ -62,7 +62,7 @@ namespace CX {
 		*/
 		enum class ErrorMode {
 			PROPAGATE_DELAYS
-			//FIX_TIMING_FROM_FIRST_SLIDE //!< This does not work currently.
+			//FIX_TIMING_FROM_FIRST_SLIDE
 			/*
 			An alternative option is to try to keep the onsets of all slides as constant as possible
 			relative to each other. This means that if one slide is presented for an extra frame, the next slide
@@ -70,6 +70,21 @@ namespace CX {
 			extra frames (this should almost never happen), the next slide may be skipped altogether. However,
 			this mode (FIX_TIMING_FROM_FIRST_SLIDE) does not completely work currently so it should not be used.
 			*/
+		};
+
+		/*! The method used by the slide presenter to swap stimuli that have been drawn to the back buffer to the front buffer.
+		MULTI_CORE is the best method, but only really works properly if you have at least a 2 core CPU. It uses a secondary thread to
+		constantly swap the front and back buffers, which allows each frame to be counted. This results in really good synchronization
+		between the copies if data to the back buffer and the swaps of the front and back buffers.
+		In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
+		drawn to the back buffer. After the correct amount of time minus preSwapCPUHoggingDuration, the buffers are swapped. The main
+		problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" in the main thread while waiting
+		for the swap.
+		*/
+		enum class SwappingMode {
+			SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
+			//SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately drawn to the back buffer.After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers is queued by launching a thread.
+			MULTI_CORE //could be FRAME_COUNTED_THREADED
 		};
 
 		/*! The final slide function takes a reference to a struct of this type. */
@@ -120,7 +135,7 @@ namespace CX {
 				finalSlideCallback(nullptr),
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
 				deallocateCompletedSlides(true),
-				swappingMode(SwappingMode::MULTI_CORE),
+				swappingMode(CX_SlidePresenter::SwappingMode::MULTI_CORE),
 				preSwapCPUHoggingDuration(3),
 				useFenceSync(true),
 				waitUntilFenceSyncComplete(false)
@@ -128,6 +143,9 @@ namespace CX {
 
 			CX_Display *display; //!< A pointer to the display to use.
 			std::function<void(CX_SlidePresenter::FinalSlideFunctionArgs&)> finalSlideCallback; //!< A pointer to a user function that will be called as soon as the final slide is presented.
+
+			/*! \brief This sets how errors in slide presentation should be handled. 
+			Currently, the only available mode is the default, so this should not be changed. */
 			CX_SlidePresenter::ErrorMode errorMode;
 
 			bool deallocateCompletedSlides; //!< If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
@@ -136,20 +154,7 @@ namespace CX {
 			the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */
 			CX_Millis preSwapCPUHoggingDuration;
 
-			/*! The method used by the slide presenter to swap stimuli that have been drawn to the back buffer to the front buffer.
-			MULTI_CORE is the best method, but only really works properly if you have at least a 2 core CPU. It uses a secondary thread to
-			constantly swap the front and back buffers, which allows each frame to be counted. This results in really good synchronization
-			between the copies if data to the back buffer and the swaps of the front and back buffers.
-			In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately 
-			drawn to the back buffer. After the correct amount of time minus preSwapCPUHoggingDuration, the buffers are swapped. The main
-			problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" in the main thread while waiting 
-			for the swap.
-			*/
-			enum SwappingMode {
-				SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
-				//SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately drawn to the back buffer.After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers is queued by launching a thread.
-				MULTI_CORE //could be FRAME_COUNTED_THREADED
-			} swappingMode;
+			SwappingMode swappingMode; //!< The mode used for swapping slides. See the SwappingMode enum for the settings. Defaults to `MULTI_CORE`.
 
 			/*! \brief Hint that fence sync should be used to check that slides are fully copied to the back buffer
 			before they are swapped in. */
@@ -158,7 +163,7 @@ namespace CX {
 			/*! \brief If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until
 			there is confirmation that the slide has been fully copied into the back buffer. This prevents vertical tearing, but
 			may cause slides to be swapped in late if the copy confirmation is delayed but the copy has actually occurred.
-			Does nothing if swappingMode is MULTI_CORE. */
+			Does nothing if `swappingMode` is `MULTI_CORE`. */
 			bool waitUntilFenceSyncComplete;
 		};
 
@@ -237,7 +242,7 @@ namespace CX {
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
 		std::string printLastPresentationInformation(void) const;
 
-	protected:
+	private:
 
 		struct ExtraSlideInfo {
 			ExtraSlideInfo(void) :

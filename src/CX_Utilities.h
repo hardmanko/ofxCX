@@ -383,6 +383,19 @@ template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> v
 		sum += dif * dif;
 	}
 	return sum / (vals.size() - 1); //Sample variance has n - 1 for denominator
+
+	/*
+	//Do single-pass var?
+	T_OUT mean = 0;
+	T_OUT M2 = 0;
+
+	for (unsigned int i = 0; i < vals.size(); i++) {
+		T_OUT delta = vals[i] - mean;
+		mean = mean + delta / (i + 1);
+		M2 = M2 + delta*(vals[i] - mean);
+	}
+	return M2 / (vals.size() - 1); //Sample variance has n - 1 for denominator
+	*/
 }
 
 /*! Uses std::unique to find all of the unique values in `vals` and return copies of those values.

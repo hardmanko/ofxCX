@@ -32,16 +32,10 @@ namespace CX {
 			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the eventType is SCROLLED.
 			int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the eventType is SCROLLED.
 
-			//ofPoint cursor;
-
-			//struct {
-			//	double x;
-			//	double y;
-			//} scroll;
-
 			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
+			/*! The type of the mouse event. */
 			enum MouseEventType {
 				MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
 				PRESSED, //!< A mouse button has been pressed. Check \ref button for the button index and \ref x and \ref y for the location.

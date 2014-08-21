@@ -471,13 +471,13 @@ ss.api = WINDOWS_DS //See convertStringToApi() for valid API names.
 ss.sampleRate = 44100
 ss.bufferSize = 512
 ss.inputChannels = 0
-//ss.inputDeviceId not used because no channels are used
+//ss.inputDeviceId not used in this example because no input channels are used. It would take a non-negative integer.
 ss.outputChannels = 2
 ss.outputDeviceId = 0
 ss.streamOptions.numberOfBuffers = 4
 ss.streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME | RTAUDIO_MINIMIZE_LATENCY //The | is not needed,
-//but it matches the way these flags are used in code.
-//ss.streamOptions.priority is not used.
+//but it matches the way these flags are used in code. All flags are supported.
+//ss.streamOptions.priority is not used in this example. It would take a positive integer.
 \endcode
 All of the configuration keys are used in this example.
 Any values in the \ref CX_SoundStream::Configuration struct that do not have values provided in the configuration

@@ -15,9 +15,12 @@ namespace Util {
 	the operation performed by `operator()`. */
 	class CX_BaseUnitConverter {
 	public:
+		/*! `operator()` should perform the unit conversion. */
 		virtual float operator() (float x) {
 			return (5 * x) - 2; //y = 5x - 2
 		};
+
+		/*! `inverse()` should perform the inverse operation as `operator()`. */
 		virtual float inverse(float y) {
 			return (y + 2) / 5; //x = (y + 2)/5
 		}

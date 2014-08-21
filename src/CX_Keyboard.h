@@ -23,7 +23,8 @@ namespace CX {
 			For special keys, `key` can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
 
 			Note that the modifier keys (shift, ctrl, alt, and super) are treated a little unusually. For
-			those keys, you can check for a specific key using, for example, `OF_KEY_RIGHT_CONTROL` or `OF_KEY_LEFT_CONTROL`.
+			those keys, you can check for a specific key using, for example, the constants defined in "ofConstants.h" of
+			`OF_KEY_RIGHT_CONTROL` or `OF_KEY_LEFT_CONTROL`.
 			However, you can alternately check to see if `key` is either of the control keys by performing a bitwise AND (`&`) with
 			`OF_KEY_CONTROL` and checking that the result of the AND is still `OF_KEY_CONTROL`. For example:
 			\code{.cpp}
@@ -37,6 +38,7 @@ namespace CX {
 			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
+			/*! The type of the keyboard event. */
 			enum KeyboardEventType {
 				PRESSED, //!< A key has been pressed.
 				RELEASED, //!< A key has been released.

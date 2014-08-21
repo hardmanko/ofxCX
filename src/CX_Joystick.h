@@ -26,6 +26,7 @@ namespace CX {
 			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
+			/*! The type of the joystick event. */
 			enum JoystickEventType {
 				BUTTON_PRESS, //!< A button on the joystick has been pressed. See \ref buttonIndex and \ref buttonState for the event data.
 				BUTTON_RELEASE, //!< A button on the joystick has been released. See \ref buttonIndex and \ref buttonState for the event data.

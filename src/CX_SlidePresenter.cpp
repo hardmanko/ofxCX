@@ -43,7 +43,7 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 			" unnoticed";
 	}
 
-	if (_config.swappingMode == Configuration::SINGLE_CORE_BLOCKING_SWAPS) {
+	if (_config.swappingMode == SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
 		//_config.display->setVSync(true, false);
 	}
 
@@ -81,14 +81,14 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 		return false;
 	}
 
-	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
+	if (_config.swappingMode == SwappingMode::MULTI_CORE) {
 		if (!_config.display->isAutomaticallySwapping()) {
 			_config.display->setAutomaticSwapping(true);
 			Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
 		}
 	} 
 
-	if (_config.swappingMode == Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
+	if (_config.swappingMode == SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
 		if (_config.display->isAutomaticallySwapping()) {
 			_config.display->setAutomaticSwapping(false);
 			Log.notice("CX_SlidePresenter") << "Display was set to automatically swap at start of presentation. It was set to not swap automatically in order for the slide presentation to occur.";
@@ -110,7 +110,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	//Wait for any ongoing rendering operations to complete before starting slide presentation.
 	_config.display->waitForOpenGL();
 
-	if (_config.swappingMode == CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE) {
+	if (_config.swappingMode == SwappingMode::MULTI_CORE) {
 		_config.display->hasSwappedSinceLastCheck();
 	}
 
@@ -744,8 +744,8 @@ update() must be called very regularly (at least once per millisecond) in order 
 presenter to function. If slide presentation is stopped, you do not need to call update() */
 void CX_SlidePresenter::update(void) {
 	switch (_config.swappingMode) {
-	case CX_SlidePresenter::Configuration::SwappingMode::MULTI_CORE: return _multiCoreUpdate();
-	case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();
+	case SwappingMode::MULTI_CORE: return _multiCoreUpdate();
+	case SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();
 	//case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS: return _singleCoreThreadedUpdate();
 	}
 }

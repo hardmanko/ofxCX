@@ -99,6 +99,7 @@ namespace CX {
 	class CX_Time_t {
 	public:
 
+		/*! This struct contains the result of CX_Time_t::getPartitionedTime(). */
 		struct PartitionedTime {
 			int hours;
 			int minutes;
@@ -113,7 +114,7 @@ namespace CX {
 		those functions return the fractional part (e.g. 5.340 seconds) whereas this returns only
 		whole numbers (e.g. 5 seconds and 340 milliseconds).
 		*/
-		PartitionedTime getPartitionedTime(void) {
+		PartitionedTime getPartitionedTime(void) const {
 			CX_Time_t<TimeUnit> t = *this;
 			PartitionedTime rval;
 			rval.hours = floor(t.hours());
@@ -194,6 +195,7 @@ namespace CX {
 			return _nanos;
 		}
 
+		/*! \brief Adds together two times. */
 		template<typename RT>
 		CX_Time_t<TimeUnit> operator+(const CX_Time_t<RT>& rhs) const {
 			CX_Time_t<TimeUnit> temp(0);
@@ -201,6 +203,7 @@ namespace CX {
 			return temp;
 		}
 
+		/*! \brief Subtracts two times. */
 		template<typename RT>
 		CX_Time_t<TimeUnit> operator-(const CX_Time_t<RT>& rhs) const {
 			CX_Time_t<TimeUnit> temp(0);
@@ -246,42 +249,50 @@ namespace CX {
 			return *this;
 		}
 
+		/*! \brief Compares two times in the expected way. */
 		template <typename RT>
 		bool operator < (const CX_Time_t<RT>& rhs) const {
 			return this->_nanos < rhs.nanos();
 		}
 
+		/*! \brief Compares two times in the expected way. */
 		template <typename RT>
 		bool operator <= (const CX_Time_t<RT>& rhs) const {
 			return this->_nanos <= rhs.nanos();
 		}
 
+		/*! \brief Compares two times in the expected way. */
 		template <typename RT>
 		bool operator >(const CX_Time_t<RT>& rhs) const {
 			return this->_nanos > rhs.nanos();
 		}
 
+		/*! \brief Compares two times in the expected way. */
 		template <typename RT>
 		bool operator >= (const CX_Time_t<RT>& rhs) const {
 			return this->_nanos >= rhs.nanos();
 		}
 
+		/*! \brief Compares two times in the expected way. */
 		template <typename RT>
 		bool operator == (const CX_Time_t<RT>& rhs) const {
 			return this->_nanos == rhs.nanos();
 		}
 
+		/*! \brief Compares two times in the expected way. */
 		template <typename RT>
 		bool operator != (const CX_Time_t<RT>& rhs) const {
 			return this->_nanos != rhs.nanos();
 		}
 
+		/*! \brief Get the minimum time value that can be represented with this class. */
 		static CX_Time_t<TimeUnit> min(void) {
 			CX_Time_t<TimeUnit> t(0);
 			t._nanos = std::numeric_limits<long long>::min();
 			return t;
 		}
 
+		/*! \brief Get the maximum time value that can be represented with this class. */
 		static CX_Time_t<TimeUnit> max(void) {
 			CX_Time_t<TimeUnit> t(0);
 			t._nanos = std::numeric_limits<long long>::max();
@@ -297,7 +308,7 @@ namespace CX {
 			//for (unsigned int i = 0; i < vals.size(); i++) {
 			//	timeValues[i] = vals[i].value();
 			//}
-			//return sqrt(var(timeValues));
+			//return sqrt(Util::var(timeValues));
 
 			//Implementation of single-pass variance: http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Incremental_Algorithm
 			double mean = 0;
@@ -317,15 +328,17 @@ namespace CX {
 
 	};
 
-	/*! This is a standard stream operator for converting a CX_Time_t to a std::ostream.
+	/*! This is a standard stream operator for inserting a CX_Time_t into a std::ostream.
 	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same
-	time type on both ends of the conversion. */
+	time units on both ends of the conversion. In addition, converting to/from string is not guaranteed to be a 
+	lossless operation. */
 	template <typename TimeUnit>
 	std::ostream& operator<< (std::ostream& os, const CX_Time_t<TimeUnit>& t) {
 		os << t.value(); //Assume sufficient precision to encode without losing nanos? Or set the pecision?
 		return os;
 	}
 
+	/*! Stream extraction operator for CX_Time_t. */
 	template <typename TimeUnit>
 	std::istream& operator>> (std::istream& is, CX_Time_t<TimeUnit>& t) {
 		double value;

@@ -237,7 +237,7 @@ namespace CX {
 	in every block of four trials, you would use this function.
 	\param values The set of values to sample from.
 	\param blocksToSample The number of blocks to sample.
-	\return A vector with `valueSize.size() * blocksToSample` elements.
+	\return A vector with `values.size() * blocksToSample` elements.
 	*/
 	template <typename T>
 	std::vector<T> CX_RandomNumberGenerator::sampleBlocks(const std::vector<T>& values, unsigned int blocksToSample) {

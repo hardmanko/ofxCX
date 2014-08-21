@@ -28,7 +28,6 @@ namespace CX {
 namespace Synth {
 
 	double sinc(double x);
-
 	double relativeFrequency(double f, double semitoneDifference);
 
 	struct ModuleControlData_t {
@@ -56,43 +55,21 @@ namespace Synth {
 
 	class ModuleParameter;
 
-	/*! All modules of the modular synth inherit from this class. */
+	/*! All modules of the modular synth inherit from this class.
+	\ingroup modSynth */
 	class ModuleBase {
 	public:
 
-		ModuleBase(void) {
-			_data = new ModuleControlData_t;
-		}
-
-		~ModuleBase(void) {
-			delete _data;
-		}
+		ModuleBase(void);
+		~ModuleBase(void);
 
 		/*! This function should be overloaded for any derived class that can be used as the input for another module. */
 		virtual double getNextSample(void) {
 			return 0;
 		}
 
-		/*! This function sets the data needed by this module in order to function properly. Many modules need this data,
-		specifically the sample rate that the synth using. If several modules are connected together, you will only need
-		to set the data for one module and the change will propagate to the other connected modules automatically.
-
-		This function does not usually need to be called driectly by the user. If an appropriate input or output is 
-		connected, the data will be set from that module. However, there are some cases where a pattern of reconnecting
-		previously used modules may result in inappropriate sample rates being set. For that reason, if you are having
-		a problem with seeing the correct sample rate after reconnecting some modules, try manually calling setData().
-		
-		\param d The data to set.
-		*/
-		void setData(ModuleControlData_t d) {
-			*_data = d;
-			_data->initialized = true;
-			this->_dataSet(nullptr);
-		}
-
-		ModuleControlData_t getData(void) {
-			return *_data;
-		}
+		void setData(ModuleControlData_t d);
+		ModuleControlData_t getData(void);
 		
 		void disconnectInput(ModuleBase* in);
 		void disconnectOutput(ModuleBase* out);
@@ -136,7 +113,14 @@ namespace Synth {
 		virtual void _outputAssignedEvent(ModuleBase* out) {};
 	};
 
-
+	/*! This class is used to provide modules with the ability to have their control parameters change as a 
+	function of incoming data from other modules. For example, if you want to change the frequency of an 
+	oscillator, you can feed an LFO into the frequency parameter of the oscillator. 
+	
+	If you create a module that uses a ModuleParameter, you must perform one setup step in the constructor of the
+	module. You must call ModuleBase::_registerParameter() with the ModuleParameter as the argument.
+	\ingroup modSynth
+	*/
 	class ModuleParameter {
 	public:
 
@@ -160,8 +144,7 @@ namespace Synth {
 		Envelope fenv;
 		Adder add;
 		add.amount = 500;
-		fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator.
-		//with an offset of 500 Hz.
+		fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator with an offset of 500 Hz.
 		\endcode
 		*/
 		friend void operator>>(ModuleBase& l, ModuleParameter& r) {
@@ -222,8 +205,6 @@ namespace Synth {
 			double harmonicPruningTol;
 		};
 
-		void configure(unsigned int harmonicCount, HarmonicSeriesType hs, HarmonicAmplitudeType aType);
-
 		void setFundamentalFrequency(double f);
 
 		void setStandardHarmonicSeries(unsigned int harmonicCount);
@@ -261,8 +242,6 @@ namespace Synth {
 		std::function<double(unsigned int)> _harmonicSeriesUserFunction;
 		vector<float> _relativeFrequenciesOfHarmonics;
 		void _calculateRelativeFrequenciesOfHarmonics (void);
-
-		
 
 		void _dataSetEvent(void) override;
 
@@ -306,24 +285,21 @@ namespace Synth {
 	class Envelope : public ModuleBase {
 	public:
 
-		Envelope(void) :
-			_stage(4),
-			gateInput(0.5)
-		{
-			this->_registerParameter(&gateInput);
-		}
+		Envelope(void);
 
 		double getNextSample(void) override;
 
 		void attack(void);
 		void release(void);
 
+		/*! This parameter can be used by another module as a way to signal the Envelope. When the output of the module inputting
+		to `gateInput` changes to 1.0, the attack of the envolpe is triggered. When it changes to 0, the release is triggered. */
 		ModuleParameter gateInput;
 
-		double a; //Time
-		double d; //Time
-		double s; //Level
-		double r; //Time
+		ModuleParameter a; //!< The number of seconds it takes, following the attack, for the level to rise from 0 to 1. Should be non-negative.
+		ModuleParameter d; //!< The number of seconds it takes, once reaching the attack peak, to fall to `s`. Should be non-negative.
+		ModuleParameter s; //!< The level at which the envelope sustains while waiting for the release. Should be between 0 and 1.
+		ModuleParameter r; //!< The number of seconds it takes, following the release, for the level to fall to 0 from `s`. Should be non-negative.
 
 	private:
 		int _stage;
@@ -335,6 +311,11 @@ namespace Synth {
 		double _timeSinceLastStage;
 
 		void _dataSetEvent(void);
+
+		double _a;
+		double _d;
+		double _s;
+		double _r;
 	};
 
 
@@ -356,24 +337,9 @@ namespace Synth {
 			NOTCH
 		};
 
-		Filter(void) :
-			_filterType(FilterType::LOW_PASS),
-			x1(0),
-			x2(0),
-			y1(0),
-			y2(0),
-			cutoff(1000),
-			bandwidth(50)
-		{
-			this->_registerParameter(&cutoff);
-			this->_registerParameter(&bandwidth);
-		}
+		Filter(void);
 
-		/*! \brief Set the type of filter to use, from the Filter::FilterType enum. */
-		void setType(FilterType type) {
-			_filterType = type;
-			_recalculateCoefficients();
-		}
+		void setType(FilterType type);
 
 		double getNextSample(void) override;
 
@@ -382,7 +348,7 @@ namespace Synth {
 
 		/*! Only used for BAND_PASS and NOTCH FilterTypes. Sets the width (in frequency domain) of the stop or pass band
 		at which the amplitude is equal to sin(PI/4) (i.e. .707). So, for example, if you wanted the frequencies
-		100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set bw to 100.
+		100 Hz above and below the breakpoint to be at .707 of the maximum amplitude, set `bandwidth` to 100.
 		Of course, past those frequencies the attenuation continues.
 		Larger values result in a less pointy band.	*/
 		ModuleParameter bandwidth;
@@ -409,6 +375,11 @@ namespace Synth {
 		double y2;
 	};
 
+	/*! This class is used within output modules that actually output data. This class serves as
+	an endpoint for data that is then retrieved by the class containing the GenericOutput. See, for
+	example, the StereoStreamOutput class.
+	
+	\ingroup modSynth */
 	class GenericOutput : public ModuleBase {
 	public:
 		double getNextSample(void) override {
@@ -499,12 +470,14 @@ namespace Synth {
 
 	\code{.cpp}
 	using namespace CX::Synth;
+
 	Splitter sp;
 	Oscillator osc;
 	Multiplier m1;
 	Multiplier m2;
 	StereoStreamOutput out;
 
+	//In runExperiment:
 	osc >> sp;
 	sp >> m1 >> out.left;
 	sp >> m2 >> out.right;
@@ -614,23 +587,30 @@ namespace Synth {
 	`left` or `right` modules that this class has. See the example code.
 
 	\code{.cpp}
+	#include "CX_EntryPoint.h"
+
 	using namespace CX::Synth;
-	StereoSoundBufferOutput sout;
-	sout.setup(44100);
 
-	Splitter sp;
-	Oscillator osc;
-	Multiplier leftM;
-	Multiplier rightM;
+	void runExperiment(void) {
+		StereoSoundBufferOutput sout;
+		sout.setup(44100);
 
-	leftM.amount = .1;
-	rightM.amount = .01;
+		Splitter sp;
+		Oscillator osc;
+		Multiplier leftM;
+		Multiplier rightM;
 
-	osc >> sp;
-	sp >> leftM >> sout.left;
-	sp >> rightM >> sout.right;
+		osc.frequency = 400;
+		leftM.amount = .1;
+		rightM.amount = .01;
 
-	sout.sampleData(CX_Seconds(2)); //Sample 2 seconds worth of data on both channels.
+		osc >> sp;
+		sp >> leftM >> sout.left;
+		sp >> rightM >> sout.right;
+
+		sout.sampleData(CX_Seconds(2)); //Sample 2 seconds worth of data on both channels.
+		sout.sb.writeToFile("Stereo.wav");
+	}
 	\endcode
 
 	\ingroup modSynth */
@@ -639,33 +619,24 @@ namespace Synth {
 		void setup(float sampleRate);
 		void sampleData(CX_Millis t);
 
-		GenericOutput left;
-		GenericOutput right;
+		GenericOutput left; //!< The left channel of the buffer.
+		GenericOutput right; //!< The right channel of the buffer.
 	
 		CX::CX_SoundBuffer sb;
 	};
 
 
-	//For testing purposes mostly
+	/*! This class is used for numerically, rather than auditorily, testing other modules. 
+	It produces samples starting at `value` and increasing by `step`. */
 	class TrivialGenerator : public ModuleBase {
 	public:
 
-		TrivialGenerator(void) :
-			value(0),
-			step(0)
-		{
-			this->_registerParameter(&value);
-			this->_registerParameter(&step);
-		}
+		TrivialGenerator(void);
 
 		ModuleParameter value;
 		ModuleParameter step;
 
-		double getNextSample(void) override {
-			value.updateValue();
-			value.getValue() += step;
-			return value.getValue() - step;
-		}
+		double getNextSample(void) override;
 	};
 
 
@@ -792,7 +763,9 @@ namespace Synth {
 
 
 
-	/* This class emulates an analog RC low-pass filter (http://en.wikipedia.org/wiki/Low-pass_filter#Electronic_low-pass_filters).
+	/* This is a worse version of the Filter class.
+	
+	This class emulates an analog RC low-pass filter (http://en.wikipedia.org/wiki/Low-pass_filter#Electronic_low-pass_filters).
 	Setting the breakpoint affects the frequency at which the filter starts to have an effect.
 	\ingroup modSynth 
 	class RCFilter : public ModuleBase {

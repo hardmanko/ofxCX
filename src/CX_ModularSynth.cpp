@@ -2,15 +2,20 @@
 
 using namespace CX::Synth;
 
+/*! The sinc function, defined as `sin(x)/x`. */
 double CX::Synth::sinc(double x) {
 	return sin(x) / x;
 }
 
+/*! This function returns the frequency that is `semitoneDifference` semitones from `f`.
+\param f The starting frequency. 
+\param semitoneDifference The difference (positive or negative) from `f` to the desired output frequency.
+\return The final frequency. */
 double CX::Synth::relativeFrequency(double f, double semitoneDifference) {
 	return f * pow(2.0, semitoneDifference / 12);
 }
 
-/*! This operator is used to connect modules together. l is set as the input for r. */
+/*! This operator is used to connect modules together. `l` is set as the input for `r`. */
 ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	r._assignInput(&l);
 	l._assignOutput(&r);
@@ -20,6 +25,36 @@ ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 ////////////////
 // ModuleBase //
 ////////////////
+
+ModuleBase::ModuleBase(void) {
+	_data = new ModuleControlData_t;
+}
+
+ModuleBase::~ModuleBase(void) {
+	delete _data;
+}
+
+/*! This function sets the data needed by this module in order to function properly. Many modules need this data,
+specifically the sample rate that the synth using. If several modules are connected together, you will only need
+to set the data for one module and the change will propagate to the other connected modules automatically.
+
+This function does not usually need to be called driectly by the user. If an appropriate input or output is
+connected, the data will be set from that module. However, there are some cases where a pattern of reconnecting
+previously used modules may result in inappropriate sample rates being set. For that reason, if you are having
+a problem with seeing the correct sample rate after reconnecting some modules, try manually calling setData().
+
+\param d The data to set.
+*/
+void ModuleBase::setData(ModuleControlData_t d) {
+	*_data = d;
+	_data->initialized = true;
+	this->_dataSet(nullptr);
+}
+
+/*! Gets the data used by the module. */
+ModuleControlData_t ModuleBase::getData(void) {
+	return *_data;
+}
 
 /*! This is a reciprocal operation: This module's input is disconnected and `in`'s output to this module
 is disconnected. */
@@ -112,8 +147,23 @@ void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
 
 }
 
-//If you are using a CX::Synth::ModuleParameter in your module, you must register that ModuleParameter
-//during setup of the module using this function.
+/*! If you are using a CX::Synth::ModuleParameter in your module, you must register that ModuleParameter
+during construction (or setup) of the module using this function.
+
+\code{.cpp}
+class MyModule : public ModuleBase {
+public:
+
+	MyModule(void) {
+		this->_registerParameter(&myParam);
+		//...
+	}
+
+	ModuleParameter myParam;
+	//...
+};
+\endcode
+*/
 void ModuleBase::_registerParameter(ModuleParameter* p) {
 	if (std::find(_parameters.begin(), _parameters.end(), p) == _parameters.end()) {
 		_parameters.push_back(p);
@@ -210,6 +260,8 @@ double AdditiveSynth::getNextSample(void) {
 
 }
 
+/*! This sets the fundamental frequency being used by the AdditiveSynth. All harmonics are adjusted
+based on the new fundamental. */
 void AdditiveSynth::setFundamentalFrequency(double f) {
 	_fundamental = f;
 
@@ -257,6 +309,12 @@ void AdditiveSynth::setAmplitudes(std::vector<amplitude_t> amps) {
 	}
 }
 
+/*! This is a specialty function that only works when the standard harmonic series is being used. If so,
+it calculates the amplitudes needed for the hamonics so as to produce the specified waveform type.
+\param type The type of waveform that should be output from the additive synth.
+\param count The number of harmonics.
+\return A vector of amplitudes.
+*/
 std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(HarmonicAmplitudeType type, unsigned int count) {
 	std::vector<amplitude_t> rval(count, 0.0);
 
@@ -293,7 +351,7 @@ std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(Harmo
 }
 
 /*! This function removes all harmonics that have an amplitude that is less than or equal to a tolerance 
-times the amplitude of the frequency with the greatest absolute amplitude. 
+times the amplitude of the harmonic with the greatest absolute amplitude. 
 
 The result of this pruning is that the synthesizer will be more computationally efficient but provide a possibly worse 
 approximation of the desired waveform.
@@ -302,8 +360,9 @@ approximation of the desired waveform.
 as a proportion of the amplitude of the frequency with the greatest amplitude. If `tol` is less than 0, it is treated as
 the difference in decibels between the frequency with the greatest amplitude and the tolerance.
 
-\note Because harmonics with an amplitude equal to the tolerance times an amplitude, setting `tol` to 0 will remove 
-harmonics with 0 amplitude, but no others. */
+\note Because only harmonics with an amplitude less than or equal to the tolerance times an amplitude are pruned, 
+setting `tol` to 0 will remove harmonics with 0 amplitude, but no others. 
+*/
 void AdditiveSynth::pruneLowAmplitudeHarmonics(double tol) {
 
 	double maxAmplitude = 0;
@@ -361,9 +420,9 @@ void AdditiveSynth::setStandardHarmonicSeries(unsigned int harmonicCount) {
 harmonic's frequency will be some multiple of the fundamental frequency, depending on the harmonic number and 
 controlParameter. For HS_SEMITONE, each harmonic's frequency will be some number of semitones above the previous frequency,
 based on controlParameter (specifying the number of semitones).
-\param controlParameter If type == HS_MULTIPLE, the frequency for harmonic i will be i * controlParameter, where the 
-fundamental gives the value 1 for i. If type == HS_SEMITONE, the frequency for harmonic i will be 
-`pow(2, (i - 1) * controlParameter/12)`, where the fundamental gives the value 1 for i.
+\param controlParameter If `type == HS_MULTIPLE`, the frequency for harmonic `i` will be `i * controlParameter`, where the 
+fundamental gives the value 1 for `i`. If `type == HS_SEMITONE`, the frequency for harmonic `i` will be 
+`pow(2, (i - 1) * controlParameter/12)`, where the fundamental gives the value 1 for `i`.
 
 \note If `type == HS_MULTIPLE` and `controlParameter == 1`, then the standard harmonic series will be generated.
 \note If `type == HS_SEMITONE`, `controlParameter` does not need to be an integer.
@@ -442,6 +501,18 @@ double Clamper::getNextSample(void) {
 // Envelope //
 //////////////
 
+
+Envelope::Envelope(void) :
+_stage(4),
+gateInput(0.5)
+{
+	this->_registerParameter(&gateInput);
+	this->_registerParameter(&a);
+	this->_registerParameter(&d);
+	this->_registerParameter(&s);
+	this->_registerParameter(&r);
+}
+
 double Envelope::getNextSample(void) {
 	
 	gateInput.updateValue();
@@ -453,37 +524,52 @@ double Envelope::getNextSample(void) {
 		}
 	}
 	
-
-
 	if (_stage > 3) {
 		return 0;
+	}
+
+	a.updateValue();
+	d.updateValue();
+	s.updateValue();
+	r.updateValue();
+	if (a.valueUpdated()) {
+		_a = a.getValue();
+	}
+	if (d.valueUpdated()) {
+		_d = d.getValue();
+	}
+	if (s.valueUpdated()) {
+		_s = s.getValue();
+	}
+	if (r.valueUpdated()) {
+		_r = r.getValue();
 	}
 
 	double p;
 
 	switch (_stage) {
 	case 0:
-		if (_timeSinceLastStage < a && a != 0) {
-			p = _timeSinceLastStage / a;
+		if ((_timeSinceLastStage < _a) && (_a != 0)) {
+			p = _timeSinceLastStage / _a;
 			break;
 		} else {
 			_timeSinceLastStage = 0;
 			_stage++;
 		}
 	case 1:
-		if (_timeSinceLastStage < d && d != 0) {
-			p = 1 - (_timeSinceLastStage / d) * (1 - s);
+		if ((_timeSinceLastStage < _d) && (_d != 0)) {
+			p = 1 - (_timeSinceLastStage / _d) * (1 - _s);
 			break;
 		} else {
 			_timeSinceLastStage = 0;
 			_stage++;
 		}
 	case 2:
-		p = s;
+		p = _s;
 		break;
 	case 3:
-		if (_timeSinceLastStage < r && r != 0) {
-			p = (1 - _timeSinceLastStage / r) * _levelAtRelease;
+		if ((_timeSinceLastStage < _r) && (_r != 0)) {
+			p = (1 - _timeSinceLastStage / _r) * _levelAtRelease;
 			break;
 		} else {
 			//_timeSinceLastStage = 0;
@@ -506,11 +592,13 @@ double Envelope::getNextSample(void) {
 	return val * p;
 }
 
+/*! \brief Trigger the attack of the Envelope. */
 void Envelope::attack(void) {
 	_stage = 0;
 	_timeSinceLastStage = 0;
 }
 
+/*! \brief Trigger the release of the Envelope. */
 void Envelope::release(void) {
 	_stage = 3;
 	_timeSinceLastStage = 0;
@@ -526,6 +614,25 @@ void Envelope::_dataSetEvent(void) {
 ////////////
 // Filter //
 ////////////
+
+Filter::Filter(void) :
+_filterType(FilterType::LOW_PASS),
+x1(0),
+x2(0),
+y1(0),
+y2(0),
+cutoff(1000),
+bandwidth(50)
+{
+	this->_registerParameter(&cutoff);
+	this->_registerParameter(&bandwidth);
+}
+
+/*! \brief Set the type of filter to use, from the Filter::FilterType enum. */
+void Filter::setType(FilterType type) {
+	_filterType = type;
+	_recalculateCoefficients();
+}
 
 double Filter::getNextSample(void) {
 	if (_inputs.size() == 0) {
@@ -920,6 +1027,25 @@ void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
 		}
 	}
+}
+
+//////////////////////
+// TrivialGenerator //
+//////////////////////
+
+TrivialGenerator::TrivialGenerator(void) :
+value(0),
+step(0)
+{
+	this->_registerParameter(&value);
+	this->_registerParameter(&step);
+}
+
+
+double TrivialGenerator::getNextSample(void) {
+	value.updateValue();
+	value.getValue() += step;
+	return value.getValue() - step;
 }
 
 /*
