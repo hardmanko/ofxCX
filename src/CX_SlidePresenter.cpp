@@ -907,7 +907,7 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 
 	if (_config.useFenceSync) {
 		_slideInfo.at(_currentSlide).fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-		glFlush();
+		glFlush(); //This flush assures that the funce sync object gets pushed into the command queue.
 		_slideInfo.at(_currentSlide).awaitingFenceSync = true;
 
 		_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING;

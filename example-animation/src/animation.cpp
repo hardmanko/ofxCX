@@ -28,7 +28,6 @@ double angles[3] = { 0, 0, 0 };
 double angleMultiplier[3] = { 1, 2, 3 };
 int directions[3] = { 1, 1, 1 };
 double distancesFromCenter[3] = { 75, 150, 225 };
-ofColor colors[3] = { ofColor::red, ofColor::green, ofColor::blue };
 double distanceMultiplier = 1;
 CX_Millis lastAnimationDrawTime = 0;
 
@@ -51,8 +50,6 @@ void runExperiment (void) {
 	}
 }
 
-
-
 void updateAnimation (void) {
 
 	//See the main comment at the top of this file.
@@ -63,7 +60,7 @@ void updateAnimation (void) {
 		drawNextFrameOfAnimation();
 
 		Display.endDrawingToBackBuffer(); //Make sure to call this to end the drawing.
-		
+
 		//Because the front and back buffers are automatically swapping, you don't
 		//need to do anything else here: the new frame will be swapped to the front
 		//at some point in the near future.
@@ -95,6 +92,9 @@ void updateAnimation (void) {
 }
 
 void drawNextFrameOfAnimation (void) {
+
+	static ofColor colors[3] = { ofColor::red, ofColor::green, ofColor::blue };
+
 	ofBackground(0);
 
 	ofSetColor(255);

@@ -62,27 +62,15 @@ Because this function uses CX::Util::readKeyValueFile() internally, it has the s
 \param filename The name of the file containing configuration data.
 \param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
 \param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
-\param commentString If commentString is not the empty string (i.e. ""), everything on a line
-following the first instance of commentString will be ignored.
+\param commentString If `commentString` is not the empty string (""), everything on a line
+following the first instance of `commentString` will be ignored.
 */
 void CX_Display::configureFromFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentString) {
-	//Helper function
-	auto stringToBooleint = [](std::string s) -> int {
-		s = ofToLower(s);
-		if ((s == "false") || (s.front() == '0')) {
-			return 0;
-		} else if ((s == "true") || (s.front() == '1')) {
-			return 1;
-		} else {
-			CX::Instances::Log.error("CX_Display") << "configureFromFile: Invalid boolean value given: \"" << s << "\"";
-			return -1;
-		}
-	};
 
 	std::map<std::string, std::string> kv = Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
 
 	if (kv.find("display.fullscreen") != kv.end()) {
-		int result = stringToBooleint(kv["display.fullscreen"]);
+		int result = Private::stringToBooleint(kv["display.fullscreen"]);
 		if (result != -1) {
 			this->setFullScreen(result == 1);
 		}
@@ -103,21 +91,21 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 	}
 
 	if (kv.find("display.hardwareVSync") != kv.end()) {
-		int result = stringToBooleint(kv["display.hardwareVSync"]);
+		int result = Private::stringToBooleint(kv["display.hardwareVSync"]);
 		if (result != -1) {
 			this->useHardwareVSync(result == 1);
 		}
 	}
 
 	if (kv.find("display.softwareVSync") != kv.end()) {
-		int result = stringToBooleint(kv["display.softwareVSync"]);
+		int result = Private::stringToBooleint(kv["display.softwareVSync"]);
 		if (result != -1) {
 			this->useSoftwareVSync(result == 1);
 		}
 	}
 
 	if (kv.find("display.swapAutomatically") != kv.end()) {
-		int result = stringToBooleint(kv["display.swapAutomatically"]);
+		int result = Private::stringToBooleint(kv["display.swapAutomatically"]);
 		if (result != -1) {
 			this->setAutomaticSwapping(result == 1);
 		}
@@ -202,7 +190,14 @@ uint64_t CX_Display::getFrameNumber (void) {
 }
 
 /*! Prepares a rendering context for using drawing functions. Must be paired with
-a call to endDrawingToBackBuffer(). */
+a call to endDrawingToBackBuffer().
+\code{.cpp}
+Display.beginDrawingToBackBuffer();
+//Draw stuff...
+Display.endDrawingToBackBuffer();
+\endcode
+
+*/
 void CX_Display::beginDrawingToBackBuffer (void) {
 	if (_renderer) {
 		_renderer->startRender();
@@ -217,6 +212,11 @@ void CX_Display::endDrawingToBackBuffer (void) {
 	if (_renderer) {
 		_renderer->finishRender();
 	}
+	glFlush(); //This is very important, because it seems like commands are buffered in a thread-local fashion initially.
+		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush 
+		//that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush 
+		//here guarantees at least some amount of security that the rendering thread's commands will be executed before 
+		//the swapping thread queues the swap.
 }
 
 /*! This function queues up a swap of the front and back buffers then
@@ -228,13 +228,11 @@ void CX_Display::swapBuffers (void) {
 		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffers() while auto swapping mode was in use.";
 	}
 
-	//glFlush();
 	glfwSwapBuffers(CX::Private::glfwContext);
 	if (_softVSyncWithGLFinish) {
 		glFinish();
 	}
 	_manualBufferSwaps++;
-
 }
 
 /*! This function cues a swap of the front and back buffers. It avoids blocking
@@ -249,7 +247,7 @@ void CX_Display::swapBuffersInThread (void) {
 
 /*! This function blocks until all OpenGL instructions that were given before this was called to complete. 
 This can be useful if you are trying to determine how long a set of rendering commands takes
-or need to make sure that all rendering is complete before moving on. 
+or need to make sure that all rendering is complete before moving on with other tasks.
 \see \ref blockingCode */
 void CX_Display::waitForOpenGL (void) {
 	glFinish();

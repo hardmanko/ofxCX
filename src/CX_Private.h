@@ -10,6 +10,7 @@
 #include <string>
 
 #include "CX_AppWindow.h"
+#include "CX_Logger.h"
 
 namespace CX {
 
@@ -47,6 +48,7 @@ namespace Private {
 
 	CX_GLVersion getGLSLVersionFromGLVersion(CX_GLVersion glVersion);
 
+	int stringToBooleint(std::string s);
 
 }
 }

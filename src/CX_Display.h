@@ -18,6 +18,7 @@ draw stimuli: see the graphics and 3d sections if this page: http://www.openfram
 #include "ofAppRunner.h"
 #include "ofGlProgrammableRenderer.h"
 
+#include "CX_Private.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 #include "CX_VideoBufferSwappingThread.h"

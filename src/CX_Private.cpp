@@ -118,3 +118,17 @@ int CX::Private::glCompareVersions(CX_GLVersion a, CX_GLVersion b) {
 	return 0;
 }
 
+/* Returns 0 if the string evaluates to false, 1 if the string evaluates to true.
+If the string evaluates to neither, this returns -1 and logs an error. */
+int CX::Private::stringToBooleint(std::string s) {
+	s = ofToLower(s);
+	if ((s == "false") || (s.front() == '0')) {
+		return 0;
+	} else if ((s == "true") || (s.front() == '1')) {
+		return 1;
+	}
+
+	CX::Instances::Log.error("Private") << "stringToBooleint: Failure attempting to convert "
+		"string to boolean: invalid boolean value given: \"" << s << "\". Use \"0\", \"1\", \"true\", or \"false\".";
+	return -1;
+};

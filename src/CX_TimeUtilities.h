@@ -5,7 +5,7 @@
 namespace CX {
 namespace Util {
 
-	/*! This class can be used for profiling event loops. It measures the amount of time that has elapsed
+	/*! This class can be used for profiling event loops. It measures the amount of time that elapses
 	between subsequent calls to takeSample().
 
 	\code{.cpp}
@@ -27,6 +27,8 @@ namespace Util {
 	*/
 	class CX_LapTimer {
 	public:
+		CX_LapTimer(void);
+		CX_LapTimer(CX_Clock *clock, unsigned int logSamples = 0);
 
 		void setup(CX_Clock *clock, unsigned int logSamples = 0);
 

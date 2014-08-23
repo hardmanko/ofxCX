@@ -25,6 +25,10 @@ namespace Util {
 	}
 
 
+	///////////////////////////////
+	// CX_DegreeToPixelConverter //
+	///////////////////////////////
+
 	CX_DegreeToPixelConverter::CX_DegreeToPixelConverter(void) :
 		_pixelsPerUnit(0),
 		_viewingDistance(0),
@@ -50,6 +54,55 @@ namespace Util {
 		_roundResult = roundResult;
 	}
 
+	/*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
+	due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
+	they are running. This function takes the file name of a specially constructed configuration file and reads the
+	key-value pairs in that file in order to configure the CX_DegreeToPixelConverter. The format of the file is
+	provided in the example code below.
+	
+	Sample configuration file:
+	\code
+	D2PC.pixelsPerUnit = 35
+	D2PC.viewingDistance = 50
+	D2PC.roundResult = true
+	\endcode
+
+	All of the configuration keys are used in this example.
+	Note that the "D2PC" prefix allows this configuration to be embedded in a file that also performs other configuration functions.
+
+	See CX_DegreeToPixelConverter::setup() for details about the meanings of the configuration options.
+
+	Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
+	\param filename The name of the file containing configuration data.
+	\param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
+	\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
+	\param commentString If `commentString` is not the empty string (""), everything on a line
+	following the first instance of `commentString` will be ignored.
+	\return `true` if there were no problems reading in the file, `false` otherwise.
+	*/
+	bool CX_DegreeToPixelConverter::configureFromFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentString) {
+		std::map<std::string, std::string> kv = Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
+		bool success = true;
+
+		if (kv.find("D2PC.pixelsPerUnit") != kv.end()) {
+			_pixelsPerUnit = ofFromString<float>(kv.at("D2PC.pixelsPerUnit"));
+		}
+
+		if (kv.find("D2PC.viewingDistance") != kv.end()) {
+			_viewingDistance = ofFromString<float>(kv.at("D2PC.viewingDistance"));
+		}
+
+		if (kv.find("D2PC.roundResult") != kv.end()) {
+			int result = Private::stringToBooleint(kv["D2PC.roundResult"]);
+			if (result != -1) {
+				_roundResult = (result == 1);
+			} else {
+				success = false;
+			}
+		}
+		return success;
+	}
+
 	/*! Converts the degrees to pixels based on the settings given during construction.
 	\param degrees The number of degrees of visual angle to convert to pixels.
 	\return The number of pixels corresponding to the number of degrees of visual angle. */
@@ -72,6 +125,9 @@ namespace Util {
 		return deg;
 	}
 
+	///////////////////////////////
+	// CX_LengthToPixelConverter //
+	///////////////////////////////
 
 	CX_LengthToPixelConverter::CX_LengthToPixelConverter(void) :
 		_pixelsPerUnit(0),
@@ -92,6 +148,50 @@ namespace Util {
 	void CX_LengthToPixelConverter::setup(float pixelsPerUnit, bool roundResult) {
 		_pixelsPerUnit = pixelsPerUnit;
 		_roundResult = roundResult;
+	}
+
+	/*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
+	due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
+	they are running. This function takes the file name of a specially constructed configuration file and reads the
+	key-value pairs in that file in order to configure the CX_LengthToPixelConverter. The format of the file is
+	provided in the example code below.
+
+	Sample configuration file:
+	\code
+	L2PC.pixelsPerUnit = 35
+	L2PC.roundResult = true
+	\endcode
+
+	All of the configuration keys are used in this example.
+	Note that the "L2PC" prefix allows this configuration to be embedded in a file that also performs other configuration functions.
+
+	See CX_LengthToPixelConverter::setup() for details about the meanings of the configuration options.
+
+	Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
+	\param filename The name of the file containing configuration data.
+	\param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
+	\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
+	\param commentString If `commentString` is not the empty string (""), everything on a line
+	following the first instance of `commentString` will be ignored.
+	\return `true` if there were no problems reading in the file, `false` otherwise.
+	*/
+	bool CX_LengthToPixelConverter::configureFromFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentString) {
+		std::map<std::string, std::string> kv = Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
+		bool success = true;
+
+		if (kv.find("L2PC.pixelsPerUnit") != kv.end()) {
+			_pixelsPerUnit = ofFromString<float>(kv.at("L2PC.pixelsPerUnit"));
+		}
+
+		if (kv.find("L2PC.roundResult") != kv.end()) {
+			int result = Private::stringToBooleint(kv["L2PC.roundResult"]);
+			if (result != -1) {
+				_roundResult = (result == 1);
+			} else {
+				success = false;
+			}
+		}
+		return success;
 	}
 
 	/*! Converts the length to pixels based on the settings given during construction.
@@ -115,6 +215,10 @@ namespace Util {
 		//}
 		return length;
 	}
+
+	////////////////////////////
+	// CX_CoordinateConverter //
+	////////////////////////////
 
 	/*! Constructs a CX_CoordinateConverter with the default settings. The settings can be changed later with
 	setAxisInversion(), setOrigin(), setMultiplier(), and/or setUnitConverter(). */

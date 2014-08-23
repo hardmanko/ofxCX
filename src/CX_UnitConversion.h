@@ -3,6 +3,7 @@
 #include "ofPoint.h"
 
 #include "CX_Utilities.h"
+#include "CX_Private.h"
 
 namespace CX {
 namespace Util {
@@ -49,6 +50,8 @@ namespace Util {
 		float operator() (float degrees) override;
 		float inverse(float pixels) override;
 
+		bool configureFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
+
 	private:
 		float _pixelsPerUnit;
 		float _viewingDistance;
@@ -64,8 +67,8 @@ namespace Util {
 
 	\code{.cpp}
 	CX_LengthToPixelConverter l2p(75); //75 pixels per unit length (e.g. inch) on the target monitor.
-	ofLine( 200, 100, 200 + l2p(1), 100 + l2p(2) ); //Draw a line from (200, 100) (in pixel coordinates) to 1 unit
-	//horizontally and 2 units vertically from that point.
+	ofLine( 200, 100, 200 + l2p(1), 100 + l2p(2) ); //Draw a line from (200, 100) (in pixel coordinates) to 
+	//1 distance unit right and 2 units down from that point.
 	\endcode
 
 	\ingroup utility */
@@ -79,6 +82,8 @@ namespace Util {
 		float operator() (float length) override;
 		float inverse(float pixels) override;
 
+		bool configureFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
+
 	private:
 		float _pixelsPerUnit;
 		bool _roundResult;
@@ -87,12 +92,12 @@ namespace Util {
 
 	/*! This helper class is used for converting from a somewhat user-defined coordinate system into
 	the standard computer monitor coordinate system. When user coordinates are input into this class,
-	they will be converted into the standard monitor coordinate system. This lets you use this class
-	to allow you to use coordinates in your own system and convert those coordinates into the standard
-	coordinates that are used by the drawing functions of openFrameworks.
+	they will be converted into the standard monitor coordinate system. This lets you use coordinates 
+	in your own system and convert those coordinates into the standard coordinates that are used by the 
+	drawing functions of openFrameworks.
 
-	See setUnitConverter() for a way to do change the units of the coordinate system to, for example, 
-	inches or degrees of visual angle.
+	See CX_CoordinateConverter::setUnitConverter() for a way to do change the units of the coordinate 
+	system to, for example, inches or degrees of visual angle.
 
 	Example use:
 

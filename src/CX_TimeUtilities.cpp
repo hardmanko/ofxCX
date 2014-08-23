@@ -7,10 +7,20 @@ namespace Util {
 	// CX_LapTimer //
 	/////////////////
 
+	CX_LapTimer::CX_LapTimer(void) :
+		_clock(nullptr),
+		_samplesBetweenLogging(0)
+	{}
+
+	/*! Construct and set up a CX_LapTimer. See CX_LapTimer::setup() for a description of the parameters. */
+	CX_LapTimer::CX_LapTimer(CX_Clock *clock, unsigned int logSamples) {
+		setup(clock, logSamples);
+	}
+
 	/*! Set up the CX_LapTimer with the selected clock source and the number of samples to log between each automatic logging of results.
 	\param clock The instance of CX_Clock to use.
 	\param logSamples If this is not 0, then every `logSamples` samples, a string containing information 
-	about the last `logSamples` samples will be logged.
+	about the last `logSamples` samples will be logged and then those samples will be cleared.
 	*/
 	void CX_LapTimer::setup(CX_Clock *clock, unsigned int logSamples) {
 		_clock = clock;
@@ -19,11 +29,14 @@ namespace Util {
 		_samplesBetweenLogging = logSamples;
 	}
 
+	/*! Restart data collection. All collected samples are cleared. */
 	void CX_LapTimer::restart(void) {
 		_durationRecalculationRequired = true;
 		_timePoints.clear();
 	}
 
+	/*! Take a single sample of time. If at least one previous sample has been taken, the difference 
+	between the current time and the previous time is stored as the duration of that "lap" through the code. */
 	void CX_LapTimer::takeSample(void) {
 		_timePoints.push_back(_clock->now());
 		_durationRecalculationRequired = true;
@@ -34,6 +47,7 @@ namespace Util {
 		}
 	}
 
+	/*! Returns the number of lap durations that have been collected. */
 	unsigned int CX_LapTimer::collectedSamples(void) {
 		if (_timePoints.size() == 0) {
 			return 0;
@@ -41,6 +55,9 @@ namespace Util {
 		return _timePoints.size() - 1;
 	}
 
+	/*! Get a string summarizing some basic descriptive statistics for the currently stored lap durations. 
+	\return A string containing the minimum, mean, maximum, and standard deviation of the collected samples.
+	*/
 	std::string CX_LapTimer::getStatString(void) {
 		std::stringstream s;
 
@@ -52,17 +69,7 @@ namespace Util {
 		return s.str();
 	}
 
-	void CX_LapTimer::_calculateDurations(void) {
-		if (_timePoints.size() < 2 || !_durationRecalculationRequired) {
-			return;
-		}
 
-		_durations.resize(_timePoints.size() - 1);
-		for (unsigned int i = 1; i < _timePoints.size(); i++) {
-			_durations[i - 1] = (_timePoints[i] - _timePoints[i - 1]).value();
-		}
-		_durationRecalculationRequired = false;
-	}
 
 	CX_Millis CX_LapTimer::mean(void) {
 		_calculateDurations();
@@ -84,8 +91,21 @@ namespace Util {
 		return CX_Millis(sqrt(Util::var(_durations)));
 	}
 
+	void CX_LapTimer::_calculateDurations(void) {
+		if (_timePoints.size() < 2 || !_durationRecalculationRequired) {
+			return;
+		}
 
+		_durations.resize(_timePoints.size() - 1);
+		for (unsigned int i = 1; i < _timePoints.size(); i++) {
+			_durations[i - 1] = (_timePoints[i] - _timePoints[i - 1]).value();
+		}
+		_durationRecalculationRequired = false;
+	}
 
+	///////////////////////
+	//CX_SegmentProfiler //
+	///////////////////////
 
 	CX_SegmentProfiler::CX_SegmentProfiler(void) :
 		_clock(nullptr),
@@ -95,7 +115,7 @@ namespace Util {
 	/*! Set up the CX_SegmentProfiler with the selected clock source and the number of samples to log between each automatic logging of results.
 	\param clock The instance of CX_Clock to use.
 	\param logSamples If this is not 0, then every `logSamples` samples, a string containing information
-	about the last `logSamples` samples will be logged.
+	about the last `logSamples` samples will be logged and then those samples will be cleared.
 	*/
 	CX_SegmentProfiler::CX_SegmentProfiler(CX_Clock* clock, unsigned int logSamples) :
 		_clock(clock),
@@ -129,10 +149,12 @@ namespace Util {
 		}
 	}
 
+	/*! \return The number of collected samples. */
 	unsigned int CX_SegmentProfiler::collectedSamples(void) {
 		return _durations.size();
 	}
 
+	/*! Restart data collection. All collected samples are cleared. */
 	void CX_SegmentProfiler::restart(void) {
 		_durations.clear();
 	}
@@ -153,6 +175,9 @@ namespace Util {
 		return CX_Millis(sqrt(Util::var(_durations)));
 	}
 
+	/*! Get a string summarizing some basic descriptive statistics for the currently stored data.
+	\return A string containing the minimum, mean, maximum, and standard deviation of the stored data.
+	*/
 	std::string CX_SegmentProfiler::getStatString(void) {
 		std::stringstream s;
 
