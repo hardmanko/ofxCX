@@ -158,7 +158,7 @@ public:
 	static std::string listDevices (RtAudio::Api api);
 
 	static CX_SoundStream::Configuration readConfigurationFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
-
+	
 private:
 
 	static int _rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data);

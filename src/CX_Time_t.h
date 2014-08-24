@@ -101,21 +101,22 @@ namespace CX {
 
 		/*! This struct contains the result of CX_Time_t::getPartitionedTime(). */
 		struct PartitionedTime {
-			int hours;
-			int minutes;
-			int seconds;
-			int milliseconds;
-			int microseconds;
-			int nanoseconds;
+			int hours; //!< The hours component of the time.
+			int minutes; //!< The minutes component of the time.
+			int seconds; //!< The seconds component of the time.
+			int milliseconds; //!< The milliseconds component of the time.
+			int microseconds; //!< The microseconds component of the time.
+			int nanoseconds; //!< The nanoseconds component of the time.
 		};
 
 		/*! Partitions a CX_Time_t into component parts containing the number of whole time units
 		that are stored in the CX_Time_t. This is different from seconds(), millis(), etc., because
 		those functions return the fractional part (e.g. 5.340 seconds) whereas this returns only
 		whole numbers (e.g. 5 seconds and 340 milliseconds).
+		\return A PartitionedTime struct containing whole number amounts of the components of the time.
 		*/
 		PartitionedTime getPartitionedTime(void) const {
-			CX_Time_t<TimeUnit> t = *this;
+			CX_Time_t<TimeUnit> t = *this; //Make a copy which is then modified.
 			PartitionedTime rval;
 			rval.hours = floor(t.hours());
 			t -= CX_Hours(rval.hours);
@@ -136,10 +137,14 @@ namespace CX {
 			return rval;
 		}
 
+		/*! Default constructor for CX_Time_t. */
 		CX_Time_t(void) :
 			_nanos(0)
 		{}
 
+		/*! Constructs a CX_Time_t with the specified time value. 
+		\param t A time value with units interpreted depending on the TimeUnit 
+		template argument for the instance of the class being constructed. */
 		CX_Time_t(double t) {
 			_nanos = (long long)Private::convertTimeCount<std::nano, TimeUnit, double>(t);
 		}
@@ -152,6 +157,11 @@ namespace CX {
 			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
 		}
 
+		/*! Constructs a CX_Time_t based on another instance of a CX_Time_t. If the TimeUnit
+		template parameter has a different value for `t` than for the CX_Time_t being constructed,
+		it does not change the amount of time stored. For example, if `t` is a CX_Time_t<std::ratio<60, 1> >
+		(i.e. CX_Minutes) containing 1 minute, and the CX_Time_t that is constructed will contain 1 minute 
+		regardless of if that minute is thought of as 1/60 of an hour or 60,000,000 microseconds. */
 		template <typename tArg>
 		CX_Time_t(const CX_Time_t<tArg>& t) {
 			this->_nanos = t.nanos();
@@ -165,27 +175,27 @@ namespace CX {
 			return Private::convertTimeCount<TimeUnit, std::nano, double>(_nanos);
 		}
 
-		/*! \brief Get the time stored by this CX_Time_t in hours, including fractional hours. */
+		/*! \brief Get the time stored by this CX_Time_t in hours, including fractions of an hour. */
 		double hours(void) const {
 			return (double)_nanos / (1e9 * 60 * 60);
 		}
 
-		/*! \brief Get the time stored by this CX_Time_t in minutes, including fractional minutes. */
+		/*! \brief Get the time stored by this CX_Time_t in minutes, including fractions of a minute. */
 		double minutes(void) const {
 			return (double)_nanos / (1e9 * 60);
 		}
 
-		/*! \brief Get the time stored by this CX_Time_t in seconds, including fractional seconds. */
+		/*! \brief Get the time stored by this CX_Time_t in seconds, including fractions of a second. */
 		double seconds(void) const {
 			return (double)_nanos / 1e9;
 		}
 
-		/*! \brief Get the time stored by this CX_Time_t in milliseconds, including fractional milliseconds. */
+		/*! \brief Get the time stored by this CX_Time_t in milliseconds, including fractions of a millisecond. */
 		double millis(void) const {
 			return (double)_nanos / 1e6;
 		}
 
-		/*! \brief Get the time stored by this CX_Time_t in microseconds, including fractional microseconds. */
+		/*! \brief Get the time stored by this CX_Time_t in microseconds, including fractions of a microsecond. */
 		double micros(void) const {
 			return (double)_nanos / 1e3;
 		}
@@ -237,12 +247,16 @@ namespace CX {
 			return *this;
 		}
 
+		/*! \brief Adds a CX_Time_t to an existing CX_Time_t. 
+		\param rhs The value to add. */
 		template<typename RT>
 		CX_Time_t<TimeUnit>& operator+=(const CX_Time_t<RT>& rhs) {
 			this->_nanos += rhs.nanos();
 			return *this;
 		}
 
+		/*! \brief Subtracts a CX_Time_t from an existing CX_Time_t. 
+		\param rhs The value to subtract. */
 		template<typename RT>
 		CX_Time_t<TimeUnit>& operator-=(const CX_Time_t<RT>& rhs) {
 			this->_nanos -= rhs.nanos();
@@ -301,14 +315,6 @@ namespace CX {
 
 		/*! This function calculates the sample standard deviation for a vector of time values. */
 		static CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
-
-			//because gcc is complete fucking garbage and cannot do fucking easy shit like function lookup within
-			//a namespace, this function has to be written out completely and can't use Util::var. It could be:
-			//std::vector<double> timeValues(vals.size());
-			//for (unsigned int i = 0; i < vals.size(); i++) {
-			//	timeValues[i] = vals[i].value();
-			//}
-			//return sqrt(Util::var(timeValues));
 
 			//Implementation of single-pass variance: http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Incremental_Algorithm
 			double mean = 0;

@@ -130,7 +130,7 @@ void CX_SlidePresenter::stopSlidePresentation(void) {
 /*! Performs a "standard" slide presentation in a single function call as a convenience. 
 This function calls startSlidePresentation() to begin the presentation and then calls update() and 
 CX::Instances::Input.pollEvents() continuously as long as isPresentingSlides() returns true. 
-\return True if the slide presentation completed successfully or false if the slide presentation 
+\return `true` if the slide presentation completed successfully or `false` if the slide presentation 
 could not be started. */
 bool CX_SlidePresenter::presentSlides(void) {
 	if (!this->startSlidePresentation()) {
@@ -201,9 +201,7 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 
 /*! Ends drawing to the framebuffer of the slide that is currently being drawn to. See beginDrawingNextSlide(). */
 void CX_SlidePresenter::endDrawingCurrentSlide (void) {
-	//ofClearAlpha();
 	_slides.back().framebuffer.end();
-	//glFlush();
 	_lastFramebufferActive = false;
 }
 
@@ -257,7 +255,7 @@ to the desired color.
 
 \note See \ref framebufferSwapping for more information about framebuffers.
 
-One of the most tedius parts of using drawing functions is the fact that they can take no arguments. Here are two
+One of the most tedious parts of using drawing functions is the fact that they can take no arguments. Here are two
 ways to get around that limitation using std::bind and function objects (functors):
 
 \code{.cpp}
@@ -265,13 +263,18 @@ ways to get around that limitation using std::bind and function objects (functor
 
 CX_SlidePresenter SlidePresenter;
 
-//This is the function we want to use to draw a stimulus, but it takes two arguments
+//This is the function we want to use to draw a stimulus, but it takes two 
+//arguments. It needs to take 0 arguments in order to be used by the CX_SlidePresenter.
 void drawRectangle(ofRectangle r, ofColor col) {
 	ofBackground(0);
 	ofSetColor(col);
 	ofRect(r);
 }
 
+//One option is to use a functor to shift around where the arguments to the function come from. With a
+//functor, like rectFunctor, below, you can define an operator() that takes no arguments directly, but gets its
+//data from members of the structure like position and color. Because `rectFunctor` has operator(), it looks
+//like a function and can be called like a function, so you can use instances of it as drawing functions.
 struct rectFunctor {
 	ofRectangle position;
 	ofColor color;
@@ -284,23 +287,24 @@ void runExperiment(void) {
 
 	SlidePresenter.setup(&Display);
 
-	ofRectangle rectPos(100, 50, 100, 30);
-	ofColor rectColor(255, 255, 0);
 
-	//We can use std::bind to "bake in" the arguments rectPos and rectColor to drawRectangle. Because all of the
-	//arguments for drawRectangle have been bound to it, it no longer takes any arguments and is a valid
-	//drawing function to give to appendSlideFunction.
-	SlidePresenter.appendSlideFunction(std::bind(drawRectangle, rectPos, rectColor), 2000.0, "bind rect");
-
-	//We can also use a functor to sort of shift around where the arguments to the function come from. With a
-	//functor, like rectFunctor, you can define an operator() that takes no arguments directly, but gets its
-	//data from members of the structure like `position` and `color`. Because rectFunctor has operator(), it looks
-	//like a function and can be called like a function, so you can use instances of it as drawing functions.
+	//Here we use the functor. We set up the values for position and color and then give the functor to appendSlideFunction.
 	rectFunctor rf;
 	rf.position = ofRectangle(100, 100, 50, 80);
 	rf.color = ofColor(0, 255, 0);
 	SlidePresenter.appendSlideFunction(rf, 2000.0, "functor rect");
 
+
+	//The other method is to use std::bind to "bake in" values for the arguments of drawRectangle. We will
+	//set up the rectPos and rectColor values to bind to the arguments of drawRectangle.
+	ofRectangle rectPos(100, 50, 100, 30);
+	ofColor rectColor(255, 255, 0);
+
+	//With the call to std::bind, we bake in the values rectPos and rectColor to their respective arguments,
+	//resulting in a function that takes 0 arguments, which we pass into appendSlideFunction().
+	SlidePresenter.appendSlideFunction(std::bind(drawRectangle, rectPos, rectColor), 2000.0, "bind rect");
+
+	
 	SlidePresenter.startSlidePresentation();
 	while (SlidePresenter.isPresentingSlides()) {
 		SlidePresenter.update();

@@ -2,7 +2,6 @@
 
 #include "../libs/colorspace/colorspace.h"
 
-//using namespace CX::Draw;
 namespace CX {
 namespace Draw {
 
@@ -789,73 +788,6 @@ void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolu
 }
 
 
-/*! Draws a color wheel (really, a ring) with specified colors.
-\param center The center of the color wheel.
-\param colors The colors to use in the color wheel.
-\param radius The radius of the color wheel.
-\param width The width of the color wheel. The color wheel will extend half of the width
-in either direction from the radius.
-\param angle The amount to rotate the color wheel. 
-
-\see The documentation for convertToRGB() includes an example of the use of this function. */
-void colorWheel(ofPoint center, std::vector<ofFloatColor> colors, float radius, float width, float angle) {
-
-	ofVbo vbo = colorWheelToVbo(center, colors, radius, width, angle);
-	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
-
-}
-
-/*! Draws an arc with specified colors. The precision of the arc is controlled by how many colors are supplied.
-\param center The center of the color wheel.
-\param colors The colors to use in the color arc.
-\param radiusX The radius of the color wheel in the X-axis.
-\param radiusY The radius of the color wheel in the Y-axis.
-\param width The width of the arc. The arc will extend half of the width
-in either direction from the radii.
-\param angleBegin The angle at which to begin the arc, in degrees.
-\param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
-*/
-void colorArc(ofPoint center, std::vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
-	ofVbo vbo = colorArcToVbo(center, colors, radiusX, radiusY, width, angleBegin, angleEnd);
-	vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
-}
-
-/*! See CX::Draw::colorWheel() for documentation. */
-ofVbo colorWheelToVbo(ofPoint center, std::vector<ofFloatColor> colors, float radius, float width, float angle) {
-	colors.push_back(colors.front());
-
-	return CX::Draw::colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
-}
-
-/*! See CX::Draw::colorArc() for documentation. */
-ofVbo colorArcToVbo(ofPoint center, std::vector<ofFloatColor> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
-	float d = width / 2;
-
-	angleBegin *= -PI / 180;
-	angleEnd *= -PI / 180;
-
-	colors = CX::Util::repeat(colors, 1, 2);
-
-	vector<ofPoint> vertices(colors.size(), center);
-
-	unsigned int resolution = vertices.size() / 2;
-
-	for (unsigned int i = 0; i < resolution; i++) {
-
-		float p = (float)i / (resolution - 1);
-
-		float rad = (angleEnd - angleBegin) * p + angleBegin;
-
-		vertices[2 * i] += ofPoint((radiusX + d) * cos(rad), (radiusY + d) * sin(rad));
-		vertices[2 * i + 1] += ofPoint((radiusX - d) * cos(rad), (radiusY - d) * sin(rad));
-	}
-
-	ofVbo vbo;
-	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
-	vbo.setColorData(colors.data(), colors.size(), GL_STATIC_DRAW);
-	return vbo;
-}
-
 
 /*! Convert between two color spaces. This conversion uses this library internally: http://www.getreuer.info/home/colorspace
 \param conversionFormula A formula of the format "SRC -> DEST", where SRC and DEST are valid color spaces.
@@ -905,34 +837,7 @@ http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB tit
 \return An ofFloatColor contaning the RGB coordinates. Instances of ofFloatColor can be implicitly 
 converted to ofColor in assignment.
 
-\code{.cpp}
-#include "CX_EntryPoint.h"
-//This code snippet draws an isoluminant color wheel to the screen using color conversion from LAB to RGB.
-void runExperiment(void) {
-
-	vector<ofFloatColor> wheelColors(100);
-	float L = 50; //Fix luminance value
-
-	for (int i = 0; i < wheelColors.size(); i++) {
-		//Take color values from a circle within the given luminance slice.
-		float angle = (float)i / wheelColors.size() * 2 * PI;
-		float A = sin(angle) * 30;
-		float B = cos(angle) * 30;
-
-		wheelColors[i] = Draw::convertToRGB("LAB", L, A, B); //Convert the L, A, and B components to the RGB color space.
-	}
-
-	Display.beginDrawingToBackBuffer();
-	ofBackground(0);
-	Draw::colorWheel(Display.getCenterOfDisplay(), wheelColors, 200, 70, 0);
-	Display.endDrawingToBackBuffer();
-	Display.swapBuffers();
-
-	Input.setup(true, false);
-	while (!Input.pollEvents())
-		;
-}
-\endcode
+\see Example code in the documentation for CX::Draw::colorWheel() uses this function.
 */
 ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3) {
 	std::string conversionFormula = inputColorSpace + " -> RGB";
@@ -998,49 +903,6 @@ void fixationCross(ofPoint location, float armLength, float armWidth) {
 	ofPath path = fixationCrossToPath(armLength, armWidth);
 	path.setColor(ofGetStyle().color);
 	path.draw(location.x, location.y);
-}
-
-/*! This function draws a pattern mask created with a large number of small squares, to an ofFbo.
-\param width The width of the resulting fbo in pixels.
-\param height The height of the resulting fbo in pixels.
-\param pixelSize The size of each small square making up the shape.
-\param colors Optional. If a vector of colors is provided, colors will be sampled in blocks
-using an Algo::BlockSampler from the provided colors. If no colors are provided, each color will
-be chosen randomly by sampling a hue value in the HSB color space, with the S and B held constant
-at maximum values (i.e. each color will be a bright, fully saturated color).
-\return An ofFbo containing the pattern mask. */
-ofFbo patternMaskToFbo(unsigned int width, unsigned int height, float squareSize, std::vector<ofColor> colors) {
-
-	squareSize = abs(squareSize);
-
-	ofFbo fbo;
-	fbo.allocate(width, height, GL_RGB);
-
-	ofRectangle pos(0, 0, squareSize, squareSize);
-
-	CX::Algo::BlockSampler<ofColor> bs(&CX::Instances::RNG, colors);
-
-	fbo.begin();
-	while (pos.x < width) {
-		while (pos.y < height) {
-
-			ofColor col;
-			if (colors.size() == 0) {
-				col = ofColor::fromHsb(CX::Instances::RNG.randomDouble(0, ofColor::limit()), ofColor::limit(), ofColor::limit());
-			} else {
-				col = bs.getNextValue();
-			}
-
-			ofSetColor(col);
-			ofRect(pos);
-			pos.y += squareSize;
-		}
-		pos.x += squareSize;
-		pos.y = 0;
-	}
-	fbo.end();
-
-	return fbo;
 }
 
 }

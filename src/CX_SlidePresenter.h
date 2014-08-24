@@ -77,7 +77,8 @@ namespace CX {
 		constantly swap the front and back buffers, which allows each frame to be counted. This results in really good synchronization
 		between the copies if data to the back buffer and the swaps of the front and back buffers.
 		In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
-		drawn to the back buffer. After the correct amount of time minus preSwapCPUHoggingDuration, the buffers are swapped. The main
+		drawn to the back buffer. After the correct amount of time minus \ref CX_SlidePresenter::Configuration::preSwapCPUHoggingDuration, 
+		the buffers are swapped. The main
 		problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" in the main thread while waiting
 		for the swap.
 		*/
@@ -142,7 +143,9 @@ namespace CX {
 			{}
 
 			CX_Display *display; //!< A pointer to the display to use.
-			std::function<void(CX_SlidePresenter::FinalSlideFunctionArgs&)> finalSlideCallback; //!< A pointer to a user function that will be called as soon as the final slide is presented.
+
+			/*! \brief A pointer to a user function that will be called as soon as the final slide is presented. */
+			std::function<void(CX_SlidePresenter::FinalSlideFunctionArgs&)> finalSlideCallback;
 
 			/*! \brief This sets how errors in slide presentation should be handled. 
 			Currently, the only available mode is the default, so this should not be changed. */

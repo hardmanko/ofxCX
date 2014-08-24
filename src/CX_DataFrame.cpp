@@ -604,6 +604,7 @@ CX_DataFrameColumn::CX_DataFrameColumn(CX_DataFrame *df, std::string column) :
 	_columnName(column)
 {}
 
+/*! Accesses the element in the specified row of the column. */
 CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
 	if (_df) {
 		return _df->operator()(row, _columnName);
@@ -612,6 +613,7 @@ CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
 	}
 }
 
+/*! Get the number of rows in the column. */
 CX_DataFrame::rowIndex_t CX_DataFrameColumn::size(void) {
 	if (_df) {
 		return _df->getRowCount();

@@ -270,7 +270,8 @@ namespace Util {
 
 	/*! This function sets the amount by which user coordinates are multiplied
 	before they are converted to standard coordinates. This allows you to easily
-	scale stimuli. The multiplier is 1 by default.
+	scale stimuli, assuming that the CX_CoordinateConverter is used throughout. 
+	If it has not been set, the multiplier is 1 by default.
 	\param multiplier The amount to multiply user coordinates by.
 	*/
 	void CX_CoordinateConverter::setMultiplier(float multiplier) {

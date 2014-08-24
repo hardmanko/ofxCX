@@ -74,9 +74,9 @@ namespace CX {
 		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& values, unsigned int blocksToSample);
 
 		template <typename stdDist>	std::vector<typename stdDist::result_type> sampleRealizations(unsigned int count, stdDist dist);
-		std::vector<double> sampleUniformRealizations(unsigned int count, double lowerBound_closed, double upperBound_open);
+		template <typename T> std::vector<T> sampleUniformRealizations(unsigned int count, T lowerBound_closed, T upperBound_open);
+		template <typename T> std::vector<T> sampleNormalRealizations(unsigned int count, T mean, T standardDeviation);
 		std::vector<unsigned int> sampleBinomialRealizations(unsigned int count, unsigned int trials, double probSuccess);
-		std::vector<double> sampleNormalRealizations(unsigned int count, double mean, double standardDeviation);
 
 		std::mt19937_64& getGenerator(void);
 
@@ -253,5 +253,29 @@ namespace CX {
 
 		return rval;
 	}
+
+
+	/*! Samples count deviates from a uniform distribution with the range [lowerBound_closed, upperBound_open).
+	\tparam T The precision with which to sample (should be `float` or `double` most of the time).
+	\param count The number of deviates to generate.
+	\param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
+	\param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.
+	\return A vector of the realizations. */
+	template <typename T>
+	std::vector<T> CX_RandomNumberGenerator::sampleUniformRealizations(unsigned int count, T lowerBound_closed, T upperBound_open) {
+		return this->sampleRealizations(count, std::uniform_real_distribution<T>(lowerBound_closed, upperBound_open));
+	}
+
+	/*! Samples count realizations from a normal distribution with the given mean and standard deviation.
+	\tparam T The precision with which to sample (should be `float` or `double` most of the time).
+	\param count The number of deviates to generate.
+	\param mean The mean of the distribution.
+	\param standardDeviation The standard deviation of the distribution.
+	\return A vector of the realizations. */
+	template <typename T>
+	std::vector<T> CX_RandomNumberGenerator::sampleNormalRealizations(unsigned int count, T mean, T standardDeviation) {
+		return this->sampleRealizations(count, std::normal_distribution<T>(mean, standardDeviation));
+	}
+
 
 }

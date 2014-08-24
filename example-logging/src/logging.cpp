@@ -35,9 +35,10 @@ void runExperiment (void) {
 	//By default all messages logged using the oF logging system (everything internal to oF is logged that way) are 
 	//routed into Log, from which they can be flushed.
 	ofLogWarning("using ofLogWarning") << "You have been warned about oF logging!";
-	ofLogError("using ofLogError", "%d plus %f is %f", 50, 0.5, 50 + 0.5); //You can also use the c-style formatting.
-	//If you want oF messages to be logged normally, you can call ofLogToConsole() or ofLogToFile(), although this is not recommended
-	//becuase there is no way to control when messages are flushed when using the standard oF logging.
+
+	ofLogError("using ofLogError", "%d plus %f is %f", 50, 0.5, 50 + 0.5); //You can also use C-style formatting with oF logging.
+	//If you want openFramworks messages to be logged normally, you can call ofLogToConsole() or ofLogToFile(), although this 
+	//is not recommended becuase there is no way to control when messages are flushed when using the standard oF logging.
 	//See the documentation http://openframeworks.cc/documentation/utils/ofLog.html for more information about oF logging
 
 	Log.flush(); //Flush the stored messages to the various logging targets (console and files). 
@@ -51,8 +52,8 @@ void runExperiment (void) {
 	Log.levelForAllModules(CX_LogLevel::LOG_NONE);
 	Log.level(CX_LogLevel::LOG_ALL, "myTargetModule");
 
-	Log.notice("myTargetModule") << "Special message";
-	Log.fatalError("anythingElse") << "Meltdown imminent!!! To bad you won't get this...";
+	Log.notice("myTargetModule") << "A special message, just for you!";
+	Log.fatalError("ReactorCore") << "Meltdown imminent!!! To bad you won't get this...";
 
 	Log.flush();
 

@@ -40,6 +40,8 @@ void CX::Private::setupCX(void) {
 
 	Clock.precisionTest(10000);
 
+	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
+
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
 }

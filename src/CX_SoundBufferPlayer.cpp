@@ -44,7 +44,8 @@ bool CX_SoundBufferPlayer::play (void) {
 		_soundPlaybackSampleFrame = 0;
 		return true;
 	}
-	Log.error("CX_SoundBufferPlayer") << "Could not start sound playback. There was a problem with the sound buffer associated with the player.";
+	Log.error("CX_SoundBufferPlayer") << "Could not start sound playback. There was a problem with the sound "
+		"buffer associated with the player. Have you remembered to call setSoundBuffer()?";
 	return false;
 }
 

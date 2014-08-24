@@ -90,6 +90,8 @@ namespace Synth {
 		*/
 		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
 
+		friend void operator>>(ModuleBase& l, ModuleParameter& r);
+
 		virtual void _dataSetEvent(void) { return; }
 
 		void _dataSet(ModuleBase* caller);
@@ -147,9 +149,7 @@ namespace Synth {
 		fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator with an offset of 500 Hz.
 		\endcode
 		*/
-		friend void operator>>(ModuleBase& l, ModuleParameter& r) {
-			r._input = &l;
-		}
+		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
 	private:
 		friend class ModuleBase;

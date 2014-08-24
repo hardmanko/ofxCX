@@ -36,7 +36,7 @@ namespace CX {
 	public:
 		CX_Clock (void);
 
-		void setImplementation(CX::CX_BaseClockImplementation* impl);
+		void setImplementation(CX_BaseClockImplementation* impl);
 
 		void precisionTest(unsigned int iterations);
 
@@ -53,7 +53,7 @@ namespace CX {
 	private:
 		Poco::LocalDateTime _pocoExperimentStart;
 
-		CX::CX_BaseClockImplementation* _impl;
+		CX_BaseClockImplementation* _impl;
 		bool _implSelfAllocated;
 	};
 

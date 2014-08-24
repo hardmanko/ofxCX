@@ -22,6 +22,12 @@ ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	return r;
 }
 
+
+void CX::Synth::operator>>(ModuleBase& l, ModuleParameter& r) {
+	r._input = &l;
+	r._owner->_setDataIfNotSet(&l);
+}
+
 ////////////////
 // ModuleBase //
 ////////////////

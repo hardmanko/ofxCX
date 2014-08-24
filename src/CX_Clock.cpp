@@ -13,7 +13,7 @@ CX_Clock CX::Instances::Clock;
 CX_Clock::CX_Clock (void) {
 
 #ifdef TARGET_WIN32
-	_impl = new CX::CX_WIN32_PerformanceCounterClock(); //I realize this causes a memory leak... of about 8 bytes.
+	_impl = new CX::CX_WIN32_PerformanceCounterClock();
 #else
 	_impl = new CX::CX_StdClockWrapper<std::chrono::high_resolution_clock>();
 #endif
@@ -100,9 +100,15 @@ void CX_Clock::resetExperimentStartTime(void) {
 
 /*! This functions sleeps for the requested period of time. This can be somewhat
 imprecise because it requests a specific sleep duration from the operating system,
-but the operating system may not provide the exact sleep time. */
+but the operating system may not provide the exact sleep time.
+\param t The requested sleep duration. If 0, the thread yields rather than sleeping.
+*/
 void CX_Clock::sleep(CX_Millis t) {
-	std::this_thread::sleep_for(std::chrono::nanoseconds(t.nanos()));
+	if (t.nanos() == 0) {
+		std::this_thread::yield();
+	} else {
+		std::this_thread::sleep_for(std::chrono::nanoseconds(t.nanos()));
+	}
 }
 
 /*! This functions blocks for the requested period of time. This is likely more

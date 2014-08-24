@@ -5,8 +5,9 @@
 namespace CX {
 namespace Util {
 
-	/*! This class can be used for profiling event loops. It measures the amount of time that elapses
-	between subsequent calls to takeSample().
+	/*! This class can be used for profiling loops. It measures the amount of time that elapses
+	between subsequent calls to takeSample(). One possible use is to determine how long it
+	takes between calls to an important function, like CX_InputManager::pollEvents() or CX_Display::swapBuffers()
 
 	\code{.cpp}
 	//Set up collection:

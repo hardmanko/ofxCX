@@ -89,6 +89,10 @@ CX_RandomInt_t CX_RandomNumberGenerator::getMaximumRandomInt(void) {
 \param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe this value.
 \return The realization. */
 double CX_RandomNumberGenerator::randomDouble(double lowerBound_closed, double upperBound_open) {
+	if (lowerBound_closed > upperBound_open) {
+		Instances::Log.error("CX_RandomNumberGenerator") << "randomDouble: The lower bound is greater than the upper bound, returning 0.";
+		return 0;
+	}
 	return std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open)(_mersenneTwister);
 }
 
@@ -100,24 +104,6 @@ double CX_RandomNumberGenerator::randomDouble(double lowerBound_closed, double u
 \return A vector of the samples. */
 std::vector<int> CX_RandomNumberGenerator::sample(unsigned int count, int lowerBound, int upperBound, bool withReplacement) {
 	return sample(count, CX::Util::intVector<int>(lowerBound, upperBound), withReplacement);
-}
-
-/*! Samples count deviates from a uniform distribution with the range [lowerBound_closed, upperBound_open).
-\param count The number of deviates to generate.
-\param lowerBound_closed The lower bound of the distribution. This bound is closed, meaning that you can observe deviates with this value.
-\param upperBound_open The upper bound of the distribution. This bound is open, meaning that you cannot observe deviates with this value.
-\return A vector of the realizations. */
-std::vector<double> CX_RandomNumberGenerator::sampleUniformRealizations(unsigned int count, double lowerBound_closed, double upperBound_open) {
-	return this->sampleRealizations(count, std::uniform_real_distribution<double>(lowerBound_closed, upperBound_open));
-}
-
-/*! Samples count realizations from a normal distribution with the given mean and standard deviation.
-\param count The number of deviates to generate.
-\param mean The mean of the distribution.
-\param standardDeviation The standard deviation of the distribution.
-\return A vector of the realizations. */
-std::vector<double> CX_RandomNumberGenerator::sampleNormalRealizations (unsigned int count, double mean, double standardDeviation) {
-	return this->sampleRealizations(count, std::normal_distribution<double>(mean, standardDeviation));
 }
 
 /*!	Samples count realizations from a binomial distribution with the given number of trials and probability of success on each trial.

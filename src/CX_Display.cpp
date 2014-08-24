@@ -3,7 +3,7 @@
 #include "CX_Private.h" //glfwContext
 
 using namespace CX;
-using namespace CX::Instances;
+//using namespace CX::Instances;
 
 CX_Display::CX_Display (void) :
 	_framePeriod(0),
@@ -55,7 +55,7 @@ display.hardwareVSync = true
 //display.swapAutomatically = false //Commented out: no change
 \endcode
 All of the configuration keys are used in this example.
-Configuration options can be ignored. Ignored options result in no change in the configuration of the CX_Display.
+Configuration options can be omitted, in which case there is no change in the configuration of the CX_Display for that option.
 Note that the "display" prefix allows this configuration to be embedded in a file that also performs other configuration functions.
 
 Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
@@ -116,7 +116,7 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
 \param autoSwap If true, the front and back buffer will swap automatically every frame. 
-\note This function may block to due the requirement that it synchronize with the thread. See \ref blockingCode. */
+\note This function may \ref blockingCode "block" for up to 1 frame to due the requirement that it synchronize with the thread. */
 void CX_Display::setAutomaticSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
@@ -181,7 +181,7 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 
 /*! This function returns the number of the last frame presented, as determined by 
 number of front and back buffer swaps. It tracks buffer swaps that result from 
-1) the front and back buffer swapping automatically (as a result of setAutomaticSwapping() with true as the argument) and 
+1) the front and back buffer swapping automatically (as a result of \ref CX_Display::setAutomaticSwapping "setAutomaticSwapping(true)") and 
 2) manual swaps resulting from a call to swapBuffers() or swapBuffersInThread().
 \return The number of the last frame. This value can only be compared with other values 
 returned by this function. */
@@ -196,7 +196,6 @@ Display.beginDrawingToBackBuffer();
 //Draw stuff...
 Display.endDrawingToBackBuffer();
 \endcode
-
 */
 void CX_Display::beginDrawingToBackBuffer (void) {
 	if (_renderer) {
@@ -225,7 +224,7 @@ blocks until the swap occurs. This usually should not be used if
 \see \ref blockingCode */
 void CX_Display::swapBuffers (void) {
 	if (isAutomaticallySwapping()) {
-		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffers() while auto swapping mode was in use.";
+		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffers() while automatic buffer swapping mode was in use.";
 	}
 
 	glfwSwapBuffers(CX::Private::glfwContext);
@@ -242,6 +241,10 @@ because spawning a thread has a cost and may introduce synchronization problems.
 because this function does not block, in order to know when the buffer swap took place,
 you need to check hasSwappedSinceLastCheck() in order to know when the buffer swap has taken place. */
 void CX_Display::swapBuffersInThread (void) {
+	if (isAutomaticallySwapping()) {
+		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffersInThread() while automatic buffer swapping mode was in use.";
+	}
+
 	_swapThread->swapNFrames(1);
 }
 
@@ -264,8 +267,8 @@ void CX_Display::waitForOpenGL (void) {
 
 /*! Returns the resolution of the current display area. If in windowed mode, this will return the resolution
 of the window. If in full screen mode, this will return the resolution of the monitor.
-\return An ofRectangle containing the resolution. The width in pixels is stored in both the width
-and x members and the height in pixles is stored in both the height and y members, so you can
+\return An ofRectangle containing the resolution. The width in pixels is stored in both the `width`
+and `x` members and the height in pixles is stored in both the `height` and `y` members, so you can
 use whichever makes the most sense to you. */
 ofRectangle CX_Display::getResolution (void) {
 	return ofRectangle( ofGetWidth(), ofGetHeight(), ofGetWidth(), ofGetHeight() );
@@ -297,8 +300,7 @@ void CX_Display::setWindowResolution (int width, int height) {
 }
 
 /*! Sets the title of the experiment window.
-\param title The new window title.
-*/
+\param title The new window title. */
 void CX_Display::setWindowTitle(std::string title) {
 	CX::Private::window->setWindowTitle(title);
 }
@@ -340,7 +342,7 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 		_framePeriod = Util::mean(durations);
 		
 	} else {
-		Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occurred during the " << estimationInterval << " ms estimation interval.";
+		CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occurred during the " << estimationInterval << " ms estimation interval.";
 	}
 	
 	setAutomaticSwapping(wasSwapping);
@@ -348,20 +350,19 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 
 /*! Set whether the display is full screen or not. If the display is set to full screen, 
 the resolution may not be the same as the resolution of display in windowed mode, and vice
-versa.
-*/
+versa. */
 void CX_Display::setFullScreen (bool fullScreen) {
 	Private::window->setFullscreen(fullScreen);
 }
 
-/*! \brief Returns true if the display is in full screen mode. */
+/*! \brief Returns `true` if the display is in full screen mode, false otherwise. */
 bool CX_Display::isFullscreen(void) {
 	return (CX::Private::window->getWindowMode() == OF_FULLSCREEN);
 }
 
 /*! Sets whether the display is using hardware VSync to control frame presentation. 
-Without some form of Vsync, vertical tearing can occur.
-\param b If true, hardware VSync will be enabled in the video card driver. If false, it will be disabled.
+Without some form of Vsync, vertical tearing may occur.
+\param b If `true`, hardware VSync will be enabled in the video card driver. If `false`, it will be disabled.
 \note This may not work, depending on your video card settings. Modern video card
 drivers allow you to control whether Vsync is used for all applications or not,
 or whether the applications are allowed to choose from themselves whether to use
@@ -383,16 +384,20 @@ Without some form of Vsync, vertical tearing can occur. Hardware VSync, if avail
 is generally preferable to software VSync, so see useHardwareVSync() as well. However,
 software and hardware VSync are not mutally exclusive, sometimes using both together works
 better than only using one.
-\param b If true, the display will attempt to do VSync in software.
+\param b If `true`, the display will attempt to do VSync in software.
 \see See \ref framebufferSwapping for information on what Vsync is. */
 void CX_Display::useSoftwareVSync(bool b) {
 	_softVSyncWithGLFinish = b;
 	_swapThread->setGLFinishAfterSwap(b);
 }
 
-/*! Copies an ofFbo to the back buffer using a potentially slow but pixel-perfect blitting operation. 
-This overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
+/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation. 
+The slowness of the operation is hardware-dependent, with older hardware often being faster at this operation.
+Generally, you should just draw the `ofFbo` directly using its `draw()` function.
+
+\note This function overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
 is ignored.
+
 \param fbo The framebuffer to copy. It will be drawn starting from (0, 0) and will be drawn at
 the full dimensions of the fbo (whatever size was chosen at allocation of the fbo).
 */
@@ -400,9 +405,13 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
 	copyFboToBackBuffer(fbo, ofPoint(0, 0));
 }
 
-/*! Copies an ofFbo to the back buffer using a potentially slow but pixel-perfect blitting operation.
-This overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
+/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation. 
+The slowness of the operation is hardware-dependent, with older hardware often being faster at this operation.
+Generally, you should just draw the `ofFbo` directly using its `draw()` function.
+
+\note This function overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
 is ignored.
+
 \param fbo The framebuffer to copy.
 \param destination The point on the back buffer where the fbo will be placed.
 */
@@ -419,9 +428,13 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
 	_blitFboToBackBuffer(fbo, source, dest);
 }
 
-/*! Copies an ofFbo to the back buffer using a potentially slow but pixel-perfect blitting operation.
-This overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
+/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation. 
+The slowness of the operation is hardware-dependent, with older hardware often being faster at this operation.
+Generally, you should just draw the `ofFbo` directly using its `draw()` function.
+
+\note This function overwrites the contents of the back buffer, it does not draw over them. For this reason, transparaency
 is ignored.
+
 \param fbo The framebuffer to copy.
 \param source A rectangle giving an area of the fbo to copy.
 \param destination The point on the back buffer where the area of the fbo will be placed.
@@ -441,6 +454,7 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint des
 	_blitFboToBackBuffer(fbo, source, dest);
 }
 
+//It turns out that this is a very slow operation, in spite of the fact that it is just copying data.
 void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates) {
 
 	ofRectangle res = this->getResolution();
@@ -470,7 +484,7 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 		//break;
 	case OF_ORIENTATION_90_RIGHT:
 		//std::swap(y0, y1);
-		Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
+		CX::Instances::Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
 			" Supported orientations are OF_ORIENTATION_DEFAULT and OF_ORIENTATION_180.";
 		break;
 	}
@@ -490,19 +504,19 @@ time measurement. The visual inspection is important because what the computer i
 and what is actually drawn on the screen are not always the same. It is best to run the tests in full screen
 mode, although that is not enforced. At the end of the tests, the results of the tests are provided to
 you to interpret based on the guidelines described here. The outcome of the test will usually be that there
-are some modes that don't work correctly and some that work well for the tested computer.
+are some modes that work better than others for the tested computer.
 
 In the resulting CX_DataFrame, there are three columns that give the test conditions. "thread" indicates
 whether the main thread or a secondary thread was used. "hardVSync" and "softVSync" indicate whether
 hardware or software Vsync were enabled for the test (see useHardwareVSync() and useSoftwareVSync()). 
 Other columns, giving data from the tests, are explained below. Whatever combination of Vsync works 
-best can be chosen for use in experiments using useHardwareVSync() and useSoftwareVSync(). The 
-threading mode is primarily used by CX_SlidePresenter with the CX::CX_SlidePresenter::Configuration::SwappingMode 
-setting.
+best can be set up for use in experiments using useHardwareVSync() and useSoftwareVSync() to set the values. The 
+threading mode is primarily determined by CX_SlidePresenter with the CX::CX_SlidePresenter::Configuration::SwappingMode 
+setting, although some experiments might want to use threaded swaps directly.
 
 Continuous swapping test
 --------------------------------
-This test examines the case of constantly swapping the fron and back buffers. It measures the amount of time
+This test examines the case of constantly swapping the front and back buffers. It measures the amount of time
 between swaps, which should always approximately equal the frame period. The data from this test are found
 in columns of the data frame beginning with "cs": "csDurations" gives the raw between-swap durations, and 
 "csDurationMean" and "csDurationStdDev" give the mean and standard deviation of the durations. If the swapping
@@ -521,7 +535,7 @@ The idea is that there is a long delay between the first swap (the "long" swap) 
 followed by a standard delay before the third swap (the "normal" swap).
 
 There are graded levels of success in this test. Complete success is when the duration of the first swap is 3P, 
-where P is the standard swap period, and the duration of both of the second two swaps is 1P. 
+where P is the standard swap period (i.e. the length of one frame), and the duration of both of the second two swaps is 1P. 
 Partial success is if the duration of the long swap is ~2.5P, the duration of the short swap is ~.5P, and the duration
 of the normal swap is 1P. In this case, the short swap at least gets things back on the right track.
 Failure occurs if the short swap duration is ~0P. Mega failure occurs if the normal swap duration is ~0P. In this
@@ -540,12 +554,13 @@ to the back buffer, overwriting the middle bar (or at least, this is my best exp
 The timing data from the wait swap test can be found in columns of the data frame beginning with "ws". "wsLongMean",
 "wsShortMean", and "wsNormalMean" are the averages of the long, short, and normal swap durations, respectively.
 "wsTotalMean" is the sum of wsLongMean, wsShortMean, and wsNormalMean. But also be sure to check the raw data in 
-"wsDurations", which goes along with the duration type in "wsTypes".
+"wsDurations", which goes along with the duration type in "wsType".
 
 The wait swap test is not performed for the secondary thread, because the assumption is that if the secondary
 thread is used, in that thread the front and back buffers will be swapped constantly so there will be no wait swaps.
 
-\param desiredTestDuration An approximate amount of time to spend performing the tests.
+\param desiredTestDuration An approximate amount of time to spend performing all of the tests, so the time if divided among
+all of the tests.
 \param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested. If false, only 
 swapping from within the main thread will be tested.
 \return A CX_DataFrame containing timing results from the tests.
@@ -554,7 +569,6 @@ swapping from within the main thread will be tested.
 */
 CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread) {
 
-	//lamdas
 	auto drawScreenData = [](CX_Display* display, ofColor color, string information) {
 		display->beginDrawingToBackBuffer();
 		ofBackground(color);
@@ -570,7 +584,6 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 		ofDrawBitmapStringHighlight(information, ofPoint(100, 50), ofColor::black, ofColor::white);
 		display->endDrawingToBackBuffer();
 	};
-
 
 	bool wasSwapping = isAutomaticallySwapping();
 
@@ -610,20 +623,20 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 						swapBuffers();
 					}
 
-					CX_Millis startTime = Clock.now();
-					while ((Clock.now() - startTime) < testSegmentDuration) {
+					CX_Millis startTime = CX::Instances::Clock.now();
+					while ((CX::Instances::Clock.now() - startTime) < testSegmentDuration) {
 						swapBuffers();
-						swapTimes.push_back(Clock.now());
+						swapTimes.push_back(CX::Instances::Clock.now());
 
 						drawScreenData(this, (swapTimes.size() % 2) ? ofColor(255) : ofColor(0), "Continuous swapping test\n" + conditionString);
 					}
 
 				} else {
 
-					Clock.delay(CX_Millis(200));
+					CX::Instances::Clock.delay(CX_Millis(200));
 
-					CX_Millis startTime = Clock.now();
-					while ((Clock.now() - startTime) < testSegmentDuration) {
+					CX_Millis startTime = CX::Instances::Clock.now();
+					while ((CX::Instances::Clock.now() - startTime) < testSegmentDuration) {
 						if (_swapThread->hasSwappedSinceLastCheck()) {
 							swapTimes.push_back(this->getLastSwapTime());
 
@@ -659,15 +672,15 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 					ofRectangle resolution = this->getResolution();
 
-					CX_Millis startTime = Clock.now();
+					CX_Millis startTime = CX::Instances::Clock.now();
 					CX_Millis period = Util::mean(durations);
-					while ((Clock.now() - startTime) < testSegmentDuration) {
+					while ((CX::Instances::Clock.now() - startTime) < testSegmentDuration) {
 
 						drawWaitSwapScreenData(this, ofColor::black, ofColor::white, 
 											   ofRectangle(0, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
 						swapBuffers();
-						swapTimes.push_back(Clock.now());
+						swapTimes.push_back(CX::Instances::Clock.now());
 						durationType.push_back("long");
 
 
@@ -675,17 +688,17 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 											   ofRectangle(resolution.width / 3, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
 
-						Clock.delay(period * 2.5);
+						CX::Instances::Clock.delay(period * 2.5);
 
 						swapBuffers();
-						swapTimes.push_back(Clock.now());
+						swapTimes.push_back(CX::Instances::Clock.now());
 						durationType.push_back("short");
 
 						drawWaitSwapScreenData(this, ofColor::black, ofColor::white,
 											   ofRectangle(resolution.width * 2 / 3, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
 						swapBuffers();
-						swapTimes.push_back(Clock.now());
+						swapTimes.push_back(CX::Instances::Clock.now());
 						durationType.push_back("normal");
 					}
 

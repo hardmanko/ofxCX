@@ -102,7 +102,7 @@ void runExperiment(void) {
 	if (Display.isFullscreen()) {
 		Clock.sleep(CX_Seconds(1));
 	}
-	Display.setVSync(true, false);
+	Display.useHardwareVSync(true);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
@@ -122,7 +122,7 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::Configuration::MULTI_CORE;
+	config.swappingMode = CX_SlidePresenter::SwappingMode::MULTI_CORE;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
 
