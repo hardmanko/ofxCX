@@ -123,6 +123,7 @@ namespace Draw {
 	ofTexture gaborToTexture (const CX_GaborProperties_t& properties);
 	void gabor (ofPoint center, const CX_GaborProperties_t& properties);
 
+	void saveFboToFile(ofFbo& fbo, std::string filename);
 
 	/*! Sample colors from the RGB spectrum with variable precision. Colors will be sampled
 	beginning with red, continue through yellow, green, cyan, blue, violet, and almost, but not quite, back to red.

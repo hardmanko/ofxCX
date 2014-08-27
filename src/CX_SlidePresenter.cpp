@@ -663,11 +663,10 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 		do {
 			swapStart = Clock.now();
 			_config.display->swapBuffers();
-			Log.notice("CX_SlidePresenter") << "swapped during sync";
+			//Log.notice("CX_SlidePresenter") << "swapped during sync";
 		} while (Clock.now() - swapStart < _config.display->getFramePeriod() - CX_Millis(1));
-			
-
-		Log.notice("CX_SlidePresenter") << "Sync swap duration: " << Clock.now() - syncSwapStart;
+		
+		//Log.notice("CX_SlidePresenter") << "Sync swap duration: " << Clock.now() - syncSwapStart;
 
 		_currentSlide = 0;
 		_renderCurrentSlide();

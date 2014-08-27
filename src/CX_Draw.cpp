@@ -159,7 +159,11 @@ void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float 
 void centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
-	y -= (bb.y + bb.height / 2);
+	if (ofIsVFlipped()) {
+		y = y - bb.y - bb.height / 2;
+	} else {
+		y = y + bb.y + bb.height / 2;
+	}
 	font.drawString(s, x, y);
 }
 
@@ -903,6 +907,20 @@ void fixationCross(ofPoint location, float armLength, float armWidth) {
 	ofPath path = fixationCrossToPath(armLength, armWidth);
 	path.setColor(ofGetStyle().color);
 	path.draw(location.x, location.y);
+}
+
+/*! Saves the contents of an ofFbo to a file. The file type is hinted by the file extension you provide
+as part of the file name.
+\param fbo The framebuffer to save.
+\param filename The path of the file to save. The file extension determines the type of file that is saved.
+If no file extention is given, nothing gets saved.
+Many standard file types are supported: png, bmp, jpg, gif, etc. However, if the fbo has an alpha channel,
+only png works properly (at least of those I have tested).
+*/
+void saveFboToFile(ofFbo& fbo, std::string filename) {
+	ofPixels pix;
+	fbo.readToPixels(pix);
+	ofSaveImage(pix, filename, OF_IMAGE_QUALITY_BEST);
 }
 
 }

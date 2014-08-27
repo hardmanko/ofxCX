@@ -102,25 +102,12 @@ namespace Util {
 		return d;
 	}
 
-	/*! Saves the contents of an ofFbo to a file. The file type is hinted by the file extension you provide
-	as part of the file name.
-	\param fbo The framebuffer to save.
-	\param filename The path of the file to save. The file extension determines the type of file that is saved.
-	Many standard file types are supported: png, bmp, jpg, gif, etc. However, if the fbo has an alpha channel,
-	only png works properly (at least of those I have tested).
-	*/
-	void saveFboToFile(ofFbo& fbo, std::string filename) {
-		ofPixels pix;
-		fbo.readToPixels(pix);
-		ofSaveImage(pix, filename, OF_IMAGE_QUALITY_BEST);
-	}
-
 
 	/*! This function reads in a file containing information stored as key-value pairs. A file of this kind could look like:
 	\code
-	unleash_penguins=true
 	Key=Value
 	blue=0000FF
+	unleash_penguins=true
 	\endcode
 	This type of file is often used for configuration of a program. This function simply provides a simple way to read in such data.
 	\param filename The name of the file containing key-value data.

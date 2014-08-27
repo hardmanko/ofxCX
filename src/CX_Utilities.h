@@ -64,8 +64,6 @@ namespace CX {
 		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
 		template <typename T> std::vector<T> exclude(const std::vector<T>& A, const std::vector<T>& B);
 
-		void saveFboToFile(ofFbo& fbo, std::string filename); //Move to Draw ns?
-
 		template <typename T> T max(std::vector<T> vals);
 		template <typename T> T min(std::vector<T> vals);
 		template <typename T> T mean(std::vector<T> vals);
