@@ -123,6 +123,9 @@ public:
 	bool deleteRow (rowIndex_t row);
 
 	std::vector<std::string> getColumnNames(void) const;
+	bool columnExists(std::string columnName) const;
+	bool columnContainsVectors(std::string columnName) const;
+
 	rowIndex_t getRowCount(void) const;
 
 	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
@@ -132,8 +135,8 @@ public:
 	void shuffleRows (CX_RandomNumberGenerator &rng);
 
 	template <typename T> std::vector<T> copyColumn(std::string column) const;
-
-	
+	std::vector<std::string> convertVectorColumnToColumns(std::string columnName, int startIndex, bool deleteOriginal, std::string newBaseName = "");
+	void convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals);
 
 protected:
 	friend class CX_DataFrameRow;

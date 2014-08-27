@@ -589,6 +589,110 @@ void CX_DataFrame::_equalizeRowLengths(void) {
 	_rowCount = maxSize;
 }
 
+/*! \brief Returns `true` if the named column exists in the `CX_DataFrame`. */
+bool CX_DataFrame::columnExists(std::string columnName) const {
+	return _data.find(columnName) != _data.end();
+}
+
+/*! \brief Returns `true` if the named column contains any cells which contain vectors (i.e.
+have a length > 1). */
+bool CX_DataFrame::columnContainsVectors(std::string columnName) const {
+	if (!columnExists(columnName)) {
+		return false;
+	}
+
+	for (rowIndex_t i = 0; i < getRowCount(); i++) {
+		if (_data.at(columnName)[i].isVector()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/*! Converts a column which contains vectors of data into multiple columns which are given names
+with an ascending integer suffix. Each new column will contain the data from one location in the
+previous vectors of data. For example, if you have length 3 vectors in a column and use this function
+on that column, you will end up with three columns, each of which contains one of the elements of those
+vectors, with order maintained, of course.
+
+If you have vectors with different lengths within the same column, this function still works, it
+just fills empty cells of new columns with the string "NA".
+
+\param columnName The name of the column to convert to multiple columns. If the named column does not exist or
+it does not contain any vectors, this function has no effect.
+\param startIndex The value at which to start giving suffix indices. For example, if it is 1, the first new column will
+be named "newBaseName1", the second "newBaseName2", etc..
+\param deleteOriginal If `true`, the original column, `columnName`, will be deleted once the data has been copied into the
+new columns.
+\param newBaseName If this is the empty string, `columnName` will be used as the base for the new column names. Otherwise,
+`newBaseName` will be used.
+\return A vector of strings containing the new names. If an error occurred or nothing needed to be done, this vector will
+be of length 0.
+
+\note If any of the names of the new columns conflicts with an existing column name, the new column will be created,
+but its name will be changed by appending "_NEW". If this new name conflicts with an existing name, the process will
+be repeated until the new name does not conflict.
+*/
+std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string columnName, int startIndex, bool deleteOriginal, std::string newBaseName) {
+
+	if (!columnExists(columnName) || !columnContainsVectors(columnName)) {
+		return std::vector<std::string>();
+	}
+
+	if (newBaseName == "") {
+		newBaseName = columnName;
+	}
+
+	rowIndex_t rowCount = this->getRowCount();
+
+	//Copy the data to string vectors.
+	vector<vector<string>> vectors(rowCount); //The original data; stored by row then column
+	size_t maxVectorLength = 0;
+	for (int i = 0; i < rowCount; i++) {
+		vectors[i] = this->operator()(i, columnName).toVector<string>();
+		maxVectorLength = max<size_t>(maxVectorLength, vectors[i].size());
+	}
+
+	//Create new column names and sort out conflicts.
+	vector<string> columnNames(maxVectorLength);
+	for (int i = 0; i < columnNames.size(); i++) {
+		columnNames[i] = columnName + ofToString(startIndex + i);
+
+		while (columnExists(columnNames[i])) {
+			CX::Instances::Log.warning("CX_DataFrame") << "convertVectorColumnToColumns: New column name " << columnNames[i] << " conflicts with existing column name. "
+				"The new column name will be changed to " << columnNames[i] << "_NEW.";
+			columnNames[i] + "_NEW";
+		}
+	}
+
+	//Add the new columns and copy over the data
+	for (int i = 0; i < columnNames.size(); i++) {
+		this->addColumn(columnNames[i]);
+
+		for (int j = 0; j < rowCount; j++) {
+			if (vectors[j].size() > i) {
+				this->operator()(j, columnNames[i]) = vectors[j][i];
+			} else {
+				this->operator()(j, columnNames[i]) = "NA";
+			}
+		}
+	}
+
+	if (deleteOriginal) {
+		this->deleteColumn(columnName);
+	}
+
+	return columnNames;
+}
+
+
+void CX_DataFrame::convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals) {
+	for (auto it = _data.begin(); it != _data.end(); it++) {
+		if (columnContainsVectors(it->first)) {
+			convertVectorColumnToColumns(it->first, startIndex, deleteOriginals, it->first);
+		}
+	}
+}
 
 ////////////////////////
 // CX_DataFrameColumn //
