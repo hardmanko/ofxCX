@@ -9,9 +9,9 @@ namespace CX {
 	CX::CX_InputManager CX::Instances::Input;
 
 	CX_InputManager::CX_InputManager(void) :
-		_usingKeyboard(false),
-		_usingMouse(false),
-		_usingJoystick(false)
+		_usingJoystick(false),
+		Keyboard(this),
+		Mouse(this)
 	{
 	}
 
@@ -30,11 +30,11 @@ namespace CX {
 		pollEvents(); //Flush out all waiting events during setup.
 
 		Keyboard.clearEvents();
-		_usingKeyboard = useKeyboard;
+		Keyboard.enable(useKeyboard);
 		Keyboard._listenForEvents(useKeyboard);
 
 		Mouse.clearEvents();
-		_usingMouse = useMouse;
+		Mouse.enable(useMouse);
 		Mouse._listenForEvents(useMouse);
 
 		bool success = true;
@@ -65,13 +65,13 @@ namespace CX {
 			Joystick.pollEvents();
 		}
 
-		if (_usingMouse) {
+		if (Mouse.enabled()) {
 			Mouse._lastEventPollTime = pollCompleteTime;
 		} else {
 			Mouse.clearEvents();
 		}
 
-		if (_usingKeyboard) {
+		if (Keyboard.enabled()) {
 			Keyboard._lastEventPollTime = pollCompleteTime;
 		} else {
 			Keyboard.clearEvents();

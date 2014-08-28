@@ -50,6 +50,10 @@ std::string CX_Joystick::getJoystickName (void) {
 	return _joystickName;
 }
 
+int CX_Joystick::getJoystickIndex(void) {
+	return _joystickIndex;
+}
+
 /*! Check to see if there are any new joystick events. If there are new events,
 they can be accessed with availableEvents() and getNextEvent().
 \return True if there are new events.*/

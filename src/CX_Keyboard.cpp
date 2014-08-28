@@ -1,14 +1,28 @@
 #include "CX_Keyboard.h"
 
+#include "CX_InputManager.h"
+
 using namespace CX;
 
-CX_Keyboard::CX_Keyboard (void) :
+CX_Keyboard::CX_Keyboard(CX_InputManager* owner) :
+	_owner(owner),
 	_listeningForEvents(false)
 {
 }
 
 CX_Keyboard::~CX_Keyboard (void) {
 	_listenForEvents(false);
+}
+
+void CX_Keyboard::enable(bool enable) {
+	_enabled = enable;
+	if (!enable) {
+		clearEvents();
+	}
+}
+
+bool CX_Keyboard::enabled(void) {
+	return _enabled;
 }
 
 /*! Get the number of new events available for this input device. */
@@ -38,8 +52,39 @@ void CX_Keyboard::clearEvents (void) {
 \param key The key code or character for the key you are interested in. See the 
 documentation for \ref CX_Keyboard::Event::key for more information about this value.
 \return True iff the given key is held. */
-bool CX_Keyboard::isKeyPressed(int key) {
+bool CX_Keyboard::isKeyHeld(int key) {
 	return (_heldKeys.find(key) != _heldKeys.end());
+}
+
+CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear) {
+	if (clear) {
+		this->clearEvents();
+	}
+
+	bool enabled = this->enabled();
+	this->enable(true);
+
+	CX_Keyboard::Event rval;
+	bool waiting = true;
+	while (waiting) {
+		if (_owner->pollEvents()) {
+			while (this->availableEvents() > 0) {
+				rval = this->getNextEvent();
+				if ((rval.eventType == CX_Keyboard::Event::PRESSED) && ((key == -1) || (rval.key == key))) {
+					waiting = false;
+					break;
+				}
+			}
+		}
+	}
+
+	if (clear) {
+		this->clearEvents();
+	}
+
+	this->enable(enabled);
+
+	return rval;
 }
 
 void CX_Keyboard::_listenForEvents(bool listen) {

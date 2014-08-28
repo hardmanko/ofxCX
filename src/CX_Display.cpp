@@ -124,8 +124,8 @@ void CX_Display::setAutomaticSwapping (bool autoSwap) {
 		}
 	} else {
 		if (_swapThread->isThreadRunning()) {
-			_swapThread->stopThread();
-			_swapThread->waitForThread(false);
+			//_swapThread->stopThread();
+			_swapThread->waitForThread(true);
 		}
 	}
 }

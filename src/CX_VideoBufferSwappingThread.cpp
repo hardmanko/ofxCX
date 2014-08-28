@@ -18,8 +18,6 @@ CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread(void) :
 
 void CX_VideoBufferSwappingThread::threadedFunction(void) {
 
-	CX_Millis lastSwapTime = 0;
-
 	while (isThreadRunning()) {
 
 		glfwSwapBuffers(CX::Private::glfwContext);
@@ -32,9 +30,10 @@ void CX_VideoBufferSwappingThread::threadedFunction(void) {
 			}
 		}
 
-		lastSwapTime = CX::Instances::Clock.now();
+		CX_Millis lastSwapTime = CX::Instances::Clock.now();
 
 		if (lock()) {
+
 			++_frameCount;
 
 			_recentSwapTimes.push_back(lastSwapTime);
@@ -55,7 +54,6 @@ void CX_VideoBufferSwappingThread::threadedFunction(void) {
 				this->stopThread();
 			}
 		}
-
 	}
 }
 

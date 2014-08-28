@@ -47,9 +47,10 @@ namespace CX {
 			} eventType; //!< The type of the event.
 		};
 
-
-		CX_Mouse (void);
 		~CX_Mouse (void);
+
+		void enable(bool enable);
+		bool enabled(void);
 
 		int availableEvents (void);
 		CX_Mouse::Event getNextEvent (void);
@@ -61,6 +62,10 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
+
+		CX_Mouse(CX_InputManager* owner);
+		CX_InputManager* _owner;
+		bool _enabled;
 		CX_Millis _lastEventPollTime;
 
 		std::set<int> _heldMouseButtons;

@@ -41,6 +41,9 @@ namespace CX {
 		CX_InputManager (void);
 
 		bool setup (bool useKeyboard, bool useMouse, int joystickIndex = -1);
+		bool usingKeyboard(void);
+		bool usingMouse(void);
+		int joystickIndex(void);
 
 		bool pollEvents (void);
 		void clearAllEvents(bool poll = false);
@@ -50,8 +53,6 @@ namespace CX {
 		CX_Joystick Joystick; //!< An instance of CX::CX_Joystick. Enabled or disabled with CX::CX_InputManager::setup().
 
 	private:
-		bool _usingKeyboard;
-		bool _usingMouse;
 		bool _usingJoystick;
 	};
 

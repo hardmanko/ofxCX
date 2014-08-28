@@ -47,17 +47,24 @@ namespace CX {
 			} eventType; //!< The type of the event.
 		};
 
-		CX_Keyboard (void);
 		~CX_Keyboard (void);
+
+		void enable(bool enable);
+		bool enabled(void);
 
 		int availableEvents (void);
 		CX_Keyboard::Event getNextEvent (void);
 		void clearEvents (void);
 
-		bool isKeyPressed(int key);
+		bool isKeyHeld(int key);
+		CX_Keyboard::Event waitForKeypress(int key, bool clear = false);
 
 	private:
-		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
+		friend class CX_InputManager;
+		
+		CX_Keyboard(CX_InputManager* owner);
+		CX_InputManager *_owner;
+		bool _enabled;
 		CX_Millis _lastEventPollTime;
 
 		std::queue<CX_Keyboard::Event> _keyEvents;
@@ -67,8 +74,6 @@ namespace CX {
 		void _keyReleaseHandler (ofKeyEventArgs &a);
 		void _keyRepeatHandler (CX::Private::CX_KeyRepeatEventArgs_t &a);
 		void _keyEventHandler(CX_Keyboard::Event &a);
-
-		//CX_KeyboardModifiers_t _heldModifiers;
 
 		void _listenForEvents (bool listen);
 		bool _listeningForEvents;

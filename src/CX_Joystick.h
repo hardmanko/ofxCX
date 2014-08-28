@@ -34,19 +34,18 @@ namespace CX {
 			} eventType; //!< The type of the event.
 		};
 
-		CX_Joystick (void);
+		CX_Joystick(void);
 		~CX_Joystick (void);
 
 		bool setup (int joystickIndex);
 		std::string getJoystickName (void);
+		int getJoystickIndex(void);
 
-		//Preferred interface. This interface collects response time data.
 		bool pollEvents (void);
 		int availableEvents (void);
 		CX_Joystick::Event getNextEvent (void);
 		void clearEvents (void);
 
-		//Direct access functions. The preferred interface is pollEvents() and getNextEvent().
 		std::vector<float> getAxisPositions (void);
 		std::vector<unsigned char> getButtonStates (void);
 
