@@ -19,6 +19,8 @@ CX_Mouse::~CX_Mouse(void) {
 }
 
 void CX_Mouse::enable(bool enable) {
+	_listenForEvents(enable);
+
 	_enabled = enable;
 	if (!enable) {
 		clearEvents();

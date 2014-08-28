@@ -58,6 +58,7 @@ namespace CX {
 
 		bool isKeyHeld(int key);
 		CX_Keyboard::Event waitForKeypress(int key, bool clear = false);
+		CX_Keyboard::Event waitForKeypress(std::vector<int> keys, bool clear = false);
 
 	private:
 		friend class CX_InputManager;
@@ -67,7 +68,7 @@ namespace CX {
 		bool _enabled;
 		CX_Millis _lastEventPollTime;
 
-		std::queue<CX_Keyboard::Event> _keyEvents;
+		std::deque<CX_Keyboard::Event> _keyEvents;
 		std::set<int> _heldKeys;
 
 		void _keyPressHandler (ofKeyEventArgs &a);

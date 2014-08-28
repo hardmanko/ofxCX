@@ -31,11 +31,9 @@ namespace CX {
 
 		Keyboard.clearEvents();
 		Keyboard.enable(useKeyboard);
-		Keyboard._listenForEvents(useKeyboard);
 
 		Mouse.clearEvents();
 		Mouse.enable(useMouse);
-		Mouse._listenForEvents(useMouse);
 
 		bool success = true;
 		if (joystickIndex >= 0) {

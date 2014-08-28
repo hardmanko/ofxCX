@@ -84,7 +84,6 @@ bool CX_Joystick::pollEvents (void) {
 
 				_joystickEvents.push( ev );
 
-				//Only do the assignment if the state is different.
 				_axisPositions[i] = axes[i];
 			}
 		}
@@ -110,7 +109,6 @@ bool CX_Joystick::pollEvents (void) {
 
 				_joystickEvents.push( ev );
 
-				//Only do the assignment if the state is different.
 				_buttonStates[i] = buttons[i];
 			}
 		}

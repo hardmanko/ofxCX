@@ -15,6 +15,8 @@ CX_Keyboard::~CX_Keyboard (void) {
 }
 
 void CX_Keyboard::enable(bool enable) {
+	_listenForEvents(enable);
+
 	_enabled = enable;
 	if (!enable) {
 		clearEvents();
@@ -34,7 +36,7 @@ int CX_Keyboard::availableEvents (void) {
 from the input device. */
 CX_Keyboard::Event CX_Keyboard::getNextEvent (void) {
 	CX_Keyboard::Event nextEvent = _keyEvents.front();
-	_keyEvents.pop();
+	_keyEvents.pop_front();
 	return nextEvent;
 }
 
@@ -43,9 +45,7 @@ CX_Keyboard::Event CX_Keyboard::getNextEvent (void) {
 responses made between a call to CX_InputManager::pollEvents() and a subsequent call to 
 clearEvents() will not be removed by calling clearEvents(). */
 void CX_Keyboard::clearEvents (void) {
-	while (!_keyEvents.empty()) {
-		_keyEvents.pop();
-	}
+	_keyEvents.clear();
 }
 
 /*! This function checks to see if the given key is pressed.
@@ -56,8 +56,30 @@ bool CX_Keyboard::isKeyHeld(int key) {
 	return (_heldKeys.find(key) != _heldKeys.end());
 }
 
+/*! Identical to waitForKeypress() that takes a vector of keys except with a length 1 vector. */
 CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear) {
+	std::vector<int> keys;
+	keys.push_back(key);
+	return waitForKeypress(keys, clear);
+}
+
+
+/*! Wait until the first of the given `keys` is pressed. This specifically checks that a key has been pressed: If it was
+held at the time this function was called and then released, it will have to be pressed again before this
+function will return.
+\param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will 
+cause this function to return.
+\param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all keyboard events
+will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
+is possible that one of the available events will include a keypress for a given key, in which case this function
+will return immediately.
+\return A CX_Keyboard::Event with information about the keypress that caused this function to return.
+\note If the keyboard is not enabled at the time this function is called, it will be enabled for the
+duration of the function and then disabled at the end of the function.
+*/
+CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clear) {
 	if (clear) {
+		_owner->pollEvents();
 		this->clearEvents();
 	}
 
@@ -68,11 +90,14 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear) {
 	bool waiting = true;
 	while (waiting) {
 		if (_owner->pollEvents()) {
-			while (this->availableEvents() > 0) {
-				rval = this->getNextEvent();
-				if ((rval.eventType == CX_Keyboard::Event::PRESSED) && ((key == -1) || (rval.key == key))) {
-					waiting = false;
-					break;
+			for (auto elem : _keyEvents) {
+				if (elem.eventType == CX_Keyboard::Event::PRESSED) {
+					if ((std::find(keys.begin(), keys.end(), -1) != keys.end()) ||
+						(std::find(keys.begin(), keys.end(), elem.key) != keys.end())) {
+						rval = elem;
+						waiting = false;
+						break;
+					}
 				}
 			}
 		}
@@ -153,7 +178,7 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		break;
 	}
 
-	_keyEvents.push( ev );
+	_keyEvents.push_back( ev );
 }
 
 std::ostream& CX::operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
