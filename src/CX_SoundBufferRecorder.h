@@ -36,12 +36,12 @@ namespace CX {
 		~CX_SoundBufferRecorder(void);
 
 		bool setup(Configuration& config);
+		bool setup(CX_SoundStream* ss);
 
-		//! Returns the configuration used for the CX_SoundBufferRecorder.
-		Configuration getConfiguration(void) { return (Configuration)_soundStream.getConfiguration(); };
+		Configuration getConfiguration(void);
 
 		//! This function provides direct access to the CX_SoundStream used by the CX_SoundBufferRecorder.
-		CX_SoundStream& getSoundStream(void) { return _soundStream; };
+		CX_SoundStream* getSoundStream(void) { return _soundStream; };
 
 		void setSoundBuffer(CX_SoundBuffer* so);
 		CX_SoundBuffer* getSoundBuffer(void);
@@ -55,7 +55,13 @@ namespace CX {
 		bool _recording;
 
 		CX_SoundBuffer *_buffer;
-		CX_SoundStream _soundStream;
+
+		CX_SoundStream *_soundStream;
+		bool _soundStreamSelfAllocated;
+		void _cleanUpOldSoundStream(void);
+
+		void _listenForEvents(bool listen);
+		bool _listeningForEvents;
 	};
 
 }

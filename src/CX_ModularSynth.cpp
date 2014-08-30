@@ -988,35 +988,56 @@ void StereoSoundBufferOutput::sampleData(CX::CX_Millis t) {
 ////////////////////////
 // StereoStreamOutput //
 ////////////////////////
-void StereoStreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
-	ofAddListener(stream.outputEvent, this, &StereoStreamOutput::_callback);
+StereoStreamOutput::~StereoStreamOutput(void) {
+	_listenForEvents(false);
+}
+
+void StereoStreamOutput::setOuputStream(CX::CX_SoundStream* stream) {
+	_soundStream = stream;
+	_listenForEvents(true);
+
 	ModuleControlData_t data;
-	data.sampleRate = stream.getConfiguration().sampleRate;
+	data.sampleRate = _soundStream->getConfiguration().sampleRate;
 	left.setData(data);
 	right.setData(data);
 }
 
 void StereoStreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-
-		d.outputBuffer[(sample * d.outputChannels) + 0] = CX::Util::clamp<float>(right.getNextSample(), -1, 1);
-
-		d.outputBuffer[(sample * d.outputChannels) + 1] = CX::Util::clamp<float>(left.getNextSample(), -1, 1);
-
-		//for (int ch = 2; ch < d.outputChannels; ch++) {
-		//	d.outputBuffer[(sample * d.outputChannels) + ch] = value;
-		//}
+		unsigned int index = sample * d.outputChannels;
+		d.outputBuffer[index + 0] = CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
+		d.outputBuffer[index + 1] = CX::Util::clamp<float>(left.getNextSample(), -1, 1);
 	}
+}
+
+void StereoStreamOutput::_listenForEvents(bool listen) {
+	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
+		return;
+	}
+
+	if (listen) {
+		ofAddListener(_soundStream->outputEvent, this, &StereoStreamOutput::_callback);
+	} else {
+		ofRemoveListener(_soundStream->outputEvent, this, &StereoStreamOutput::_callback);
+	}
+	_listeningForEvents = listen;
 }
 
 
 //////////////////
 // StreamOutput //
 //////////////////
-void StreamOutput::setOuputStream(CX::CX_SoundStream& stream) {
-	ofAddListener(stream.outputEvent, this, &StreamOutput::_callback);
+
+StreamOutput::~StreamOutput(void) {
+	_listenForEvents(false);
+}
+
+void StreamOutput::setOuputStream(CX::CX_SoundStream* stream) {
+	_soundStream = stream;
+	_listenForEvents(true);
+
 	ModuleControlData_t data;
-	data.sampleRate = stream.getConfiguration().sampleRate;
+	data.sampleRate = _soundStream->getConfiguration().sampleRate;
 	this->setData(data);
 }
 
@@ -1033,6 +1054,19 @@ void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
 		}
 	}
+}
+
+void StreamOutput::_listenForEvents(bool listen) {
+	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
+		return;
+	}
+
+	if (listen) {
+		ofAddListener(_soundStream->outputEvent, this, &StreamOutput::_callback);
+	} else {
+		ofRemoveListener(_soundStream->outputEvent, this, &StreamOutput::_callback);
+	}
+	_listeningForEvents = listen;
 }
 
 //////////////////////

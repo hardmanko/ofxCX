@@ -1,34 +1,67 @@
 #include "CX_SoundBufferRecorder.h"
 
-using namespace CX;
+namespace CX {
 
 CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
 	_recording(false),
-	_buffer(nullptr)
+	_buffer(nullptr),
+	_soundStream(nullptr),
+	_soundStreamSelfAllocated(false),
+	_listeningForEvents(false)
 {
-	ofAddListener(_soundStream.inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
 }
 
 CX_SoundBufferRecorder::~CX_SoundBufferRecorder(void) {
 	this->stopRecording();
-	_soundStream.closeStream();
-	ofRemoveListener(_soundStream.inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
+	if (_soundStream != nullptr) {
+		_soundStream->closeStream();
+		_listenForEvents(false);
+		if (_soundStreamSelfAllocated) {
+			delete _soundStream;
+			_soundStreamSelfAllocated = false;
+		}
+	}
 }
 
 /*! This function sets up the CX_SoundStream that CX_SoundBufferRecorder uses to record audio data.
-\return True if configuration of the CX_SoundStream was successful, false otherwise.
+\param config A reference to a CX_SoundBufferRecorder::Configuration struct that will be used to configure
+an internally-stored CX_SoundStream.
+\return `true` if configuration of the CX_SoundStream was successful, `false` otherwise.
 */
 bool CX_SoundBufferRecorder::setup(CX_SoundBufferRecorder::Configuration& config) {
-	ofAddListener(_soundStream.inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
+	_cleanUpOldSoundStream();
 
-	bool success = _soundStream.setup(config);
+	_soundStream = new CX_SoundStream;
+	_soundStreamSelfAllocated = true;
+	_listenForEvents(true);
+
+	bool setupSuccessfully = _soundStream->setup((CX_SoundStream::Configuration&)config);
 
 	if (_buffer != nullptr) {
 		setSoundBuffer(_buffer);
 	}
 
-	success = success && _soundStream.start();
-	return success;
+	bool startedSuccessfully = _soundStream->start();
+
+	return startedSuccessfully && setupSuccessfully;
+}
+
+/*! Set up the sound buffer recorder from an existing CX_SoundStream. The CX_SoundStream is not started automatically.
+The CX_SoundStream must remain in scope for the lifetime of the CX_SoundBufferRecorder.
+\param ss A pointer to a fully configured CX_SoundStream.
+\return `true` in all cases. */
+bool CX_SoundBufferRecorder::setup(CX_SoundStream* ss) {
+	_cleanUpOldSoundStream();
+
+	_soundStream = ss;
+	_soundStreamSelfAllocated = false;
+	_listenForEvents(true);
+
+	if (_buffer != nullptr) {
+		setSoundBuffer(_buffer);
+	}
+
+	return true;
 }
 
 /*! This function associates a CX_SoundBuffer with the CX_SoundBufferRecorder. The CX_SoundBuffer
@@ -40,13 +73,14 @@ was configured to use.
 void CX_SoundBufferRecorder::setSoundBuffer(CX_SoundBuffer* so) {
 	_buffer = so;
 	so->clear();
-	so->setFromVector(vector<float>(), _soundStream.getConfiguration().inputChannels, _soundStream.getConfiguration().sampleRate);
+	const CX_SoundBufferRecorder::Configuration& config = this->getConfiguration();
+	so->setFromVector(vector<float>(), config.inputChannels, config.sampleRate);
 }
 
 /*! This function returns a pointer to the CX_SoundBuffer that is currently in use by the CX_SoundBufferRecorder. */
 CX_SoundBuffer* CX_SoundBufferRecorder::getSoundBuffer(void) {
 	if (_recording) {
-		CX::Instances::Log.warning("CX_SoundBufferRecorder") << "getSoundBuffer: Sound buffer pointer accessed while recording was in progress.";
+		CX::Instances::Log.warning("CX_SoundBufferRecorder") << "getSoundBuffer(): Sound buffer pointer accessed while recording was in progress.";
 	}
 	return _buffer;
 }
@@ -57,7 +91,7 @@ with setSoundBuffer().
 */
 void CX_SoundBufferRecorder::startRecording(bool clearExistingData) {
 	if (_buffer == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferRecorder") << "Unable to start recording because no CX_SoundBuffer was set.";
+		CX::Instances::Log.error("CX_SoundBufferRecorder") << "startRecording(): Unable to start recording because no CX_SoundBuffer was set.";
 		return;
 	}
 	if (clearExistingData) {
@@ -69,6 +103,18 @@ void CX_SoundBufferRecorder::startRecording(bool clearExistingData) {
 /*! Stop recording sound data. */
 void CX_SoundBufferRecorder::stopRecording(void) {
 	_recording = false;
+}
+
+
+
+/*! Returns the configuration used for this CX_SoundBufferRecorder. */
+CX_SoundBufferRecorder::Configuration CX_SoundBufferRecorder::getConfiguration(void) {
+	if (_soundStream == nullptr) {
+		CX::Instances::Log.error("CX_SoundBufferPlayer") << "getConfiguration(): Could not get configuration, the sound stream was nonexistent. Have you forgotten to call setup()?";
+		return CX_SoundBufferRecorder::Configuration();
+	}
+
+	return (CX_SoundBufferRecorder::Configuration)_soundStream->getConfiguration();
 }
 
 
@@ -87,4 +133,32 @@ bool CX_SoundBufferRecorder::_inputEventHandler(CX_SoundStream::InputEventArgs& 
 
 	memcpy(soundData.data() + currentBufferEnd, inputData.inputBuffer, (size_t)(totalNewSamples * sizeof(float)));
 	return true;
+}
+
+void CX_SoundBufferRecorder::_listenForEvents(bool listen) {
+	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
+		return;
+	}
+
+	if (listen) {
+		ofAddListener(_soundStream->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
+	} else {
+		ofRemoveListener(_soundStream->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
+	}
+
+	_listeningForEvents = listen;
+}
+
+void CX_SoundBufferRecorder::_cleanUpOldSoundStream(void) {
+	//If another sound stream was connected, stop listening to it.
+	if (_soundStream != nullptr) {
+		_listenForEvents(false);
+
+		if (_soundStreamSelfAllocated) {
+			delete _soundStream;
+			_soundStreamSelfAllocated = false;
+		}
+	}
+}
+
 }

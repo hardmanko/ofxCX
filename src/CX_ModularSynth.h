@@ -526,12 +526,12 @@ namespace Synth {
 
 	\code{.cpp}
 	using namespace CX::Synth;
-	//Assume that both osc and ss have been configured and the sound stream has been started.
+	//Assume that both osc and ss have been configured and that ss has been started.
 	CX_SoundStream ss;
 	Oscillator osc;
 
 	Synth::StreamOutput output;
-	output.setOutputStream(ss);
+	output.setOutputStream(&ss);
 
 	osc >> output; //Sound should be playing past this point.
 	\endcode
@@ -540,7 +540,10 @@ namespace Synth {
 	*/
 	class StreamOutput : public ModuleBase {
 	public:
-		void setOuputStream(CX::CX_SoundStream& stream);
+
+		~StreamOutput(void);
+
+		void setOuputStream(CX::CX_SoundStream* stream);
 
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
@@ -548,6 +551,10 @@ namespace Synth {
 		void _inputAssignedEvent(ModuleBase* in) override {
 			in->setData(*this->_data);
 		}
+
+		CX_SoundStream* _soundStream;
+		bool _listeningForEvents;
+		void _listenForEvents(bool listen);
 	};
 
 	/*! This class is much like StreamOutput except in stereo. This captures stereo audio by taking the 
@@ -558,13 +565,20 @@ namespace Synth {
 	*/
 	class StereoStreamOutput {
 	public:
-		void setOuputStream(CX::CX_SoundStream& stream);
+
+		~StereoStreamOutput(void);
+
+		void setOuputStream(CX::CX_SoundStream* stream);
 
 		GenericOutput left;
 		GenericOutput right;
 
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
+
+		CX_SoundStream* _soundStream;
+		bool _listeningForEvents;
+		void _listenForEvents(bool listen);
 	};
 
 	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer

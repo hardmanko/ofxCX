@@ -37,6 +37,7 @@ namespace CX  {
 		~CX_SoundBufferPlayer (void);
 
 		bool setup(Configuration config);
+		bool setup(CX_SoundStream *ss);
 
 		bool play (void);
 		bool startPlayingAt(CX_Millis experimentTime, CX_Millis offset);
@@ -48,14 +49,13 @@ namespace CX  {
 		//! Check if the sound is queued to play.
 		bool isQueuedToStart(void) { return _playbackStartQueued; }; 
 
-		//! Returns the configuration used for this CX_SoundBufferPlayer.
-		Configuration getConfiguration(void) { return (Configuration)_soundStream.getConfiguration(); };
+		Configuration getConfiguration(void);
 		
 		bool setSoundBuffer (CX_SoundBuffer *sound);
 		CX_SoundBuffer* getSoundBuffer(void);
 
-		/*! This function provides direct access to the CX_SoundStream used by the CX_SoundBufferRecorder. */
-		CX_SoundStream& getSoundStream(void) { return _soundStream; };
+		/*! This function provides direct access to the CX_SoundStream used by the CX_SoundBufferPlayer. */
+		CX_SoundStream* getSoundStream(void) { return _soundStream; };
 
 		void setTime(CX_Millis time);
 
@@ -63,7 +63,13 @@ namespace CX  {
 
 		bool _outputEventHandler (CX_SoundStream::OutputEventArgs &outputData);
 
-		CX_SoundStream _soundStream;
+		CX_SoundStream *_soundStream;
+		bool _soundStreamSelfAllocated;
+		void _cleanUpOldSoundStream(void);
+
+		void _listenForEvents(bool listen);
+		bool _listeningForEvents;
+
 		CX_SoundBuffer *_buffer;
 
 		bool _playing;

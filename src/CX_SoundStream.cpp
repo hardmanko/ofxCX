@@ -112,17 +112,17 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 
 }
 
-/*! Starts the sound stream. The stream must already be open().
-\return False if the stream was not started, true if the stream was started or if it was already running. */
+/*! Starts the sound stream. The stream must already be have been set up (see setup()).
+\return `false` if the stream was not started, `true` if the stream was started or if it was already running. */
 bool CX_SoundStream::start (void) {
 
 	if(_rtAudio == nullptr) {
-		Log.error("CX_SoundStream") << "start: Stream not started because instance pointer was NULL. Have you remembered to call open()?";
+		Log.error("CX_SoundStream") << "start: Stream not started because instance pointer was NULL. Have you remembered to call setup()?";
 		return false;
 	}
 
 	if (!_rtAudio->isStreamOpen()) {
-		Log.error("CX_SoundStream") << "start: Stream not started because the stream was not open. Have you remembered to call open()?";
+		Log.error("CX_SoundStream") << "start: Stream not started because the stream was not set up. Have you remembered to call setup()?";
 		return false;
 	}
 
@@ -146,7 +146,7 @@ bool CX_SoundStream::start (void) {
 }
 
 /*! Check whether the sound stream is running. 
-\return false if the stream is not open or not running or if RtAudio has not been initialized. Returns true if the stream is running. */
+\return false if the stream is not setup or not running or if RtAudio has not been initialized. Returns `true` if the stream is running. */
 bool CX_SoundStream::isStreamRunning(void) const {
 	if (_rtAudio == nullptr) {
 		return false;
@@ -155,10 +155,10 @@ bool CX_SoundStream::isStreamRunning(void) const {
 }
 
 /*! Stop the stream, if is running. If there is an error, a message will be logged.
-\return False if there was an error, true otherwise. */
+\return `false` if there was an error, `true` otherwise. */
 bool CX_SoundStream::stop (void) {
 	if(_rtAudio == nullptr) {
-		Log.error("CX_SoundStream") << "stop: Stream not stopped because instance pointer was NULL. Have you remembered to call open()?";
+		Log.error("CX_SoundStream") << "stop: Stream not stopped because instance pointer was NULL. Have you remembered to call setup()?";
 		return false;
 	}
 	
@@ -176,7 +176,7 @@ bool CX_SoundStream::stop (void) {
 }
 
 /*! Closes the sound stream.
-\return False if an error was encountered while closing the stream, true otherwise. */
+\return `false` if an error was encountered while closing the stream, `true` otherwise. */
 bool CX_SoundStream::closeStream(void) {
 	if(_rtAudio == nullptr) {
 		return false;

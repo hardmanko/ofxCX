@@ -235,10 +235,12 @@ namespace CX {
 
 		/*! \brief Multiplies a CX_Time_t by a unitless value, resulting in a CX_Time_t of the same type.
 		You cannot multiply a time by another time because that would result in units of time squared. */
+		/*
 		CX_Time_t<TimeUnit> operator*(double rhs) const {
 			double n = this->_nanos * rhs;
 			return CX_Nanos(n);
 		}
+		*/
 
 		/*! \brief Multiplies a CX_Time_t by a unitless value, storing the result in the CX_Time_t.
 		You cannot multiply a time by another time because that would result in units of time squared. */
@@ -351,5 +353,17 @@ namespace CX {
 		is >> value;
 		t = CX_Time_t<TimeUnit>(value);
 		return is;
+	}
+
+	template<typename T>
+	CX_Time_t<T> operator*(CX_Time_t<T> lhs, double rhs) {
+		double n = lhs.nanos() * rhs;
+		return CX_Nanos(n);
+	}
+
+	template<typename T>
+	CX_Time_t<T> operator*(double lhs, CX_Time_t<T> rhs) {
+		double n = rhs.nanos() * lhs;
+		return CX_Nanos(n);
 	}
 }
