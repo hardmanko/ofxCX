@@ -93,12 +93,12 @@ void getResponse (void) {
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent();
-			if (keyEvent.eventType == CX_Keyboard::Event::PRESSED) {
+			if (keyEvent.type == CX_Keyboard::PRESSED) {
 
 				if (keyEvent.key == 's' || keyEvent.key == 'd') {
 
 					CX_Millis testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
-					trialDf(trialIndex, "responseLatency") = keyEvent.eventTime - testArrayOnset;
+					trialDf(trialIndex, "responseLatency") = keyEvent.time - testArrayOnset;
 
 					bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();
 

@@ -15,10 +15,20 @@ namespace CX {
 	class CX_Keyboard {
 	public:
 
+		/*! The type of the keyboard event. */
+		enum KeyboardEventType {
+			PRESSED, //!< A key has been pressed.
+			RELEASED, //!< A key has been released.
+			REPEAT /*!< \brief A key has been held for some time and automatic key repeat has kicked in, causing
+				   multiple keypresses to be rapidly sent. This event is one of the many repeats. */
+		};
+
+
 		/*! This struct contains the results of a keyboard event, whether it be a key press or release, or key repeat. */
 		struct Event {
-			/*! The value created by the key involved in this event. The value of this can be compared with character literals for many of
+			/*! The key involved in this event. The value of this can be compared with character literals for many of
 			the standard keyboard keys. For example, you could use `(myKeyEvent.key == 'e')` to test if the key was the E key.
+			Always check for lower case letters, because shift/capslock are ignored when setting the value for `key`.
 
 			For special keys, `key` can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
 
@@ -35,16 +45,10 @@ namespace CX {
 			This works the same way for all of the modifier keys. */
 			int key;
 
-			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
+			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
-			/*! The type of the keyboard event. */
-			enum KeyboardEventType {
-				PRESSED, //!< A key has been pressed.
-				RELEASED, //!< A key has been released.
-				REPEAT /*!< \brief A key has been held for some time and automatic key repeat has kicked in, causing
-					   multiple keypresses to be rapidly sent. This event is one of the many repeats. */
-			} eventType; //!< The type of the event.
+			KeyboardEventType type; //!< The type of the event: press, release, or key repeat.
 		};
 
 		~CX_Keyboard (void);
@@ -57,8 +61,9 @@ namespace CX {
 		void clearEvents (void);
 
 		bool isKeyHeld(int key);
-		CX_Keyboard::Event waitForKeypress(int key, bool clear = false);
-		CX_Keyboard::Event waitForKeypress(std::vector<int> keys, bool clear = false);
+
+		CX_Keyboard::Event waitForKeypress(int key, bool clear = true, bool eraseEvent = false);
+		CX_Keyboard::Event waitForKeypress(std::vector<int> keys, bool clear = true, bool eraseEvent = false);
 
 	private:
 		friend class CX_InputManager;

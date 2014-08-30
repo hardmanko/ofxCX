@@ -11,40 +11,43 @@
 
 namespace CX {
 
-	enum class CX_MouseButtons : int {
-		LEFT_MOUSE = OF_MOUSE_BUTTON_LEFT,
-		MIDDLE_MOUSE = OF_MOUSE_BUTTON_MIDDLE,
-		RIGHT_MOUSE = OF_MOUSE_BUTTON_RIGHT
-	};
-
-	/*! This class is responsible for managing the mouse. 
+	/*! This class is responsible for managing the mouse. It has a private constructor, so you can only use the
+	CX_Mouse that is a part of a CX_InputManager, specifically the instance of a CX_InputManager named CX::Instances::Input.
 	\ingroup inputDevices */
 	class CX_Mouse {
 	public:
+
+		/*! Names of the mouse buttons corresponding to some of the integer button identifiers. */
+		enum class Buttons : int {
+			LEFT = OF_MOUSE_BUTTON_LEFT,
+			MIDDLE = OF_MOUSE_BUTTON_MIDDLE,
+			RIGHT = OF_MOUSE_BUTTON_RIGHT
+		};
+
+		enum MouseEventType {
+			MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
+			PRESSED, //!< A mouse button has been pressed. Check \ref button for the button index and \ref x and \ref y for the location.
+			RELEASED, //!< A mouse button has been released. Check \ref button for the button index and \ref x and \ref y for the location.
+			DRAGGED, //!< The mouse has been moved while at least one button was held. \ref button may not be meaningful because the held button 
+			//!< can be changed during a drag, or multiple buttons may be held at once during a drag.
+			SCROLLED //!< The mouse wheel has been scrolled. Check \ref y to get the change in the standard mouse wheel, or \ref x if your 
+			//!< mouse has a wheel that can move horizontally.
+		};
 
 		/*! This struct contains the results of a mouse event, which is any type of interaction with the mouse, be it
 		simply movement, a button press or release, a drag event (mouse button held while mouse is moved), or movement
 		of the scroll wheel. */
 		struct Event {
-			int button; /*!< \brief The relevant mouse button if the eventType is PRESSED, RELEASED, or DRAGGED.
-						Can be compared with elements of enum CX_MouseButtons to find out about the primary buttons. */
+			int button; /*!< \brief The relevant mouse button if the event `type` is PRESSED, RELEASED, or DRAGGED.
+						Can be compared with elements of enum CX_Mouse::Buttons to find out about the named buttons. */
 
 			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the eventType is SCROLLED.
 			int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the eventType is SCROLLED.
 
-			CX_Millis eventTime; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
+			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
 			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
 
-			/*! The type of the mouse event. */
-			enum MouseEventType {
-				MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
-				PRESSED, //!< A mouse button has been pressed. Check \ref button for the button index and \ref x and \ref y for the location.
-				RELEASED, //!< A mouse button has been released. Check \ref button for the button index and \ref x and \ref y for the location.
-				DRAGGED, //!< The mouse has been moved while at least one button was held. \ref button may not be meaningful because the held button 
-				//!< can be changed during a drag, or multiple buttons may be held at once during a drag.
-				SCROLLED //!< The mouse wheel has been scrolled. Check \ref y to get the change in the standard mouse wheel, or \ref x if your 
-				//!< mouse has a wheel that can move horizontally.
-			} eventType; //!< The type of the event.
+			MouseEventType type; //!< The type of the event.
 		};
 
 		~CX_Mouse (void);

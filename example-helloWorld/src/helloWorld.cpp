@@ -16,7 +16,7 @@ void runExperiment (void) {
 	//See Framebuffers and Buffer Swapping in the manual for more information.
 	Display.beginDrawingToBackBuffer();
 
-	ofBackground(0); //Set the back buffer to black.
+	ofBackground(0); //Set screen to black.
 
 	ofSetColor(255); //Set the drawing color to white
 	font.drawString( "Hello, world!", 30, 40 ); //Draw the "Hello, world!" at the specified pixel coordinates.
@@ -30,12 +30,8 @@ void runExperiment (void) {
 	//Swap the front and back buffers, which moves what you drew into the offscreen back buffer into the onscreen front buffer.
 	Display.swapBuffers();
 
-	//Set up the keyboard for use, but not the mouse.
-	Input.setup(true, false);
-
-	//Check for input. Input.pollEvents() will return true when any input event happens.
-	while (!Input.pollEvents())
-		;
+	//Wait for any key press before continuing.
+	Input.Keyboard.waitForKeypress(-1);
 
 	//Just past this point, the runExperiment function returns implicitly and the program exits.
 }

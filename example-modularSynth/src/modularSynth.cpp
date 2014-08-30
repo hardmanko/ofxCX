@@ -154,7 +154,7 @@ void runExperiment(void) {
 		if (Input.pollEvents()) {
 			while (Input.Mouse.availableEvents()) {
 				CX_Mouse::Event ev = Input.Mouse.getNextEvent();
-				if (ev.eventType == CX_Mouse::Event::MOVED || ev.eventType == CX_Mouse::Event::DRAGGED) {
+				if (ev.type == CX_Mouse::MOVED || ev.type == CX_Mouse::DRAGGED) {
 					osc.frequency = pow(ev.x, 1.3);
 					lfoOffset.amount = osc.frequency; //We don't set the frequency of the doubling osc directly,
 						//instead we set the offset for the lfo that feeds into the frequency of the doubling osc.
@@ -167,12 +167,12 @@ void runExperiment(void) {
 					cout << "Gain = " << g << endl;
 				}
 
-				if (ev.eventType == CX_Mouse::Event::PRESSED) {
+				if (ev.type == CX_Mouse::PRESSED) {
 					env.attack();
 					modEnv.attack();
 				}
 
-				if (ev.eventType == CX_Mouse::Event::RELEASED) {
+				if (ev.type == CX_Mouse::RELEASED) {
 					env.release();
 					modEnv.release();
 				}

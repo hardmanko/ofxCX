@@ -157,7 +157,5 @@ void runExperiment (void) {
 	Display.endDrawingToBackBuffer();
 	Display.swapBuffers();
 
-	Input.setup(true, false);
-	while (!Input.pollEvents())
-		;
+	Input.Keyboard.waitForKeypress(-1);
 }

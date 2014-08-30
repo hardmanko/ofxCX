@@ -70,23 +70,24 @@ void updateAnimation (void) {
 	Input.pollEvents();
 	while (Input.Mouse.availableEvents() > 0) {
 		CX_Mouse::Event mev = Input.Mouse.getNextEvent();
-		if (mev.eventType == CX_Mouse::Event::MOVED) {
-			mouseX = mev.x;
-		}
 
-		//Check to see if a circle was clicked on
-		if (mev.eventType == CX_Mouse::Event::PRESSED) {
+		switch (mev.type) {
+		case CX_Mouse::MOVED:
+			mouseX = mev.x;
+			break;
+		case CX_Mouse::PRESSED:
+			//Check to see if a circle was clicked on
 			for (int i = 0; i < 3; i++) {
 				if (getCircleLocation(i).distance(ofPoint(mev.x, mev.y)) <= circleRadius) {
 					directions[i] *= -1;
 				}
 			}
-		}
-
-		//If the mouse was scrolled, change the distance of the circles from the center.
-		if (mev.eventType == CX_Mouse::Event::SCROLLED) {
+			break;
+		case CX_Mouse::SCROLLED:
+			//If the mouse was scrolled, change the distance of the circles from the center.
 			distanceMultiplier += mev.y * .02; //The y component of the scroll wheel is the typical scroll wheel on most mice
 			distanceMultiplier = Util::clamp(distanceMultiplier, -1.5, 1.5);
+			break;
 		}
 	}
 }

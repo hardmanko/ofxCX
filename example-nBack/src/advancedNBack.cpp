@@ -203,7 +203,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_Keyboard::Event kev = Input.Keyboard.getNextEvent();
-			if ((kev.eventTime >= stimulusOnset) && (kev.eventType == CX_Keyboard::Event::PRESSED) && (kev.key == targetKey || kev.key == nonTargetKey)) {
+			if ((kev.time >= stimulusOnset) && (kev.type == CX_Keyboard::PRESSED) && (kev.key == targetKey || kev.key == nonTargetKey)) {
 
 				if (kev.key == targetKey) {
 					df(trialNumber, "responseType") = "target";
@@ -211,7 +211,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 					df(trialNumber, "responseType") = "nonTarget";
 				}
 
-				df(trialNumber, "responseLatency") = kev.eventTime - stimulusOnset;
+				df(trialNumber, "responseLatency") = kev.time - stimulusOnset;
 
 				validResponseMade = true;
 				Input.Keyboard.clearEvents();

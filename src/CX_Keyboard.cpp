@@ -2,7 +2,7 @@
 
 #include "CX_InputManager.h"
 
-using namespace CX;
+namespace CX {
 
 CX_Keyboard::CX_Keyboard(CX_InputManager* owner) :
 	_owner(owner),
@@ -10,10 +10,13 @@ CX_Keyboard::CX_Keyboard(CX_InputManager* owner) :
 {
 }
 
-CX_Keyboard::~CX_Keyboard (void) {
+CX_Keyboard::~CX_Keyboard(void) {
 	_listenForEvents(false);
 }
 
+/*! Enable or disable the keyboard. 
+\param enable If `true`, the keyboard will be enabled; if `false` it will be disabled.
+*/
 void CX_Keyboard::enable(bool enable) {
 	_listenForEvents(enable);
 
@@ -23,33 +26,34 @@ void CX_Keyboard::enable(bool enable) {
 	}
 }
 
+/*! Returns `true` if the keyboard is enabled. */
 bool CX_Keyboard::enabled(void) {
 	return _enabled;
 }
 
 /*! Get the number of new events available for this input device. */
-int CX_Keyboard::availableEvents (void) {
+int CX_Keyboard::availableEvents(void) {
 	return _keyEvents.size();
 }
 
 /*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
 from the input device. */
-CX_Keyboard::Event CX_Keyboard::getNextEvent (void) {
+CX_Keyboard::Event CX_Keyboard::getNextEvent(void) {
 	CX_Keyboard::Event nextEvent = _keyEvents.front();
 	_keyEvents.pop_front();
 	return nextEvent;
 }
 
 /*! Clear (delete) all events from this input device.
-\note This function only clears already existing events from the device, which means that 
-responses made between a call to CX_InputManager::pollEvents() and a subsequent call to 
+\note This function only clears already existing events from the device, which means that
+responses made between a call to CX_InputManager::pollEvents() and a subsequent call to
 clearEvents() will not be removed by calling clearEvents(). */
-void CX_Keyboard::clearEvents (void) {
+void CX_Keyboard::clearEvents(void) {
 	_keyEvents.clear();
 }
 
-/*! This function checks to see if the given key is pressed.
-\param key The key code or character for the key you are interested in. See the 
+/*! This function checks to see if the given key is held, which means a keypress has been received, but not a key release.
+\param key The key code or character for the key you are interested in. See the
 documentation for \ref CX_Keyboard::Event::key for more information about this value.
 \return True iff the given key is held. */
 bool CX_Keyboard::isKeyHeld(int key) {
@@ -57,27 +61,32 @@ bool CX_Keyboard::isKeyHeld(int key) {
 }
 
 /*! Identical to waitForKeypress() that takes a vector of keys except with a length 1 vector. */
-CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear) {
+CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear, bool eraseEvent) {
 	std::vector<int> keys;
 	keys.push_back(key);
-	return waitForKeypress(keys, clear);
+	return waitForKeypress(keys, clear, eraseEvent);
 }
 
 
 /*! Wait until the first of the given `keys` is pressed. This specifically checks that a key has been pressed: If it was
 held at the time this function was called and then released, it will have to be pressed again before this
-function will return.
-\param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will 
+function will return. Returns a CX_Keyboard::Event for the key that was waited on, optionally removing that event from the
+stored events if `eraseEvent` is `true`. 
+\param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will
 cause this function to return.
 \param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all keyboard events
 will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
 is possible that one of the available events will include a keypress for a given key, in which case this function
 will return immediately.
+\param eraseEvent If `true`, the event will be erased from the queue of captured events. The implication of this removal 
+is that the return value of this function is the only opportunity to gain access to the event that caused this function to return.
+The advantage of this approach is that if, after some given key is pressed, all events in the queue are processed, you are
+guaranteed to not hit the same event twice (once form the return value of this function, once from processing the queue).
 \return A CX_Keyboard::Event with information about the keypress that caused this function to return.
 \note If the keyboard is not enabled at the time this function is called, it will be enabled for the
 duration of the function and then disabled at the end of the function.
 */
-CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clear) {
+CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clear, bool eraseEvent) {
 	if (clear) {
 		_owner->pollEvents();
 		this->clearEvents();
@@ -90,11 +99,17 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 	bool waiting = true;
 	while (waiting) {
 		if (_owner->pollEvents()) {
-			for (auto elem : _keyEvents) {
-				if (elem.eventType == CX_Keyboard::Event::PRESSED) {
+			for (auto it = _keyEvents.begin(); it != _keyEvents.end(); it++) {
+				if (it->type == CX_Keyboard::PRESSED) {
 					if ((std::find(keys.begin(), keys.end(), -1) != keys.end()) ||
-						(std::find(keys.begin(), keys.end(), elem.key) != keys.end())) {
-						rval = elem;
+						(std::find(keys.begin(), keys.end(), it->key) != keys.end())) {
+
+						rval = *it;
+
+						if (eraseEvent) {
+							_keyEvents.erase(it);
+						}
+
 						waiting = false;
 						break;
 					}
@@ -129,23 +144,23 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 	_listeningForEvents = listen;
 }
 
-void CX_Keyboard::_keyPressHandler (ofKeyEventArgs &a) {
+void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
-	ev.eventType = CX_Keyboard::Event::PRESSED;
+	ev.type = CX_Keyboard::PRESSED;
 	ev.key = a.key;
 	_keyEventHandler(ev);
 }
 
-void CX_Keyboard::_keyReleaseHandler (ofKeyEventArgs &a) {
+void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
-	ev.eventType = CX_Keyboard::Event::RELEASED;
+	ev.type = CX_Keyboard::RELEASED;
 	ev.key = a.key;
 	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
 	CX_Keyboard::Event ev;
-	ev.eventType = CX_Keyboard::Event::REPEAT;
+	ev.type = CX_Keyboard::REPEAT;
 	ev.key = a.key;
 	_keyEventHandler(ev);
 }
@@ -164,43 +179,47 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		ev.key = ::tolower(ev.key);
 	}
 
-	ev.eventTime = CX::Instances::Clock.now();
-	ev.uncertainty = ev.eventTime - _lastEventPollTime;
+	ev.time = CX::Instances::Clock.now();
+	ev.uncertainty = ev.time - _lastEventPollTime;
 
-	switch (ev.eventType) {
-	case CX_Keyboard::Event::PRESSED:
+	switch (ev.type) {
+	case CX_Keyboard::PRESSED:
 		_heldKeys.insert(ev.key);
 		break;
-	case CX_Keyboard::Event::RELEASED:
+	case CX_Keyboard::RELEASED:
 		_heldKeys.erase(ev.key);
 		break;
-	case CX_Keyboard::Event::REPEAT:
+	case CX_Keyboard::REPEAT:
 		break;
 	}
 
-	_keyEvents.push_back( ev );
+	_keyEvents.push_back(ev);
 }
 
+static const std::string dlm = ", ";
+
 std::ostream& CX::operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
-	string dlm = ", ";
-	os << ev.key << dlm << ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
+	os << ev.key << dlm << ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
 std::istream& CX::operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	is >> ev.key;
-	is.ignore(2);
-	is >> ev.eventTime;
-	is.ignore(2);
+	is.ignore(dlm.size());
+	is >> ev.time;
+	is.ignore(dlm.size());
 	is >> ev.uncertainty;
-	is.ignore(2);
+	is.ignore(dlm.size());
 
 	int eventType;
 	is >> eventType;
+
 	switch (eventType) {
-	case CX_Keyboard::Event::PRESSED: ev.eventType = CX_Keyboard::Event::PRESSED; break;
-	case CX_Keyboard::Event::RELEASED: ev.eventType = CX_Keyboard::Event::RELEASED; break;
-	case CX_Keyboard::Event::REPEAT: ev.eventType = CX_Keyboard::Event::REPEAT; break;
+	case CX_Keyboard::PRESSED: ev.type = CX_Keyboard::PRESSED; break;
+	case CX_Keyboard::RELEASED: ev.type = CX_Keyboard::RELEASED; break;
+	case CX_Keyboard::REPEAT: ev.type = CX_Keyboard::REPEAT; break;
 	}
 	return is;
+}
+
 }
