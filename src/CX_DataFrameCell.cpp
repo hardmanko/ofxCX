@@ -37,7 +37,7 @@ CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 
 
 /*! Gets a string representing the type of data stored within the cell. This string is implementation-defined
-(which is the C++ standards committee way of saying "It can be anything at all"). It is only guranteed to be 
+(which is the C++ standards committee way of saying "It can be anything at all"). It is only guranteed to be
 the same for the same type, but not neccessarily be different for different types.
 \return A string containing the name of the stored type as given by typeid(typename).name(). */
 std::string CX_DataFrameCell::getStoredType(void) const {
@@ -55,11 +55,9 @@ void CX_DataFrameCell::deleteStoredType(void) {
 /*! Copies the contents of this cell to targetCell, including type information.
 \param targetCell A pointer to the cell to copy data to.
 */
-void CX_DataFrameCell::copyCellTo(CX_DataFrameCell* targetCell) {
+void CX_DataFrameCell::copyCellTo(CX_DataFrameCell* targetCell) const {
 	*targetCell->_data = *this->_data;
-	//*targetCell->_str = *this->_str; 
 	*targetCell->_type = *this->_type;
-	//*targetCell->_dataIsVector = *this->_dataIsVector;
 }
 
 template<> std::string CX_DataFrameCell::to(void) const {
@@ -77,7 +75,7 @@ template<> std::string CX_DataFrameCell::to(void) const {
 
 /*! Equivalent to a call to to<string>(). */
 std::string CX_DataFrameCell::toString(void) const {
-	return this->to<std::string>(); 
+	return this->to<std::string>();
 }
 
 template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {

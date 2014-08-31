@@ -15,7 +15,7 @@ this may be \ref blockingCode if the copied data frame is large enough.
 \return A reference to this data frame.
 \note The contents of this data frame are deleted during the copy.
 */
-CX_DataFrame& CX_DataFrame::operator= (CX_DataFrame& df) {
+CX_DataFrame& CX_DataFrame::operator= (const CX_DataFrame& df) {
 	CX_DataFrame temp = df.copyRows(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, df.getRowCount() - 1));
 	std::swap(this->_data, temp._data);
 	std::swap(this->_rowCount, temp._rowCount);
@@ -86,8 +86,8 @@ std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string
 	return print(columns, rows, delimiter, printRowNumbers);
 }
 
-/*! Prints the selected rows and columns of the data frame to a string. Each cell of the data frame will be 
-separated with the selected delimiter. Each row of the data frame will be ended with a new line (whatever 
+/*! Prints the selected rows and columns of the data frame to a string. Each cell of the data frame will be
+separated with the selected delimiter. Each row of the data frame will be ended with a new line (whatever
 std::endl evaluates to, typically "\n").
 
 \param columns Columns to print. Column names not found in the data frame will be ignored with a warning.
@@ -102,8 +102,8 @@ being the selected row indices. If false, no row numbers will be printed.
 
 \note This function may be \ref blockingCode if the data frame is large enough.
 */
-std::string CX_DataFrame::print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, 
-								std::string delimiter, bool printRowNumbers) const 
+std::string CX_DataFrame::print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows,
+								std::string delimiter, bool printRowNumbers) const
 {
 	OutputOptions oOpt;
 	oOpt.cellDelimiter = delimiter;
@@ -208,8 +208,8 @@ All paramters expect for filename behave in the same way an in print().
 \param filename Name of the file to print to. If it is an absolute path, the file will be put there. If it is
 a local path, the file will be placed relative to the data directory of the project.
 \return True for success, false if there was some problem writing to the file (insufficient permissions, etc.) */
-bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, 
-							   std::string delimiter, bool printRowNumbers) const 
+bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows,
+							   std::string delimiter, bool printRowNumbers) const
 {
 	return CX::Util::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
 }
@@ -352,7 +352,7 @@ bool CX_DataFrame::deleteColumn (std::string columnName) {
 	return false;
 }
 
-/*! Deletes the given row of the data frame. 
+/*! Deletes the given row of the data frame.
 \param row The row to delete (0 indexed). If row is greater than or equal to the number of rows in the data frame, a warning will be logged.
 \return True if the row was in bounds and was deleted, false if the row was out of bounds.
 */
@@ -395,7 +395,7 @@ std::vector<std::string> CX_DataFrame::getColumnNames(void) const {
 
 /*! Returns the number of rows in the data frame. */
 CX_DataFrame::rowIndex_t CX_DataFrame::getRowCount(void) const {
-	return _rowCount; 
+	return _rowCount;
 }
 
 /*! Re-orders the rows in the data frame.
@@ -419,7 +419,7 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 	vector<string> names = this->getColumnNames();
 
 	for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
-		
+
 		vector<CX_DataFrameCell> columnCopy(_rowCount); //Data must first be copied into new columns,
 			//otherwise moving data from one row to another could overwrite a row that hasn't been copied
 			//yet.
@@ -444,7 +444,7 @@ copied may be specified multiple times.
 
 \note This function may be \ref blockingCode if the amount of copied data is large.
 */
-CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) {
+CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const {
 	unsigned int outOfRangeCount = 0;
 	for (unsigned int i = 0; i < rowOrder.size(); i++) {
 		if (rowOrder[i] >= _rowCount) {
@@ -453,6 +453,7 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 			outOfRangeCount++;
 		}
 	}
+
 	if (outOfRangeCount) {
 		CX::Instances::Log.warning("CX_DataFrame") << "copyRows: rowOrder contained " << outOfRangeCount << " out-of-range indices. They will be ignored.";
 	}
@@ -460,6 +461,14 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 	CX_DataFrame copyDf;
 
 	vector<string> columnNames = this->getColumnNames();
+
+	for (string col : columnNames) {
+        copyDf._resizeToFit(col, rowOrder.size() - 1);
+        for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
+            this->_data.at(col)[rowOrder[row]].copyCellTo( &copyDf._data[col][row] );
+        }
+	}
+	/*
 	for (vector<string>::iterator col = columnNames.begin(); col != columnNames.end(); col++) {
 		//copyDf._data[*col].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
 		//next columns, they will be resized to the proper size when they are created.
@@ -470,7 +479,7 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 			this->operator()(*col, rowOrder[row]).copyCellTo( &copyDf._data[*col][row] );
 		}
 	}
-
+    */
 	return copyDf;
 }
 
@@ -497,14 +506,14 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 		copyDf._resizeToFit(*col, this->getRowCount() - 1);
 		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
 			this->operator()(*col, row).copyCellTo( &copyDf._data[*col][row] );
-		}		
+		}
 	}
 
 	return copyDf;
 }
 
 /*! Randomly re-orders the rows of the data frame.
-\param rng Reference to a CX_RandomNumberGenerator to be used for the shuffling. 
+\param rng Reference to a CX_RandomNumberGenerator to be used for the shuffling.
 \note This function may be \ref blockingCode if the data frame is large.
 */
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
@@ -549,7 +558,7 @@ void CX_DataFrame::append(CX_DataFrame df) {
 }
 
 void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
-	//Check the size of the column. If it is a new column, it will have size 0. 
+	//Check the size of the column. If it is a new column, it will have size 0.
 	//If it is an old column but too short, then it needs to be lengthened.
 	if (_data[column].size() <= row) {
 		_rowCount = std::max(_rowCount, row + 1);

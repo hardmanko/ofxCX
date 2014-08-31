@@ -31,7 +31,7 @@ Known issues
 ------------
 This is alpha/beta software, don't expect it to be bug-free. Please report any issues you have in the issue tracker.
 
-Loading sound files with CX_SoundBuffer uses FMOD, which is not available on Linux. Other ways of playing sound are supported.
+There is a silly naming incompatibility on Linux, where an X11 header defines a symbol called Display. CX has a symbol called `CX::Instances::Display` that is used in all of the examples without the namespace qualifiers. As a result, the examples won't compile without aliasing the CX `Display` or adding at least the `Instances::` qualifier. Aliasing is easily done with `CX_Display& Disp = CX::Instances::Display;` at global scope and then renaming the CX `Display` in the examples to `Disp`.
 
 Version history
 ------------

@@ -16,10 +16,10 @@ namespace CX {
 
 /*! This class manages the contents of a single cell in a CX_DataFrame. It handles all of the type conversion nonsense
 that goes on when data is inserted into or extracted from a data frame. It tracks the type of the data that is inserted
-or extracted and logs warnings if the inserted type does not match the extracted type, with a few exceptions (see notes). 
+or extracted and logs warnings if the inserted type does not match the extracted type, with a few exceptions (see notes).
 
 \note There are a few exceptions to the type tracking. If the inserted type is const char*, it is treated as a string.
-Additionally, you can extract anything as string without a warning. This is because the data is stored as a string 
+Additionally, you can extract anything as string without a warning. This is because the data is stored as a string
 internally so extracting the data as a string is a lossless operation.
 \ingroup dataManagement
 */
@@ -30,7 +30,7 @@ public:
 	CX_DataFrameCell(const char* c);
 	template <typename T> CX_DataFrameCell (const T& value); //!< Construct the cell, assigning the value to it.
 	template <typename T> CX_DataFrameCell (const std::vector<T>& values); //!< Construct the cell, assigning the values to it.
-	
+
 	CX_DataFrameCell& operator= (const char* c);
 	template <typename T> CX_DataFrameCell& operator= (const T& value); //!< Assigns a value to the cell.
 	template <typename T> CX_DataFrameCell& operator= (const std::vector<T>& values); //!< Assigns a vector of values to the cell.
@@ -56,7 +56,7 @@ public:
 	template <typename T> std::vector<T> toVector (void) const;
 	template <typename T> void storeVector (std::vector<T> values);
 
-	void copyCellTo(CX_DataFrameCell* targetCell);
+	void copyCellTo(CX_DataFrameCell* targetCell) const;
 
 	std::string getStoredType (void) const;
 	void deleteStoredType(void);
@@ -64,7 +64,7 @@ public:
 	bool isVector(void) const {
 		return _data->size() > 1;
 	}
-	
+
 private:
 
 	std::shared_ptr<std::vector<std::string>> _data;
@@ -85,7 +85,7 @@ private:
 		if (*_dataIsVector) {
 			strings = toVector<std::string>(); //This will likely result in warnings. Maybe temporarily suppress warnings?
 		}
-		
+
 
 
 		_df = df;
@@ -116,13 +116,13 @@ private:
 
 };
 
-template <typename T> 
+template <typename T>
 CX_DataFrameCell::CX_DataFrameCell (const T& value) {
 	_allocatePointers();
 	this->store(value);
 }
 
-template <typename T> 
+template <typename T>
 CX_DataFrameCell::CX_DataFrameCell (const std::vector<T>& values) {
 	_allocatePointers();
 	storeVector<T>(values);
@@ -158,7 +158,7 @@ cell, a warning will be logged.
 \tparam <T> The type to convert to.
 \return The data in the cell converted to T.
 */
-template <typename T> 
+template <typename T>
 T CX_DataFrameCell::to (void) const {
 
 	if (_data->size() == 0) {
@@ -172,7 +172,7 @@ T CX_DataFrameCell::to (void) const {
 
 	std::string typeName = typeid(T).name();
 	if (*_type != typeName) {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract data of different type than was inserted:" << 
+		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract data of different type than was inserted:" <<
 			" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << typeName << "\".";
 	}
 
@@ -180,12 +180,12 @@ T CX_DataFrameCell::to (void) const {
 }
 
 /*! Returns a copy of the contents of the cell converted to a vector of the given type. If the type
-of data stored in the cell was not a vector of the given type or the type does match but it was a 
+of data stored in the cell was not a vector of the given type or the type does match but it was a
 scalar that is stored, the logs a warning but attempts the conversion anyway.
 \tparam <T> The type of the elements of the returned vector.
 \return A vector containing the converted data.
 */
-template <typename T> 
+template <typename T>
 std::vector<T> CX_DataFrameCell::toVector (void) const {
 	std::string extractedTypeName = typeid(T).name();
 
@@ -209,7 +209,7 @@ std::vector<T> CX_DataFrameCell::toVector (void) const {
 If the data to be stored are strings containing semicolons, the data will not be extracted properly.
 \param values A vector of values to store.
 */
-template <typename T> 
+template <typename T>
 void CX_DataFrameCell::storeVector(std::vector<T> values) {
 	//*_str = _getVectorStartString() + CX::Util::vectorToString(values, _getVectorElementDelimiter(), _getFloatingPointPrecision()) + _getVectorEndString();
 

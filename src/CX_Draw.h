@@ -168,6 +168,68 @@ namespace Draw {
 	}
 
 
+
+	/*! See CX::Draw::colorArc() for documentation. The only difference is that this function returns an ofVbo,
+	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html */
+	template <typename T>
+	ofVbo colorArcToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+		float d = width / 2;
+
+		angleBegin *= -PI / 180;
+		angleEnd *= -PI / 180;
+
+		vector<ofFloatColor> convertedColors(colors.size());
+		for (int i = 0; i < convertedColors.size(); i++) {
+			convertedColors[i] = colors[i];
+		}
+
+		convertedColors = CX::Util::repeat(convertedColors, 1, 2);
+
+		vector<ofPoint> vertices(convertedColors.size(), center);
+
+		unsigned int resolution = vertices.size() / 2;
+
+		for (unsigned int i = 0; i < resolution; i++) {
+
+			float p = (float)i / (resolution - 1);
+
+			float rad = (angleEnd - angleBegin) * p + angleBegin;
+
+			vertices[2 * i] += ofPoint((radiusX + d) * cos(rad), (radiusY + d) * sin(rad));
+			vertices[2 * i + 1] += ofPoint((radiusX - d) * cos(rad), (radiusY - d) * sin(rad));
+		}
+
+		ofVbo vbo;
+		vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
+		vbo.setColorData(convertedColors.data(), convertedColors.size(), GL_STATIC_DRAW);
+		return vbo;
+	}
+
+	/*! Draws an arc with specified colors. The precision of the arc is controlled by how many colors are supplied.
+	\param center The center of the color wheel.
+	\param colors The colors to use in the color arc.
+	\param radiusX The radius of the color wheel in the X-axis.
+	\param radiusY The radius of the color wheel in the Y-axis.
+	\param width The width of the arc. The arc will extend half of the width
+	in either direction from the radii.
+	\param angleBegin The angle at which to begin the arc, in degrees.
+	\param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
+	*/
+	template <typename T>
+	void colorArc(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+		ofVbo vbo = colorArcToVbo(center, colors, radiusX, radiusY, width, angleBegin, angleEnd);
+		vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
+	}
+
+    /*! See CX::Draw::colorWheel() for documentation. The only difference is that this function returns an ofVbo,
+	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html */
+	template <typename T>
+	ofVbo colorWheelToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
+		colors.push_back(colors.front());
+
+		return colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
+	}
+
 	/*! Draws a color wheel (really, a ring) with specified colors.
 	\param center The center of the color wheel.
 	\param colors The colors to use in the color wheel.
@@ -233,64 +295,7 @@ namespace Draw {
 		vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 	}
 
-	/*! Draws an arc with specified colors. The precision of the arc is controlled by how many colors are supplied.
-	\param center The center of the color wheel.
-	\param colors The colors to use in the color arc.
-	\param radiusX The radius of the color wheel in the X-axis.
-	\param radiusY The radius of the color wheel in the Y-axis.
-	\param width The width of the arc. The arc will extend half of the width
-	in either direction from the radii.
-	\param angleBegin The angle at which to begin the arc, in degrees.
-	\param angleEnd The angle at which to end the arc, in degrees. If the arc goes in the "wrong" direction, try giving a negative value for `angleEnd`.
-	*/
-	template <typename T>
-	void colorArc(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
-		ofVbo vbo = colorArcToVbo(center, colors, radiusX, radiusY, width, angleBegin, angleEnd);
-		vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
-	}
 
-	/*! See CX::Draw::colorWheel() for documentation. */
-	template <typename T>
-	ofVbo colorWheelToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
-		colors.push_back(colors.front());
-
-		return colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
-	}
-
-	/*! See CX::Draw::colorArc() for documentation. */
-	template <typename T>
-	ofVbo colorArcToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
-		float d = width / 2;
-
-		angleBegin *= -PI / 180;
-		angleEnd *= -PI / 180;
-
-		vector<ofFloatColor> convertedColors(colors.size());
-		for (int i = 0; i < convertedColors.size(); i++) {
-			convertedColors[i] = colors[i];
-		}
-
-		convertedColors = CX::Util::repeat(convertedColors, 1, 2);
-
-		vector<ofPoint> vertices(convertedColors.size(), center);
-
-		unsigned int resolution = vertices.size() / 2;
-
-		for (unsigned int i = 0; i < resolution; i++) {
-
-			float p = (float)i / (resolution - 1);
-
-			float rad = (angleEnd - angleBegin) * p + angleBegin;
-
-			vertices[2 * i] += ofPoint((radiusX + d) * cos(rad), (radiusY + d) * sin(rad));
-			vertices[2 * i + 1] += ofPoint((radiusX - d) * cos(rad), (radiusY - d) * sin(rad));
-		}
-
-		ofVbo vbo;
-		vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
-		vbo.setColorData(convertedColors.data(), convertedColors.size(), GL_STATIC_DRAW);
-		return vbo;
-	}
 
 	/*! This function draws a pattern mask created with a large number of small squares.
 	\param width The width of the area to draw to, in pixels.
