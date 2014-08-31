@@ -9,7 +9,8 @@
 namespace CX {
 
 	/*! This class manages a joystick that is attached to the system (if any). If more than one joystick is needed
-	for the experiment, you can create more instances of CX_Joystick other than the one in CX::Instances::Input.
+	for the experiment, you can create more instances of CX_Joystick other than the one in CX::Instances::Input. Unlike
+	CX_Keyboard and CX_Mouse, CX_Joystick does not need to be in a CX_InputManager to work.
 	\ingroup inputDevices */
 	class CX_Joystick {
 	public:

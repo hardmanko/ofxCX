@@ -12,14 +12,17 @@
 #include "CX_AppWindow.h"
 #include "CX_Logger.h"
 
-//so apparently sysmacros.h defines some macros with these names...
+
+#ifdef TARGET_LINUX
+//so apparently sysmacros.h defines some macros with these names on Linux...
 #ifdef major
 #undef major
-#endif // major
+#endif
 
 #ifdef minor
 #undef minor
-#endif // minor
+#endif
+#endif
 
 namespace CX {
 
@@ -32,7 +35,7 @@ namespace Private {
 
 	struct CX_GLVersion {
 		CX_GLVersion(void) :
-		    major(0),
+			major(0),
 		    minor(0),
 			release(0)
 		{}

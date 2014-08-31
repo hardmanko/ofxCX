@@ -26,19 +26,24 @@ For interfacing with serial ports, use ofSerial
 
 namespace CX {
 
+	namespace Private {
+		CX_InputManager inputManagerFactory(void);
+	}
+
 	/*! This class is responsible for managing three basic input devices: a keyboard, mouse, and joystick. 
 	You access each of these devices with the corresponding member class: Keyboard, Mouse, and Joystick. 
 	See \ref CX::CX_Keyboard, \ref CX::CX_Mouse, and \ref CX::CX_Joystick for more information about each
 	specific device.
 
 	By default, all three input devices are disabled. Call \ref setup() to enable specific devices.
+
+	This class has a private constructor because you should never need more than one of them. If you really,
+	really need more than one, you can use CX::Private::inputManagerFactory() to make one.
 	
 	\ingroup inputDevices
 	*/
 	class CX_InputManager {
 	public:
-
-		CX_InputManager (void);
 
 		bool setup (bool useKeyboard, bool useMouse, int joystickIndex = -1);
 		bool usingKeyboard(void);
@@ -53,6 +58,9 @@ namespace CX {
 		CX_Joystick Joystick; //!< An instance of CX::CX_Joystick. Enabled or disabled with CX::CX_InputManager::setup().
 
 	private:
+		friend CX_InputManager Private::inputManagerFactory(void);
+		CX_InputManager(void);
+
 		bool _usingJoystick;
 	};
 
