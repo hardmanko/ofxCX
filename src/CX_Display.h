@@ -16,7 +16,7 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 #include "ofFbo.h"
 #include "ofGraphics.h"
 #include "ofAppRunner.h"
-#include "ofGlProgrammableRenderer.h"
+#include "ofGLProgrammableRenderer.h"
 
 #include "CX_Private.h"
 #include "CX_Clock.h"

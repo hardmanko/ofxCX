@@ -77,7 +77,7 @@ namespace CX {
 		constantly swap the front and back buffers, which allows each frame to be counted. This results in really good synchronization
 		between the copies if data to the back buffer and the swaps of the front and back buffers.
 		In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
-		drawn to the back buffer. After the correct amount of time minus \ref CX_SlidePresenter::Configuration::preSwapCPUHoggingDuration, 
+		drawn to the back buffer. After the correct amount of time minus \ref CX_SlidePresenter::Configuration::preSwapCPUHoggingDuration,
 		the buffers are swapped. The main
 		problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" in the main thread while waiting
 		for the swap.
@@ -116,7 +116,7 @@ namespace CX {
 
 			/*! The number of slides for which the actual and intended frame counts did not match,
 			indicating that the slide was presented for too many or too few frames.	*/
-			unsigned int incorrectFrameCounts; 
+			unsigned int incorrectFrameCounts;
 
 			/*! \brief The number of slides for which the time at which the slide finished being copied
 			to the back buffer was after the actual start time of the slide. */
@@ -147,17 +147,17 @@ namespace CX {
 			/*! \brief A pointer to a user function that will be called as soon as the final slide is presented. */
 			std::function<void(CX_SlidePresenter::FinalSlideFunctionArgs&)> finalSlideCallback;
 
-			/*! \brief This sets how errors in slide presentation should be handled. 
+			/*! \brief This sets how errors in slide presentation should be handled.
 			Currently, the only available mode is the default, so this should not be changed. */
 			CX_SlidePresenter::ErrorMode errorMode;
 
 			bool deallocateCompletedSlides; //!< If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
 
+			SwappingMode swappingMode; //!< The mode used for swapping slides. See the SwappingMode enum for the settings. Defaults to `MULTI_CORE`.
+
 			/*! \brief Only used if swappingMode is a single core mode. The amount of time, before a slide is swapped from
 			the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */
 			CX_Millis preSwapCPUHoggingDuration;
-
-			SwappingMode swappingMode; //!< The mode used for swapping slides. See the SwappingMode enum for the settings. Defaults to `MULTI_CORE`.
 
 			/*! \brief Hint that fence sync should be used to check that slides are fully copied to the back buffer
 			before they are swapped in. */
@@ -194,7 +194,7 @@ namespace CX {
 			std::function<void(void)> drawingFunction; /*!< \brief Pointer to a user function that will be called to draw the slide.
 										   If this points to a user function, it overrides `framebuffer`. The drawing function is
 										   not required to call ofBackground() or otherwise clear the display before drawing, which
-										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer. 
+										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer.
 										   However, if you want a blank framebuffer, you will have to clear it manually. */
 
 			/*! \brief Status of the current slide vis a vis presentation. This should not be modified by the user. */
@@ -221,7 +221,7 @@ namespace CX {
 		bool setup (CX_Display *display);
 		bool setup (const CX_SlidePresenter::Configuration &config);
 		virtual void update (void);
-		
+
 		void appendSlide (CX_SlidePresenter::Slide slide);
 		void appendSlideFunction (std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
 		void beginDrawingNextSlide(CX_Millis slideDuration, std::string slideName = "");

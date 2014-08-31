@@ -10,6 +10,8 @@
 
 namespace CX {
 
+    class CX_InputManager;
+
 	/*! This class is responsible for managing the mouse.
 	\ingroup inputDevices */
 	class CX_Keyboard {
@@ -67,7 +69,7 @@ namespace CX {
 
 	private:
 		friend class CX_InputManager;
-		
+
 		CX_Keyboard(CX_InputManager* owner);
 		CX_InputManager *_owner;
 		bool _enabled;

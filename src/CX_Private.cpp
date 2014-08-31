@@ -1,6 +1,6 @@
 #include "CX_Private.h"
 
-#include "GLFW\glfw3.h"
+#include "GLFW/glfw3.h"
 GLFWwindow *CX::Private::glfwContext = NULL;
 
 ofPtr<CX::Private::CX_AppWindow> CX::Private::window;
@@ -9,7 +9,7 @@ CX::Private::CX_GLVersion glVersion;
 
 void CX::Private::learnOpenGLVersion(void) {
 
-	//Find out what version of openGL the graphics card supports, which requires the creation 
+	//Find out what version of openGL the graphics card supports, which requires the creation
 	//of a GLFW window (or other initialization of openGL).
 
 	glfwInit();

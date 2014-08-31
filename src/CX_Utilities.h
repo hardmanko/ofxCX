@@ -82,7 +82,7 @@ namespace CX {
 \param times The number of times to repeat the value.
 \return A vector containing times copies of the repeated value.
 */
-template <typename T> 
+template <typename T>
 std::vector<T> CX::Util::repeat(T value, unsigned int times) {
 	return std::vector<T>( times, value );
 }
@@ -95,7 +95,7 @@ repeated "times" times.
 \param each Number of times each element of values should be repeated.
 \return A vector of the repeated values.
 */
-template <typename T> 
+template <typename T>
 std::vector<T> CX::Util::repeat(std::vector<T> values, unsigned int times, unsigned int each) {
 	std::vector<T> rval;
 
@@ -119,7 +119,7 @@ is logged and an empty vector is returned.
 \param times The number of times the process should be performed.
 \return A vector of the repeated values.
 */
-template <typename T> 
+template <typename T>
 std::vector<T> CX::Util::repeat(std::vector<T> values, std::vector<unsigned int> each, unsigned int times) {
 	std::vector<T> rval;
 
@@ -160,7 +160,7 @@ std::string CX::Util::vectorToString(std::vector<T> values, std::string delimite
 }
 
 /*! This function takes a string, splits it on the delimiter, and converts each delimited part of
-the string to T, returning a vector<T>. 
+the string to T, returning a vector<T>.
 \tparam T The type of the data encoded in the string.
 \param s The string containing the encoded data.
 \param delimiter The string that delimits the elements of the data.
@@ -172,7 +172,7 @@ std::vector<T> CX::Util::stringToVector(std::string s, std::string delimiter) {
 	std::vector<T> rval;
 	rval.resize( parts.size() );
 	for (unsigned int i = 0; i < parts.size(); i++) {
-		rval[i] = ofFromString( parts[i] );
+		rval[i] = ofFromString<T>( parts[i] );
 	}
 	return rval;
 }
@@ -189,7 +189,7 @@ Example call: `sequence<double>(1, 3.3, 2)` results in a vector containing {1, 3
 \param stepSize A nonzero number.
 \return A vector containing the sequence.
 */
-template <typename T> 
+template <typename T>
 std::vector<T> CX::Util::sequence(T start, T end, T stepSize) {
 	std::vector<T> rval;
 
@@ -300,7 +300,7 @@ T CX::Util::clamp(T val, T minimum, T maximum) {
 \param minimum The lower bound. Must be less than or equal to maximum.
 \param maximum The upper bound. Must be greater than or equal to minimum.
 \return The clamped values. */
-template <typename T> 
+template <typename T>
 std::vector<T> CX::Util::clamp(std::vector<T> vals, T minimum, T maximum) {
 	std::vector<T> rval(vals.size());
 	for (unsigned int i = 0; i < vals.size(); i++) {
@@ -424,7 +424,7 @@ std::vector<T> CX::Util::concatenate(const std::vector<T>& A, const std::vector<
 \param values The set of values to select from.
 \param exclude The set of values to exclude from `values`.
 \return A vector containing the values that were not excluded. This vector may be empty. */
-template <typename T> 
+template <typename T>
 std::vector<T> CX::Util::exclude(const std::vector<T>& values, const std::vector<T>& exclude) {
 	std::vector<T> kept;
 

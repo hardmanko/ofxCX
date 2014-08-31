@@ -3,7 +3,7 @@
 #include "CX_InputManager.h"
 
 #include "ofAppRunner.h" //ofShowCursor()/ofHideCursor()
-#include "GLFW\glfw3.h"
+#include "GLFW/glfw3.h"
 #include "CX_Private.h"
 
 namespace CX {
@@ -177,13 +177,13 @@ void CX_Mouse::_listenForEvents(bool listen) {
 	_listeningForEvents = listen;
 }
 
-std::ostream& CX::operator<< (std::ostream& os, const CX_Mouse::Event& ev) {
+std::ostream& operator<< (std::ostream& os, const CX_Mouse::Event& ev) {
 	string dlm = ", ";
 	os << ev.button << dlm << ev.x << dlm << ev.y << dlm << ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
-std::istream& CX::operator>> (std::istream& is, CX_Mouse::Event& ev) {
+std::istream& operator>> (std::istream& is, CX_Mouse::Event& ev) {
 	is >> ev.button;
 	is.ignore(2);
 	is >> ev.x;

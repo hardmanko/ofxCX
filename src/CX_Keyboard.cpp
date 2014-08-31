@@ -14,7 +14,7 @@ CX_Keyboard::~CX_Keyboard(void) {
 	_listenForEvents(false);
 }
 
-/*! Enable or disable the keyboard. 
+/*! Enable or disable the keyboard.
 \param enable If `true`, the keyboard will be enabled; if `false` it will be disabled.
 */
 void CX_Keyboard::enable(bool enable) {
@@ -71,14 +71,14 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear, bool eraseE
 /*! Wait until the first of the given `keys` is pressed. This specifically checks that a key has been pressed: If it was
 held at the time this function was called and then released, it will have to be pressed again before this
 function will return. Returns a CX_Keyboard::Event for the key that was waited on, optionally removing that event from the
-stored events if `eraseEvent` is `true`. 
+stored events if `eraseEvent` is `true`.
 \param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will
 cause this function to return.
 \param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all keyboard events
 will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
 is possible that one of the available events will include a keypress for a given key, in which case this function
 will return immediately.
-\param eraseEvent If `true`, the event will be erased from the queue of captured events. The implication of this removal 
+\param eraseEvent If `true`, the event will be erased from the queue of captured events. The implication of this removal
 is that the return value of this function is the only opportunity to gain access to the event that caused this function to return.
 The advantage of this approach is that if, after some given key is pressed, all events in the queue are processed, you are
 guaranteed to not hit the same event twice (once form the return value of this function, once from processing the queue).
@@ -198,12 +198,12 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 
 static const std::string dlm = ", ";
 
-std::ostream& CX::operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
+std::ostream& operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
 	os << ev.key << dlm << ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
-std::istream& CX::operator>> (std::istream& is, CX_Keyboard::Event& ev) {
+std::istream& operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	is >> ev.key;
 	is.ignore(dlm.size());
 	is >> ev.time;

@@ -5,12 +5,21 @@
 #include "ofUtils.h"
 #include "ofEvents.h"
 
-#include "GLFW\glfw3.h"
+#include "GLFW/glfw3.h"
 #include <sstream>
 #include <string>
 
 #include "CX_AppWindow.h"
 #include "CX_Logger.h"
+
+//so apparently sysmacros.h defines some macros with these names...
+#ifdef major
+#undef major
+#endif // major
+
+#ifdef minor
+#undef minor
+#endif // minor
 
 namespace CX {
 
@@ -23,8 +32,8 @@ namespace Private {
 
 	struct CX_GLVersion {
 		CX_GLVersion(void) :
-			major(0),
-			minor(0),
+		    major(0),
+		    minor(0),
 			release(0)
 		{}
 

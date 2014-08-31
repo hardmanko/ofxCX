@@ -11,6 +11,8 @@
 
 namespace CX {
 
+    class CX_InputManager;
+
 	/*! This class is responsible for managing the mouse. It has a private constructor, so you can only use the
 	CX_Mouse that is a part of a CX_InputManager, specifically the instance of a CX_InputManager named CX::Instances::Input.
 	\ingroup inputDevices */
@@ -28,9 +30,9 @@ namespace CX {
 			MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
 			PRESSED, //!< A mouse button has been pressed. Check \ref button for the button index and \ref x and \ref y for the location.
 			RELEASED, //!< A mouse button has been released. Check \ref button for the button index and \ref x and \ref y for the location.
-			DRAGGED, //!< The mouse has been moved while at least one button was held. \ref button may not be meaningful because the held button 
+			DRAGGED, //!< The mouse has been moved while at least one button was held. \ref button may not be meaningful because the held button
 			//!< can be changed during a drag, or multiple buttons may be held at once during a drag.
-			SCROLLED //!< The mouse wheel has been scrolled. Check \ref y to get the change in the standard mouse wheel, or \ref x if your 
+			SCROLLED //!< The mouse wheel has been scrolled. Check \ref y to get the change in the standard mouse wheel, or \ref x if your
 			//!< mouse has a wheel that can move horizontally.
 		};
 

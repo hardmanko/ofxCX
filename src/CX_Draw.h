@@ -12,7 +12,7 @@
 
 namespace CX {
 
-/*! This namespace contains functions for drawing certain complex stimuli. 
+/*! This namespace contains functions for drawing certain complex stimuli.
 These functions are provided "as-is": If what they draw looks nice to you, great;
 however, there are no strong guarantees about what the output of the functions will look like.
 \ingroup video */
@@ -20,7 +20,7 @@ namespace Draw {
 
 	std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 	ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
-		
+
 	enum class LineCornerMode {
 		OUTER_POINT,
 		BEZIER_ARC,
@@ -61,9 +61,9 @@ namespace Draw {
 		CX_PatternProperties_t(void) :
 			minValue(0),
 			maxValue(255),
-			angle(0),
 			width(100),
 			height(100),
+			angle(0),
 			period(30),
 			phase(0),
 			maskType(CX_PatternProperties_t::SINE_WAVE),
@@ -73,7 +73,7 @@ namespace Draw {
 
 		unsigned char minValue; //!< The minimum value that will be used in the pattern.
 		unsigned char maxValue; //!< The maximum value that will be used in the pattern.
-		
+
 		/*! The width of the pattern, or if `apertureType` is `AP_CIRCLE`, the diameter of the circle enclosing the pattern. */
 		float width;
 
@@ -224,7 +224,7 @@ namespace Draw {
 		}
 	}
 	\endcode
-	
+
 	*/
 	template <typename T>
 	void colorWheel(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
@@ -254,7 +254,7 @@ namespace Draw {
 	ofVbo colorWheelToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
 		colors.push_back(colors.front());
 
-		return CX::Draw::colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
+		return colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
 	}
 
 	/*! See CX::Draw::colorArc() for documentation. */
