@@ -74,7 +74,7 @@ namespace CX {
 			std::vector<unsigned int> getColumn(unsigned int col) const;
 			std::vector<unsigned int> getRow(unsigned int row) const;
 
-			std::vector< std::vector<unsigned int> > square;
+			std::vector< std::vector<unsigned int> > square; //!< The Latin square.
 			
 		private:
 			unsigned int _columns;

@@ -17,6 +17,7 @@ This module provides a class that is used for random number generation.
 
 namespace CX {
 
+	/*! \brief The type of integer returned by the CX_RandomNumberGenerator::randomInt() functions. */
 	typedef int64_t CX_RandomInt_t;
 
 	/*! This class is used for generating random values from a pseudo-random number generator. If uses

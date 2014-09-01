@@ -49,12 +49,14 @@ namespace CX {
 		bool writeToFile(std::string filename, std::string data, bool append = true);
 		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 
+		/*! The way in which numbers should be rounded with round(). */
 		enum class CX_RoundingConfiguration {
-			ROUND_TO_NEAREST,
-			ROUND_UP,
-			ROUND_DOWN,
-			ROUND_TOWARD_ZERO
+			ROUND_TO_NEAREST, //!< Round to the nearest number.
+			ROUND_UP, //!< Round to the number above the current number.
+			ROUND_DOWN, //!< Round to the number below the current number.
+			ROUND_TOWARD_ZERO //!< Round toward zero.
 		};
+
 		double round(double d, int roundingPower, CX_RoundingConfiguration c = CX_RoundingConfiguration::ROUND_TO_NEAREST);
 
 		template <typename T> T clamp(T val, T minimum, T maximum);
@@ -364,6 +366,10 @@ template <typename T_OUT, typename T_IN> T_OUT CX::Util::mean(std::vector<T_IN> 
 	return sum / vals.size();
 }
 
+/*! Calculates the sample variance of a vector of values. 
+\tparam T The type of data.
+\param vals The data.
+\return The sample variance. */
 template <typename T> T CX::Util::var(std::vector<T> vals) {
 	return Util::var<T, T>(vals);
 }

@@ -27,13 +27,13 @@ namespace CX {
 		};
 
 		enum MouseEventType {
-			MOVED, //!< The mouse has been moved without a button being held. \ref button should be -1 (meaningless).
-			PRESSED, //!< A mouse button has been pressed. Check \ref button for the button index and \ref x and \ref y for the location.
-			RELEASED, //!< A mouse button has been released. Check \ref button for the button index and \ref x and \ref y for the location.
-			DRAGGED, //!< The mouse has been moved while at least one button was held. \ref button may not be meaningful because the held button
+			MOVED, //!< The mouse has been moved without a button being held. Event::button should be -1 (meaningless).
+			PRESSED, //!< A mouse button has been pressed. Check Event::button for the button index and Event::x and Event::y for the location.
+			RELEASED, //!< A mouse button has been released. Check Event::button for the button index and Event::x and Event::y for the location.
+			DRAGGED, //!< The mouse has been moved while at least one button was held. Event::button may not be meaningful because the held button
 			//!< can be changed during a drag, or multiple buttons may be held at once during a drag.
-			SCROLLED //!< The mouse wheel has been scrolled. Check \ref y to get the change in the standard mouse wheel, or \ref x if your
-			//!< mouse has a wheel that can move horizontally.
+			SCROLLED //!< The mouse wheel has been scrolled. Check Event::y to get the change in the standard mouse wheel direction, or 
+				//!< Event::x if your mouse has a wheel that can move horizontally.
 		};
 
 		/*! This struct contains the results of a mouse event, which is any type of interaction with the mouse, be it
@@ -43,7 +43,7 @@ namespace CX {
 			int button; /*!< \brief The relevant mouse button if the event `type` is PRESSED, RELEASED, or DRAGGED.
 						Can be compared with elements of enum CX_Mouse::Buttons to find out about the named buttons. */
 
-			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the eventType is SCROLLED.
+			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the eventType is MouseEventType::SCROLLED.
 			int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the eventType is SCROLLED.
 
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().

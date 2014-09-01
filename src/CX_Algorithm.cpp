@@ -2,19 +2,19 @@
 
 using namespace CX::Algo;
 
-
+/*! \brief Construct a LatinSquare with no contents. */
 LatinSquare::LatinSquare(void) :
 	_columns(0)
 {}
 
+/*! Construct a LatinSquare with the given dimensions. The generated square is the
+basic latin square that, for dimension 3, has {0,1,2} on the first row, {1,2,0}
+on the middle row, and {2,0,1} on the last row. */
 LatinSquare::LatinSquare(unsigned int dimensions) {
 	generate(dimensions);
 }
 
-/*! Generate a latin square with the given dimensions. The generated square is the
-very basic latin square that, for dimension 3, has {0,1,2} on the first row, {1,2,0}
-on the middle row, and {2,0,1} on the last row.
-
+/*! \copydoc CX::Algo::LatinSquare::LatinSquare
 \note This deletes any previous contents of the latin square. */
 void LatinSquare::generate(unsigned int dimensions) {
 	square.resize(dimensions);
@@ -47,12 +47,14 @@ void LatinSquare::reorderLeft(void) {
 	}
 }
 
+/*! This function moves all of the rows up one place, then moves the topmost row to the bottom. */
 void LatinSquare::reorderUp(void) {
 	for (unsigned int i = 0; i < square.size() - 1; i++) {
 		std::swap(square[i], square[i + 1]);
 	}
 }
 
+/*! This function moves all of the rows down one place, then moves the bottommost row to the top. */
 void LatinSquare::reorderDown(void) {
 	for (unsigned int i = square.size() - 1; i > 0; i--) {
 		std::swap(square[i], square[i - 1]);

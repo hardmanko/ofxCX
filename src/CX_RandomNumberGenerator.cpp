@@ -2,7 +2,8 @@
 
 using namespace CX;
 
-/*! An instance of CX_RandomNumberGenerator that is (lightly) hooked into the CX backend.
+/*! An instance of CX_RandomNumberGenerator that is very lightly hooked into the CX backend. The only
+ way this is used outside of user code is to generate random numbers internally in, e.g., Algo::BlockSampler.
 \ingroup entryPoint
 */
 CX::CX_RandomNumberGenerator CX::Instances::RNG;

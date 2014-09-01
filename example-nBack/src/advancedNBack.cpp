@@ -1,6 +1,6 @@
 #include "CX_EntryPoint.h"
 
-/*! \file
+/*
 In this example, we are going to consider two different ways of using the slide presenter
 to present stimuli. One method is the one used in the change detection example: Draw the
 stimuli to framebuffers that are managed by the SlidePresenter. This approach is fairly

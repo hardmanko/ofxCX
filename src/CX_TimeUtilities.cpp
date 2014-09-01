@@ -70,22 +70,25 @@ namespace Util {
 	}
 
 
-
+	/*! \brief Get the mean value of the stored lap times. */
 	CX_Millis CX_LapTimer::mean(void) {
 		_calculateDurations();
 		return Util::mean(_durations);
 	}
 
+	/*! \brief Get the longest stored lap time. */
 	CX_Millis CX_LapTimer::max(void) {
 		_calculateDurations();
 		return Util::max(_durations);
 	}
 
+	/*! \brief Get the shortest stored lap time. */
 	CX_Millis CX_LapTimer::min(void) {
 		_calculateDurations();
 		return Util::min(_durations);
 	}
 
+	/*! \brief Get the standard deviation of the stored lap times. */
 	CX_Millis CX_LapTimer::stdDev(void) {
 		_calculateDurations();
 		return CX_Millis(sqrt(Util::var(_durations)));
@@ -159,18 +162,22 @@ namespace Util {
 		_durations.clear();
 	}
 
+	/*! \brief Get the mean of the stored segment durations. */
 	CX_Millis CX_SegmentProfiler::mean(void) {
 		return Util::mean(_durations);
 	}
 
+	/*! \brief Get the longest of the stored segment durations. */
 	CX_Millis CX_SegmentProfiler::max(void) {
 		return Util::max(_durations);
 	}
 
+	/*! \brief Get the shortest of the stored segment durations. */
 	CX_Millis CX_SegmentProfiler::min(void) {
 		return Util::min(_durations);
 	}
 
+	/*! \brief Get the standard deviation of the stored segment durations. */
 	CX_Millis CX_SegmentProfiler::stdDev(void) {
 		return CX_Millis(sqrt(Util::var(_durations)));
 	}

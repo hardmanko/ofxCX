@@ -181,26 +181,29 @@ vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	return but;
 }
 
+static const std::string dlm = ", ";
+
+/*! \brief Stream insertion operator for the CX_Joystick::Event struct. */
 std::ostream& CX::operator<< (std::ostream& os, const CX_Joystick::Event& ev) {
-	string dlm = ", ";
 	os << ev.buttonIndex << dlm << ev.buttonState << dlm << ev.axisIndex << dlm << ev.axisPosition << dlm <<
 		ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
 	return os;
 }
 
+/*! \brief Stream extraction operator for the CX_Joystick::Event struct. */
 std::istream& CX::operator>> (std::istream& is, CX_Joystick::Event& ev) {
 	is >> ev.buttonIndex;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.buttonState;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.axisIndex;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.axisPosition;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.eventTime;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.uncertainty;
-	is.ignore(2);
+	is.ignore(dlm.size());
 
 	int eventType;
 	is >> eventType;

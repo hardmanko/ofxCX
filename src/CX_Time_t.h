@@ -2,18 +2,16 @@
 
 #include <chrono>
 
-//#include "CX_Utilities.h"
-
 namespace CX {
 
 	template <typename T> class CX_Time_t;
 
-	typedef CX_Time_t<std::ratio<3600, 1> > CX_Hours;
-	typedef CX_Time_t<std::ratio<60, 1> > CX_Minutes;
-	typedef CX_Time_t<std::ratio<1, 1> > CX_Seconds;
-	typedef CX_Time_t<std::ratio<1, 1000> > CX_Millis;
-	typedef CX_Time_t<std::ratio<1, 1000000> > CX_Micros;
-	typedef CX_Time_t<std::ratio<1, 1000000000> > CX_Nanos;
+	typedef CX_Time_t<std::ratio<3600, 1> > CX_Hours; //!< Hours.
+	typedef CX_Time_t<std::ratio<60, 1> > CX_Minutes; //!< Minutes.
+	typedef CX_Time_t<std::ratio<1, 1> > CX_Seconds; //!< Seconds.
+	typedef CX_Time_t<std::ratio<1, 1000> > CX_Millis; //!< Milliseconds.
+	typedef CX_Time_t<std::ratio<1, 1000000> > CX_Micros; //!< Microseconds.
+	typedef CX_Time_t<std::ratio<1, 1000000000> > CX_Nanos; //!< Nanoseconds.
 
 	namespace Private {
 		template<typename tOut, typename tIn, typename resultT>
@@ -144,15 +142,24 @@ namespace CX {
 
 		/*! Constructs a CX_Time_t with the specified time value. 
 		\param t A time value with units interpreted depending on the TimeUnit 
-		template argument for the instance of the class being constructed. */
+		template argument for the instance of the class being constructed. 
+		
+		Example:
+		\code{.cpp}
+		CX_Minutes quarterHour(15); //Interpreted as 15 minutes
+		CX_Seconds oneMinute(60); //Interpreted as 60 seconds
+		\endcode
+		*/
 		CX_Time_t(double t) {
 			_nanos = (long long)Private::convertTimeCount<std::nano, TimeUnit, double>(t);
 		}
 
+		/*! \copydoc CX_Time_t::CX_Time_t(double) */
 		CX_Time_t(int t) {
 			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
 		}
 
+		/*! \copydoc CX_Time_t::CX_Time_t(double) */
 		CX_Time_t(long long t) {
 			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
 		}
@@ -232,15 +239,6 @@ namespace CX {
 		CX_Time_t<TimeUnit> operator/(double rhs) const {
 			return CX_Nanos(_nanos / rhs);
 		}
-
-		/*! \brief Multiplies a CX_Time_t by a unitless value, resulting in a CX_Time_t of the same type.
-		You cannot multiply a time by another time because that would result in units of time squared. */
-		/*
-		CX_Time_t<TimeUnit> operator*(double rhs) const {
-			double n = this->_nanos * rhs;
-			return CX_Nanos(n);
-		}
-		*/
 
 		/*! \brief Multiplies a CX_Time_t by a unitless value, storing the result in the CX_Time_t.
 		You cannot multiply a time by another time because that would result in units of time squared. */
@@ -336,10 +334,27 @@ namespace CX {
 
 	};
 
-	/*! This is a standard stream operator for inserting a CX_Time_t into a std::ostream.
+	/*! Stream instertion operator for CX_Time_t.
 	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same
 	time units on both ends of the conversion. In addition, converting to/from string is not guaranteed to be a 
-	lossless operation. */
+	lossless operation, but it usually works out. 
+	
+	\code{.cpp}
+	st::stringstream ss;
+	CX_Seconds sec(60);
+
+	ss << sec;
+	cout << ss.str() << endl;
+
+	CX_Minutes min;
+	ss >> min; //Oops! This is now holding 60 minutes!
+
+	//Better: Use the same type at both ends.
+	CX_Seconds sec2;
+	ss << sec;
+	ss >> sec2;
+	\endcode
+	*/
 	template <typename TimeUnit>
 	std::ostream& operator<< (std::ostream& os, const CX_Time_t<TimeUnit>& t) {
 		os << t.value(); //Assume sufficient precision to encode without losing nanos? Or set the pecision?
@@ -355,12 +370,14 @@ namespace CX {
 		return is;
 	}
 
+	/*! \brief Multiplies a CX_Time_t with a numeric value, resulting in a CX_Time_t in the same units as `lhs`. */
 	template<typename T>
 	CX_Time_t<T> operator*(CX_Time_t<T> lhs, double rhs) {
 		double n = lhs.nanos() * rhs;
 		return CX_Nanos(n);
 	}
 
+	/*! \brief Multiplies a CX_Time_t with a numeric value, resulting in a CX_Time_t in the same units as `rhs`. */
 	template<typename T>
 	CX_Time_t<T> operator*(double lhs, CX_Time_t<T> rhs) {
 		double n = rhs.nanos() * lhs;

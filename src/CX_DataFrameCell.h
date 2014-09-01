@@ -61,17 +61,13 @@ public:
 	std::string getStoredType (void) const;
 	void deleteStoredType(void);
 
-	bool isVector(void) const {
-		return _data->size() > 1;
-	}
+	bool isVector(void) const;
 
 private:
 
 	std::shared_ptr<std::vector<std::string>> _data;
 
-	//std::shared_ptr<std::string> _str;
 	std::shared_ptr<std::string> _type;
-	//std::shared_ptr<bool> _dataIsVector;
 	std::shared_ptr<bool> _ignoreStoredType;
 	//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
 	/*
@@ -219,7 +215,6 @@ void CX_DataFrameCell::storeVector(std::vector<T> values) {
 	}
 
 	*_type = typeid(T).name();
-	//*_dataIsVector = true;
 	*_ignoreStoredType = false;
 }
 
@@ -232,15 +227,10 @@ template <typename T> void CX_DataFrameCell::store(const T& value) {
 	_data->clear();
 	_data->push_back( ofToString<T>(value) );
 
-	//*_str = ofToString<T>(value);
 	*_type = typeid(T).name();
-	//*_dataIsVector = false;
 	*_ignoreStoredType = false;
 }
 
-/*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
-\return A copy of the stored data encoded as a string.
-*/
 template<> std::string CX_DataFrameCell::to(void) const;
 
 template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const;

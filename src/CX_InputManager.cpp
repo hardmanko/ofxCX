@@ -10,8 +10,6 @@ namespace CX {
 		}
 	}
 
-	/*! An instance of CX_InputManager that is very lightly hooked into the CX backend.
-	\ingroup entryPoint */
 	CX::CX_InputManager CX::Instances::Input = CX::Private::inputManagerFactory();
 
 	CX_InputManager::CX_InputManager(void) :

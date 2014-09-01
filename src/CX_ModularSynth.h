@@ -76,21 +76,13 @@ namespace Synth {
 
 	protected:
 
+		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
+		friend void operator>>(ModuleBase& l, ModuleParameter& r);
+
 		vector<ModuleBase*> _inputs;
 		vector<ModuleBase*> _outputs;
 		vector<ModuleParameter*> _parameters;
 		ModuleControlData_t *_data;
-
-		/*! This operator is used to connect modules together. `l` is set as the input for `r`. 
-		\code{.cpp}
-		Oscillator osc;
-		StreamOutput out;
-		osc >> out; //Connect osc as the input for out.
-		\endcode
-		*/
-		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
-
-		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
 		virtual void _dataSetEvent(void) { return; }
 
@@ -130,25 +122,14 @@ namespace Synth {
 		ModuleParameter(double d);
 
 		void updateValue(void);
-		bool valueUpdated(void);
+		bool valueUpdated(bool checkForUpdates = true);
 		double& getValue(void);
 
 		operator double(void);
 
 		ModuleParameter& operator=(double d);
 
-		/*! This operator connects a module to the module parameter. It is not possible to connect a module
-		parameter as an input for anything: They are dead ends.
-		
-		\code{.cpp}
-		using namespace CX::Synth;
-		Oscillator osc;
-		Envelope fenv;
-		Adder add;
-		add.amount = 500;
-		fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator with an offset of 500 Hz.
-		\endcode
-		*/
+
 		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
 	private:
@@ -160,6 +141,10 @@ namespace Synth {
 		bool _updated;
 		double _value;
 	};
+
+
+	ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
+	void operator>>(ModuleBase& l, ModuleParameter& r);
 
 	/*! This class is an implementation of an additive synthesizer. Additive synthesizers are essentially an
 	inverse fourier transform. You specify at which frequencies you want to have a sine wave and the amplitudes 

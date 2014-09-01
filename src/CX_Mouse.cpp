@@ -18,6 +18,9 @@ CX_Mouse::~CX_Mouse(void) {
 	_listenForEvents(false);
 }
 
+/*! Enable or disable the mouse.
+\param enable If `true`, the mouse will be enabled; if `false` it will be disabled.
+*/
 void CX_Mouse::enable(bool enable) {
 	_listenForEvents(enable);
 
@@ -27,6 +30,7 @@ void CX_Mouse::enable(bool enable) {
 	}
 }
 
+/*! Returns `true` if the mouse is enabled. */
 bool CX_Mouse::enabled(void) {
 	return _enabled;
 }
@@ -177,23 +181,26 @@ void CX_Mouse::_listenForEvents(bool listen) {
 	_listeningForEvents = listen;
 }
 
+static const std::string dlm = ", ";
+
+/*! \brief Stream insertion operator for the CX_Mouse::Event struct. */
 std::ostream& operator<< (std::ostream& os, const CX_Mouse::Event& ev) {
-	string dlm = ", ";
 	os << ev.button << dlm << ev.x << dlm << ev.y << dlm << ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
+/*! \brief Stream extraction operator for the CX_Mouse::Event struct. */
 std::istream& operator>> (std::istream& is, CX_Mouse::Event& ev) {
 	is >> ev.button;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.x;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.y;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.time;
-	is.ignore(2);
+	is.ignore(dlm.size());
 	is >> ev.uncertainty;
-	is.ignore(2);
+	is.ignore(dlm.size());
 
 	int eventType;
 	is >> eventType;

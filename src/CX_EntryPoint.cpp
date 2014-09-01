@@ -5,7 +5,8 @@
 #include "CX_AppWindow.h"
 
 
-/*! An instance of CX::CX_Display that is lightly hooked into the CX backend. setup() is called for Display before runExperiment() is called.
+/*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
+is that during CX setup, before reaching user code in runExperiment(), CX_Display::setup() is called.
 \ingroup entryPoint */
 CX::CX_Display CX::Instances::Display;
 
@@ -33,8 +34,8 @@ void CX::Private::setupCX(void) {
 		//This must happen after the window is configured because it relies on GLFW.
 
 	//Why use these? CX has RNG and Clock.
-	ofSeedRandom();
-	ofResetElapsedTimeCounter();
+	//ofSeedRandom();
+	//ofResetElapsedTimeCounter();
 
 	CX::Instances::Display.setup();
 

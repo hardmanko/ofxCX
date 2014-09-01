@@ -14,16 +14,11 @@ CX_DataFrameCell::CX_DataFrameCell(const char* c) {
 
 	this->store<const char*>(c);
 	*_type = typeid(std::string).name(); //override the type information with the type of std::string.
-	//*_dataIsVector = false;
 }
 
 void CX_DataFrameCell::_allocatePointers(void) {
-
 	_data = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>);
-
-	//_str = std::shared_ptr<std::string>(new std::string);
 	_type = std::shared_ptr<std::string>(new std::string);
-	//_dataIsVector = std::shared_ptr<bool>(new bool);
 	_ignoreStoredType = std::shared_ptr<bool>(new bool);
 }
 
@@ -60,6 +55,8 @@ void CX_DataFrameCell::copyCellTo(CX_DataFrameCell* targetCell) const {
 	*targetCell->_type = *this->_type;
 }
 
+/*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
+\return A copy of the stored data encoded as a string. */
 template<> std::string CX_DataFrameCell::to(void) const {
 	if (_data->size() == 0) {
 		CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
@@ -78,6 +75,12 @@ std::string CX_DataFrameCell::toString(void) const {
 	return this->to<std::string>();
 }
 
+/*! Returns `true` if more than one element is stored in the CX_DataFrameCell. */
+bool CX_DataFrameCell::isVector(void) const {
+	return _data->size() > 1;
+}
+
+/*! Converts the contents of the CX_DataFrame cell to a vector of strings. */
 template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {
 	if (_data->size() == 0) {
 		CX::Instances::Log.error("CX_DataFrameCell") << "toVector(): No data to extract from cell.";
@@ -86,7 +89,15 @@ template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {
 	return *_data;
 }
 
+/*! Stream insertion operator for a CX_DataFrameCell. */
 std::ostream& CX::operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
-	os << cell.toString();
+	std::string s;
+	if (cell.isVector()) {
+		s = Util::vectorToString(cell.toVector<string>(), "; ");
+	} else {
+		s = cell.toString();
+	}
+
+	os << s;
 	return os;
 }

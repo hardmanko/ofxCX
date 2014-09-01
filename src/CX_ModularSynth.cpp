@@ -15,14 +15,31 @@ double CX::Synth::relativeFrequency(double f, double semitoneDifference) {
 	return f * pow(2.0, semitoneDifference / 12);
 }
 
-/*! This operator is used to connect modules together. `l` is set as the input for `r`. */
+/*! This operator is used to connect modules together. `l` is set as the input for `r`.
+\code{.cpp}
+Oscillator osc;
+StreamOutput out;
+osc >> out; //Connect osc as the input for out.
+\endcode
+*/
 ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
 	r._assignInput(&l);
 	l._assignOutput(&r);
 	return r;
 }
 
+/*! This operator connects a module to the module parameter. It is not possible to connect a module
+parameter as an input for anything: They are dead ends.
 
+\code{.cpp}
+using namespace CX::Synth;
+Oscillator osc;
+Envelope fenv;
+Adder add;
+add.amount = 500;
+fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator with an offset of 500 Hz.
+\endcode
+*/
 void CX::Synth::operator>>(ModuleBase& l, ModuleParameter& r) {
 	r._input = &l;
 	r._owner->_setDataIfNotSet(&l);
@@ -181,6 +198,7 @@ void ModuleBase::_registerParameter(ModuleParameter* p) {
 // ModuleParameter //
 /////////////////////
 
+/*! \brief Construct a ModuleParameter with no value. */
 ModuleParameter::ModuleParameter(void) :
 _value(0),
 _updated(true),
@@ -188,6 +206,7 @@ _input(nullptr),
 _owner(nullptr)
 {}
 
+/*! \brief Construct a ModuleParameter with the given start value. */
 ModuleParameter::ModuleParameter(double d) :
 _value(d),
 _updated(true),
@@ -195,6 +214,8 @@ _input(nullptr),
 _owner(nullptr)
 {}
 
+/*! Update the value of the module parameter. This gets the next sample from the module
+that is the input for the ModuleParameter, if any. */
 void ModuleParameter::updateValue(void) {
 	if (_input != nullptr) { //If there is no input connected, just keep the same value.
 		double temp = _input->getNextSample();
@@ -205,7 +226,22 @@ void ModuleParameter::updateValue(void) {
 	}
 }
 
-bool ModuleParameter::valueUpdated(void) {
+/*! Returns `true` if the value of the ModuleParameter has been updated since the last time
+this function was called. This should be called right after updateValue() or with `checkForUpdates = true`.
+Updates to the value resulting from assignment of a new value with `operator=()` count as updates
+to the value.
+
+If you don't care whether the value has been updated before using it, don't call this function. 
+Instead, just use updateValue() and getValue().
+
+\param checkForUpdates Check for updates before determining whether the value has been updated.
+\return `true` if the value has been updated since the last check.
+*/
+bool ModuleParameter::valueUpdated(bool checkForUpdates) {
+	if (checkForUpdates) {
+		updateValue();
+	}
+
 	if (_updated) {
 		_updated = false;
 		return true;
@@ -213,14 +249,17 @@ bool ModuleParameter::valueUpdated(void) {
 	return false;
 }
 
+/*! Gets the current value of the parameter. */
 double& ModuleParameter::getValue(void) {
 	return _value;
 }
 
+/*! \brief Implicitly converts the parameter to `double`. */
 ModuleParameter::operator double(void) {
 	return _value;
 }
 
+/*! \brief Assign a value to the parameter. */
 ModuleParameter& ModuleParameter::operator=(double d) {
 	_value = d;
 	_updated = true;
@@ -520,9 +559,8 @@ gateInput(0.5)
 }
 
 double Envelope::getNextSample(void) {
-	
-	gateInput.updateValue();
-	if (gateInput.valueUpdated()) {
+
+	if (gateInput.valueUpdated(true)) {
 		if (gateInput.getValue() == 1.0) {
 			this->attack();
 		} else if (gateInput.getValue() == 0.0) {
@@ -534,20 +572,16 @@ double Envelope::getNextSample(void) {
 		return 0;
 	}
 
-	a.updateValue();
-	d.updateValue();
-	s.updateValue();
-	r.updateValue();
-	if (a.valueUpdated()) {
+	if (a.valueUpdated(true)) {
 		_a = a.getValue();
 	}
-	if (d.valueUpdated()) {
+	if (d.valueUpdated(true)) {
 		_d = d.getValue();
 	}
-	if (s.valueUpdated()) {
+	if (s.valueUpdated(true)) {
 		_s = s.getValue();
 	}
-	if (r.valueUpdated()) {
+	if (r.valueUpdated(true)) {
 		_r = r.getValue();
 	}
 
@@ -645,10 +679,7 @@ double Filter::getNextSample(void) {
 		return 0;
 	}
 
-	cutoff.updateValue();
-	bandwidth.updateValue();
-
-	if (cutoff.valueUpdated() || bandwidth.valueUpdated()) {
+	if (cutoff.valueUpdated(true) || bandwidth.valueUpdated(true)) {
 		_recalculateCoefficients();
 	}
 

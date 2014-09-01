@@ -1,6 +1,6 @@
 #include "CX_EntryPoint.h"
 
-/*! \file
+/*
 This example shows how to implement an N-Back task using an advanced feature of the CX_SlidePresenter 
 (SP). There is a feature of the SP that allows you to give it a pointer to a function that will be 
 called every time the SP has just presented the final slide that it currently has. In your function,

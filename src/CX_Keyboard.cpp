@@ -198,11 +198,13 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 
 static const std::string dlm = ", ";
 
+/*! \brief Stream insertion operator for the CX_Keyboard::Event struct. */
 std::ostream& operator<< (std::ostream& os, const CX_Keyboard::Event& ev) {
 	os << ev.key << dlm << ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
+/*! \brief Stream extraction operator for the CX_Keyboard::Event struct. */
 std::istream& operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	is >> ev.key;
 	is.ignore(dlm.size());
