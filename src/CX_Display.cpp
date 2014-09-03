@@ -179,6 +179,18 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 	return false;
 }
 
+/*! If the display is automatically swapping, this function blocks until a buffer swap has ocurred. If the
+display is not automatically swapping, it returns immediately. */
+void CX_Display::waitForBufferSwap(void) {
+	if (!isAutomaticallySwapping()) {
+		CX::Instances::Log.warning("CX_Display") << "waitForBufferSwap(): Wait for buffer swap requested while not automatically swapping. Returning immediately";
+		return;
+	}
+	hasSwappedSinceLastCheck();
+	while (!hasSwappedSinceLastCheck())
+		;
+}
+
 /*! This function returns the number of the last frame presented, as determined by 
 number of front and back buffer swaps. It tracks buffer swaps that result from 
 1) the front and back buffer swapping automatically (as a result of \ref CX_Display::setAutomaticSwapping "setAutomaticSwapping(true)") and 

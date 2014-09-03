@@ -12,13 +12,14 @@ namespace CX {
 
     class CX_InputManager;
 
-	/*! This class is responsible for managing the mouse.
+	/*! This class is responsible for managing the keyboard. You should not need to create an instance of this class:
+	use the instance of CX_Keyboard within CX::Instances::Input instead.
 	\ingroup inputDevices */
 	class CX_Keyboard {
 	public:
 
 		/*! The type of the keyboard event. */
-		enum KeyboardEventType {
+		enum EventType {
 			PRESSED, //!< A key has been pressed.
 			RELEASED, //!< A key has been released.
 			REPEAT /*!< \brief A key has been held for some time and automatic key repeat has kicked in, causing
@@ -29,8 +30,8 @@ namespace CX {
 		/*! This struct contains the results of a keyboard event, whether it be a key press or release, or key repeat. */
 		struct Event {
 			/*! The key involved in this event. The value of this can be compared with character literals for many of
-			the standard keyboard keys. For example, you could use `(myKeyEvent.key == 'e')` to test if the key was the E key.
-			Always check for lower case letters, because shift/capslock are ignored when setting the value for `key`.
+			the standard keyboard keys. For example, you could use (myKeyEvent.key == 'e') to test if the key was the E key.
+			Always check for lower case letters, because shift/capslock are ignored when setting the value for ::key.
 
 			For special keys, `key` can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
 
@@ -48,9 +49,9 @@ namespace CX {
 			int key;
 
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
-			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
+			CX_Millis uncertainty; //!< The uncertainty in `time`. The event occured some time between `time` and `time` minus uncertainty.
 
-			KeyboardEventType type; //!< The type of the event: press, release, or key repeat.
+			EventType type; //!< The type of the event: press, release, or key repeat.
 		};
 
 		~CX_Keyboard (void);

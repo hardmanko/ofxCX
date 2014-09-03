@@ -139,6 +139,8 @@ public:
 	CX_Millis getStreamLatency (void);
 
 	bool hasSwappedSinceLastCheck (void);
+	void waitForBufferSwap(void);
+
 	/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::CX_Clock::now(). */
 	CX_Millis getLastSwapTime(void) { return _lastSwapTime; };
 	CX_Millis estimateNextSwapTime(void);

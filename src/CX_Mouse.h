@@ -13,20 +13,20 @@ namespace CX {
 
     class CX_InputManager;
 
-	/*! This class is responsible for managing the mouse. It has a private constructor, so you can only use the
-	CX_Mouse that is a part of a CX_InputManager, specifically the instance of a CX_InputManager named CX::Instances::Input.
+	/*! This class is responsible for managing the mouse. You should not need to create an instance of this class:
+	use the instance of CX_Mouse within CX::Instances::Input instead.
 	\ingroup inputDevices */
 	class CX_Mouse {
 	public:
 
 		/*! Names of the mouse buttons corresponding to some of the integer button identifiers. */
-		enum class Buttons : int {
+		enum Buttons {
 			LEFT = OF_MOUSE_BUTTON_LEFT,
 			MIDDLE = OF_MOUSE_BUTTON_MIDDLE,
 			RIGHT = OF_MOUSE_BUTTON_RIGHT
 		};
 
-		enum MouseEventType {
+		enum EventType {
 			MOVED, //!< The mouse has been moved without a button being held. Event::button should be -1 (meaningless).
 			PRESSED, //!< A mouse button has been pressed. Check Event::button for the button index and Event::x and Event::y for the location.
 			RELEASED, //!< A mouse button has been released. Check Event::button for the button index and Event::x and Event::y for the location.
@@ -43,13 +43,13 @@ namespace CX {
 			int button; /*!< \brief The relevant mouse button if the event `type` is PRESSED, RELEASED, or DRAGGED.
 						Can be compared with elements of enum CX_Mouse::Buttons to find out about the named buttons. */
 
-			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the eventType is MouseEventType::SCROLLED.
-			int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the eventType is SCROLLED.
+			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the `type` is EventType::SCROLLED.
+			int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the `type` is SCROLLED.
 
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
-			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
+			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between `time` and `time` minus uncertainty.
 
-			MouseEventType type; //!< The type of the event.
+			EventType type; //!< The type of the event.
 		};
 
 		~CX_Mouse (void);

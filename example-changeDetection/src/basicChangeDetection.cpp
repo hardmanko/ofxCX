@@ -133,7 +133,7 @@ void getResponse(void) {
 
 			//Only examine key presses (as opposed to key releases or repeats). Everything would probably work 
 			//just fine without this check for this experiment, but it is generally a good idea to filter your input.
-			if (keyEvent.eventType == CX_Keyboard::Event::PRESSED) {
+			if (keyEvent.type == CX_Keyboard::PRESSED) {
 
 				//Ignore all responses that are not s or d.
 				if (keyEvent.key == 's' || keyEvent.key == 'd') {
@@ -146,7 +146,7 @@ void getResponse(void) {
 					CX_Micros testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 					//One you have the onset time of the test array, you can subtract that from the time
 					//of the response, giving the "response time" (better known as response latency).
-					trials.at(trialIndex).responseLatency = keyEvent.eventTime - testArrayOnset;
+					trials.at(trialIndex).responseLatency = keyEvent.time - testArrayOnset;
 
 					bool changeTrial = trials.at(trialIndex).changeTrial;
 

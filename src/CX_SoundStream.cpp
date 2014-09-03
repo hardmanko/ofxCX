@@ -220,6 +220,18 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 	return false;
 }
 
+/*! Blocks until the next swap of the audio buffers. If the stream is not running, it returns immediately. */
+void CX_SoundStream::waitForBufferSwap(void) {
+	if (_rtAudio == nullptr || !_rtAudio->isStreamRunning()) {
+		CX::Instances::Log.warning("CX_SoundStream") << "waitForBufferSwap(): Wait for buffer swap requested while stream not running. Returning immediately.";
+		return;
+	}
+
+	hasSwappedSinceLastCheck();
+	while (!hasSwappedSinceLastCheck())
+		;
+}
+
 /*! Estimate the time at which the next buffer swap will occur.
 \return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.now(). */
 CX_Millis CX_SoundStream::estimateNextSwapTime(void) {

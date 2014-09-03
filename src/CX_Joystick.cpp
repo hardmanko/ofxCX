@@ -75,12 +75,12 @@ bool CX_Joystick::pollEvents (void) {
 			if (_axisPositions[i] != axes[i]) {
 				CX_Joystick::Event ev;
 
-				ev.eventType = CX_Joystick::Event::AXIS_POSITION_CHANGE;
+				ev.type = CX_Joystick::EventType::AXIS_POSITION_CHANGE;
 				ev.axisIndex = i;
 				ev.axisPosition = axes[i];
 
-				ev.eventTime = pollTime;
-				ev.uncertainty = ev.eventTime - _lastEventPollTime;
+				ev.time = pollTime;
+				ev.uncertainty = ev.time - _lastEventPollTime;
 
 				_joystickEvents.push( ev );
 
@@ -96,16 +96,16 @@ bool CX_Joystick::pollEvents (void) {
 
 				//I'm just guessing about button state here. 1 might be PRESSED, but it could also be UNDEFINED_BUTTON.
 				if (buttons[i] == 1) {
-					ev.eventType = CX_Joystick::Event::BUTTON_PRESS;
+					ev.type = CX_Joystick::EventType::BUTTON_PRESS;
 				} else {
-					ev.eventType = CX_Joystick::Event::BUTTON_RELEASE;
+					ev.type = CX_Joystick::EventType::BUTTON_RELEASE;
 				}
 
 				ev.buttonIndex = i;
 				ev.buttonState = buttons[i];
 
-				ev.eventTime = pollTime;
-				ev.uncertainty = ev.eventTime - _lastEventPollTime;
+				ev.time = pollTime;
+				ev.uncertainty = ev.time - _lastEventPollTime;
 
 				_joystickEvents.push( ev );
 
@@ -186,7 +186,7 @@ static const std::string dlm = ", ";
 /*! \brief Stream insertion operator for the CX_Joystick::Event struct. */
 std::ostream& CX::operator<< (std::ostream& os, const CX_Joystick::Event& ev) {
 	os << ev.buttonIndex << dlm << ev.buttonState << dlm << ev.axisIndex << dlm << ev.axisPosition << dlm <<
-		ev.eventTime << dlm << ev.uncertainty << dlm << ev.eventType;
+		ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
@@ -200,7 +200,7 @@ std::istream& CX::operator>> (std::istream& is, CX_Joystick::Event& ev) {
 	is.ignore(dlm.size());
 	is >> ev.axisPosition;
 	is.ignore(dlm.size());
-	is >> ev.eventTime;
+	is >> ev.time;
 	is.ignore(dlm.size());
 	is >> ev.uncertainty;
 	is.ignore(dlm.size());
@@ -208,9 +208,9 @@ std::istream& CX::operator>> (std::istream& is, CX_Joystick::Event& ev) {
 	int eventType;
 	is >> eventType;
 	switch (eventType) {
-	case CX_Joystick::Event::BUTTON_PRESS: ev.eventType = CX_Joystick::Event::BUTTON_PRESS; break;
-	case CX_Joystick::Event::BUTTON_RELEASE: ev.eventType = CX_Joystick::Event::BUTTON_RELEASE; break;
-	case CX_Joystick::Event::AXIS_POSITION_CHANGE: ev.eventType = CX_Joystick::Event::AXIS_POSITION_CHANGE; break;
+	case CX_Joystick::EventType::BUTTON_PRESS: ev.type = CX_Joystick::EventType::BUTTON_PRESS; break;
+	case CX_Joystick::EventType::BUTTON_RELEASE: ev.type = CX_Joystick::EventType::BUTTON_RELEASE; break;
+	case CX_Joystick::EventType::AXIS_POSITION_CHANGE: ev.type = CX_Joystick::EventType::AXIS_POSITION_CHANGE; break;
 	}
 
 	return is;

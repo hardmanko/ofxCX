@@ -169,8 +169,10 @@ namespace Draw {
 
 
 
-	/*! See CX::Draw::colorArc() for documentation. The only difference is that this function returns an ofVbo,
-	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html */
+	/*! See CX::Draw::colorArc(ofPoint, std::vector<ofColor_<T>>, float, float, float, float, float) for documentation. 
+	The only difference is that this function returns an ofVbo,
+	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html 
+	The ofFbo is ready to be drawn without any further processing. */
 	template <typename T>
 	ofVbo colorArcToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
 		float d = width / 2;
@@ -221,8 +223,10 @@ namespace Draw {
 		vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 	}
 
-    /*! See CX::Draw::colorWheel() for documentation. The only difference is that this function returns an ofVbo,
-	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html */
+    /*! See CX::Draw::colorWheel(ofPoint, std::vector<ofColor_<T>>, float, float, float) for documentation. 
+	The only difference is that this function returns an ofVbo,
+	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html 
+	The ofFbo is ready to be drawn without any further processing. */
 	template <typename T>
 	ofVbo colorWheelToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
 		colors.push_back(colors.front());
@@ -230,7 +234,8 @@ namespace Draw {
 		return colorArcToVbo(center, colors, radius, radius, width, angle, angle - 360);
 	}
 
-	/*! Draws a color wheel (really, a ring) with specified colors.
+	/*! Draws a color wheel (really, a ring) with specified colors. It doesn't look quite right 
+	if there isn't any empty space in the middle of the ring.
 	\param center The center of the color wheel.
 	\param colors The colors to use in the color wheel.
 	\param radius The radius of the color wheel.
@@ -286,7 +291,6 @@ namespace Draw {
 		}
 	}
 	\endcode
-
 	*/
 	template <typename T>
 	void colorWheel(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {

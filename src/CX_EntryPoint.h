@@ -22,8 +22,8 @@ This namespace contains instances of some classes that are fundamental to the fu
 #include "CX_SlidePresenter.h"
 
 #include "CX_InputManager.h" //Includes CX::Instances::Input
-#include "CX_Logger.h" //Includes an instance called CX::Instances::Log
-#include "CX_RandomNumberGenerator.h" //Includes an instance called CX::Instances::RNG
+#include "CX_Logger.h" //Includes CX::Instances::Log
+#include "CX_RandomNumberGenerator.h" //Includes CX::Instances::RNG
 
 #include "CX_SoundBufferPlayer.h"
 #include "CX_SoundBufferRecorder.h"
@@ -31,9 +31,6 @@ This namespace contains instances of some classes that are fundamental to the fu
 
 #include "CX_Algorithm.h"
 #include "CX_Utilities.h"
-
-#include "CX_TrialController.h" 
-#include "CX_TrialController_Class.h"
 
 #include "CX_Private.h"
 

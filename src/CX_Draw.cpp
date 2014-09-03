@@ -114,6 +114,7 @@ This draws an N-pointed star to an ofPath. The star will be centered on (0,0) in
 the star hit.
 \param outerRadius The distance from the center of the star to the outer points of the star.
 \return An ofPath containing the star.
+\see CX::Draw::star()
 */
 ofPath starToPath(unsigned int numberOfPoints, float innerRadius, float outerRadius) {
 	ofPath star;
@@ -155,7 +156,8 @@ void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float 
 	vbo.draw(GL_TRIANGLE_FAN, 0, vertices.size());
 }
 
-/*! Equivalent to a call to CX::Draw::centeredString(ofPoint(x, y), s, font). */
+/*! Equivalent to a call to CX::Draw::centeredString(ofPoint, std::string, ofTrueTypeFont&) 
+with the x and y values in the point. */
 void centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
@@ -317,19 +319,19 @@ bool isPointInRegion(ofPoint p, ofPoint r1, ofPoint r2, float tolerance) {
 	return (p.x >= lowerX) && (p.x <= upperX) && (p.y >= lowerY) && (p.y <= upperY);
 }
 
-bool arePointsInLine(ofPoint p1, ofPoint p2, ofPoint p3, float slopeTolerance = 1e-3) {
-	float x12Dif = p1.x - p2.x;
-	float x23Dif = p2.x - p3.x;
-	if ((x12Dif == 0) && (x23Dif == 0)) {
-		return true;
-	} else if ((x12Dif == 0 || x23Dif == 0) && (x12Dif != x23Dif)) {
-		return false;
+bool arePointsInLine(ofPoint p1, ofPoint p2, ofPoint p3, float angleTolerance) {
+	float a1 = Util::getAngleBetweenPoints(p1, p2);
+	float a2 = Util::getAngleBetweenPoints(p2, p3);
+
+	float dif = a1 - a2;
+	if (abs(dif) > 90.0) {
+		dif = abs(dif) - 180.0;
 	}
 
-	float m1 = ((p1.y - p2.y) / x12Dif);
-	float m2 = ((p2.y - p3.y) / x23Dif);
-
-	return (m2 >= (m1 - slopeTolerance)) && (m2 <= (m1 + slopeTolerance));
+	if (abs(dif) < angleTolerance) {
+		return true;
+	}
+	return false;
 }
 
 
@@ -349,8 +351,8 @@ struct LineSegment {
 		return (p2 - p1)*p + p1;
 	}
 
-	bool doesPointLieOnSegment(ofPoint p, float tolerance = 1e-3) {
-		return isPointInRegion(p, p1, p2, tolerance) && arePointsInLine(p, p1, p2, tolerance);
+	bool doesPointLieOnSegment(ofPoint p, float locationTolerance = 1e-3, float angleTolerance = 0.5) {
+		return isPointInRegion(p, p1, p2, locationTolerance) && arePointsInLine(p, p1, p2, angleTolerance);
 
 	}
 
@@ -530,7 +532,7 @@ ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode
 
 				if (arePointsInLine(points[i], points[i2], points[i2 + 1], 0)) {
 					if (isPointInRegion(points[i2], points[i], points[i2 + 1], width / 100)) {
-						//Middle point is between others. This should have been removed earlier.
+						//Middle point is between others. This should have been removed earlier, so do nothing now.
 					} else {
 						//Middle point is not between others, it is at the end of a line sticking out.
 						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
@@ -798,6 +800,14 @@ void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolu
 For example, if you wanted to convert from HSL to RGB, you would use "HSL -> RGB" as the formula. The whitespace
 is immaterial, but the arrow must exist (the arrow can point either direction). See this page for options for 
 the color space: http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage.
+
+Ranges for the values for some common color spaces:
++ HSV/HSB/HSL/HSI: For any of these color spaces, H is in the range [0,360) and the other components are in the range [0,1].
++ RGB: All in [0,1].
++ LAB: L is in the range [0,100]. A and B have vague ranges, because at certain values, the color that results
+cannot exist (an "imaginary color"). However, in general, A and B should be in the approximate range [-128,128],
+although the edges are likely to be imaginary.
+
 \param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB. S2 and S3 follow as expected.
 \return An vector of length 3 containing the converted coordinates in the destination color space.
 The value at index 0 corresponds to the first letter in the resulting color space and the next two
@@ -833,13 +843,16 @@ std::vector<double> convertColors(std::string conversionFormula, double S1, doub
 }
 
 /*! This function converts from an arbitrary color space to the RGB color space. This is convenient, 
-because in order to draw stimuli with a color, you need to have the color in the RGB space.
+because in order to draw stimuli with a color, you need to have the color in the RGB space. This
+uses CX::Draw::convertColors(std::string, double, double, double), which provides more options.
+
 \param inputColorSpace The color space to convert from. For example, if you wanted to convert from LAB
 coordinates, you would provde the string "LAB". See this page for more options for the color space:
-http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB title on that page).
+http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB title on that page; it's 
+the same interface in both the MATLAB and C versions).
 \param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB. S2 and S3 follow as expected.
-\return An ofFloatColor contaning the RGB coordinates. Instances of ofFloatColor can be implicitly 
-converted to ofColor in assignment.
+\return An `ofFloatColor` contaning the RGB coordinates. Instances of `ofFloatColor` can be implicitly 
+converted in assignment to other `ofColor` types.
 
 \see Example code in the documentation for CX::Draw::colorWheel() uses this function.
 */

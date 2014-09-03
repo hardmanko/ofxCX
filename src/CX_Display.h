@@ -54,6 +54,8 @@ namespace CX {
 		bool isAutomaticallySwapping(void);
 
 		bool hasSwappedSinceLastCheck(void);
+		void waitForBufferSwap(void);
+
 		CX_Millis getLastSwapTime(void);
 		CX_Millis estimateNextSwapTime(void);
 		uint64_t getFrameNumber(void);

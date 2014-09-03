@@ -2,7 +2,7 @@
 
 using namespace CX;
 
-CX_DataFrameCell::CX_DataFrameCell (void) {
+CX_DataFrameCell::CX_DataFrameCell(void) {
 	_allocatePointers();
 	//*_str = "NULL"; //?
 	*_type = "NULL";
