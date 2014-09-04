@@ -193,7 +193,37 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		break;
 	}
 
+	_checkForExitChord();
+
 	_keyEvents.push_back(ev);
+}
+
+/*! Change the set of keys that must be pressed at once for the program to close.
+By default, pressing left control + backspace will exit the program.
+\param chord A vector of keys that, when held simulatenously, will cause the program to exit.
+\note You must be exact about modifier keys: Using, for example, OF_KEY_SHIFT does nothing.
+You must use OF_KEY_LEFT_SHIFT or OF_KEY_RIGHT_SHIFT.
+*/
+void CX_Keyboard::setExitChord(std::vector<int> chord) {
+	ofSetEscapeQuitsApp(false);
+	_exitChord.clear();
+	for (int i : chord) {
+		_exitChord.insert(i);
+	}
+}
+
+void CX_Keyboard::_checkForExitChord(void) {
+	if (_exitChord.empty()) {
+		return;
+	}
+
+	bool foundAll = true;
+	for (int ck : _exitChord) {
+		foundAll = foundAll && (_heldKeys.find(ck) != _heldKeys.end());
+	}
+	if (foundAll) {
+		std::exit(0);
+	}
 }
 
 static const std::string dlm = ", ";
@@ -223,5 +253,7 @@ std::istream& operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	}
 	return is;
 }
+
+
 
 }

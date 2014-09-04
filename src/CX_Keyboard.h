@@ -68,6 +68,8 @@ namespace CX {
 		CX_Keyboard::Event waitForKeypress(int key, bool clear = true, bool eraseEvent = false);
 		CX_Keyboard::Event waitForKeypress(std::vector<int> keys, bool clear = true, bool eraseEvent = false);
 
+		void setExitChord(std::vector<int> chord);
+
 	private:
 		friend class CX_InputManager;
 
@@ -86,6 +88,9 @@ namespace CX {
 
 		void _listenForEvents (bool listen);
 		bool _listeningForEvents;
+
+		std::set<int> _exitChord;
+		void _checkForExitChord(void);
 
 	};
 

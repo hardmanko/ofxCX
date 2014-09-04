@@ -41,6 +41,11 @@ void CX::Private::setupCX(void) {
 
 	Clock.precisionTest(10000);
 
+	std::vector<int> defaultExitChord;
+	defaultExitChord.push_back(OF_KEY_LEFT_CONTROL);
+	defaultExitChord.push_back(OF_KEY_BACKSPACE);
+	CX::Instances::Input.Keyboard.setExitChord(defaultExitChord);
+
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
 
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.

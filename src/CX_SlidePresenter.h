@@ -283,5 +283,8 @@ namespace CX {
 		void _handleFinalSlide(void);
 		void _prepareNextSlide(void);
 
+		bool _hasSwappedSinceLastCheck(void);
+		uint64_t _frameNumberOnLastSwapCheck;
+
 	};
 }
