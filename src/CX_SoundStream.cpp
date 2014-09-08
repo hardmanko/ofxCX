@@ -14,13 +14,14 @@ CX_SoundStream::~CX_SoundStream (void) {
 	closeStream();
 }
 
-/*! Opens the sound stream with the specified configuration. If there was an error during configuration,
-messages will be logged.
+/*! Opens the sound stream with the specified configuration. See CX::CX_SoundStream::Configuration for the configuration options.
+If there were errors during configuration, error messages will be logged. If the configuration was successful, the sound stream 
+will be started.
 \param config The configuration settings that are desired. Some of the configuration options are only suggestions,
 so some of the values that are used may differ from the values that are chosen. In those cases, config is updated
 based on the actually used settings. You can check the configuration later using getConfiguration().
 \return True if configuration appeared to be successful, false otherwise. 
-\note Opening the stream does not start it. See \ref start(). */
+*/
 bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	if (_rtAudio != nullptr) {
 		closeStream();
@@ -108,8 +109,8 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	}
 
 	_config = config; //Store the updated settings.
-	return true;
 
+	return this->start();
 }
 
 /*! Starts the sound stream. The stream must already be have been set up (see setup()).

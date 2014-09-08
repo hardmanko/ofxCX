@@ -6,9 +6,9 @@ This class is a container for a sound. It can load sound files, manipulate the c
 of the sound data, add other sounds to an existing sound at specified offsets.
 
 In order to play a CX_SoundBuffer, you use a \ref CX::CX_SoundBufferPlayer. See the soundBuffer
-tutorial for an introduction on how to use this class along with a CX_SoundBufferPlayer.
+example for an introduction on how to use this class along with a CX_SoundBufferPlayer.
 
-To record from a microphone to a CX_SoundBuffer, you use a CX::CX_SoundBufferRecorder.
+To record from a microphone into a CX_SoundBuffer, you use a CX::CX_SoundBufferRecorder.
 
 \note Nearly all functions of this class should be considered \ref blockingCode. Many of
 the operations can take quite a while to complete because they are performed on
@@ -28,6 +28,8 @@ namespace CX {
 
 	class CX_SoundBuffer {
 	public:
+
+		CX_SoundBuffer(void);
 
 		bool loadFile (std::string fileName);
 		bool addSound(std::string fileName, CX_Millis timeOffset); //I'm really not sure I want to have this.
@@ -55,25 +57,28 @@ namespace CX {
 		void addSilence(CX_Millis duration, bool atBeginning);
 		void deleteAmount (CX_Millis duration, bool fromBeginning);
 
+		bool deleteChannel(unsigned int channel);
+		bool setChannelData(unsigned int channel, const std::vector<float>& data);
+
 		void reverse(void);
 
 		void multiplySpeed (float speedMultiplier);
 		void resample (float newSampleRate);
 		//! Returns the sample rate of the sound data stored in this CX_SoundBuffer.
-		float getSampleRate (void) { return _soundSampleRate; };
+		float getSampleRate (void) const { return _soundSampleRate; };
 
-		bool setChannelCount (int channels);
+		bool setChannelCount(unsigned int channels, bool average = true);
 
 		//! Returns the number of channels in the sound data stored in this CX_SoundBuffer.
-		int getChannelCount (void) { return _soundChannels; };
+		int getChannelCount (void) const { return _soundChannels; };
 		
 		/*! This function returns the total number of samples in the sound data held by the CX_SoundBuffer, 
 		which is equal to the number of sample frames times the number of channels. */
-		uint64_t getTotalSampleCount (void) { return _soundData.size(); };
+		uint64_t getTotalSampleCount (void) const { return _soundData.size(); };
 
 		/*! This function returns the number of sample frames in the sound data held by the CX_SoundBuffer,
 		which is equal to the total number of samples divided by the number of channels. */
-		uint64_t getSampleFrameCount (void) { return _soundData.size()/_soundChannels; };
+		uint64_t getSampleFrameCount (void) const { return _soundData.size()/_soundChannels; };
 
 		/*! This function returns a reference to the raw data underlying the CX_SoundBuffer.
 		\return A reference to the data. Modify at your own risk! */
@@ -89,7 +94,7 @@ namespace CX {
 
 		bool _successfullyLoaded;
 
-		int _soundChannels;
+		unsigned int _soundChannels;
 		FMOD_SOUND_FORMAT _soundFormat; //This doesn't need to be here: It can be a local in the FMOD read in function.
 		float _soundSampleRate;
 
