@@ -12,7 +12,7 @@ CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
 }
 
 CX_SoundBufferRecorder::~CX_SoundBufferRecorder(void) {
-	this->stopRecording();
+	this->stop();
 	if (_soundStream != nullptr) {
 		_soundStream->closeStream();
 		_listenForEvents(false);
@@ -65,7 +65,7 @@ bool CX_SoundBufferRecorder::setup(CX_SoundStream* ss) {
 }
 
 /*! This function associates a CX_SoundBuffer with the CX_SoundBufferRecorder. The CX_SoundBuffer
-will be recorded to when startRecording() is called.
+will be recorded to when start() is called.
 \param so The CX_SoundBuffer to associate with the CX_SoundBufferRecorder. The sound buffer will be cleared
 and it will be configured to have the same number of channels and sample rate that the CX_SoundBufferRecorder
 was configured to use.
@@ -89,9 +89,9 @@ CX_SoundBuffer* CX_SoundBufferRecorder::getSoundBuffer(void) {
 with setSoundBuffer().
 \param clearExistingData If true, any data in the CX_SoundBuffer will be deleted before recording starts.
 */
-void CX_SoundBufferRecorder::startRecording(bool clearExistingData) {
+void CX_SoundBufferRecorder::start(bool clearExistingData) {
 	if (_buffer == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferRecorder") << "startRecording(): Unable to start recording because no CX_SoundBuffer was set.";
+		CX::Instances::Log.error("CX_SoundBufferRecorder") << "start(): Unable to start recording because no CX_SoundBuffer was set.";
 		return;
 	}
 	if (clearExistingData) {
@@ -100,11 +100,15 @@ void CX_SoundBufferRecorder::startRecording(bool clearExistingData) {
 	_recording = true;
 }
 
-/*! Stop recording sound data. */
-void CX_SoundBufferRecorder::stopRecording(void) {
+/*! \brief Stop recording sound data. */
+void CX_SoundBufferRecorder::stop(void) {
 	_recording = false;
 }
 
+/*! \brief Returns `true` is currently recording. */
+bool CX_SoundBufferRecorder::isRecording(void) const {
+	return _recording;
+}
 
 
 /*! Returns the configuration used for this CX_SoundBufferRecorder. */

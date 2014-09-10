@@ -19,9 +19,9 @@ namespace CX {
 	recorder.setSoundBuffer(&recording); //Associate a CX_SoundBuffer with the recorder so that the buffer can be recorded to.
 
 	//Record for 5 seconds
-	recorder.startRecording();
+	recorder.start();
 	Clock.sleep(CX_Seconds(5));
-	recorder.stopRecording();
+	recorder.stop();
 
 	//Write the recording to a file
 	recording.writeToFile("recording.wav");
@@ -46,8 +46,10 @@ namespace CX {
 		void setSoundBuffer(CX_SoundBuffer* so);
 		CX_SoundBuffer* getSoundBuffer(void);
 
-		void startRecording(bool clearExistingData = false);
-		void stopRecording(void);
+		void start(bool clearExistingData = false);
+		void stop(void);
+
+		bool isRecording(void) const;
 
 	private:
 		bool _inputEventHandler(CX_SoundStream::InputEventArgs& inputData);

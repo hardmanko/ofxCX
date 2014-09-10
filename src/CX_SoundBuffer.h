@@ -58,7 +58,7 @@ namespace CX {
 		void deleteAmount (CX_Millis duration, bool fromBeginning);
 
 		bool deleteChannel(unsigned int channel);
-		bool setChannelData(unsigned int channel, const std::vector<float>& data);
+		void setChannelData(unsigned int channel, const std::vector<float>& data);
 
 		void reverse(void);
 

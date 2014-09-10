@@ -10,7 +10,8 @@ CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
 	_currentSampleFrame(0),
 	_soundStream(nullptr),
 	_soundStreamSelfAllocated(false),
-	_listeningForEvents(false)
+	_listeningForEvents(false),
+	_withinOutputEvent(false)
 {}
 
 CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {
@@ -108,7 +109,7 @@ an offset of 0 and discovered that the sound played 200 ms later than you were e
 you would set offset to -200 in order to queue the start time 200 ms earlier than the
 desired experiment time.
 \return False if the start time plus the offset is in the past. True otherwise.
-\note See setTime() for a way to choose the current time point within the sound.
+\note See CX_SoundBufferPlayer::seek() for a way to choose the current time point within the sound.
 */
 bool CX_SoundBufferPlayer::startPlayingAt(CX_Millis experimentTime, CX_Millis latencyOffset) {
 	if (_soundStream == nullptr) {
@@ -139,7 +140,11 @@ time in the sound. If the sound buffer is currently playing, this will jump to t
 in the sound.
 \param time The time in the sound to seek to.
 */
-void CX_SoundBufferPlayer::setTime(CX_Millis time) {
+void CX_SoundBufferPlayer::seek(CX_Millis time) {
+	if (_playing) {
+		while (_withinOutputEvent)
+			;
+	}
 	_soundPlaybackSampleFrame = time.seconds() * this->getConfiguration().sampleRate;
 }
 
@@ -218,6 +223,8 @@ bool CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &
 		return false;
 	}
 
+	_withinOutputEvent = true;
+
 	//if (outputData.bufferUnderflow) {
 	//	cout << "Underflow!" << endl;
 	//}
@@ -255,6 +262,7 @@ bool CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &
 
 	_soundPlaybackSampleFrame += sampleFramesToOutput;
 
+	_withinOutputEvent = false;
 	return true;
 }
 
@@ -284,4 +292,4 @@ void CX_SoundBufferPlayer::_cleanUpOldSoundStream(void) {
 	}
 }
 
-}
+} //namespace CX;

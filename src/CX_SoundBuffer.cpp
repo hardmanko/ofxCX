@@ -256,10 +256,10 @@ If the other channels in the CX_SoundBuffer are longer than `data`, `data` will 
 If the other channels in the CX_SoundBuffer are shorter than `data`, those channels will be extended with zeroes.
 
 */
-bool CX_SoundBuffer::setChannelData(unsigned int channel, const std::vector<float>& data) {
+void CX_SoundBuffer::setChannelData(unsigned int channel, const std::vector<float>& data) {
 
 	if (channel >= _soundChannels) {
-		this->setChannelCount(channel + 1); //average = false?
+		this->setChannelCount(channel + 1, false); //average = false?
 	}
 
 	for (unsigned int sampleFrame = 0; sampleFrame < data.size(); sampleFrame++) {
@@ -482,16 +482,25 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 	}
 	
 	if (N == 1) {
-		//Anything to mono is easy (to do a bad job of): just average all sample frames.
-		vector<float> newSoundData( this->getSampleFrameCount() );
-		for (unsigned int outputSamp = 0; outputSamp < newSoundData.size(); outputSamp++) {
-			float avg = 0;
-			for (unsigned int ch = 0; ch < _soundChannels; ch++) {
-				avg += _soundData[ (outputSamp * _soundChannels) + ch ];
-			}
-			avg /= (float)_soundChannels;
+		std::vector<float> newSoundData(this->getSampleFrameCount());
 
-			newSoundData[ outputSamp ] = avg;
+		//Anything to mono is easy: just average all sample frames.
+		if (average) {
+			for (unsigned int outputSamp = 0; outputSamp < newSoundData.size(); outputSamp++) {
+				float avg = 0;
+				for (unsigned int ch = 0; ch < _soundChannels; ch++) {
+					avg += _soundData[(outputSamp * _soundChannels) + ch];
+				}
+				avg /= (float)_soundChannels;
+
+				newSoundData[outputSamp] = avg;
+			}
+		} else {
+			//Remove all but the first channel
+			for (unsigned int outputSamp = 0; outputSamp < newSoundData.size(); outputSamp++) {
+				newSoundData[outputSamp] = _soundData[(outputSamp * _soundChannels) + 0];
+			}
+
 		}
 
 		_soundChannels = newChannelCount;
@@ -501,7 +510,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 
 	if (N > O) {
 
-		vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
+		std::vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
 
 		if (average) {
 			//New channels set to average of existing channels
@@ -538,7 +547,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 	}
 	
 	if (N < O) {
-		vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
+		std::vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
 
 		if (average) {
 			//the data from the `O - N` to-be-removed channels are averaged and added on to the `N` remaining channels

@@ -44,10 +44,10 @@ namespace CX  {
 		bool stop (void);
 
 		//! Check if the sound is currently playing.
-		bool isPlaying (void) { return _playing; };
+		bool isPlaying (void) const { return _playing; };
 
 		//! Check if the sound is queued to play.
-		bool isQueuedToStart(void) { return _playbackStartQueued; }; 
+		bool isQueuedToStart(void) const { return _playbackStartQueued; }; 
 
 		Configuration getConfiguration(void);
 		
@@ -57,7 +57,7 @@ namespace CX  {
 		/*! This function provides direct access to the CX_SoundStream used by the CX_SoundBufferPlayer. */
 		CX_SoundStream* getSoundStream(void) { return _soundStream; };
 
-		void setTime(CX_Millis time);
+		void seek(CX_Millis time);
 
 	private:
 
@@ -71,6 +71,8 @@ namespace CX  {
 		bool _listeningForEvents;
 
 		CX_SoundBuffer *_buffer;
+
+		bool _withinOutputEvent;
 
 		bool _playing;
 
