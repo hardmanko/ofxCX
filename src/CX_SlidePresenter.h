@@ -151,7 +151,9 @@ namespace CX {
 			Currently, the only available mode is the default, so this should not be changed. */
 			CX_SlidePresenter::ErrorMode errorMode;
 
-			bool deallocateCompletedSlides; //!< If true, once a slide has been presented, its framebuffer will be deallocated to conserve memory.
+			/*! If true, once a slide has been presented, its framebuffer will be deallocated to conserve video memory. 
+			This only really matters if you are using a large number of slides at once and are planning on adding more slides during slide presentation. */
+			bool deallocateCompletedSlides;
 
 			SwappingMode swappingMode; //!< The mode used for swapping slides. See the SwappingMode enum for the settings. Defaults to `MULTI_CORE`.
 
@@ -160,7 +162,7 @@ namespace CX {
 			CX_Millis preSwapCPUHoggingDuration;
 
 			/*! \brief Hint that fence sync should be used to check that slides are fully copied to the back buffer
-			before they are swapped in. */
+			before they are swapped in. This can help prevent vertical tearing. */
 			bool useFenceSync;
 
 			/*! \brief If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until

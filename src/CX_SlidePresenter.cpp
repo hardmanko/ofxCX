@@ -883,7 +883,7 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 					_slides[i].slideStatus = Slide::SWAP_PENDING;
 					Log.verbose("CX_SlidePresenter") << "Slide #" << i << " copied to back buffer at " <<
 						_slides[i].copyToBackBufferCompleteTime;
-				} else {
+				} else if (_config.waitUntilFenceSyncComplete) {
 					Log.warning("CX_SlidePresenter") << "Slide #" << i <<
 						" fence sync completed when active slide was not waiting for copy to back buffer. At " <<
 						_slides[i].copyToBackBufferCompleteTime;
