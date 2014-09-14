@@ -248,15 +248,22 @@ bool CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &
 	}
 
 	if (soundData.size() < ((_soundPlaybackSampleFrame + outputData.bufferSize - outputBufferOffset) * config.outputChannels)) {
-		//If there is not enough data to completely fill the sound buffer, only use some of it.
+		//If there is not enough data to completely fill the sound buffer, so only use some of it.
 		sampleFramesToOutput = (soundData.size() / config.outputChannels) - _soundPlaybackSampleFrame - outputBufferOffset;
 		_playing = false;
 	}
 
-	//Elsewhere, we force the number of sound channels and output channels to be the same, so we can just memcpy here.
-	memcpy(outputData.outputBuffer + outputBufferOffset,
-			soundData.data() + (_soundPlaybackSampleFrame * config.outputChannels),
-			(size_t)(sampleFramesToOutput * config.outputChannels * sizeof(float)));
+	//Copy over the data, adding to the existing data. Addition allows multiple CX_SoundBufferPlayers to play into
+	//the same sound stream at the same time.
+	if (sampleFramesToOutput > 0) {
+		unsigned int rawSamplesToOutput = sampleFramesToOutput * config.outputChannels; //not times sizeof(float)!
+		float *rawData = soundData.data() + (_soundPlaybackSampleFrame * config.outputChannels);
+		float *dataTarget = outputData.outputBuffer + outputBufferOffset;
+
+		for (unsigned int i = 0; i < rawSamplesToOutput; i++) {
+			dataTarget[i] += rawData[i];
+		}
+	}
 
 	_currentSampleFrame += outputData.bufferSize;
 
