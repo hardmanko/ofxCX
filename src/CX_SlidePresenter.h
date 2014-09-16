@@ -73,22 +73,25 @@ namespace CX {
 		};
 
 		/*! The method used by the slide presenter to swap stimuli that have been drawn to the back buffer to the front buffer.
-		MULTI_CORE is the best method, but only really works properly if you have at least a 2 core CPU. It uses a secondary thread to
-		constantly swap the front and back buffers, which allows each frame to be counted. This results in really good synchronization
-		between the copies if data to the back buffer and the swaps of the front and back buffers.
+		MULTI_CORE is theoretically the best method, but only really works properly if you have at least a 2 core CPU. It uses 
+		a secondary thread to constantly swap the front and back buffers, which allows each frame to be counted. This results 
+		in really good synchronization between the copies of data to the back buffer and the swaps of the front and back buffers.
 		In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
 		drawn to the back buffer. After the correct amount of time minus \ref CX_SlidePresenter::Configuration::preSwapCPUHoggingDuration,
-		the buffers are swapped. The main
-		problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" in the main thread while waiting
-		for the swap.
+		the buffers are swapped. The main problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" 
+		in the main thread while waiting for the swap. However, it avoids thread synchronization issues, which is a huge plus.
 		*/
 		enum class SwappingMode {
-			SINGLE_CORE_BLOCKING_SWAPS, //could be TIMED_BLOCKING
+			SINGLE_CORE_BLOCKING_SWAPS, //!< The slide presenter does bufer swapping in the main thread, blocking briefly during the buffer swap.
 			//SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately drawn to the back buffer.After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers is queued by launching a thread.
-			MULTI_CORE //could be FRAME_COUNTED_THREADED
+			
+			/*! \brief The slide presenter does bufer swapping in a secondary thread, which means that 
+			there is no blocking in the main thread when buffers are swapping. */
+			MULTI_CORE
 		};
 
-		/*! The final slide function takes a reference to a struct of this type. */
+		/*! The final slide user function takes a reference to a struct of this type. 
+		See CX_SlidePresenter::Configuration::finalSlideCallback for more information. */
 		struct FinalSlideFunctionArgs {
 			FinalSlideFunctionArgs(void) :
 				instance(nullptr),
@@ -129,7 +132,7 @@ namespace CX {
 
 		};
 
-		/*! This struct is used for configuring a CX_SlidePresenter. */
+		/*! This struct is used for configuring a CX_SlidePresenter. See CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration&). */
 		struct Configuration {
 			Configuration(void) :
 				display(nullptr),
@@ -144,18 +147,21 @@ namespace CX {
 
 			CX_Display *display; //!< A pointer to the display to use.
 
-			/*! \brief A pointer to a user function that will be called as soon as the final slide is presented. */
+			/*! \brief A pointer to a user function that will be called as soon as the final slide is presented. In this function,
+			you can add additional slides to the slide presenter and do other tasks, like process input. */
 			std::function<void(CX_SlidePresenter::FinalSlideFunctionArgs&)> finalSlideCallback;
 
 			/*! \brief This sets how errors in slide presentation should be handled.
 			Currently, the only available mode is the default, so this should not be changed. */
 			CX_SlidePresenter::ErrorMode errorMode;
 
-			/*! If true, once a slide has been presented, its framebuffer will be deallocated to conserve video memory. 
-			This only really matters if you are using a large number of slides at once and are planning on adding more slides during slide presentation. */
+			/*! \brief If `true`, once a slide has been presented, its framebuffer will be deallocated to conserve video memory. 
+			This only matters if you are using a large number of slides at once and add slides during slide presentation. */
 			bool deallocateCompletedSlides;
 
-			SwappingMode swappingMode; //!< The mode used for swapping slides. See the SwappingMode enum for the settings. Defaults to `MULTI_CORE`.
+			/*! \brief The mode used for swapping slides. See the SwappingMode enum for the possible settings. 
+			Defaults to `SINGLE_CORE_BLOCKING_SWAPS`. */
+			SwappingMode swappingMode;
 
 			/*! \brief Only used if swappingMode is a single core mode. The amount of time, before a slide is swapped from
 			the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */

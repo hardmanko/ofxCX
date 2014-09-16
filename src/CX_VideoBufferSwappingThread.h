@@ -1,7 +1,5 @@
 #pragma once
 
-#include <deque>
-
 #include "ofThread.h"
 
 #include "CX_Clock.h"
@@ -16,17 +14,9 @@ namespace Private {
 
 		void threadedFunction(void) override;
 
-		void swapNFrames(unsigned int n);
-
+		void swapNFrames(int n);
 		bool hasSwappedSinceLastCheck(void);
-
-		//void pauseSwapping(void);
-		//void unpauseSwapping(void);
-
-		CX_Millis getTypicalSwapPeriod(void);
 		CX_Millis getLastSwapTime(void);
-		CX_Millis getLastSwapPeriod(void);
-		CX_Millis estimateNextSwapTime(void);
 		uint64_t getFrameNumber(void);
 
 		void setGLFinishAfterSwap(bool finishAfterSwap);
@@ -37,7 +27,7 @@ namespace Private {
 		bool _unlockMutex(void);
 		bool _isLocked;
 
-		deque<CX_Millis> _recentSwapTimes;
+		CX_Millis _lastSwapTime;
 
 		uint64_t _frameCount;
 		uint64_t _frameCountOnLastCheck;
@@ -46,7 +36,6 @@ namespace Private {
 
 		bool _glFinishAfterSwap;
 
-		//bool _swappingPaused;
 	};
 
 }

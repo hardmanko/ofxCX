@@ -2,15 +2,14 @@
 
 #include "CX_Private.h" //glfwContext
 
-using namespace CX;
-
 namespace CX {
 namespace Private {
 
 CX_VideoBufferSwappingThread::CX_VideoBufferSwappingThread(void) :
+	_isLocked(false),
+	_lastSwapTime(0),
 	_frameCount(0),
 	_frameCountOnLastCheck(0),
-	_isLocked(false),
 	_swapsBeforeStop(-1),
 	_glFinishAfterSwap(false)
 {
@@ -30,16 +29,13 @@ void CX_VideoBufferSwappingThread::threadedFunction(void) {
 			}
 		}
 
-		CX_Millis lastSwapTime = CX::Instances::Clock.now();
+		CX_Millis swapTime = CX::Instances::Clock.now();
 
 		if (lock()) {
 
 			++_frameCount;
 
-			_recentSwapTimes.push_back(lastSwapTime);
-			while (_recentSwapTimes.size() > 30) {
-				_recentSwapTimes.pop_front();
-			}
+			_lastSwapTime = swapTime;
 
 			bool stopSwapping = false;
 			if (_swapsBeforeStop > 0) {
@@ -58,14 +54,14 @@ void CX_VideoBufferSwappingThread::threadedFunction(void) {
 }
 
 
-void CX_VideoBufferSwappingThread::swapNFrames(unsigned int n) {
-	if (n == 0) {
+void CX_VideoBufferSwappingThread::swapNFrames(int n) {
+	if (n <= 0) {
 		return;
 	}
 
 	if (!this->isThreadRunning()) {
 		_swapsBeforeStop = n;
-		this->startThread(true, false);
+		this->startThread(true);
 	} else {
 		if (_lockMutex()) {
 			_swapsBeforeStop = n;
@@ -86,52 +82,13 @@ bool CX_VideoBufferSwappingThread::hasSwappedSinceLastCheck(void) {
 	return rval;
 }
 
-CX_Millis CX_VideoBufferSwappingThread::getTypicalSwapPeriod(void) {
-	CX_Millis typicalSwapPeriod = 0;
-	if (_lockMutex()) {
-		if (_recentSwapTimes.size() >= 2) {
-			CX_Millis swapPeriodSum = 0;
-			for (unsigned int i = 1; i < _recentSwapTimes.size(); i++) {
-				swapPeriodSum += _recentSwapTimes[i] - _recentSwapTimes[i - 1];
-			}
-			typicalSwapPeriod = swapPeriodSum / (_recentSwapTimes.size() - 1);
-		}
-		_unlockMutex();
-	}
-	return typicalSwapPeriod;
-}
-
-CX_Millis CX_VideoBufferSwappingThread::estimateNextSwapTime(void) {
-	CX_Millis nextSwapTime = 0;
-	if (_lockMutex()) {
-		if (_recentSwapTimes.size() >= 2) {
-			nextSwapTime = _recentSwapTimes.back() + getTypicalSwapPeriod();
-		}
-		_unlockMutex();
-	}
-	return nextSwapTime;
-}
-
 CX_Millis CX_VideoBufferSwappingThread::getLastSwapTime(void) {
 	CX_Millis lastSwapTime = 0;
 	if (_lockMutex()) {
-		if (_recentSwapTimes.size() > 0) {
-			lastSwapTime = _recentSwapTimes.back();
-		}
+		lastSwapTime = _lastSwapTime;
 		_unlockMutex();
 	}
 	return lastSwapTime;
-}
-
-CX_Millis CX_VideoBufferSwappingThread::getLastSwapPeriod(void) {
-	CX_Millis lastSwapPeriod = 0;
-	if (_lockMutex()) {
-		if (_recentSwapTimes.size() >= 2) {
-			lastSwapPeriod = _recentSwapTimes.at(_recentSwapTimes.size() - 1) - _recentSwapTimes.at(_recentSwapTimes.size() - 2);
-		}
-		_unlockMutex();
-	}
-	return lastSwapPeriod;
 }
 
 uint64_t CX_VideoBufferSwappingThread::getFrameNumber(void) {
@@ -169,21 +126,6 @@ bool CX_VideoBufferSwappingThread::_unlockMutex(void) {
 	return true;
 }
 
-/*
-void CX_VideoBufferSwappingThread::pauseSwapping(void) {
-	if (_lockMutex()) {
-		_swappingPaused = true;
-		_unlockMutex();
-	}
-}
 
-void CX_VideoBufferSwappingThread::unpauseSwapping(void) {
-	if (_lockMutex()) {
-		_swappingPaused = false;
-		_unlockMutex();
-	}
-}
-*/
-
-}
-}
+} //namespace Private
+} //namespace CX

@@ -6,12 +6,6 @@
 #include "ofAppGLFWWindow.h"
 
 
-/*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
-is that during CX setup, before reaching user code in runExperiment(), CX_Display::setup() is called.
-\ingroup entryPoint */
-CX::CX_Display CX::Instances::Display;
-
-
 namespace CX {
 namespace Private {
 
@@ -23,22 +17,22 @@ void setupCX(void) {
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
-	reopenWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
+	bool openedSucessfully = reopenWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
+	if (openedSucessfully) {
+		CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding.
+		//This must happen after the window is configured because it relies on GLFW.
 
-	CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding
-	//This must happen after the window is configured because it relies on GLFW.
+		CX::Instances::Display.setup();
 
-	CX::Instances::Display.setup();
+		Clock.precisionTest(10000);
 
-	Clock.precisionTest(10000);
-
-	std::vector<int> defaultExitChord;
-	defaultExitChord.push_back(OF_KEY_LEFT_CONTROL);
-	defaultExitChord.push_back(OF_KEY_BACKSPACE);
-	CX::Instances::Input.Keyboard.setExitChord(defaultExitChord);
+		std::vector<int> defaultExitChord;
+		defaultExitChord.push_back(OF_KEY_LEFT_CONTROL);
+		defaultExitChord.push_back(OF_KEY_BACKSPACE);
+		CX::Instances::Input.Keyboard.setExitChord(defaultExitChord);
+	}
 
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
-
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
 }
@@ -68,8 +62,9 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 	//Pass that pointer to ofSetupOpenGL. It's an ofAppGLFWWindow, so no problem.
 	//The location pointed to by the pointer is now stored in the variable "window" in ofAppRunner.cpp and can do nice things.
 	//Now that the location is stored there, destroy the just-opened window.
-	//Finally, use placement new to create a CX_AppWindow at the special location in memory.
+	//Finally, use placement new to create a CX_AppWindow where the pointer points to.
 	//Success!!!
+	//////////////////////
 	unsigned int appWindowAllocationSize = std::max(sizeof(CX::Private::CX_AppWindow), sizeof(ofAppGLFWWindow));
 
 	void* windowP = new char[appWindowAllocationSize];
@@ -104,11 +99,13 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 open by the application at the time this is called, that window will be closed. This is useful
 if you want to control some of the parameters of the window that cannot be changed after the window
 has been opened.
-\param config Configuration options for the window to be opened. 
+\param config Configuration options for the window to be opened.
+\return `true` if reopening the window was successful, `false` otherwise.
 */
-void reopenWindow(CX_WindowConfiguration_t config) {
+bool reopenWindow(CX_WindowConfiguration_t config) {
 	if (CX::Private::glfwContext == glfwGetCurrentContext()) {
 		glfwDestroyWindow(CX::Private::glfwContext); //Close previous window
+		CX::Private::glfwContext = NULL;
 	}
 
 	Private::setMsaaSampleCount(config.msaaSampleCount);
@@ -146,9 +143,9 @@ void reopenWindow(CX_WindowConfiguration_t config) {
 		} else {
 			CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX.";
 			CX::Instances::Log.flush();
-			return;
+			return false;
 		}
-
+		CX::Private::glfwContext = glfwGetCurrentContext();
 	} catch (std::exception& e) {
 		CX::Instances::Log.error("CX_EntryPoint") <<
 			"reopenWindow(): Exception caught while setting up window: " << e.what();
@@ -156,12 +153,10 @@ void reopenWindow(CX_WindowConfiguration_t config) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window.";
 	}
 
-	CX::Private::glfwContext = glfwGetCurrentContext();
-
 	if (CX::Private::glfwContext == NULL) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): There was an error setting up the window.";
 		CX::Instances::Log.flush();
-		return;
+		return false;
 	}
 
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
@@ -170,6 +165,7 @@ void reopenWindow(CX_WindowConfiguration_t config) {
 	CX::Private::appWindow->setWindowTitle(config.windowTitle);
 
 	CX::Instances::Log.flush();
+	return true;
 }
 
 } //namespace CX

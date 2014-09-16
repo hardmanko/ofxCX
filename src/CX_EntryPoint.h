@@ -11,12 +11,12 @@ This namespace contains instances of some classes that are fundamental to the fu
 #include "ofMain.h" //Include all of the oF stuff.
 
 
-#include "CX_Clock.h" //CX_Clock.h includes an instance called CX::Instances::Clock
+#include "CX_Clock.h" //Includes CX::Instances::Clock
 #include "CX_TimeUtilities.h"
 
 #include "CX_DataFrame.h"
 
-#include "CX_Display.h"
+#include "CX_Display.h" //Includes CX::Instances::Display
 #include "CX_Draw.h"
 #include "CX_UnitConversion.h"
 #include "CX_SlidePresenter.h"
@@ -35,9 +35,6 @@ This namespace contains instances of some classes that are fundamental to the fu
 #include "CX_Private.h"
 
 namespace CX {
-	namespace Instances {
-		extern CX_Display Display;
-	}
 
 	/*! This structure is used to configure windows opened with CX::reopenWindow(). */
 	struct CX_WindowConfiguration_t {
@@ -68,7 +65,7 @@ namespace CX {
 		std::string windowTitle;
 	};
 
-	void reopenWindow(CX_WindowConfiguration_t config);
+	bool reopenWindow(CX_WindowConfiguration_t config);
 
 }
 

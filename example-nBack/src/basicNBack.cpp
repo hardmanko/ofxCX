@@ -66,7 +66,7 @@ void runExperiment (void) {
 
 	config.deallocateCompletedSlides = true; //We know that for this experiment we will never want to present the
 		//same slide twice, so we set the SlidePresenter to deallocate the memory used for slides that have already been presented.
-		//This can help to prevent out-of-memory issues with the video card (although that should be next to impossible to do).
+		//This can help to prevent out-of-memory issues with the video card (although that should be hard to do with a psychology experiment.
 
 	SlidePresenter.setup(config);
 
@@ -197,7 +197,7 @@ void generateTrials(int numberOfTrials) {
 
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
 	vector<string> letters = Util::arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
-	//to use an initializer list for vectors as well as arrays. Until then, arrayToVector is useful.
+		//to use an initializer list for vectors as well as arrays. Until then, arrayToVector can be useful.
 
 	//Draw trialCount deviates from a bernoulli distribution with 40% probability of a success (i.e. trialCount slightly unfair coin flips).
 	//For a real N-Back task, you would probably use a more complicated way of determining the trial sequence.

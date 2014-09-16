@@ -23,7 +23,8 @@ in a project, use the openFrameworks project generator and select ofxCX as an ad
 ### Linux openFramworks installation notes ###
 There are two issues with installing openFrameworks 0.8.0 on Linux. All directories are given relative to where you installed openFramworks.
 
-## Problem 1: ## For at least some Linux distributions, `scripts/linux/WHATEVEROS/install_dependencies.sh` must be modified so as to ignore the gstreamer-ffmpeg stuff, 
+#### Problem 1: 
+For at least some Linux distributions, `scripts/linux/WHATEVEROS/install_dependencies.sh` must be modified so as to ignore the gstreamer-ffmpeg stuff, 
 because the script doesn't seem to properly deal with the case of gstreamer_0.1-ffmpeg not existing in the available software sources. 
 A newer version of gstreamer can be installed by commenting out everything related to selecting a gstreamer version, except
 
@@ -32,7 +33,8 @@ A newer version of gstreamer can be installed by commenting out everything relat
 
 which does the trick for me. I'm not sure that 1.0 is the latest version of gstreamer, but this WORKFORME.
 
-## Problem 2: ## `ofTrueTypeFont.cpp` cannot compile because of some strange folder structure issue. All you need to do is 
+#### Problem 2: 
+`ofTrueTypeFont.cpp` cannot compile because of some strange folder structure issue. All you need to do is 
 modify `libs/openFrameworks/graphics/ofTrueTypeFont.cpp` a little. At the top of the file, there are include directives for some freetype files. They look like
 
 	#include "freetype2/freetype/freetype.h"
@@ -98,7 +100,7 @@ openFramework's drawing capabilities.
 
 \section yourFirstExperiment Creating a Blank Experiment
 
-To create your first experiment, follow the steps for using the examples in \ref examplesAndTutorials up to and including step 3. Then create an empty .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define runExperiment, like in the example below:
+To create your first experiment, follow the steps for using the examples in \ref examplesAndTutorials up to and including step 3. Then create an empty .cpp file in the source directory of the project folder you made. In the file, you will need to include CX_EntryPoint.h and define `runExperiment`, like in the example below:
 \code{.cpp}
 #include "CX_EntryPoint.h"
 

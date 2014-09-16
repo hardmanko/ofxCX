@@ -95,4 +95,8 @@ namespace CX {
 
 	};
 
+	namespace Instances {
+		extern CX_Display Display;
+	}
+
 }

@@ -247,7 +247,8 @@ it takes essentially zero time to append a function to the list of slides, where
 be allocated, which takes time. Additionally, because framebuffers must be allocated, they use video
 memory, so if you are using a very large number of slides, you could potentially run out of video memory.
 Also, when it comes time to draw the slide to the back buffer, it may be faster to draw directly to the
-back buffer than to copy an FBO to the fack buffer (although this depends on various factors).
+back buffer than to copy an FBO to the back buffer (although this depends on various factors).
+
 \param drawingFunction A pointer to a function that will draw the slide to the back buffer. The contents of
 the back buffer are not cleared before this function is called, so the function must clear the background
 to the desired color.
@@ -257,7 +258,7 @@ to the desired color.
 \note See \ref framebufferSwapping for more information about framebuffers.
 
 One of the most tedious parts of using drawing functions is the fact that they can take no arguments. Here are two
-ways to get around that limitation using std::bind and function objects (functors):
+ways to get around that limitation using `std::bind` and function objects ("functors"):
 
 \code{.cpp}
 #include "CX_EntryPoint.h"
@@ -274,7 +275,7 @@ void drawRectangle(ofRectangle r, ofColor col) {
 
 //One option is to use a functor to shift around where the arguments to the function come from. With a
 //functor, like rectFunctor, below, you can define an operator() that takes no arguments directly, but gets its
-//data from members of the structure like position and color. Because `rectFunctor` has operator(), it looks
+//data from the position and color members of the structure. Because rectFunctor has operator(), it looks
 //like a function and can be called like a function, so you can use instances of it as drawing functions.
 struct rectFunctor {
 	ofRectangle position;
@@ -289,7 +290,7 @@ void runExperiment(void) {
 	SlidePresenter.setup(&Display);
 
 
-	//Here we use the functor. We set up the values for position and color and then give the functor to appendSlideFunction.
+	//Here we use the functor. We set up the values for position and color and then give the functor to `appendSlideFunction()`.
 	rectFunctor rf;
 	rf.position = ofRectangle(100, 100, 50, 80);
 	rf.color = ofColor(0, 255, 0);
@@ -354,7 +355,7 @@ std::vector<CX_SlidePresenter::Slide>& CX_SlidePresenter::getSlides (void) {
 }
 
 /*! Gets a reference to the slide with the given name, if found. If the named slide is not found,
-a std::out_of_range exception is thrown and an error is logged (although you will never see the log
+a `std::out_of_range` exception is thrown and an error is logged (although you will never see the log
 message unless the exception is caught).
 \param name The name of the slide to get.
 \return A reference to the named slide.

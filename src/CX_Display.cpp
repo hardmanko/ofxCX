@@ -2,8 +2,12 @@
 
 #include "CX_Private.h" //glfwContext
 
-using namespace CX;
-//using namespace CX::Instances;
+/*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
+is that during CX setup, before reaching user code in runExperiment(), CX_Display::setup() is called.
+\ingroup entryPoint */
+CX::CX_Display CX::Instances::Display;
+
+namespace CX {
 
 CX_Display::CX_Display (void) :
 	_framePeriod(0),
@@ -27,9 +31,6 @@ void CX_Display::setup (void) {
 		//are really verbose when allocated and it is a lot of gibberish.
 
 	_renderer = ofGetGLProgrammableRenderer();
-	//if (!_renderer) {
-		//Log.warning("CX_Display") << "Programmable renderer not available. Standard renderer will be used instead.";
-	//}
 
 	_swapThread = new Private::CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
@@ -150,18 +151,9 @@ last buffer swap time as a reference.
 \return A time value that can be compared to CX::Instances::Clock.now(). */
 CX_Millis CX_Display::estimateNextSwapTime(void) {
 	return this->getLastSwapTime() + this->getFramePeriod();
-	//return _swapThread->estimateNextSwapTime();
 }
 
-/*! Gets the estimate of the frame period calculated with estimateFramePeriod(). */
-CX_Millis CX_Display::getFramePeriod(void) {
-	return _framePeriod;
-}
 
-/*! Gets the estimate of the standard deviation of the frame period calculated with estimateFramePeriod(). */
-CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
-	return _framePeriodStandardDeviation;
-}
 
 /*! Check to see if the display has swapped the front and back buffers since the last call to this function.
 This is generally used in conjuction with automatic swapping of the buffers (setAutomaticSwapping())
@@ -182,12 +174,15 @@ bool CX_Display::hasSwappedSinceLastCheck (void) {
 display is not automatically swapping, it returns immediately. */
 void CX_Display::waitForBufferSwap(void) {
 	if (!isAutomaticallySwapping()) {
-		CX::Instances::Log.warning("CX_Display") << "waitForBufferSwap(): Wait for buffer swap requested while not automatically swapping. Returning immediately";
+		CX::Instances::Log.warning("CX_Display") << "waitForBufferSwap(): Wait requested while not swapping in secondary thread. Returning immediately";
 		return;
 	}
 	hasSwappedSinceLastCheck();
-	while (!hasSwappedSinceLastCheck())
-		;
+	while (!hasSwappedSinceLastCheck()) {
+		if (!isAutomaticallySwapping()) {
+			return;
+		}
+	}
 }
 
 /*! This function returns the number of the last frame presented, as determined by 
@@ -327,7 +322,7 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 	bool wasSwapping = isAutomaticallySwapping();
 	setAutomaticSwapping(false);
 
-	vector<CX_Millis> swapTimes;
+	std::vector<CX_Millis> swapTimes;
 
 	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
 	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
@@ -357,6 +352,16 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 	}
 	
 	setAutomaticSwapping(wasSwapping);
+}
+
+/*! Gets the estimate of the frame period estimated with CX_Display::estimateFramePeriod(). */
+CX_Millis CX_Display::getFramePeriod(void) {
+	return _framePeriod;
+}
+
+/*! Gets the estimate of the standard deviation of the frame period estimated with CX_Display::estimateFramePeriod(). */
+CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
+	return _framePeriodStandardDeviation;
 }
 
 /*! Set whether the display is full screen or not. If the display is set to full screen, 
@@ -757,4 +762,6 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 	setAutomaticSwapping(wasSwapping);
 
 	return data;
+}
+
 }
