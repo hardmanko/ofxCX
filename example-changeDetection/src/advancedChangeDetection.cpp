@@ -134,9 +134,9 @@ void generateTrials (int trialCount) {
 	//Make a 3x3 grid of object locations around the center of the screen. This time
 	//we do it in units of degrees of visual angle by using a CX_CoordinateConverter
 	//and a CX_DegreeToPixelConverter.
-	CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Set the origin to be at the center of the display
+	Util::CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Set the origin to be at the center of the display
 		//and invert the y-axis.
-	CX_DegreeToPixelConverter d2p(35, 60); //Assume 35 pixels per cm on the monitor (this is fairly close to correct 
+	Util::CX_DegreeToPixelConverter d2p(35, 60); //Assume 35 pixels per cm on the monitor (this is fairly close to correct 
 		//for many monitors) and viewer sitting 60 cm from screen.
 	cc.setUnitConverter(&d2p); //Set the units of the coordinate converter to be in degrees of visual angle, as calculated by
 		//the CX_DegreeToPixelConverter.
@@ -162,14 +162,14 @@ void generateTrials (int trialCount) {
 
 	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
 
-	vector<int> changeTrial = repeat( intVector<int>(0, 1), trialCount/2 );	
+	vector<int> changeTrial = Util::repeat( Util::intVector<int>(0, 1), trialCount/2 );	
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
 		CX_DataFrameRow tr;
 		tr["arraySize"] = 4;
 
-		vector<unsigned int> colorIndices = RNG.shuffleVector( intVector<unsigned int>(0, objectColors.size() - 1) );
+		vector<unsigned int> colorIndices = RNG.shuffleVector( Util::intVector<unsigned int>(0, objectColors.size() - 1) );
 		vector<ofColor> colors;
 
 		//Note that you'll have to use functions like toInt() in cases like this, where it isn't obvious what type the data should be converted to.

@@ -121,7 +121,7 @@ void runExperiment (void) {
 	Log.notice() << "Slide presentation information: " << endl << SlidePresenter.printLastPresentationInformation();
 
 	if (Display.isFullscreen()) {
-		Display.setFullScreen(false);
+		Display.setFullscreen(false);
 	}
 
 	if (Display.isAutomaticallySwapping()) {
@@ -137,8 +137,7 @@ void runExperiment (void) {
 	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. 
 		//You could do it in each interstimulus blank, but there is more potential for timing problems there.
 
-	while (!Input.pollEvents())
-		;
+	Input.Keyboard.waitForKeypress(-1);
 
 	//Just past this point, runExperiment will implicitly return and the program will exit.
 }
@@ -197,7 +196,7 @@ void generateTrials(int numberOfTrials) {
 	trialCount = numberOfTrials;
 
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
-	vector<string> letters = arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
+	vector<string> letters = Util::arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
 	//to use an initializer list for vectors as well as arrays. Until then, arrayToVector is useful.
 
 	//Draw trialCount deviates from a bernoulli distribution with 40% probability of a success (i.e. trialCount slightly unfair coin flips).

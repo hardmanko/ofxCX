@@ -17,6 +17,15 @@
 
 /*! \defgroup utility Utility */
 
+//More overbroadly-named macros to deal with...
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 namespace CX {
 
 	namespace Private {
@@ -27,7 +36,7 @@ namespace CX {
 	\ingroup utility*/
 	namespace Util {
 
-		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch);
+		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log = true);
 
 		unsigned int getMsaaSampleCount(void); //Move to Draw ns?
 

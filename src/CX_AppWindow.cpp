@@ -1,5 +1,7 @@
 #include "CX_AppWindow.h"
 
+#include "Poco/URI.h"
+
 #include "ofEvents.h"
 
 #include "ofBaseApp.h"
@@ -230,10 +232,10 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersionMajor);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);
 
-		if (glVersionMajor > 3 || (glVersionMajor == 3 && glVersionMinor >= 2)) {
+		if (glVersionMajor >= 4 || (glVersionMajor == 3 && glVersionMinor >= 2)) {
                 //TODO: Reconsider this.
             #ifdef TARGET_LINUX
-                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //COMPAT profile doesn't work on linux for some reason.
+                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //COMPAT profile doesn't work on linux for some reason (nouveau?).
             #else
                 glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
             #endif
@@ -267,6 +269,7 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 		windowP = glfwCreateWindow(w, h, "", NULL, NULL);
 		if(!windowP){
 			ofLogError("CX_AppWindow") << "couldn't create GLFW window";
+			return;
 		}
 		#ifdef TARGET_LINUX
 			if(!iconSet){
@@ -287,7 +290,7 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 		}
 	}
     if(!windowP) {
-        ofLogError("CX_AppWindow") << "couldn't create window";
+        ofLogError("CX_AppWindow") << "couldn't create GLFW window";
         return;
     }
 
@@ -318,8 +321,6 @@ void CX_AppWindow::exit_cb(GLFWwindow* windowP_){
 
 //--------------------------------------------
 void CX_AppWindow::initializeWindow(){
-	 //----------------------
-	 // setup the callbacks
 
 	glfwSetMouseButtonCallback(windowP, mouse_cb);
 	glfwSetCursorPosCallback(windowP, motion_cb);
@@ -327,7 +328,11 @@ void CX_AppWindow::initializeWindow(){
 	glfwSetWindowSizeCallback(windowP, resize_cb);
 	glfwSetWindowCloseCallback(windowP, exit_cb);
 	glfwSetScrollCallback(windowP, scroll_cb);
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
 	glfwSetDropCallback(windowP, drop_cb);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
+	glfwSetDropCallback(windowP, drop_cb_080);
+#endif
 
 }
 
@@ -967,16 +972,18 @@ void CX_AppWindow::scroll_cb(GLFWwindow* windowP_, double x, double y) {
 }
 
 //------------------------------------------------------------
-void CX_AppWindow::drop_cb(GLFWwindow* windowP_, const char* dropString) {
-	string drop = dropString;
+void CX_AppWindow::drop_cb_080(GLFWwindow* windowP_, const char* dropString) {
+	drop_cb(windowP, 1, &dropString);
+}
+
+//------------------------------------------------------------
+void CX_AppWindow::drop_cb(GLFWwindow* windowP_, int numFiles, const char** dropString) {
 	ofDragInfo drag;
-	drag.position.set(ofGetMouseX(),ofGetMouseY());
-	drag.files = ofSplitString(drop,"\n",true);
-#ifdef TARGET_LINUX
-	for(int i=0; i<(int)drag.files.size(); i++){
-		drag.files[i] = Poco::URI(drag.files[i]).getPath();
+	drag.position.set(ofGetMouseX(), ofGetMouseY());
+	drag.files.resize(numFiles);
+	for (int i = 0; i<(int)drag.files.size(); i++){
+		drag.files[i] = Poco::URI(dropString[i]).getPath();
 	}
-#endif
 	ofNotifyDragEvent(drag);
 }
 
@@ -986,129 +993,134 @@ void CX_AppWindow::error_cb(int code, const char* message) {
 }
 
 //------------------------------------------------------------
-void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods) {
-
-	ofLogVerbose("CX_AppWindow") << "key: " << key << " state: " << action;
-
-	switch (key) {
-		case GLFW_KEY_ESCAPE:
-			key = OF_KEY_ESC;
-			break;
-		case GLFW_KEY_F1:
-			key = OF_KEY_F1;
-			break;
-		case GLFW_KEY_F2:
-			key = OF_KEY_F2;
-			break;
-		case GLFW_KEY_F3:
-			key = OF_KEY_F3;
-			break;
-		case GLFW_KEY_F4:
-			key = OF_KEY_F4;
-			break;
-		case GLFW_KEY_F5:
-			key = OF_KEY_F5;
-			break;
-		case GLFW_KEY_F6:
-			key = OF_KEY_F6;
-			break;
-		case GLFW_KEY_F7:
-			key = OF_KEY_F7;
-			break;
-		case GLFW_KEY_F8:
-			key = OF_KEY_F8;
-			break;
-		case GLFW_KEY_F9:
-			key = OF_KEY_F9;
-			break;
-		case GLFW_KEY_F10:
-			key = OF_KEY_F10;
-			break;
-		case GLFW_KEY_F11:
-			key = OF_KEY_F11;
-			break;
-		case GLFW_KEY_F12:
-			key = OF_KEY_F12;
-			break;
-		case GLFW_KEY_LEFT:
-			key = OF_KEY_LEFT;
-			break;
-		case GLFW_KEY_RIGHT:
-			key = OF_KEY_RIGHT;
-			break;
-		case GLFW_KEY_UP:
-			key = OF_KEY_UP;
-			break;
-		case GLFW_KEY_DOWN:
-			key = OF_KEY_DOWN;
-			break;
-		case GLFW_KEY_PAGE_UP:
-			key = OF_KEY_PAGE_UP;
-			break;
-		case GLFW_KEY_PAGE_DOWN:
-			key = OF_KEY_PAGE_DOWN;
-			break;
-		case GLFW_KEY_HOME:
-			key = OF_KEY_HOME;
-			break;
-		case GLFW_KEY_END:
-			key = OF_KEY_END;
-			break;
-		case GLFW_KEY_INSERT:
-			key = OF_KEY_INSERT;
-			break;
-		case GLFW_KEY_LEFT_SHIFT:
-			key = OF_KEY_LEFT_SHIFT;
-			break;
-		case GLFW_KEY_LEFT_CONTROL:
-			key = OF_KEY_LEFT_CONTROL;
-			break;
-		case GLFW_KEY_LEFT_ALT:
-			key = OF_KEY_LEFT_ALT;
-			break;
-		case GLFW_KEY_LEFT_SUPER:
-			key = OF_KEY_LEFT_SUPER;
-			break;
-		case GLFW_KEY_RIGHT_SHIFT:
-			key = OF_KEY_RIGHT_SHIFT;
-			break;
-		case GLFW_KEY_RIGHT_CONTROL:
-			key = OF_KEY_RIGHT_CONTROL;
-			break;
-		case GLFW_KEY_RIGHT_ALT:
-			key = OF_KEY_RIGHT_ALT;
-			break;
-		case GLFW_KEY_RIGHT_SUPER:
-			key = OF_KEY_RIGHT_SUPER;
-            break;
-		case GLFW_KEY_BACKSPACE:
-			key = OF_KEY_BACKSPACE;
-			break;
-		case GLFW_KEY_DELETE:
-			key = OF_KEY_DEL;
-			break;
-		case GLFW_KEY_ENTER:
-			key = OF_KEY_RETURN;
-			break;
-		case GLFW_KEY_KP_ENTER:
-			key = OF_KEY_RETURN;
-			break;
-		case GLFW_KEY_TAB:
-			key = OF_KEY_TAB;
-			break;
-		default:
-			break;
-	}
-
-	//GLFW defaults to uppercase - OF users are used to lowercase
-    //we look and see if shift is being held to toggle upper/lowecase
-	if ((key >= 65) && (key <= 90) && !ofGetKeyPressed(OF_KEY_SHIFT)) {
-		key += 32;
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
+void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int keycode, int scancode, int action, int mods) {
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
+void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int keycode, int scancode, unsigned int codepoint, int action, int mods) {
+#endif
+	int key;
+	switch (keycode) {
+	case GLFW_KEY_ESCAPE:
+		key = OF_KEY_ESC;
+		break;
+	case GLFW_KEY_F1:
+		key = OF_KEY_F1;
+		break;
+	case GLFW_KEY_F2:
+		key = OF_KEY_F2;
+		break;
+	case GLFW_KEY_F3:
+		key = OF_KEY_F3;
+		break;
+	case GLFW_KEY_F4:
+		key = OF_KEY_F4;
+		break;
+	case GLFW_KEY_F5:
+		key = OF_KEY_F5;
+		break;
+	case GLFW_KEY_F6:
+		key = OF_KEY_F6;
+		break;
+	case GLFW_KEY_F7:
+		key = OF_KEY_F7;
+		break;
+	case GLFW_KEY_F8:
+		key = OF_KEY_F8;
+		break;
+	case GLFW_KEY_F9:
+		key = OF_KEY_F9;
+		break;
+	case GLFW_KEY_F10:
+		key = OF_KEY_F10;
+		break;
+	case GLFW_KEY_F11:
+		key = OF_KEY_F11;
+		break;
+	case GLFW_KEY_F12:
+		key = OF_KEY_F12;
+		break;
+	case GLFW_KEY_LEFT:
+		key = OF_KEY_LEFT;
+		break;
+	case GLFW_KEY_RIGHT:
+		key = OF_KEY_RIGHT;
+		break;
+	case GLFW_KEY_UP:
+		key = OF_KEY_UP;
+		break;
+	case GLFW_KEY_DOWN:
+		key = OF_KEY_DOWN;
+		break;
+	case GLFW_KEY_PAGE_UP:
+		key = OF_KEY_PAGE_UP;
+		break;
+	case GLFW_KEY_PAGE_DOWN:
+		key = OF_KEY_PAGE_DOWN;
+		break;
+	case GLFW_KEY_HOME:
+		key = OF_KEY_HOME;
+		break;
+	case GLFW_KEY_END:
+		key = OF_KEY_END;
+		break;
+	case GLFW_KEY_INSERT:
+		key = OF_KEY_INSERT;
+		break;
+	case GLFW_KEY_LEFT_SHIFT:
+		key = OF_KEY_LEFT_SHIFT;
+		break;
+	case GLFW_KEY_LEFT_CONTROL:
+		key = OF_KEY_LEFT_CONTROL;
+		break;
+	case GLFW_KEY_LEFT_ALT:
+		key = OF_KEY_LEFT_ALT;
+		break;
+	case GLFW_KEY_LEFT_SUPER:
+		key = OF_KEY_LEFT_SUPER;
+		break;
+	case GLFW_KEY_RIGHT_SHIFT:
+		key = OF_KEY_RIGHT_SHIFT;
+		break;
+	case GLFW_KEY_RIGHT_CONTROL:
+		key = OF_KEY_RIGHT_CONTROL;
+		break;
+	case GLFW_KEY_RIGHT_ALT:
+		key = OF_KEY_RIGHT_ALT;
+		break;
+	case GLFW_KEY_RIGHT_SUPER:
+		key = OF_KEY_RIGHT_SUPER;
+		break;
+	case GLFW_KEY_BACKSPACE:
+		key = OF_KEY_BACKSPACE;
+		break;
+	case GLFW_KEY_DELETE:
+		key = OF_KEY_DEL;
+		break;
+	case GLFW_KEY_ENTER:
+		key = OF_KEY_RETURN;
+		break;
+	case GLFW_KEY_KP_ENTER:
+		key = OF_KEY_RETURN;
+		break;
+	case GLFW_KEY_TAB:
+		key = OF_KEY_TAB;
+		break;
+	default:
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
+		key = codepoint;
+#else
+		key = keycode;
+#endif
+		break;
 	}
 
 	switch (action) {
 	case GLFW_PRESS:
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
 		ofNotifyKeyPressed(key);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
+		ofNotifyKeyPressed(key, keycode, scancode, codepoint);
+#endif
 		break;
 	case GLFW_REPEAT:
 		CX::Private::CX_KeyRepeatEventArgs_t args;
@@ -1116,7 +1128,11 @@ void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int 
 		ofNotifyEvent(CX::Private::getEvents().keyRepeatEvent, args);
 		break;
 	case GLFW_RELEASE:
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
 		ofNotifyKeyReleased(key);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
+		ofNotifyKeyReleased(key, keycode, scancode, codepoint);
+#endif
 		break;
 	}
 }

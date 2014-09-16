@@ -72,7 +72,7 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 	if (kv.find("display.fullscreen") != kv.end()) {
 		int result = Private::stringToBooleint(kv["display.fullscreen"]);
 		if (result != -1) {
-			this->setFullScreen(result == 1);
+			this->setFullscreen(result == 1);
 		}
 	}
 
@@ -120,11 +120,10 @@ check to see if the display is automatically swapping by calling isAutomatically
 void CX_Display::setAutomaticSwapping (bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
-			_swapThread->startThread(true, false); //verbose is true only for testing.
+			_swapThread->startThread(true);
 		}
 	} else {
 		if (_swapThread->isThreadRunning()) {
-			//_swapThread->stopThread();
 			_swapThread->waitForThread(true);
 		}
 	}
@@ -314,7 +313,7 @@ void CX_Display::setWindowResolution (int width, int height) {
 /*! Sets the title of the experiment window.
 \param title The new window title. */
 void CX_Display::setWindowTitle(std::string title) {
-	CX::Private::window->setWindowTitle(title);
+	CX::Private::appWindow->setWindowTitle(title);
 }
 
 /*! This function estimates the typical period of the display refresh.
@@ -363,13 +362,13 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 /*! Set whether the display is full screen or not. If the display is set to full screen, 
 the resolution may not be the same as the resolution of display in windowed mode, and vice
 versa. */
-void CX_Display::setFullScreen (bool fullScreen) {
-	Private::window->setFullscreen(fullScreen);
+void CX_Display::setFullscreen (bool fullscreen) {
+	CX::Private::appWindow->setFullscreen(fullscreen);
 }
 
 /*! \brief Returns `true` if the display is in full screen mode, false otherwise. */
 bool CX_Display::isFullscreen(void) {
-	return (CX::Private::window->getWindowMode() == OF_FULLSCREEN);
+	return (CX::Private::appWindow->getWindowMode() == OF_FULLSCREEN);
 }
 
 /*! Sets whether the display is using hardware VSync to control frame presentation. 

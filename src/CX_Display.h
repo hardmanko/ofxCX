@@ -40,7 +40,7 @@ namespace CX {
 		void setup(void);
 		void configureFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 
-		void setFullScreen(bool fullScreen);
+		void setFullscreen(bool fullscreen);
 		bool isFullscreen(void);
 		void useHardwareVSync(bool b);
 		void useSoftwareVSync(bool b);

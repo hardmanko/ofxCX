@@ -25,7 +25,7 @@ we can feel good about putting in some sleeps.
 */
 
 //Use CX::Instances::Clock for time information.
-CX_SegmentProfiler segmentProfiler(&Clock);
+Util::CX_SegmentProfiler segmentProfiler(&Clock);
 
 
 int mouseX = 100;
