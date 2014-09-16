@@ -23,9 +23,9 @@ and how to use the examples for CX.
 
 Compatibility
 ------------
-CX only works with oF version 0.8.0, so make sure you are using that version and not the latest version.
+CX works with oF versions 0.8.4 and 0.8.0, so make sure you are using one of those versions.
 
-It has only been tested on Windows and Linux. It should work completely on OSx.
+It has been tested on Windows and Linux. It should work completely on OSx.
 
 As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2013 with the VS2012 compiler and Code::Blocks for Windows using GCC. On Linux, CX has been tested with Code::Blocks using GCC.
 

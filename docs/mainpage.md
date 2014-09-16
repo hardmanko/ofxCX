@@ -8,13 +8,12 @@ and CX are both free and open source, distributed under the MIT license.
 
 One of the features that CX has is the ability to run without a substantial installation process.
 When a CX program is compiled and linked, the resulting artifact is an executable binary that can be run directly with needing another program to be installed.
-The collection of files needed to run a CX program is about 10 MB (possibly more, depending on stimuli). Installing the program just requires unzipping a file.
+The collection of files needed to run a CX program starts at about 5 MB (zipped) for Windows, smaller on Linux. Installing the program just requires unzipping a file.
 
 \section installationInstructions Installation
-In order to use CX, you must have openFrameworks installed. Currently only version 0.8.0 of openFrameworks is supported by CX,
-which you can download from this page: http://openframeworks.cc/download/older.html The main openFrameworks download page 
-(http://openframeworks.cc/download/) has information about how to install openFrameworks for use with some of the more popular 
-development environments.
+In order to use CX, you must have openFrameworks installed. Currently versions 0.8.4 and 0.8.0 of openFrameworks are supported by CX.
+The latest version of openFrameworks can be downloaded from [here](http://openframeworks.cc/download/) and older versions from [here](http://openframeworks.cc/download/older.html) The main openFrameworks download page 
+(http://openframeworks.cc/download/) has information about how to install openFrameworks.
 
 Once you have installed openFrameworks, you can install CX by putting the contents of the CX repository into a subdirectory 
 under OFDIR/addons (typically OFDIR/addons/ofxCX), where OFDIR is where you put openFramworks when you installed it. To use CX 
@@ -49,8 +48,7 @@ for each include of a freetype file. Now running `complileOF.sh` should work.
 
 openFrameworks works on a wide variety of hardware and software, some of which are not supported by CX. CX works on computers with certain versions of Windows, Linux, or OSx operating systems. Windows 7 and XP are both supported.
 
-As far as hardware is concerned, the minimum requirements for CX are very low. However, if your video card is too old, you won't be able to use some types of rendering. Having a video card that supports OpenGL version 3.2 at least is good, although older ones will work, potentially with reduced functionality. Also, a 2+ core CPU helps with some things and is generally a good idea for psychology experiments, because one core can be hogged by CX and the operating system can use the other core for other things. Basically, use a computer made after 2010 and you will have no worries whatsoever. However, CX has been found to work with reduced functionality on computers from the mid 90's, so there is that option, although I cannot make any guarantees that it will work on any given computer of that vintage.
-
+As far as hardware is concerned, the minimum requirements for CX are very low. However, if your video card is too old, you won't be able to use some types of rendering. Having a video card that supports OpenGL version 3.2 at least is good, although older ones will work, potentially with reduced functionality. Also, a 2+ core CPU helps with some things and is generally a good idea for psychology experiments, because one core can be hogged by CX while the operating system can use the other core for other things. Basically, use a computer made after 2010 and you will have no worries whatsoever. However, CX has been found to work with reduced functionality on computers from the mid 90's, so there is that option, although I cannot make any guarantees that it will work on any given computer of that vintage.
 
 \section examplesAndTutorials Examples and Tutorials
 
