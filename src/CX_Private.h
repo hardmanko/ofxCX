@@ -14,7 +14,7 @@
 
 
 #ifdef TARGET_LINUX
-//so apparently sysmacros.h defines some macros with these names on Linux...
+//so apparently sysmacros.h defines some macros with these names on Linux... f
 #ifdef major
 #undef major
 #endif
@@ -29,9 +29,9 @@ namespace CX {
 /*! This namespace contains symbols that may be visible in user code but which should not be used by user code.
 */
 namespace Private {
-	extern GLFWwindow *glfwContext;
+	extern GLFWwindow* glfwContext;
 
-	extern ofPtr<CX_AppWindow> window;
+	extern ofPtr<ofAppBaseWindow> appWindow;
 
 	struct CX_GLVersion {
 		CX_GLVersion(void) :
@@ -61,6 +61,7 @@ namespace Private {
 	CX_GLVersion getGLSLVersionFromGLVersion(CX_GLVersion glVersion);
 
 	int stringToBooleint(std::string s);
+
 
 }
 }

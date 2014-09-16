@@ -98,7 +98,7 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
-	Display.setFullScreen(true);
+	Display.setFullscreen(false);
 	if (Display.isFullscreen()) {
 		Clock.sleep(CX_Seconds(1));
 	}
@@ -122,7 +122,7 @@ void runExperiment(void) {
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Display;
-	config.swappingMode = CX_SlidePresenter::SwappingMode::MULTI_CORE;
+	config.swappingMode = CX_SlidePresenter::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
 
@@ -175,7 +175,7 @@ void runExperiment(void) {
 	Log.notice() << "Average difference between back buffer copy completion and slide start: " << startMinusCopySum / slides.size();
 	
 	if (Display.isFullscreen()) {
-		Display.setFullScreen(false);
+		Display.setFullscreen(false);
 	}
 
 	if (Display.isAutomaticallySwapping()) {
@@ -190,8 +190,7 @@ void runExperiment(void) {
 
 	Log.flush();
 
-	while (!Input.pollEvents())
-		;
+	Input.Keyboard.waitForKeypress(-1);
 }
 
 void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
@@ -238,7 +237,7 @@ void generateTrials(int numberOfTrials) {
 	trialCount = numberOfTrials;
 
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
-	vector<string> letters = arrayToVector(letterArray, 8);
+	vector<string> letters = Util::arrayToVector(letterArray, 8);
 
 	vector<bool> targetTrial = RNG.sampleRealizations(trialCount, std::bernoulli_distribution(.4));
 

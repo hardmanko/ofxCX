@@ -593,6 +593,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 
 	return false;
 	*/
+	return false;
 }
 
 /*!

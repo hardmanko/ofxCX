@@ -200,7 +200,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
 
-	vector<int> changeTrial = repeat(intVector<int>(0, 1), trialCount / 2);
+	vector<int> changeTrial = Util::repeat(Util::intVector<int>(0, 1), trialCount / 2);
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
@@ -209,7 +209,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 
 		//RNG is an instance of CX_RandomNumberGenerator that is instantiated for you. It is useful for a variety of randomization stuff.
 		//This version of shuffleVector() returns a shuffled copy of the argument without changing the argument.
-		vector<int> colorIndices = RNG.shuffleVector( intVector<int>(0, objectColors.size() - 1) );
+		vector<int> colorIndices = RNG.shuffleVector(Util::intVector<int>(0, objectColors.size() - 1));
 		
 		for (int i = 0; i < tr.arraySize; i++) {
 			tr.colors.push_back( objectColors[colorIndices[i]] );
@@ -326,11 +326,11 @@ void outputData(void) {
 
 		//CX::vectorToString() does the above ^^^, more or less. vectorToString makes manually outputting data
 		//better, but still loses out to the convenience of a data frame.
-		out << t << "\"" << vectorToString(it->locations, ";") << "\"";
+		out << t << "\"" << Util::vectorToString(it->locations, ";") << "\"";
 		out << endl;
 	}
 
-	writeToFile("basic change detection data.txt", out.str(), false); //This file can be found in the data directory of the project.
-	//i.e. %openFrameworks directory%/apps/myApps/%your app name%/bin/data. You can also specify an absolute path
-	//and the file should end up there as long the location does not require write permissions.
+	Util::writeToFile("basic change detection data.txt", out.str(), false); //This file can be found in the data directory of the project,
+		//i.e. %openFrameworks directory%/apps/myApps/%your_app_name%/bin/data. You can also specify an absolute path
+		//and the file should end up there as long the location does not require write permissions.
 }

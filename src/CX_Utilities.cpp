@@ -26,13 +26,17 @@ namespace Util {
 	};
 
 	/*! Checks that the version of oF that is used during compilation matches the requested version. If the desired version
-	was 0.7.1, simply input (0, 7, 1) as the arguments. A warning will be logged if the versions don't match.
-	\return True if the versions match, false otherwise. */
-	bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch) {
+	was 0.8.1, simply input (0, 8, 1) for `versionMajor`, `versionMinor`, and `versionPatch`, respectively.
+	\param log If `true`, a version mismatch will result in a warning being logged.
+	\return `true` if the versions match, `false` otherwise. */
+	bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log) {
 		if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
 			return true;
 		}
-		CX::Instances::Log.warning("CX::Util::checkOFVersion") << "openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
+		if (log) {
+			CX::Instances::Log.warning("CX::Util::checkOFVersion") << 
+				"openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
+		}
 		return false;
 	}
 

@@ -1,7 +1,7 @@
 #pragma once
 
 /*! \namespace CX
-This namespace contains all of the symbols related to CX, except for \ref runExperiment(), which is not namespace qualified.
+This namespace contains all of the symbols related to CX, except for \ref `runExperiment()`, which is not namespace qualified.
 */
 
 /*! \namespace CX::Instances
@@ -45,20 +45,26 @@ namespace CX {
 			mode(ofWindowMode::OF_WINDOW),
 			width(800),
 			height(600),
-			msaaSampleCount(4), //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
+			msaaSampleCount(4), 
 			windowTitle("CX Experiment")
 		{}
 
-		ofWindowMode mode;
+		ofWindowMode mode; //!< The mode of the window. One of ofWindowMode::OF_WINDOW, ofWindowMode::OF_FULLSCREEN, or ofWindowMode::OF_GAME_MODE.
 
-		int width;
-		int height;
+		int width; //!< The width of the window, in pixels.
+		int height; //!< The height of the window, in pixels.
 
-		unsigned int msaaSampleCount;
+		unsigned int msaaSampleCount; //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
 
-		ofPtr<ofBaseGLRenderer> desiredRenderer; //If not set, default is assumed
+		/*! \brief If you want to request a specific renderer, you can provide one here. 
+		If nothing is provided, a reasonable default is assumed. */
+		ofPtr<ofBaseGLRenderer> desiredRenderer;
+
+		/*! \brief If you want to request a specific OpenGL version, you can provide this value. 
+		If nothing is provided, the newest OpenGL version available is used. */
 		Private::CX_GLVersion desiredOpenGLVersion;
 
+		/*! A title for the window that is opened. */
 		std::string windowTitle;
 	};
 
@@ -68,7 +74,6 @@ namespace CX {
 
 using namespace CX;
 using namespace CX::Instances;
-using namespace CX::Util;
 
 /*! \defgroup entryPoint Entry Point
 The entry point provides access to a few instances of classes that can be used by user code.
@@ -78,7 +83,7 @@ It also provides declarations (but not definitions) of a function which the user
 
 /*! \fn runExperiment 
 The user code should define a function with this name and type signature (takes no arguments and returns nothing). 
-This function will be called once setup is done for CX. When runExperiment returns, the program will exit.
+This function will be called once setup is done for CX. When `runExperiment` returns, the program will exit.
 
 \code{.cpp}
 void runExperiment (void) {
