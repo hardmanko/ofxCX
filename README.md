@@ -23,11 +23,11 @@ and how to use the examples for CX.
 
 Compatibility
 ------------
-CX works with oF versions 0.8.4 and 0.8.0, so make sure you are using one of those versions.
+CX works with oF versions 0.8.4 and 0.8.0, so make sure you are using one of those versions (intervening versions should probably work as well).
 
-It has been tested on Windows and Linux. It should work completely on OSx.
+CX is compatible with Windows and Linux and is tested and working on both platforms. As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012 with the Microsoft Visual C++ compiler and Code::Blocks for Windows using GCC. On Linux, CX has been tested with Code::Blocks using GCC.
 
-As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2013 with the VS2012 compiler and Code::Blocks for Windows using GCC. On Linux, CX has been tested with Code::Blocks using GCC.
+CX is not compatible with OSx because CX uses C++11 features extensively, but openFrameworks does not support C++11 on OSx (openFrameworks does not officially support C++11 on Linux or Windows either, yet there are no problems with either of those OSes, so I blame Apple, not the openFrameworks devs).
 
 Known issues
 ------------
