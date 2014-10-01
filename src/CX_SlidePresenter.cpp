@@ -49,7 +49,7 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	}
 
 	if (_config.preSwapCPUHoggingDuration > (_config.display->getFramePeriod() - CX_Millis(1))) {
-		_config.preSwapCPUHoggingDuration = _config.display->getFramePeriod() - CX_Millis(1);
+		_config.preSwapCPUHoggingDuration = std::max(_config.display->getFramePeriod() - CX_Millis(1), CX_Millis(1));
 		Log.warning("CX_SlidePresenter") << "preSwapCPUHoggingDuration was set to a value greater than the frame period minus one millisecond." <<
 			" It has been set to the frame period minus one millisecond.";
 	}
@@ -118,7 +118,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	return true;
 }
 
-/*! \brief Stops slide presentation. */
+/*! \brief Stops a slide presentation, if any is in progress. */
 void CX_SlidePresenter::stopSlidePresentation(void) {
 	_synchronizing = false;
 	_presentingSlides = false;
@@ -126,6 +126,11 @@ void CX_SlidePresenter::stopSlidePresentation(void) {
 	for (unsigned int i = 0; i < _slideInfo.size(); i++) {
 		_slideInfo[i].awaitingFenceSync = false;
 	}
+}
+
+/*! \brief Returns `true` if slide presentation is in progress, even if the first slide has not yet been presented. */
+bool CX_SlidePresenter::isPresentingSlides (void) const { 
+	return _presentingSlides || _synchronizing; 
 }
 
 /*! Performs a "standard" slide presentation in a single function call as a convenience.

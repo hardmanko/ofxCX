@@ -110,15 +110,16 @@ namespace Util {
 	/*! This function reads in a file containing information stored as key-value pairs. A file of this kind could look like:
 	\code
 	Key=Value
-	blue=0000FF
+	blue = 0000FF
 	unleash_penguins=true
 	\endcode
 	This type of file is often used for configuration of a program. This function simply provides a simple way to read in such data.
 	\param filename The name of the file containing key-value data.
 	\param delimiter The string that separates the key from the value. In the example, it is "=".
-	\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed.
+	\param trimWhitespace If `true`, whitespace characters surrounding both the key and value will be removed. If this is `false`, in the example, one of the
+	key-value pairs would be ("blue ", " 0000FF"). Generally, you would want to trim.
 	\param commentString If commentString is not the empty string (i.e. ""), everything on a line following the first instance of commentString will be ignored.
-	\return A map<string, string>, where the keys are the keys to the map.
+	\return A map<string, string>, where each key string accesses a value string.
 	*/
 	std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter, bool trimWhitespace, std::string commentString) {
 		std::map<std::string, std::string> rval;
@@ -155,8 +156,7 @@ namespace Util {
 	(0, 0) and move to (abs(V.x), 0), creating a line segment. Now if you "rotate" this line segment clockwise,
 	like the hand of a clock, until you reach V, the angle rotated through is the value returned by this function.
 
-	This is useful if you want to know, e.g., what angle you must travel on to get from some arbitrary point
-	on screen to where the mouse cursor is.
+	This is useful if you want to know, e.g., the angle between the mouse cursor and the center of the screen.
 
 	\param p1 The start point of the vector V.
 	\param p2 The end point of V. If p1 and p2 are reversed, the angle will be off by 180 degrees.
@@ -187,7 +187,10 @@ namespace Util {
 		return fmod(360 + angle * 180 / PI, 360);
 	}
 
-	/*! This function begins at point `start`, travels `distance` from that point along `angle`, and returns the resulting point.
+	/*! This function begins at point `start` and travels `distance` from that point along `angle`, returning the resulting point.
+
+	This is useful for, e.g., drawing an object at a position relative to the center of the screen.
+
 	\param start The starting point.
 	\param distance The distance to travel.
 	\param angle The angle to travel on, in degrees. */

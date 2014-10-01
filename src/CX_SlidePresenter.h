@@ -12,7 +12,7 @@
 
 namespace CX {
 
-	/*! This class is a very useful abstraction that presents slides (typically a full display) of visual stimuli for fixed durations.
+	/*! This class is a useful abstraction that presents slides (i.e. a full display) of visual stimuli for fixed durations.
 	See the changeDetection and nBack examples for the usage of this class.
 
 	A brief example:
@@ -21,19 +21,20 @@ namespace CX {
 	CX_SlidePresenter slidePresenter;
 	slidePresenter.setup(&Display);
 
-	slidePresenter.beginDrawingNextSlide(2000 * 1000, "circle");
+	slidePresenter.beginDrawingNextSlide(2000, "circle");
 	ofBackground(50);
 	ofSetColor(ofColor::red);
 	ofCircle(Display.getCenterOfDisplay(), 40);
 
-	slidePresenter.beginDrawingNextSlide(1000 * 1000, "rectangle");
+	slidePresenter.beginDrawingNextSlide(1000, "rectangle");
 	ofBackground(50);
 	ofSetColor(ofColor::green);
 	ofRect(Display.getCenterOfDisplay() - ofPoint(100, 100), 200, 200);
 
+	//The duration of the last slide, as long as it is greater than 0, is ignored.
 	slidePresenter.beginDrawingNextSlide(1, "off");
 	ofBackground(50);
-	slidePresenter.endDrawingCurrentSlide();
+	slidePresenter.endDrawingCurrentSlide(); //it is not necessary to call this, but the slide presenter will complain if you don't.
 
 	slidePresenter.startSlidePresentation();
 
@@ -138,9 +139,9 @@ namespace CX {
 				display(nullptr),
 				finalSlideCallback(nullptr),
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
-				deallocateCompletedSlides(true),
+				deallocateCompletedSlides(false),
 				swappingMode(CX_SlidePresenter::SwappingMode::MULTI_CORE),
-				preSwapCPUHoggingDuration(3),
+				preSwapCPUHoggingDuration(2),
 				useFenceSync(true),
 				waitUntilFenceSyncComplete(false)
 			{}
@@ -181,7 +182,7 @@ namespace CX {
 		/*! Contains information about the presentation timing of the slide. */
 		struct SlideTimingInfo {
 			uint32_t startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
-			uint32_t frameCount; /*!< \brief The number of frames the slide was/should be presented for. */
+			uint32_t frameCount; /*!< \brief The number of frames the slide was/should have been presented for. */
 			CX_Millis startTime; /*!< \brief The time at which the slide was/should have been started. Can be compared with values from CX::CX_Clock::now(). */
 			CX_Millis duration; /*!< \brief The amount of time the slide was/should have been presented for. */
 		};
@@ -228,7 +229,7 @@ namespace CX {
 
 		bool setup (CX_Display *display);
 		bool setup (const CX_SlidePresenter::Configuration &config);
-		virtual void update (void);
+		void update (void);
 
 		void appendSlide (CX_SlidePresenter::Slide slide);
 		void appendSlideFunction (std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
@@ -237,10 +238,8 @@ namespace CX {
 
 		bool startSlidePresentation (void);
 		void stopSlidePresentation (void);
+		bool isPresentingSlides (void) const;
 		bool presentSlides(void);
-
-		//! Returns true if slide presentation is in progress, even if the first slide has not yet been presented.
-		bool isPresentingSlides (void) const { return _presentingSlides || _synchronizing; };
 
 		void clearSlides (void);
 

@@ -10,8 +10,6 @@
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 
-#define CX_SOUND_STREAM_USE_DEFAULT_DEVICE (-1)
-
 namespace CX {
 
 /*! \class CX::CX_SoundStream
@@ -41,8 +39,8 @@ public:
 
 			api(RtAudio::UNSPECIFIED),
 
-			inputDeviceId(CX_SOUND_STREAM_USE_DEFAULT_DEVICE),
-			outputDeviceId(CX_SOUND_STREAM_USE_DEFAULT_DEVICE)
+			inputDeviceId(-1),
+			outputDeviceId(-1)
 		{
 			//streamOptions.streamName = "CX_SoundStream";
 			streamOptions.numberOfBuffers = 2; //More buffers means higher latency but fewer glitches. Same applies to bufferSize.
@@ -78,8 +76,8 @@ public:
 		*/
 		RtAudio::StreamOptions streamOptions;
 
-		int inputDeviceId; //!< The ID of the desired input device. A value of -1 will cause the system default input device to be used.
-		int outputDeviceId; //!< The ID of the desired output device. A value of -1 will cause the system default output device to be used.
+		int inputDeviceId; //!< The ID of the desired input device. A value less than 0 will cause the system default input device to be used.
+		int outputDeviceId; //!< The ID of the desired output device. A value less than 0 will cause the system default output device to be used.
 
 	};
 
@@ -125,8 +123,8 @@ public:
 
 	bool isStreamRunning(void) const;
 	
-	/*! Gets the configuration that was used on the last call to open(). Because some of the configuration
-	options are only suggestions, this function allows you to check what the actual configuration was.
+	/*! Gets the configuration that was used on the last call to setup(). Because some of the configuration
+	options are only suggestions, this function allows you to check what the actual used configuration was.
 	\return A const reference to the configuration struct. */
 	const CX_SoundStream::Configuration& getConfiguration (void) const { return _config; };
 	
@@ -140,9 +138,7 @@ public:
 
 	bool hasSwappedSinceLastCheck (void);
 	void waitForBufferSwap(void);
-
-	/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::CX_Clock::now(). */
-	CX_Millis getLastSwapTime(void) { return _lastSwapTime; };
+	CX_Millis getLastSwapTime(void);
 	CX_Millis estimateNextSwapTime(void);
 
 	RtAudio* getRtAudioInstance(void);
@@ -160,7 +156,7 @@ public:
 	static std::string listDevices(RtAudio::Api api);
 
 	static CX_SoundStream::Configuration readConfigurationFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
-	
+
 private:
 
 	static int _rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data);
