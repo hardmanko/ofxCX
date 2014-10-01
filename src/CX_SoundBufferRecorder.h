@@ -43,7 +43,7 @@ namespace CX {
 		//! This function provides direct access to the CX_SoundStream used by the CX_SoundBufferRecorder.
 		CX_SoundStream* getSoundStream(void) { return _soundStream; };
 
-		void setSoundBuffer(CX_SoundBuffer* so);
+		void setSoundBuffer(CX_SoundBuffer* soundBuffer);
 		CX_SoundBuffer* getSoundBuffer(void);
 
 		void start(bool clearExistingData = false);

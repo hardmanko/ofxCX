@@ -203,7 +203,7 @@ bool CX_SoundStream::closeStream(void) {
 
 /*! This function gets an estimate of the stream latency. However, it should not be relied on as
 it is based on what the sound card driver reports, which is often false. 
-\return The stream latency in microseconds. */
+\return The stream latency. */
 CX_Millis CX_SoundStream::getStreamLatency(void) {
 	long latencySamples = _rtAudio->getStreamLatency();
 	CX_Millis latency = (((long long)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());

@@ -225,13 +225,9 @@ bool CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &
 
 	_withinOutputEvent = true;
 
-	//if (outputData.bufferUnderflow) {
-	//	cout << "Underflow!" << endl;
-	//}
-
 	uint64_t sampleFramesToOutput = outputData.bufferSize;
 	uint64_t outputBufferOffset = 0;
-	vector<float> &soundData = _buffer->getRawDataReference();
+	std::vector<float> &soundData = _buffer->getRawDataReference();
 	const CX_SoundStream::Configuration &config = this->getConfiguration();
 
 	if (_playbackStartQueued) {

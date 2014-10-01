@@ -157,7 +157,7 @@ public:
 	static std::string formatsToString (RtAudioFormat formats, std::string delim = "\r\n");
 
 	static std::vector<RtAudio::DeviceInfo> getDeviceList (RtAudio::Api api);
-	static std::string listDevices (RtAudio::Api api);
+	static std::string listDevices(RtAudio::Api api);
 
 	static CX_SoundStream::Configuration readConfigurationFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
 	

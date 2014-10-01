@@ -354,7 +354,7 @@ bool CX_DataFrame::deleteColumn (std::string columnName) {
 
 /*! Deletes the given row of the data frame.
 \param row The row to delete (0 indexed). If row is greater than or equal to the number of rows in the data frame, a warning will be logged.
-\return True if the row was in bounds and was deleted, false if the row was out of bounds.
+\return `true` if the row was in bounds and was deleted, `false` if the row was out of bounds.
 */
 bool CX_DataFrame::deleteRow (rowIndex_t row) {
 	if (row < _rowCount) {
@@ -369,8 +369,8 @@ bool CX_DataFrame::deleteRow (rowIndex_t row) {
 }
 
 /*! Appends the row to the end of the data frame.
-\param row The row to add.
-\note If the row has columns that do not exist in the data frame, those columns will be added to the data frame.
+\param row The row of data to add.
+\note If `row` has columns that do not exist in the data frame, those columns will be added to the data frame.
 */
 void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	//This implementation looks weird, but don't change it without care: it deals with a number of edge cases.
@@ -381,6 +381,51 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 		row[names[i]].copyCellTo( &_data[names[i]].back() ); //Copy the cell in the row into the data frame.
 	}
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
+}
+
+/*! Inserts a row into the data frame.
+\param row The row of data to insert.
+\param beforeIndex The index of the row before which `row` should be inserted. If >= the number of rows currently stored, `row`
+will be appended to the end of the data frame.
+\note If `row` has columns that do not exist in the data frame, those columns will be added to the data frame.
+*/
+void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
+
+	//For each new column, add it
+	bool newColumnAdded = false;
+	for (std::string& name : row.names()) {
+		if (!this->columnExists(name)) {
+			this->addColumn(name);
+			newColumnAdded = true;
+		}
+	}
+
+	if (newColumnAdded) {
+		this->_equalizeRowLengths();
+	}
+
+	//Set up the location at which the new data will be added.
+	rowIndex_t insertedElementIndex = std::min(beforeIndex, this->getRowCount());
+		
+	//For each existing column, insert one cell then assign new data to that cell
+	std::vector<std::string> rowNames = row.names();
+	for (auto existingColumn = this->_data.begin(); existingColumn != this->_data.end(); existingColumn++) {
+
+		std::vector<CX_DataFrameCell>::const_iterator insertionIterator = existingColumn->second.end();
+		
+		if (beforeIndex < this->getRowCount()) {
+			insertionIterator = existingColumn->second.begin() + beforeIndex;
+		}
+
+		existingColumn->second.insert(insertionIterator, CX_DataFrameCell());
+
+		if (std::find(rowNames.begin(), rowNames.end(), existingColumn->first) != rowNames.end()) {
+			row[existingColumn->first].copyCellTo(&existingColumn->second[insertedElementIndex]);
+		}
+	}
+
+	//Note that a row has been added
+	this->_rowCount++;
 }
 
 /*! Returns a vector containing the names of the columns in the data frame.

@@ -70,11 +70,14 @@ will be recorded to when start() is called.
 and it will be configured to have the same number of channels and sample rate that the CX_SoundBufferRecorder
 was configured to use.
 */
-void CX_SoundBufferRecorder::setSoundBuffer(CX_SoundBuffer* so) {
-	_buffer = so;
-	so->clear();
+void CX_SoundBufferRecorder::setSoundBuffer(CX_SoundBuffer* soundBuffer) {
+	_buffer = soundBuffer;
+	if (soundBuffer == nullptr) {
+		return;
+	}
+	_buffer->clear();
 	const CX_SoundBufferRecorder::Configuration& config = this->getConfiguration();
-	so->setFromVector(vector<float>(), config.inputChannels, config.sampleRate);
+	_buffer->setFromVector(vector<float>(), config.inputChannels, config.sampleRate);
 }
 
 /*! This function returns a pointer to the CX_SoundBuffer that is currently in use by the CX_SoundBufferRecorder. */

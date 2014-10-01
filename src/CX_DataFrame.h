@@ -98,6 +98,7 @@ public:
 	CX_DataFrameRow operator[] (rowIndex_t row);
 
 	void appendRow (CX_DataFrameRow row);
+	void insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex);
 	void setRowCount(rowIndex_t rowCount);
 	void addColumn(std::string columnName);
 
