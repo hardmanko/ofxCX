@@ -29,8 +29,10 @@ information about the actual precision of the clock.
 Depending on the number of iterations, this function may be considered blocking. See \ref blockingCode.
 
 \param iterations Number of time duration samples to take. More iterations should give a better
-estimate. */
-void CX_Clock::precisionTest (unsigned int iterations) {
+estimate. 
+\return A string containing some information about the precision of the clock.
+*/
+std::string CX_Clock::precisionTest (unsigned int iterations) {
 	std::vector<long long> durations(iterations);
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
@@ -40,7 +42,7 @@ void CX_Clock::precisionTest (unsigned int iterations) {
 		durations[i] = t2 - t1;
 	}
 
-	uint64_t differenceSum = 0;
+	//uint64_t differenceSum = 0;
 	long long maxDifference = 0;
 	long long minDifference = std::numeric_limits<long long>::max();
 	long long minNonzeroDuration = std::numeric_limits<long long>::max();
@@ -50,7 +52,7 @@ void CX_Clock::precisionTest (unsigned int iterations) {
 		long long duration = durations[i];
 		durations[i] = duration;
 
-		differenceSum += duration;
+		//differenceSum += duration;
 
 		if (duration > maxDifference) {
 			maxDifference = duration;
@@ -69,6 +71,14 @@ void CX_Clock::precisionTest (unsigned int iterations) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
 			"microsecond precision. Observed tick period of the system clock is " << minNonzeroDuration << " nanoseconds.";
 	}
+
+	std::stringstream ss;
+	ss << iterations << " iterations of a clock precision test gave the following results: \n" <<
+		"Minimum nonzero duration: " << minNonzeroDuration << " ns" << endl <<
+		"Smallest time step: " << minDifference << " ns" << endl <<
+		"Largest time step: " << maxDifference << " ns" << endl;
+
+	return ss.str();
 }
 
 /*! Set the underlying clock implementation used by this instance of CX_Clock. You would
@@ -216,6 +226,30 @@ void CX::CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
 	LARGE_INTEGER li;
 	QueryPerformanceFrequency(&li);
 	_frequency = li.QuadPart;
+
+
+	_ratioNumerator = 1000000000LL;
+	_ratioDenominator = _frequency;
+	bool attemptSuccessful = false;
+
+	long long basicPrimes[7] = { 2, 3, 5, 7, 11, 13, 17 };
+
+	do {
+		attemptSuccessful = false;
+
+		for (int i = 0; i < 7; i++) {
+			long long p = basicPrimes[i];
+			if (_ratioNumerator % p == 0 && _ratioDenominator % p == 0) {
+				_ratioNumerator /= p;
+				_ratioDenominator /= p;
+				attemptSuccessful = true;
+			}
+		}
+
+
+	} while (attemptSuccessful);
+
+	cout << "num: " << _ratioNumerator << " den: " << _ratioDenominator << endl;
 }
 
 #endif //TARGET_WIN32

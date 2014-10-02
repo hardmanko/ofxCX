@@ -38,7 +38,7 @@ namespace CX {
 
 		void setImplementation(CX_BaseClockImplementation* impl);
 
-		void precisionTest(unsigned int iterations);
+		std::string precisionTest(unsigned int iterations);
 
 		CX_Millis now(void);
 
@@ -129,6 +129,8 @@ namespace CX {
 
 		long long _startTime;
 		long long _frequency;
+		long long _ratioNumerator;
+		long long _ratioDenominator;
 	};
 
 	/* This implementation of a high resolution clock uses QueryPerformanceCounter (a Windows API call).

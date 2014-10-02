@@ -24,7 +24,7 @@ void setupCX(void) {
 
 		CX::Instances::Display.setup();
 
-		Clock.precisionTest(10000);
+		Clock.precisionTest(100000);
 
 		std::vector<int> defaultExitChord;
 		defaultExitChord.push_back(OF_KEY_LEFT_CONTROL);
