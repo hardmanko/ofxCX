@@ -44,14 +44,10 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 			" unnoticed";
 	}
 
-	if (_config.swappingMode == SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
-		//_config.display->setVSync(true, false);
-	}
-
-	if (_config.preSwapCPUHoggingDuration > (_config.display->getFramePeriod() - CX_Millis(1))) {
-		_config.preSwapCPUHoggingDuration = std::max(_config.display->getFramePeriod() - CX_Millis(1), CX_Millis(1));
-		Log.warning("CX_SlidePresenter") << "preSwapCPUHoggingDuration was set to a value greater than the frame period minus one millisecond." <<
-			" It has been set to the frame period minus one millisecond.";
+	if (_config.preSwapCPUHoggingDuration > _config.display->getFramePeriod()) {
+		CX::Instances::Log.warning("CX_SlidePresenter") << "setup(): preSwapCPUHoggingDuration was set to a value greater than the frame period. "
+			"This can result in slides being swapped in one frame early. The frame period is " << _config.display->getFramePeriod() << " and the requestd preSwapCPUHoggingDuration was " <<
+			_config.preSwapCPUHoggingDuration << ".";
 	}
 
 	return true;

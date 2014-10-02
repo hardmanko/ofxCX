@@ -43,7 +43,8 @@ namespace CX {
 			width(800),
 			height(600),
 			msaaSampleCount(4), 
-			windowTitle("CX Experiment")
+			windowTitle("CX Experiment"),
+			preOpeningUserFunction(nullptr)
 		{}
 
 		ofWindowMode mode; //!< The mode of the window. One of ofWindowMode::OF_WINDOW, ofWindowMode::OF_FULLSCREEN, or ofWindowMode::OF_GAME_MODE.
@@ -63,6 +64,10 @@ namespace CX {
 
 		/*! A title for the window that is opened. */
 		std::string windowTitle;
+
+		/*! A user-supplied function that will be called just before the GLFW window is opened. This allows you to
+		set window hints just before the window is opened. This only works if you are using oF version 0.8.4. */
+		std::function<void(void)> preOpeningUserFunction;
 	};
 
 	bool reopenWindow(CX_WindowConfiguration_t config);

@@ -90,7 +90,7 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 	awp->setOpenGLVersion(config.desiredOpenGLVersion.major, config.desiredOpenGLVersion.minor);
 	awp->setNumSamples(Util::getMsaaSampleCount());
 
-	CX::Private::appWindow->setupOpenGL(config.width, config.height, config.mode);
+	((CX::Private::CX_AppWindow*)CX::Private::appWindow.get())->setupOpenGL(config.width, config.height, config.mode, config.preOpeningUserFunction);
 }
 
 } //namespace Private

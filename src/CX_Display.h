@@ -63,6 +63,7 @@ namespace CX {
 		void estimateFramePeriod(CX_Millis estimationInterval);
 		CX_Millis getFramePeriod(void);
 		CX_Millis getFramePeriodStandardDeviation(void);
+		void setFramePeriod(CX_Millis knownPeriod);
 
 		void setWindowResolution(int width, int height);
 		void setWindowTitle(std::string title);

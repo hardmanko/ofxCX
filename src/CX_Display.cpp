@@ -364,6 +364,20 @@ CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
 	return _framePeriodStandardDeviation;
 }
 
+/*! During setup, CX tries to estimate the frame period of the display using CX::CX_Display::estimateFramePeriod().
+However, this does not always work, and the estimated value is wrong. 
+If you know that this is happening, use this function to set the correct frame period. A typical call might be
+\code{.cpp}
+Display.setFramePeriod(CX_Seconds(1.0/60.0));
+\endcode
+to set the frame period for a 60 Hz refresh cycle.
+\param knownPeriod The known refresh period of the monitor.
+*/
+void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
+	_framePeriod = knownPeriod;
+	_framePeriodStandardDeviation = 0;
+}
+
 /*! Set whether the display is full screen or not. If the display is set to full screen, 
 the resolution may not be the same as the resolution of display in windowed mode, and vice
 versa. */

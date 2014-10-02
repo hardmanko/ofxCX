@@ -192,7 +192,7 @@ void CX_AppWindow::setGLSLVersion(int major, int minor) {
 }
 
 //------------------------------------------------------------
-void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
+void CX_AppWindow::setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction){
 
 	glfwSetErrorCallback(&error_cb); //Set up error callback here so that errors during initialization can be detected.
 
@@ -254,6 +254,10 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode){
 		glfwWindowHint(GLFW_CLIENT_API,GLFW_OPENGL_ES_API);
 		#endif
 
+	}
+
+	if (preOpeningUserFunction != nullptr) {
+		preOpeningUserFunction();
 	}
 
 	if(requestedMode==OF_GAME_MODE){
