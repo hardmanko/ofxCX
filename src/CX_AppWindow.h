@@ -49,6 +49,7 @@ public:
 	// this functions are only meant to be called from inside OF don't call them from your code
 	void setOpenGLVersion(int major, int minor);
 	void setGLSLVersion(int major, int minor); //0.0 is interpreted as "does not have GLSL".
+	void setupOpenGL(int w, int h, int screenMode);
 	void setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction = nullptr);
 	void initializeWindow();
 	void runAppViaInfiniteLoop(ofBaseApp * appPtr);

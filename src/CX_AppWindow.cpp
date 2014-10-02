@@ -191,6 +191,10 @@ void CX_AppWindow::setGLSLVersion(int major, int minor) {
 	glslVersionMajor = major;
 }
 
+void CX_AppWindow::setupOpenGL(int w, int h, int screenMode) {
+	setupOpenGL(w, h, screenMode, nullptr);
+}
+
 //------------------------------------------------------------
 void CX_AppWindow::setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction){
 

@@ -741,9 +741,11 @@ std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string 
 
 
 void CX_DataFrame::convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals) {
-	for (auto it = _data.begin(); it != _data.end(); it++) {
-		if (columnContainsVectors(it->first)) {
-			convertVectorColumnToColumns(it->first, startIndex, deleteOriginals, it->first);
+	std::vector<std::string> originalNames = this->getColumnNames();
+
+	for (std::string originalColumn : originalNames) {
+		if (columnContainsVectors(originalColumn)) {
+			convertVectorColumnToColumns(originalColumn, startIndex, deleteOriginals, originalColumn);
 		}
 	}
 }
