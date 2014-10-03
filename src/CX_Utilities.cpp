@@ -3,19 +3,20 @@
 #include "ofMain.h"
 #include "ofConstants.h"
 
-using namespace std;
-using namespace CX;
-
 static unsigned int multisamplingSampleCount = 4; //This is set during setup
 
-//This should not be used in user code to set the MSAA sample count because if this is set
-//after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK, 
-//GL_FRONT). Use CX::relaunchWindow() to set the MSAA sample count.
-void CX::Private::setMsaaSampleCount(unsigned int count) {
-	multisamplingSampleCount = count;
-}
-
 namespace CX {
+
+namespace Private {
+	//This should not be used in user code to set the MSAA sample count because if this is set
+	//after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK, 
+	//GL_FRONT). Use CX::relaunchWindow() to set the MSAA sample count.
+	void CX::Private::setMsaaSampleCount(unsigned int count) {
+		multisamplingSampleCount = count;
+	}
+
+} //namespace Private
+
 namespace Util {
 
 	/*! This function retrieves the MSAA (http://en.wikipedia.org/wiki/Multisample_anti-aliasing)
@@ -201,5 +202,5 @@ namespace Util {
 		return start;
 	}
 
-}
-}
+} //namespace Util
+} //namespace CX

@@ -69,7 +69,8 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 
 	if (minNonzeroDuration > 1000000) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
-			"millisecond precision. Observed tick period of the system clock is " << minNonzeroDuration << " nanoseconds.";
+			"millisecond precision. Observed tick period of the system clock is " << minNonzeroDuration / 1000000.0 << " milliseconds. "
+			"See CX_Clock::setImplementation() for information about using a different underlying clock implementation.";
 	}
 
 	std::stringstream ss;
@@ -87,7 +88,8 @@ precision on your system. You can use CX::CX_StdClockWrapper to wrap any of the 
 from the std::chrono namespace or any clock that conforms to the standard of those clocks.
 You can also write your own low level clock that implements CX_BaseClockInterface.
 \param impl A pointer to an instance of a class implementing CX::CX_BaseClockInterface.
-\note This function resets the start time of the given implementation.
+\note This function resets the experiment start time of `impl`, but does not
+reset the experiment start time date/time string.
 */
 void CX_Clock::setImplementation(CX::CX_BaseClockInterface* impl) {
 	if (_implSelfAllocated) {
@@ -193,4 +195,4 @@ void CX::CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
 
 #endif //TARGET_WIN32
 
-}
+} //namespace CX

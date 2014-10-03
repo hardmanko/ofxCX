@@ -1,9 +1,8 @@
 #include "CX_DataFrame.h"
 
-using namespace std;
-using namespace CX;
-
 //CX_DataFrame::DataFrameConfiguration CX_DataFrame::Configuration = { ",", "\"", "\"", "\t" };
+
+namespace CX {
 
 CX_DataFrame::CX_DataFrame(void) :
 	_rowCount(0)
@@ -828,4 +827,4 @@ void CX_DataFrameRow::clear(void) {
 	}
 }
 
-
+} //namespace CX

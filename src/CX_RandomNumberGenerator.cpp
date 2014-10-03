@@ -1,12 +1,12 @@
 #include "CX_RandomNumberGenerator.h"
 
-using namespace CX;
+namespace CX {
 
 /*! An instance of CX_RandomNumberGenerator that is very lightly hooked into the CX backend. The only
  way this is used outside of user code is to generate random numbers internally in, e.g., Algo::BlockSampler.
 \ingroup entryPoint
 */
-CX::CX_RandomNumberGenerator CX::Instances::RNG;
+CX_RandomNumberGenerator Instances::RNG;
 
 /*! Constructs an instance of a CX_RandomNumberGenerator. Seeds the CX_RandomNumberGenerator
 using a std::random_device. 
@@ -126,3 +126,5 @@ int deviate = pois(RNG.getGenerator());
 std::mt19937_64& CX_RandomNumberGenerator::getGenerator(void) { 
 	return _mersenneTwister; 
 }
+
+} //namespace CX

@@ -1,10 +1,9 @@
 #include "CX_DataFrameCell.h"
 
-using namespace CX;
+namespace CX {
 
 CX_DataFrameCell::CX_DataFrameCell(void) {
 	_allocatePointers();
-	//*_str = "NULL"; //?
 	*_type = "NULL";
 }
 
@@ -36,8 +35,7 @@ CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 the same for the same type, but not neccessarily be different for different types.
 \return A string containing the name of the stored type as given by typeid(typename).name(). */
 std::string CX_DataFrameCell::getStoredType(void) const {
-	//if (*_dataIsVector) {
-	if (_data->size() > 1) {
+	if (this->isVector()) {
 		return "vector<" + *_type + ">";
 	}
 	return *_type;
@@ -70,12 +68,12 @@ template<> std::string CX_DataFrameCell::to(void) const {
 	return _data->at(0);
 }
 
-/*! Equivalent to a call to to<string>(). */
+/*! \brief Equivalent to a call to to<string>(). */
 std::string CX_DataFrameCell::toString(void) const {
 	return this->to<std::string>();
 }
 
-/*! Returns `true` if more than one element is stored in the CX_DataFrameCell. */
+/*! \brief Returns `true` if more than one element is stored in the CX_DataFrameCell. */
 bool CX_DataFrameCell::isVector(void) const {
 	return _data->size() > 1;
 }
@@ -89,7 +87,7 @@ template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {
 	return *_data;
 }
 
-/*! Stream insertion operator for a CX_DataFrameCell. */
+/*! \brief Stream insertion operator for a CX_DataFrameCell. It simply prints the contents of the CX_DataFrameCell in a pretty way. */
 std::ostream& CX::operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
 	std::string s;
 	if (cell.isVector()) {
@@ -101,3 +99,5 @@ std::ostream& CX::operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
 	os << s;
 	return os;
 }
+
+} //namespace CX

@@ -1,6 +1,7 @@
 #include "CX_Algorithm.h"
 
-using namespace CX::Algo;
+namespace CX {
+namespace Algo {
 
 /*! \brief Construct a LatinSquare with no contents. */
 LatinSquare::LatinSquare(void) :
@@ -226,3 +227,6 @@ std::vector<unsigned int> LatinSquare::getRow(unsigned int row) const {
 
 	return square[row];
 }
+
+} //namespace Algo
+} //namespace CX

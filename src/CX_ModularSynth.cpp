@@ -1,9 +1,10 @@
 #include "CX_ModularSynth.h"
 
-using namespace CX::Synth;
+namespace CX {
+namespace Synth {
 
 /*! The sinc function, defined as `sin(x)/x`. */
-double CX::Synth::sinc(double x) {
+double sinc(double x) {
 	return sin(x) / x;
 }
 
@@ -11,7 +12,7 @@ double CX::Synth::sinc(double x) {
 \param f The starting frequency. 
 \param semitoneDifference The difference (positive or negative) from `f` to the desired output frequency.
 \return The final frequency. */
-double CX::Synth::relativeFrequency(double f, double semitoneDifference) {
+double relativeFrequency(double f, double semitoneDifference) {
 	return f * pow(2.0, semitoneDifference / 12);
 }
 
@@ -22,7 +23,7 @@ StreamOutput out;
 osc >> out; //Connect osc as the input for out.
 \endcode
 */
-ModuleBase& CX::Synth::operator>> (ModuleBase& l, ModuleBase& r) {
+ModuleBase& operator>> (ModuleBase& l, ModuleBase& r) {
 	r._assignInput(&l);
 	l._assignOutput(&r);
 	return r;
@@ -40,7 +41,7 @@ add.amount = 500;
 fenv >> add >> osc.frequency; //Connect the envelope as the input for the frequency of the oscillator with an offset of 500 Hz.
 \endcode
 */
-void CX::Synth::operator>>(ModuleBase& l, ModuleParameter& r) {
+void operator>>(ModuleBase& l, ModuleParameter& r) {
 	r._input = &l;
 	r._owner->_setDataIfNotSet(&l);
 }
@@ -1191,3 +1192,6 @@ private:
 
 };
 */
+
+} //namespace Synth
+} //namespace CX

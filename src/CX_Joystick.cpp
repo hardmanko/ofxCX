@@ -2,7 +2,7 @@
 
 #include "ofAppGLFWWindow.h"
 
-using namespace CX;
+namespace CX {
 
 CX_Joystick::CX_Joystick (void) :
 	_joystickName("NULL"),
@@ -215,3 +215,5 @@ std::istream& CX::operator>> (std::istream& is, CX_Joystick::Event& ev) {
 
 	return is;
 }
+
+} //namespace CX
