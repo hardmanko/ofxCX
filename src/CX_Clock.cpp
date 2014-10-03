@@ -1,6 +1,6 @@
 #include "CX_Clock.h"
 
-using namespace CX;
+namespace CX {
 
 /*! An instance of CX::CX_Clock that is hooked into the CX backend. Anything in CX
 that requires timing information uses this instance. You should use this instance in
@@ -67,9 +67,9 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 		}
 	}
 
-	if (minNonzeroDuration > 1000) {
+	if (minNonzeroDuration > 1000000) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
-			"microsecond precision. Observed tick period of the system clock is " << minNonzeroDuration << " nanoseconds.";
+			"millisecond precision. Observed tick period of the system clock is " << minNonzeroDuration << " nanoseconds.";
 	}
 
 	std::stringstream ss;
@@ -85,15 +85,17 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 use this function if the default clock implementation used by CX_Clock has insufficient 
 precision on your system. You can use CX::CX_StdClockWrapper to wrap any of the clocks
 from the std::chrono namespace or any clock that conforms to the standard of those clocks.
-\param impl A pointer to an instance of a class derived from CX::CX_BaseClockImplementation. 
+You can also write your own low level clock that implements CX_BaseClockInterface.
+\param impl A pointer to an instance of a class implementing CX::CX_BaseClockInterface.
+\note This function resets the start time of the given implementation.
 */
-void CX_Clock::setImplementation(CX::CX_BaseClockImplementation* impl) {
-
+void CX_Clock::setImplementation(CX::CX_BaseClockInterface* impl) {
 	if (_implSelfAllocated) {
 		_implSelfAllocated = false;
 		delete _impl;
 	}
 	_impl = impl;
+	_impl->resetStartTime();
 }
 
 /*! If for some reason you have a long setup period before the experiment proper
@@ -131,11 +133,6 @@ void CX_Clock::delay(CX_Millis t) {
 		;
 }
 
-/* Get the start time of the experiment in system time. The returned value can be compared with the result of getSystemTime(). */
-//CX_Micros CX_Clock::getExperimentStartTime(void) {
-//	return std::chrono::duration_cast<std::chrono::microseconds>(_experimentStart.time_since_epoch()).count();
-//}
-
 /*! This function returns the current time relative to the start of the experiment in milliseconds.
 The start of the experiment is defined by default as when the CX_Clock instance named Clock
 (instantiated in this file) is constructed (typically the beginning of program execution).
@@ -170,50 +167,16 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 
 #include "Windows.h"
 
-/*
-Calculate the overflow characteristics of this implementation as follows:
-
-uint64_t_max = 2^64 #although this uses (signed) long long, it still holds 2^64 values
-den = 1e9
-
-secPerOvf = uint64_t_max/den
-
-hoursPerOvf = secPerOvf/60/60
-yearsPerOvf = hoursPerOvf / 24 / 365
-
-*/
-CX::CX_WIN32_HRC::time_point CX::CX_WIN32_HRC::now() {
-	static long long freq = []() -> long long
-	{
-		LARGE_INTEGER frequency;
-		QueryPerformanceFrequency(&frequency);
-		return frequency.QuadPart;
-	}();
-
-	static long long start = []() -> long long
-	{
-		LARGE_INTEGER scount;
-		QueryPerformanceCounter(&scount);
-		return scount.QuadPart;
-	}();
-
-	LARGE_INTEGER count;
-	QueryPerformanceCounter(&count);
-
-	return time_point(duration((count.QuadPart - start) * static_cast<rep>(period::den) / freq));
-}
-
-
-
 CX::CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 	_resetFrequency();
 	resetStartTime();
 }
 
+//This only has at best 1 microsecond precision.
 long long CX::CX_WIN32_PerformanceCounterClock::nanos(void) {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
-	return ((count.QuadPart - _startTime) * 1000000000LL) / _frequency;
+	return (((count.QuadPart - _startTime) * 1000000LL) / _frequency) * 1000LL;
 }
 
 void CX::CX_WIN32_PerformanceCounterClock::resetStartTime(void) {
@@ -226,30 +189,8 @@ void CX::CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
 	LARGE_INTEGER li;
 	QueryPerformanceFrequency(&li);
 	_frequency = li.QuadPart;
-
-
-	_ratioNumerator = 1000000000LL;
-	_ratioDenominator = _frequency;
-	bool attemptSuccessful = false;
-
-	long long basicPrimes[7] = { 2, 3, 5, 7, 11, 13, 17 };
-
-	do {
-		attemptSuccessful = false;
-
-		for (int i = 0; i < 7; i++) {
-			long long p = basicPrimes[i];
-			if (_ratioNumerator % p == 0 && _ratioDenominator % p == 0) {
-				_ratioNumerator /= p;
-				_ratioDenominator /= p;
-				attemptSuccessful = true;
-			}
-		}
-
-
-	} while (attemptSuccessful);
-
-	cout << "num: " << _ratioNumerator << " den: " << _ratioDenominator << endl;
 }
 
 #endif //TARGET_WIN32
+
+}

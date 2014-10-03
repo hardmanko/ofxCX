@@ -23,7 +23,7 @@ This module provides methods for timestamping events in experiments.
 
 namespace CX {
 
-	class CX_BaseClockImplementation;
+	class CX_BaseClockInterface;
 
 	/*! This class is responsible for getting timestamps for anything requiring timestamps. The way to
 	get timing information is the function now(). It returns the current time relative to the start
@@ -36,7 +36,7 @@ namespace CX {
 	public:
 		CX_Clock (void);
 
-		void setImplementation(CX_BaseClockImplementation* impl);
+		void setImplementation(CX_BaseClockInterface* impl);
 
 		std::string precisionTest(unsigned int iterations);
 
@@ -53,7 +53,7 @@ namespace CX {
 	private:
 		Poco::LocalDateTime _pocoExperimentStart;
 
-		CX_BaseClockImplementation* _impl;
+		CX_BaseClockInterface* _impl;
 		bool _implSelfAllocated;
 	};
 
@@ -74,7 +74,7 @@ namespace CX {
 
 	\ingroup timing
 	*/
-	class CX_BaseClockImplementation {
+	class CX_BaseClockInterface {
 	public:
 		virtual long long nanos(void) = 0;
 		virtual void resetStartTime(void) = 0;
@@ -85,7 +85,7 @@ namespace CX {
 
 
 	template <class stdClock>
-	class CX_StdClockWrapper : public CX_BaseClockImplementation {
+	class CX_StdClockWrapper : public CX_BaseClockInterface {
 	public:
 
 		CX_StdClockWrapper(void) {
@@ -113,7 +113,7 @@ namespace CX {
 
 #ifdef TARGET_WIN32
 
-	class CX_WIN32_PerformanceCounterClock : public CX_BaseClockImplementation {
+	class CX_WIN32_PerformanceCounterClock : public CX_BaseClockInterface {
 	public:
 		CX_WIN32_PerformanceCounterClock(void);
 
@@ -129,27 +129,8 @@ namespace CX {
 
 		long long _startTime;
 		long long _frequency;
-		long long _ratioNumerator;
-		long long _ratioDenominator;
-	};
-
-	/* This implementation of a high resolution clock uses QueryPerformanceCounter (a Windows API call).
-
-	Based on http://stackoverflow.com/questions/16299029/resolution-of-stdchronohigh-resolution-clock-doesnt-correspond-to-measureme/16299576#16299576
-	with a few changes.
-	*/
-	struct CX_WIN32_HRC {
-		typedef long long                               rep;
-		typedef std::nano                               period;
-		typedef std::chrono::duration<rep, period>      duration;
-		typedef std::chrono::time_point<CX_WIN32_HRC>   time_point;
-		static const bool is_steady = true;
-
-		static time_point now();
 	};
 
 #endif
-
-
 
 }
