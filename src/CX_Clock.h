@@ -119,6 +119,9 @@ namespace CX {
 
 		long long nanos(void) override;
 		void resetStartTime(void) override;
+		void setStartTime(long long ticks) {
+			_startTime = ticks;
+		}
 
 		std::string getName(void) override {
 			return "CX_WIN32_PerformanceCounterClock";

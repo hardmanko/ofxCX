@@ -32,7 +32,7 @@ bool CX_Keyboard::enabled(void) {
 }
 
 /*! Get the number of new events available for this input device. */
-int CX_Keyboard::availableEvents(void) {
+int CX_Keyboard::availableEvents(void) const {
 	return _keyEvents.size();
 }
 
@@ -56,7 +56,7 @@ void CX_Keyboard::clearEvents(void) {
 \param key The key code or character for the key you are interested in. See the
 documentation for \ref CX_Keyboard::Event::key for more information about this value.
 \return True iff the given key is held. */
-bool CX_Keyboard::isKeyHeld(int key) {
+bool CX_Keyboard::isKeyHeld(int key) const {
 	return (_heldKeys.find(key) != _heldKeys.end());
 }
 
@@ -102,7 +102,8 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 			for (auto it = _keyEvents.begin(); it != _keyEvents.end(); it++) {
 				if (it->type == CX_Keyboard::PRESSED) {
 					if ((std::find(keys.begin(), keys.end(), -1) != keys.end()) ||
-						(std::find(keys.begin(), keys.end(), it->key) != keys.end())) {
+						(std::find(keys.begin(), keys.end(), it->key) != keys.end())) 
+					{
 
 						rval = *it;
 
@@ -125,6 +126,42 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 	this->enable(enabled);
 
 	return rval;
+}
+
+
+
+/*! Change the set of keys that must be pressed at once for the program to close.
+By default, pressing `right-control + escape` will exit the program.
+\param chord A vector of keys that, when held simulatenously, will cause the program to exit.
+\note You must be exact about modifier keys: Using, for example, OF_KEY_SHIFT does nothing.
+You must use OF_KEY_LEFT_SHIFT or OF_KEY_RIGHT_SHIFT.
+*/
+void CX_Keyboard::setExitChord(std::vector<int> chord) {
+	ofSetEscapeQuitsApp(false);
+	_exitChord = chord;
+}
+
+void CX_Keyboard::_checkForExitChord(void) {
+	if (isChordHeld(_exitChord)) {
+		std::exit(0);
+	}
+}
+
+/*! Checks whether the given key chord is held, i.e. are all of the keys in `chord` held
+right now.
+\return `false` if `chord` is empty or if not all of the keys in `chord` are held. `true` if all of
+the keys in `chord` are held.
+*/
+bool CX_Keyboard::isChordHeld(const std::vector<int>& chord) const {
+	if (chord.empty()) {
+		return false;
+	}
+
+	bool allHeld = true;
+	for (int key : chord) {
+		allHeld = allHeld && isKeyHeld(key);
+	}
+	return allHeld;
 }
 
 void CX_Keyboard::_listenForEvents(bool listen) {
@@ -171,10 +208,11 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 	case OF_KEY_ALT:
 	case OF_KEY_SHIFT:
 	case OF_KEY_SUPER:
-		return; //These keys are reported by oF twice: once as OF_KEY_X and again as OF_KEY_RIGHT_X or OF_KEY_LEFT_X. We ignore the generic version.
+		return; //These keys are reported by oF twice: once as OF_KEY_X and again as 
+		//OF_KEY_RIGHT_X or OF_KEY_LEFT_X. This ignores the generic version.
 	}
 
-	//Make all keys lower (counteract oF behavior of uppcasing letter keys if shift is held).
+	//Make all keys lower (counteract oF behavior of uppercasing letter keys if shift is held).
 	if (ev.key <= std::numeric_limits<unsigned char>::max()) {
 		ev.key = ::tolower(ev.key);
 	}
@@ -198,33 +236,7 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 	_keyEvents.push_back(ev);
 }
 
-/*! Change the set of keys that must be pressed at once for the program to close.
-By default, pressing left control + backspace will exit the program.
-\param chord A vector of keys that, when held simulatenously, will cause the program to exit.
-\note You must be exact about modifier keys: Using, for example, OF_KEY_SHIFT does nothing.
-You must use OF_KEY_LEFT_SHIFT or OF_KEY_RIGHT_SHIFT.
-*/
-void CX_Keyboard::setExitChord(std::vector<int> chord) {
-	ofSetEscapeQuitsApp(false);
-	_exitChord.clear();
-	for (int i : chord) {
-		_exitChord.insert(i);
-	}
-}
 
-void CX_Keyboard::_checkForExitChord(void) {
-	if (_exitChord.empty()) {
-		return;
-	}
-
-	bool foundAll = true;
-	for (int ck : _exitChord) {
-		foundAll = foundAll && (_heldKeys.find(ck) != _heldKeys.end());
-	}
-	if (foundAll) {
-		std::exit(0);
-	}
-}
 
 static const std::string dlm = ", ";
 

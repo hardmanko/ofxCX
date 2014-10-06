@@ -169,6 +169,8 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 
 #include "Windows.h"
 
+#define CX_NANOS_PER_SECOND 1000000000LL
+
 CX::CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 	_resetFrequency();
 	resetStartTime();
@@ -178,7 +180,15 @@ CX::CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 long long CX::CX_WIN32_PerformanceCounterClock::nanos(void) {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
-	return (((count.QuadPart - _startTime) * 1000000LL) / _frequency) * 1000LL;
+
+	long long adjustedCount = count.QuadPart - _startTime;
+	long long seconds = adjustedCount / _frequency;
+
+	//Note that if _frequency is greater than or equal to 10 GHz (or just slightly lower), this multiplication will overflow
+	//before reaching the division.
+	long long nanos = ((adjustedCount % _frequency) * CX_NANOS_PER_SECOND) / _frequency;
+
+	return (seconds * CX_NANOS_PER_SECOND) + nanos;
 }
 
 void CX::CX_WIN32_PerformanceCounterClock::resetStartTime(void) {

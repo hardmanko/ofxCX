@@ -27,8 +27,8 @@ void setupCX(void) {
 		Clock.precisionTest(100000);
 
 		std::vector<int> defaultExitChord;
-		defaultExitChord.push_back(OF_KEY_LEFT_CONTROL);
-		defaultExitChord.push_back(OF_KEY_BACKSPACE);
+		defaultExitChord.push_back(OF_KEY_RIGHT_CONTROL);
+		defaultExitChord.push_back(OF_KEY_ESC);
 		CX::Instances::Input.Keyboard.setExitChord(defaultExitChord);
 	}
 
