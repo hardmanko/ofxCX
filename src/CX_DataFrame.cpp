@@ -22,7 +22,7 @@ CX_DataFrame& CX_DataFrame::operator= (const CX_DataFrame& df) {
 }
 
 /*! Access the cell at the given row and column. If the row or column is out of bounds,
-the data frame will be dynamically resized in order to fit the row or column.
+the data frame will be resized in order to fit the new row(s) and/or column.
 \param row The row number.
 \param column The column name.
 \return A CX_DataFrameCell that can be read from or written to.
@@ -36,7 +36,7 @@ CX_DataFrameCell CX_DataFrame::operator() (rowIndex_t row, std::string column) {
 	return this->operator()(column, row);
 }
 
-/*! Access the cell at the given row and column with bounds checking. Throws a std::out_of_range
+/*! Access the cell at the given row and column with bounds checking. Throws a `std::out_of_range`
 exception and logs an error if either the row or column is out of bounds.
 \param row The row number.
 \param column The column name.
@@ -53,6 +53,7 @@ CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
 	}
 }
 
+/*! Equivalent to `CX_DataFrame::at(rowIndex_t, std::string)`. */
 CX_DataFrameCell CX_DataFrame::at(std::string column, rowIndex_t row) {
 	return at(row, column);
 }
@@ -65,14 +66,24 @@ CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 	return CX_DataFrameRow(this, row);
 }
 
-/*! Reduced argument version of print(). Prints all rows and columns. */
+/*! Reduced argument version of CX_DataFrame::print(OutputOptions). Prints all rows and columns. */
 std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) const {
-	return print(CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
+	std::vector<CX_DataFrame::rowIndex_t> rowsToPrint;
+	if (this->getRowCount() > 0) {
+		rowsToPrint = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1);
+	}
+
+	return print(rowsToPrint, delimiter, printRowNumbers);
 }
 
 /*! Reduced argument version of print(). Prints all rows and the selected columns. */
 std::string CX_DataFrame::print(const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
-	return print(columns, CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1), delimiter, printRowNumbers);
+	std::vector<CX_DataFrame::rowIndex_t> rowsToPrint;
+	if (this->getRowCount() > 0) {
+		rowsToPrint = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1);
+	}
+
+	return print(columns, rowsToPrint, delimiter, printRowNumbers);
 }
 
 /*! Reduced argument version of print(). Prints all columns and the selected rows. */
@@ -115,33 +126,34 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 std::string CX_DataFrame::print(OutputOptions oOpt) const {
 
 	if (oOpt.columnsToPrint.empty()) {
-		vector<string> names = getColumnNames();
+		std::vector<std::string> names = getColumnNames();
 		for (rowIndex_t i = 0; i < names.size(); i++) {
 			oOpt.columnsToPrint.insert(names[i]);
 		}
 	}
 
-	if (oOpt.rowsToPrint.empty()) {
+	//No rows to print is not an error: Just the column headers are printed.
+	if (oOpt.rowsToPrint.empty() && this->getRowCount() > 0) {
 		oOpt.rowsToPrint = Util::intVector<rowIndex_t>(0, this->getRowCount() - 1);
 	}
 
 	//Get rid of invalid columns
-	set<string> validColumns = oOpt.columnsToPrint;
-	for (set<string>::iterator it = oOpt.columnsToPrint.begin(); it != oOpt.columnsToPrint.end(); it++) {
+	std::set<std::string> validColumns = oOpt.columnsToPrint;
+	for (std::set<std::string>::iterator it = oOpt.columnsToPrint.begin(); it != oOpt.columnsToPrint.end(); it++) {
 		if (_data.find(*it) == _data.end()) {
 			Instances::Log.warning("CX_DataFrame") << "Invalid column name requested for printing was ignored: " << *it;
 			validColumns.erase(*it);
 		}
 	}
 
-	stringstream output;
+	std::stringstream output;
 
 	//Output the headers
 	if (oOpt.printRowNumbers) {
 		output << "rowNumber" << oOpt.cellDelimiter;
 	}
 
-	for (map<string, vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
+	for (std::map<std::string, std::vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
 		if (validColumns.find(it->first) != validColumns.end()) {
 			if (it != _data.begin()) {
 				output << oOpt.cellDelimiter;
@@ -163,7 +175,7 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 			output << oOpt.rowsToPrint[i] << oOpt.cellDelimiter;
 		}
 
-		for (map<string, vector<CX_DataFrameCell> >::const_iterator it = _data.begin(); it != _data.end(); it++) {
+		for (std::map<std::string, std::vector<CX_DataFrameCell> >::const_iterator it = _data.begin(); it != _data.end(); it++) {
 			if (validColumns.find(it->first) != validColumns.end()) {
 				if (it != _data.begin()) {
 					output << oOpt.cellDelimiter;
@@ -172,10 +184,10 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 				//TODO: Update this to be more sensible/allow configuration.
 				string s;
 				if (it->second[oOpt.rowsToPrint[i]].isVector()) {
-					vector<string> v = it->second[oOpt.rowsToPrint[i]].toVector<string>();
+					std::vector<std::string> v = it->second[oOpt.rowsToPrint[i]].toVector<std::string>();
 					s = oOpt.vectorEncloser + CX::Util::vectorToString(v, oOpt.vectorElementDelimiter) + oOpt.vectorEncloser;
 				} else {
-					s = it->second[oOpt.rowsToPrint[i]].to<string>();
+					s = it->second[oOpt.rowsToPrint[i]].to<std::string>();
 				}
 				output << s;
 			}
@@ -191,22 +203,23 @@ bool CX_DataFrame::printToFile(std::string filename, std::string delimiter, bool
 	return CX::Util::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
 }
 
-/*! Reduced argument version of printToFile(). Prints all rows and the selected columns. */
+/*! Reduced argument version ofprintToFile(). Prints all rows and the selected columns. */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
-/*! Reduced argument version of printToFile(). Prints all columns and the selected rows. */
+/*! Reduced argument version of printToFile(). 
+Prints all columns and the selected rows. */
 bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }
 
-/*! This function is equivalent in behavior to print() except that instead of returning a string containing the
-printed contents of the data frame, the string is printed to a file. If the file exists, it will be overwritten.
-All paramters expect for filename behave in the same way an in print().
+/*! This function is equivalent in behavior to CX::CX_DataFrame::print() except that instead of returning a string containing the
+printed contents of the data frame, the string is printed directly to a file. If the file exists, it will be overwritten.
+All paramters shared with print() are simply passed along to print(), so they have the same behavior.
 \param filename Name of the file to print to. If it is an absolute path, the file will be put there. If it is
 a local path, the file will be placed relative to the data directory of the project.
-\return True for success, false if there was some problem writing to the file (insufficient permissions, etc.) */
+\return `true` for success, `false` if there was some problem writing to the file (insufficient permissions, etc.) */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows,
 							   std::string delimiter, bool printRowNumbers) const
 {
@@ -738,11 +751,19 @@ std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string 
 	return columnNames;
 }
 
-
+/*! For all columns with at least one cell that contains a vector, that column is converted into multiple columns
+with CX_DataFrame::convertVectorColumnToColumns(). The name of the new columns will be the same as the name
+of the original column, plus an index suffix.
+\param startIndex The number at which to being suffixing the multiple columns derived from a vector column.
+This value is used for each vector column (it's not cumuluative for all columns created with this function call, because
+that would be bizarre).
+\param deleteOriginals If `true`, the original vector columns will be deleted once they have been converted into
+multiple columns.
+*/
 void CX_DataFrame::convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals) {
 	std::vector<std::string> originalNames = this->getColumnNames();
 
-	for (std::string originalColumn : originalNames) {
+	for (std::string& originalColumn : originalNames) {
 		if (columnContainsVectors(originalColumn)) {
 			convertVectorColumnToColumns(originalColumn, startIndex, deleteOriginals, originalColumn);
 		}

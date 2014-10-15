@@ -89,7 +89,7 @@ namespace Private {
 
 			bufferSize *= 4;
 			if (bufferSize > 17000) { //Largest possible is 16384 chars.
-				this->log(ofLogLevel::OF_LOG_ERROR, "CX_LoggerChannel", "Could not convert formatted arguments: Resulting message too long.");
+				this->log(ofLogLevel::OF_LOG_ERROR, "CX_LoggerChannel", "Could not convert formatted arguments: Resulting message would have been too long.");
 				break;
 			}
 		}
@@ -131,7 +131,7 @@ CX_Logger::~CX_Logger(void) {
 /*! Log all of the messages stored since the last call to flush() to the
 selected logging targets. This is a blocking operation, because it may take
 quite a while to output all log messages to various targets (see \ref blockingCode).
-This function is not thread-safe: Only call it from the main thread. */
+\note This function is not 100% thread-safe: Only call it from the main thread. */
 void CX_Logger::flush(void) {
 
 	unsigned int messageCount = _messageQueue.size();
@@ -139,6 +139,7 @@ void CX_Logger::flush(void) {
 		return;
 	}
 
+	//Open output files
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == Private::LogTarget::FILE) {
 			_targetInfo[i].file->open(_targetInfo[i].filename, ofFile::Append, false);
@@ -150,16 +151,16 @@ void CX_Logger::flush(void) {
 
 
 	for (unsigned int i = 0; i < messageCount; i++) {
-		Private::CX_LogMessage& m = _messageQueue[i];
+		const Private::CX_LogMessage& m = _messageQueue[i];
 
 		if (_flushCallback) {
 			CX_MessageFlushData dat(m.message->str(), m.level, m.module);
 			_flushCallback(dat);
 		}
 
-		string logName = _getLogLevelName(m.level);
+		std::string logName = _getLogLevelName(m.level);
 		logName.append(max<int>((int)(7 - logName.size()), 0), ' '); //Pad out names to 7 chars
-		string formattedMessage;
+		std::string formattedMessage;
 		if (_logTimestamps) {
 			formattedMessage += m.timestamp + " ";
 		}
@@ -185,23 +186,29 @@ void CX_Logger::flush(void) {
 				}
 			}
 		}
-
-		//delete m.message; //Deallocate message pointer
 	}
 
+	//Close output files
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == Private::LogTarget::FILE) {
 			_targetInfo[i].file->close();
 		}
 	}
 
-	//_messageQueue.clear();
+	//Delete printed messages
 	_messageQueueMutex.lock();
 	_messageQueue.erase(_messageQueue.begin(), _messageQueue.begin() + messageCount);
 	_messageQueueMutex.unlock();
 }
 
-/*! Set the log level for messages to be printed to the console. */
+/*! \brief Clear all stored log messages. */
+void CX_Logger::clear(void) {
+	_messageQueueMutex.lock();
+	_messageQueue.clear();
+	_messageQueueMutex.unlock();
+}
+
+/*! \brief Set the log level for messages to be printed to the console. */
 void CX_Logger::levelForConsole(CX_LogLevel level) {
 	bool consoleFound = false;
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
@@ -319,50 +326,54 @@ void CX_Logger::timestamps(bool logTimestamps, std::string format) {
 	_timestampFormat = format;
 }
 
-/*! This is the basic logging function for this class. Example use:
+/*! This is the fundamental logging function for this class. Example use:
+\code{.cpp}
+Log.log(CX_LogLevel::LOG_WARNING, "moduleName") << "Speical message number: " << 20;
+\endcode
 
-	Log.log(CX_LogLevel::LOG_WARNING, "myModule") << "My message number " << 20;
+Possible output: "[warning] <moduleName> Speical message number: 20"
 
-	Possible output: "[warning] <myModule> My message number 20"
+A newline is inserted automatically at the end of each message.
 
-	\param level Log level for this message. This has implications for message filtering. See level().
-	This should not be LOG_ALL or LOG_NONE, because that would be weird, wouldn't it?
-	\param module Name of the module that this log message is related to. This has implications for message filtering.
-	See level().
-	\return A reference to a std::stringstream that the log message data should be streamed into.
-	\note This function and all of the trivial wrappers of this function (verbose(), notice(), warning(),
-	error(), fatalError()) are thread-safe.
-	*/
+\param level Log level for this message. This has implications for message filtering. See CX::CX_Logger::level().
+This should not be LOG_ALL or LOG_NONE, because that would be weird, wouldn't it?
+\param module Name of the module that this log message is related to. This has implications for message filtering.
+See CX::CX_Logger::level().
+\return A reference to a `std::stringstream` that the log message data should be streamed into.
+\note This function and all of the trivial wrappers of this function (verbose(), notice(), warning(),
+error(), fatalError()) are thread-safe.
+*/
 std::stringstream& CX_Logger::log(CX_LogLevel level, std::string module) {
 	return _log(level, module);
 }
 
-/*! This function is equivalent to a call to log(CX_LogLevel::LOG_VERBOSE, module). */
+/*! \brief Equivalent to `log(CX_LogLevel::LOG_VERBOSE, module)`. */
 std::stringstream& CX_Logger::verbose(std::string module) {
 	return _log(CX_LogLevel::LOG_VERBOSE, module);
 }
 
-/*! This function is equivalent to a call to log(CX_LogLevel::LOG_NOTICE, module). */
+/*! \brief Equivalent to `log(CX_LogLevel::LOG_NOTICE, module)`. */
 std::stringstream& CX_Logger::notice(std::string module) {
 	return _log(CX_LogLevel::LOG_NOTICE, module);
 }
 
-/*! This function is equivalent to a call to log(CX_LogLevel::LOG_WARNING, module). */
+/*! \brief Equivalent to `log(CX_LogLevel::LOG_WARNING, module)`. */
 std::stringstream& CX_Logger::warning(std::string module) {
 	return _log(CX_LogLevel::LOG_WARNING, module);
 }
 
-/*! This function is equivalent to a call to log(CX_LogLevel::LOG_ERROR, module). */
+/*! \brief Equivalent to `log(CX_LogLevel::LOG_ERROR, module)`. */
 std::stringstream& CX_Logger::error(std::string module) {
 	return _log(CX_LogLevel::LOG_ERROR, module);
 }
 
-/*! This function is equivalent to a call to log(CX_LogLevel::LOG_FATAL_ERROR, module). */
+/*! \brief Equivalent to `log(CX_LogLevel::LOG_FATAL_ERROR, module)`. */
 std::stringstream& CX_Logger::fatalError(std::string module) {
 	return _log(CX_LogLevel::LOG_FATAL_ERROR, module);
 }
 
-/*! Set this instance of CX_Logger to be the target of any messages created by oF logging functions. */
+/*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions. 
+This function is called during CX setup for CX::Instances::Log. You do not need to call it yourself. */
 void CX_Logger::captureOFLogMessages(void) {
 	ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
 	ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);

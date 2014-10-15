@@ -184,14 +184,14 @@ vector<unsigned char> CX_Joystick::getButtonStates (void) {
 static const std::string dlm = ", ";
 
 /*! \brief Stream insertion operator for the CX_Joystick::Event struct. */
-std::ostream& CX::operator<< (std::ostream& os, const CX_Joystick::Event& ev) {
+std::ostream& operator<< (std::ostream& os, const CX_Joystick::Event& ev) {
 	os << ev.buttonIndex << dlm << ev.buttonState << dlm << ev.axisIndex << dlm << ev.axisPosition << dlm <<
 		ev.time << dlm << ev.uncertainty << dlm << ev.type;
 	return os;
 }
 
 /*! \brief Stream extraction operator for the CX_Joystick::Event struct. */
-std::istream& CX::operator>> (std::istream& is, CX_Joystick::Event& ev) {
+std::istream& operator>> (std::istream& is, CX_Joystick::Event& ev) {
 	is >> ev.buttonIndex;
 	is.ignore(dlm.size());
 	is >> ev.buttonState;

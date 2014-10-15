@@ -91,7 +91,6 @@ namespace CX {
 		bool _listeningForEvents;
 
 		std::vector<int> _exitChord;
-		void _checkForExitChord(void);
 
 	};
 

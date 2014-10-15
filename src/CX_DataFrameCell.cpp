@@ -88,7 +88,7 @@ template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {
 }
 
 /*! \brief Stream insertion operator for a CX_DataFrameCell. It simply prints the contents of the CX_DataFrameCell in a pretty way. */
-std::ostream& CX::operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
+std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
 	std::string s;
 	if (cell.isVector()) {
 		s = Util::vectorToString(cell.toVector<string>(), "; ");

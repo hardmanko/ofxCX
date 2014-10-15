@@ -3,7 +3,7 @@ Program Model {#programModel}
 
 Program Flow
 ------------
-One of the foundational aspects of CX is the design of the overall program flow, which includes things such as how responses are collected, how stimuli are drawn to the screen, and other similar concepts. The best way to learn about program flow is to examine the \ref examplesAndTutorials "examples". The examples cover most of the critical topics and introduce the major components of CX.
+One of the foundational aspects of CX is the design of the overall program flow, which includes things such as how responses are collected, how stimuli are drawn to the screen, and other similar concepts. The best way to learn about program flow is to look at the examples. The examples cover most of the critical topics and introduce the major components of CX.
 
 The most important thing to understand is that in CX, nothing happens that your code does not explicitly ask for, with the exception of a small amount of setup, which is discussed below (see Pre-experiment Setup). For example, CX does not magically collect and timestamp user responses for you. Your code must poll for user input in order to get timestamps for input. This is explained more in the input section. In CX, there is no code running in the background that makes everything work out for your experiment, you have to design your experiment in such a way that you are covering all of your bases. That said, CX is specifically designed to make doing that as easy and painless as possible, while still giving you as much control over your experiment as is reasonably possible.
 

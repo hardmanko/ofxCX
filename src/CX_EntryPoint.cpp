@@ -17,7 +17,9 @@ void setupCX(void) {
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
+
 	bool openedSucessfully = reopenWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
+
 	if (openedSucessfully) {
 		CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding.
 		//This must happen after the window is configured because it relies on GLFW.
@@ -27,8 +29,8 @@ void setupCX(void) {
 		Clock.precisionTest(100000);
 
 		std::vector<int> defaultExitChord;
-		defaultExitChord.push_back(OF_KEY_RIGHT_CONTROL);
-		defaultExitChord.push_back(OF_KEY_ESC);
+		defaultExitChord.push_back(OF_KEY_RIGHT_ALT);
+		defaultExitChord.push_back(OF_KEY_F4);
 		CX::Instances::Input.Keyboard.setExitChord(defaultExitChord);
 	}
 

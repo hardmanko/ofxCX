@@ -77,7 +77,12 @@ namespace CX {
 
 	/*! This class is used for logging messages throughout the CX backend code. It can also be used
 	in user code to log messages. Rather than instantiating your own copy of CX_Logger, it is probably
-	better to use the preinstantiated \ref CX::Instances::Log.
+	better to use the preinstantiated \ref CX::Instances::Log. 
+	
+	This class is designed to be partially thread safe. It is safe to use any of the message logging 
+	functions (log(), verbose(), notice(), 	warning(), error(), and fatalError()) in multiple threads
+	at once. Other than those functions, the other functions should be called only from one thread 
+	(presumably the main thread).
 
 	There is an example showing a number of the features of CX_Logger named example-logging.
 	\ingroup errorLogging */
@@ -101,7 +106,8 @@ namespace CX {
 
 		CX_LogLevel getModuleLevel(std::string module);
 
-		void flush (void);
+		void flush(void);
+		void clear(void);
 
 		void timestamps(bool logTimestamps, std::string format = "%H:%M:%S.%i");
 

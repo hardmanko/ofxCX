@@ -65,21 +65,23 @@ public:
 			vectorEncloser("\""),
 			vectorElementDelimiter(";")
 		{}
-		std::string cellDelimiter; //!< The delimiter between cells of the data frame when in file format. Defaults to tab.
-		std::string vectorEncloser;
-		std::string vectorElementDelimiter;
+		std::string cellDelimiter; //!< The delimiter between cells of the data frame. Defaults to tab ("\t").
+		std::string vectorEncloser; //!< The string which surrounds a vector of data (i.e. one cell of data, which happens to be a vector). Defaults to double quote ("\"").
+		std::string vectorElementDelimiter; //!< The string which delimits elements of a vector. Defaults to semicolon (";").
 	};
 
+	/*! Options for the format of data that are output from a CX_DataFrame. */
 	struct OutputOptions : public IoOptions {
 		OutputOptions(void) :
 			printRowNumbers(true)
 		{}
 
-		bool printRowNumbers;
-		std::vector<rowIndex_t> rowsToPrint;
-		std::set<std::string> columnsToPrint;
+		bool printRowNumbers; //!< If `true`, a column of row numbers will be printed. The column will be named "rowNumber".
+		std::vector<rowIndex_t> rowsToPrint; //!< The indices of the rows that should be printed. If empty, all rows will be printed.
+		std::set<std::string> columnsToPrint; //!< The names of the columns that should be printed. If empty, all columns will be printed.
 	};
 
+	/*! Options for the format of data that are input to a CX_DataFrame. */
 	struct InputOptions : public IoOptions {};
 
 

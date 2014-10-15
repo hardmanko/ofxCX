@@ -155,7 +155,7 @@ recorder.setSoundBuffer(nullptr); //Make it so that no buffers are associated wi
 Synthesizing Audio
 ------------------
 
-You can synthesize audio in real time, or ahead of time, using the classes in the \ref Synth namespace. See also the modularSynth example.
+You can synthesize audio in real time, or ahead of time, using the classes in the CX::Synth namespace. See also the modularSynth example.
 
 Direct Control of Audio IO
 --------------------------

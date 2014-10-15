@@ -17,9 +17,9 @@ namespace CX {
 
 		/*! The type of the joystick event. */
 		enum EventType {
-			BUTTON_PRESS, //!< A button on the joystick has been pressed. See \ref buttonIndex and \ref buttonState for the event data.
-			BUTTON_RELEASE, //!< A button on the joystick has been released. See \ref buttonIndex and \ref buttonState for the event data.
-			AXIS_POSITION_CHANGE //!< The joystick has been moved in one of its axes. See \ref axisIndex and \ref axisPosition for the event data.
+			BUTTON_PRESS, //!< A button on the joystick has been pressed. See \ref Event::buttonIndex and \ref Event::buttonState for the event data.
+			BUTTON_RELEASE, //!< A button on the joystick has been released. See \ref Event::buttonIndex and \ref Event::buttonState for the event data.
+			AXIS_POSITION_CHANGE //!< The joystick has been moved in one of its axes. See \ref Event::axisIndex and \ref Event::axisPosition for the event data.
 		};
 
 		/*! This struct contains information about joystick events. Joystick events are either a button
