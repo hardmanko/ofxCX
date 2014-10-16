@@ -35,6 +35,10 @@ CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 the same for the same type, but not neccessarily be different for different types.
 \return A string containing the name of the stored type as given by typeid(typename).name(). */
 std::string CX_DataFrameCell::getStoredType(void) const {
+	if (*_ignoreStoredType) {
+		return "Data type ignored (type deleted or unknown).";
+	}
+
 	if (this->isVector()) {
 		return "vector<" + *_type + ">";
 	}
@@ -80,6 +84,8 @@ bool CX_DataFrameCell::isVector(void) const {
 
 /*! Converts the contents of the CX_DataFrame cell to a vector of strings. */
 template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {
+
+	//But why is an empty vector an error? An empty scalar can be thought of as an error, but an empty vector should be fine.
 	if (_data->size() == 0) {
 		CX::Instances::Log.error("CX_DataFrameCell") << "toVector(): No data to extract from cell.";
 	}

@@ -139,7 +139,7 @@ namespace CX {
 		}
 
 		std::string typeName = typeid(T).name();
-		if (*_type != typeName) {
+		if (!(*_ignoreStoredType) && (*_type != typeName)) {
 			CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract data of different type than was inserted:" <<
 				" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << typeName << "\".";
 		}
@@ -161,7 +161,7 @@ namespace CX {
 			CX::Instances::Log.notice("CX_DataFrameCell") << "toVector(): Attempt to extract a vector when the stored data was a scalar. The returned vector will be of length one.";
 		}
 
-		if (*_type != extractedTypeName) {
+		if (!(*_ignoreStoredType) && (*_type != extractedTypeName)) {
 			CX::Instances::Log.warning("CX_DataFrameCell") << "toVector(): Attempt to extract data of different type than was inserted:" <<
 				" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << extractedTypeName << "\".";
 		}

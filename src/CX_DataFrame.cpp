@@ -323,12 +323,12 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 			for (unsigned int i = 0; i < headers.size(); i++) {
 
 				if (isVector[i]) {
-					string s = rowCells[i];
-					string::size_type first = s.find_first_of(iOpt.vectorEncloser);
-					string::size_type last = s.find_last_of(iOpt.vectorEncloser);
+					std::string s = rowCells[i];
+					std::string::size_type first = s.find_first_of(iOpt.vectorEncloser);
+					std::string::size_type last = s.find_last_of(iOpt.vectorEncloser);
 
 					std::vector<std::string> parts;
-					if (first != string::npos && last != string::npos) {
+					if (first != std::string::npos && last != std::string::npos) {
 						s = s.substr(first + iOpt.vectorEncloser.size(), last - first + iOpt.vectorEncloser.size() - 2);
 						parts = ofSplitString(s, iOpt.vectorElementDelimiter, true, true);
 					} else {
