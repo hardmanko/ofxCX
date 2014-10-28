@@ -134,7 +134,7 @@ void generateTrials (int trialCount) {
 	//Make a 3x3 grid of object locations around the center of the screen. This time
 	//we do it in units of degrees of visual angle by using a CX_CoordinateConverter
 	//and a CX_DegreeToPixelConverter.
-	Util::CX_CoordinateConverter cc(Display.getCenterOfDisplay(), false, true); //Set the origin to be at the center of the display
+	Util::CX_CoordinateConverter cc(Display.getCenter(), false, true); //Set the origin to be at the center of the display
 		//and invert the y-axis.
 	Util::CX_DegreeToPixelConverter d2p(35, 60); //Assume 35 pixels per cm on the monitor (this is fairly close to correct 
 		//for many monitors) and viewer sitting 60 cm from screen.
@@ -210,7 +210,7 @@ void generateTrials (int trialCount) {
 void drawFixation (void) {
 	ofBackground( backgroundColor );
 
-	ofPoint centerpoint = Display.getCenterOfDisplay();
+	ofPoint centerpoint = Display.getCenter();
 
 	ofSetColor(ofColor(255));
 	Draw::line(ofPoint(centerpoint.x - 10, centerpoint.y), ofPoint(centerpoint.x + 10, centerpoint.y), 3);

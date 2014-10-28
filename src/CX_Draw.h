@@ -266,8 +266,8 @@ namespace Draw {
 				}
 
 				if (mev.eventType == CX_Mouse::Event::MOVED) {
-					aOff = mev.x - Display.getCenterOfDisplay().x;
-					bOff = mev.y - Display.getCenterOfDisplay().y;
+					aOff = mev.x - Display.getCenter().x;
+					bOff = mev.y - Display.getCenter().y;
 				}
 			}
 
@@ -284,7 +284,7 @@ namespace Draw {
 
 			Display.beginDrawingToBackBuffer();
 			ofBackground(0);
-			Draw::colorWheel(Display.getCenterOfDisplay(), wheelColors, 200, 70, 0);
+			Draw::colorWheel(Display.getCenter(), wheelColors, 200, 70, 0);
 			Display.endDrawingToBackBuffer();
 			Display.swapBuffers();
 			}

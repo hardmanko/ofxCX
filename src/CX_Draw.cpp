@@ -936,5 +936,5 @@ void saveFboToFile(ofFbo& fbo, std::string filename) {
 	ofSaveImage(pix, filename, OF_IMAGE_QUALITY_BEST);
 }
 
-}
-}
+} //namespace Draw
+} //namespace CX

@@ -55,15 +55,21 @@ namespace CX {
 
 		template <typename T> std::vector<T> toVector(void) const;
 		template <typename T> void storeVector(std::vector<T> values);
+		bool isVector(void) const;
 
 		void copyCellTo(CX_DataFrameCell* targetCell) const;
 
 		std::string getStoredType(void) const;
 		void deleteStoredType(void);
 
-		bool isVector(void) const;
+		void clear(void);
+
+		static void setFloatingPointPrecision(unsigned int prec);
+		static unsigned int getFloatingPointPrecision(void);
 
 	private:
+
+		static unsigned int _floatingPointPrecision;
 
 		std::shared_ptr<std::vector<std::string>> _data;
 
@@ -71,13 +77,9 @@ namespace CX {
 		std::shared_ptr<bool> _ignoreStoredType;
 		//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
 
-		unsigned int _getFloatingPointPrecision(void) const {
-			return 16;
-		}
-
 		template <typename T>
 		std::string _toString(const T& value) {
-			return ofToString<T>(value, _getFloatingPointPrecision());
+			return ofToString<T>(value, CX_DataFrameCell::getFloatingPointPrecision());
 		}
 
 		void _allocatePointers(void);
@@ -179,8 +181,6 @@ namespace CX {
 	*/
 	template <typename T>
 	void CX_DataFrameCell::storeVector(std::vector<T> values) {
-		//*_str = _getVectorStartString() + CX::Util::vectorToString(values, _getVectorElementDelimiter(), _getFloatingPointPrecision()) + _getVectorEndString();
-
 		_data->clear();
 		for (unsigned int i = 0; i < values.size(); i++) {
 			_data->push_back(ofToString<T>(values[i]));

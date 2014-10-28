@@ -26,17 +26,17 @@ void CX_Keyboard::enable(bool enable) {
 	}
 }
 
-/*! Returns `true` if the keyboard is enabled. */
+/*! \brief Returns `true` if the keyboard is enabled. */
 bool CX_Keyboard::enabled(void) {
 	return _enabled;
 }
 
-/*! Get the number of new events available for this input device. */
+/*! \brief Get the number of new events available for this input device. */
 int CX_Keyboard::availableEvents(void) const {
 	return _keyEvents.size();
 }
 
-/*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
+/*! Get the next event available for this input device. This is a destructive operation in which the returned event is deleted
 from the input device. */
 CX_Keyboard::Event CX_Keyboard::getNextEvent(void) {
 	CX_Keyboard::Event nextEvent = _keyEvents.front();
@@ -50,6 +50,16 @@ responses made between a call to CX_InputManager::pollEvents() and a subsequent 
 clearEvents() will not be removed by calling clearEvents(). */
 void CX_Keyboard::clearEvents(void) {
 	_keyEvents.clear();
+}
+
+/*! \brief Return a vector containing a copy of the currently stored events. The events stored by
+the input device are unchanged. The first element of the vector is the oldest event. */
+std::vector<CX_Keyboard::Event> CX_Keyboard::copyEvents(void) {
+	std::vector<CX_Keyboard::Event> copy(_keyEvents.size());
+	for (unsigned int i = 0; i < _keyEvents.size(); i++) {
+		copy[i] = _keyEvents.at(i);
+	}
+	return copy;
 }
 
 /*! This function checks to see if the given key is held, which means a keypress has been received, but not a key release.

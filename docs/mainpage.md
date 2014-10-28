@@ -6,7 +6,7 @@ is designed to be used used for creating psychology experiments. OpenFrameworks 
 is a very good programming languange for anything requiring a high degree of timing precision. OpenFrameworks 
 and CX are both free and open source, distributed under the MIT license.
 
-The best place to start with CX is the \ref gettingStarted page. After that, there are a variety of topics to read about.
+The best place to start with CX is the \ref gettingStarted_page page, which includes installation information. After that, there are a variety of topics to read about.
 
 + To learn about presenting visual stimuli, go to the \ref video page or see the `renderingTest` or `animation` examples or the `nBack` or `changeDetection` example experiments.
 + To learn about playing, recording, and synthesizing sounds, go to the \ref audioIO page. See also the \ref sound page, or see the `soundObject` or `modularSynth` examples.
@@ -17,5 +17,3 @@ The best place to start with CX is the \ref gettingStarted page. After that, the
 You can look at the \ref modulesPage page to see the other modules that CX has.
 
 \page modulesPage Modules
-
-

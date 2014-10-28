@@ -32,6 +32,7 @@ CX_DataFrameCell CX_DataFrame::operator() (std::string column, rowIndex_t row) {
 	return _data[column][row];
 }
 
+/*! \brief Behaves just like CX_DataFrame::operator()(std::string, rowIndex_t). */
 CX_DataFrameCell CX_DataFrame::operator() (rowIndex_t row, std::string column) {
 	return this->operator()(column, row);
 }
@@ -58,6 +59,7 @@ CX_DataFrameCell CX_DataFrame::at(std::string column, rowIndex_t row) {
 	return at(row, column);
 }
 
+/*!  */
 CX_DataFrameColumn CX_DataFrame::operator[] (std::string column) {
 	return CX_DataFrameColumn(this, column);
 }
@@ -123,6 +125,7 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 	return print(oOpt);
 }
 
+/*! Prints the contents of the CX_DataFrame to a string with formatting options specified in oOpt. */
 std::string CX_DataFrame::print(OutputOptions oOpt) const {
 
 	if (oOpt.columnsToPrint.empty()) {
@@ -203,7 +206,7 @@ bool CX_DataFrame::printToFile(std::string filename, std::string delimiter, bool
 	return CX::Util::writeToFile(filename, this->print(delimiter, printRowNumbers), false);
 }
 
-/*! Reduced argument version ofprintToFile(). Prints all rows and the selected columns. */
+/*! Reduced argument version of printToFile(). Prints all rows and the selected columns. */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
@@ -237,14 +240,14 @@ void CX_DataFrame::clear (void) {
 }
 
 /*! Reads data from the given file into the data frame. This function assumes that there will be a row of column names as the first row of the file.
-It does not treat consecutive delimiters as a single delimiter.
+
 \param filename The name of the file to read data from. If it is a relative path, the file will be read relative to the data directory.
-\param cellDelimiter A string containing the delimiter between cells of data in the input file.
+\param cellDelimiter A string containing the delimiter between cells of data in the input file. Consecutive delimiters are not treated as a single delimiter.
 \param vectorEncloser A string containing the character(s) that surround cells that contain a vector of data in the input file. By default,
-vectors are enclosed in double quotes (""). This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
+vectors are enclosed in double quotes ("). This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
 if it finds a delimiter within the quotes, it should not split there, but wait until out of the quotes. If vectorEncloser is the empty
 string, this function will not attempt to read in vectors: everything that looks like a vector will just be treated as a string.
-\return False if an error occurred, true otherwise.
+\return `false` if an error occurred, `true` otherwise.
 
 \note The contents of the data frame will be deleted before attempting to read in the file.
 \note If the data is read in from a file written with a row numbers column, that column will be read into the data frame. You can remove it using
@@ -825,12 +828,13 @@ CX_DataFrameCell CX_DataFrameRow::operator[] (std::string column) {
 	}
 }
 
-vector<std::string> CX_DataFrameRow::names(void) {
+
+std::vector<std::string> CX_DataFrameRow::names(void) {
 	if (_df) {
 		return _df->getColumnNames();
 	} else {
 		std::vector<std::string> names;
-		for (map<std::string, CX_DataFrameCell>::iterator it = _data.begin(); it != _data.end(); it++) {
+		for (std::map<std::string, CX_DataFrameCell>::iterator it = _data.begin(); it != _data.end(); it++) {
 			names.push_back(it->first);
 		}
 		return names;
@@ -841,7 +845,7 @@ void CX_DataFrameRow::clear(void) {
 	if (_df) {
 		std::vector<std::string> names = _df->getColumnNames();
 		for (unsigned int i = 0; i < names.size(); i++) {
-			_df->operator()(names[i], _rowNumber) = "";
+			_df->operator()(names[i], _rowNumber).clear();
 		}
 	} else {
 		_data.clear();

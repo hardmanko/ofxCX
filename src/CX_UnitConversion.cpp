@@ -234,7 +234,7 @@ namespace Util {
 	\param origin The location within the standard coordinate system at which the origin (the point at which the x,
 	y, and z values are 0) of the user-defined coordinate system is located.
 	If, for example, you want the center of the display to be the origin within your user-defined coordinate system, 
-	you could use CX_Display::getCenterOfDisplay() as the value for this argument.
+	you could use CX_Display::getCenter() as the value for this argument.
 	\param invertX Invert the x-axis from the default, which is that x increases to the right.
 	\param invertY Invert the y-axis from the default, which is that y increases downward.
 	\param invertZ Invert the z-axis from the default, which is that z increases toward the user
@@ -263,7 +263,7 @@ namespace Util {
 	\param newOrigin The location within the standard coordinate system at which the origin (the point at which the x,
 	y, and z values are 0) of the user-defined coordinate system is located.
 	If, for example, you want the center of the display to be the origin within your user-defined coordinate system, 
-	you could use CX_Display::getCenterOfDisplay() as the value for this argument. */
+	you could use CX_Display::getCenter() as the value for this argument. */
 	void CX_CoordinateConverter::setOrigin(ofPoint newOrigin) {
 		_origin = newOrigin;
 	}
@@ -347,7 +347,7 @@ namespace Util {
 	CX_DegreeToPixelConverter d2p(35, 70);
 
 	//During setup:
-	conv.setOrigin(Display.getCenterOfDisplay());
+	conv.setOrigin(Display.getCenter());
 	conv.setUnitConverter(&d2p); //Use degrees of visual angle as the units of the user coordinate system.
 
 	//Draw a blue circle 2 degrees of visual angle to the left of the origin and 3 degrees above (inverted y-axis) the origin.

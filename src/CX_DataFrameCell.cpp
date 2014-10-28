@@ -2,6 +2,23 @@
 
 namespace CX {
 
+unsigned int CX_DataFrameCell::_floatingPointPrecision = 20;
+
+/*! Set the precision with which floating point numbers (`float`s and `double`s) are stored, in number of significant digits.
+This value will be used for all `CX_DataFrameCell`s. Changing this value after storing data will
+not change the precision of that data. Defaults to 20 significant digits.
+\param prec The number of significant digits.
+\note The fact that floating point values are (potentially) stored with less than full precision is one
+of the reasons that `CX_DataFrame`s should not be used for numerical analysis, just storage.
+*/
+void CX_DataFrameCell::setFloatingPointPrecision(unsigned int prec) {
+	_floatingPointPrecision = prec;
+}
+
+unsigned int CX_DataFrameCell::getFloatingPointPrecision(void) {
+	return _floatingPointPrecision;
+}
+
 CX_DataFrameCell::CX_DataFrameCell(void) {
 	_allocatePointers();
 	*_type = "NULL";
@@ -80,6 +97,12 @@ std::string CX_DataFrameCell::toString(void) const {
 /*! \brief Returns `true` if more than one element is stored in the CX_DataFrameCell. */
 bool CX_DataFrameCell::isVector(void) const {
 	return _data->size() > 1;
+}
+
+/*! \brief Delete the contents of the cell. */
+void CX_DataFrameCell::clear(void) {
+	_data->clear();
+	this->deleteStoredType();
 }
 
 /*! Converts the contents of the CX_DataFrame cell to a vector of strings. */

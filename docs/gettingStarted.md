@@ -30,11 +30,11 @@ Compiler/IDE
 
 You will need a C++ compiler/IDE with support for C++11, because CX uses C++11 features extensively. The openFrameworks [download page](http://openframeworks.cc/download/) lists the officially supported IDEs for the different platforms. However, you can probably make openFrameworks work with other compilers.
 
-For Windows, I primarily use Visual Studio 2012, which is well-supported by openFrameworks. Visual Studio is by far the best C++ IDE of those I have used, but the Professional version of it costs money (unless you are a student, in which it is free through Dreamspark: https://www.dreamspark.com/).
+For Windows, I primarily use Visual Studio 2012, which is well-supported by openFrameworks. Visual Studio is by far the best C++ IDE of those I have used, but the Professional version of it costs money (unless you are a student, in which case it is free through Dreamspark: https://www.dreamspark.com/).
 If you don't want to buy Visual Studio just to try CX, you can use Visual Studio 2012 Express (http://www.microsoft.com/en-us/download/details.aspx?id=34673), which is free but does not have all of the functionality of the full version of Visual Studio.
 If you want something that is not only gratis, but also libre, you can use Code::Blocks (http://www.codeblocks.org/).
 
-If you are using Linux, you can use [Code::Blocks](http://www.codeblocks.org/) or just figure out how to make openFrameworks work without an IDE.
+If you are using Linux, you can use [Code::Blocks](http://www.codeblocks.org/) or just use makefiles with the compiler of your choice.
 
 
 Getting openFrameworks
@@ -113,11 +113,11 @@ There are several examples of how to use CX. The example files can be found in t
 In order to use the examples and tutorials, do everything for creating a new CX project (above) up until step 3. Then, instead of creating a new .cpp file in step 4, copy one of the example .cpp files from the example folders into the `src` directory of a project that uses CX as an addon. 
 
 Some of the examples have data files that they need run. For example, the runderingTest example has a picture of some birds that it uses. 
-If the example has data, in the example directory there will be a directory called `bin` with a directory under it called `data` containing the necessary files. These should be copied to `PROJECT_NAME/bin/data`. The `bin/data` folder in the project directory might not exist at this point. You can create it.
+If the example has data, in the example directory there will be a directory called `bin` with a directory under it called `data` containing the necessary files. These should be copied to `PROJECT_NAME/bin/data`. The `bin/data` folder in the project directory might not exist immediately after creating a new project. You can create it if not.
 
 Tutorials:
 -----------------------
-+ soundBuffer - Tutorial covering a number of things that you can do with CX_SoundObjects, including loading sound 
++ soundBuffer - Tutorial covering a number of things that you can do with CX_SoundBuffers, including loading sound 
 files, combining sounds, and playing them.
 + modularSynth - This tutorial demonstrates a number of ways to generate auditory stimuli using the synthesizer modules in the CX::Synth namespace.
 + dataFrame - Tutorial covering use of CX_DataFrame, which is a container for storing data of various types that is collected in an experiment.
@@ -126,7 +126,7 @@ files, combining sounds, and playing them.
 
 Experiments:
 ------------------------
-+ changeDetection - A very straightforward change-detection task demonstrating some of the features of CX 
++ changeDetection - A very straightforward working memory change-detection task demonstrating some of the features of CX 
 like presentation of time-locked stimuli, keyboard response collection, and use of the CX_RandomNumberGenerator.
 There is also an advanced version of the changeDetection task that shows how to do data storage and output with a CX_DataFrame 
 and how to use a custom coordinate system with visual stimuli so that you don't have to work in pixels.

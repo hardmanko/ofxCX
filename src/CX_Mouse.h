@@ -1,6 +1,6 @@
 #pragma once
 
-#include <queue>
+#include <deque>
 #include <set>
 
 #include "CX_Clock.h"
@@ -59,6 +59,7 @@ namespace CX {
 
 		int availableEvents (void);
 		CX_Mouse::Event getNextEvent (void);
+		std::vector<CX_Mouse::Event> copyEvents(void);
 		void clearEvents (void);
 
 		void showCursor (bool show);
@@ -74,7 +75,7 @@ namespace CX {
 		CX_Millis _lastEventPollTime;
 
 		std::set<int> _heldMouseButtons;
-		std::queue<CX_Mouse::Event> _mouseEvents;
+		std::deque<CX_Mouse::Event> _mouseEvents;
 
 		void _mouseButtonPressedEventHandler (ofMouseEventArgs &a);
 		void _mouseButtonReleasedEventHandler (ofMouseEventArgs &a);

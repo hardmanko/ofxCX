@@ -118,7 +118,7 @@ void drawNextFrameOfAnimation (void) {
 }
 
 ofPoint getCircleLocation(int circleIndex) {
-	return Util::getRelativePointFromDistanceAndAngle(Display.getCenterOfDisplay(), 
+	return Util::getRelativePointFromDistanceAndAngle(Display.getCenter(), 
 													  distancesFromCenter[circleIndex] * distanceMultiplier, 
 													  angles[circleIndex]);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <queue>
+#include <deque>
 #include <set>
 
 #include "CX_Clock.h"
@@ -62,6 +62,7 @@ namespace CX {
 		int availableEvents (void) const;
 		CX_Keyboard::Event getNextEvent (void);
 		void clearEvents (void);
+		std::vector<CX_Keyboard::Event> copyEvents(void);
 
 		bool isKeyHeld(int key) const;
 

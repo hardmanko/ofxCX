@@ -184,7 +184,7 @@ void runExperiment(void) {
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
-	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!\nPress any key to exit.", letterFont);
+	Draw::centeredString(Display.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
 	Display.endDrawingToBackBuffer();
 	Display.swapBuffers();
 
@@ -307,7 +307,7 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 void drawStimulus(string letter, bool showInstructions) {
 	ofBackground(backgroundColor);
 	ofSetColor(textColor);
-	Draw::centeredString(Display.getCenterOfDisplay(), letter, letterFont);
+	Draw::centeredString(Display.getCenter(), letter, letterFont);
 
 	if (showInstructions) {
 		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);
@@ -326,5 +326,5 @@ void drawFixationSlide (int remainingTime) {
 	s << keyReminderInstructions << endl;
 	s << "Starting in " << remainingTime << " seconds";
 
-	Draw::centeredString(Display.getCenterOfDisplay(), s.str(), letterFont);
+	Draw::centeredString(Display.getCenter(), s.str(), letterFont);
 }

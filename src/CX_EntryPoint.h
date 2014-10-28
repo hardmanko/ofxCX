@@ -92,7 +92,7 @@ void runExperiment (void) {
 	//Do your experiment.
 
 	return; //Return when done to exit the program. You don't have to explicity return; you can just fall off the end of the function. 
-		//You can alternately call std::exit() or ofExit() at any point.
+		//You can alternately call std::exit() at any point.
 }
 \endcode
 

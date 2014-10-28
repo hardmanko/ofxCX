@@ -219,15 +219,15 @@ void drawInformation(void) {
 	ofBackground(50);
 	ofSetColor(255);
 
-	ofDrawBitmapString("Low\nfrequency", Display.getCenterOfDisplay() + ofPoint(-300, 0));
-	ofDrawBitmapString("High\nfrequency", Display.getCenterOfDisplay() + ofPoint(300, 0));
-	ofDrawBitmapString("Low\nvolume", Display.getCenterOfDisplay() + ofPoint(-30, 230));
-	ofDrawBitmapString("High\nvolume", Display.getCenterOfDisplay() + ofPoint(-30, -230));
+	ofDrawBitmapString("Low\nfrequency", Display.getCenter() + ofPoint(-300, 0));
+	ofDrawBitmapString("High\nfrequency", Display.getCenter() + ofPoint(300, 0));
+	ofDrawBitmapString("Low\nvolume", Display.getCenter() + ofPoint(-30, 230));
+	ofDrawBitmapString("High\nvolume", Display.getCenter() + ofPoint(-30, -230));
 
 	ofDrawBitmapString("Click to trigger the attack,\nunclick to trigger the release\n\n"
 					   "Move the mouse to change amplitude and frequency.\n\n"
 					   "Press keys to change the waveform.\n"
-					   "Key: Waveform\nt: triangle\nq: square\ni: sine\na: saw\nw: white noise", Display.getCenterOfDisplay() + ofPoint(-150,-50));
+					   "Key: Waveform\nt: triangle\nq: square\ni: sine\na: saw\nw: white noise", Display.getCenter() + ofPoint(-150,-50));
 
 	Display.endDrawingToBackBuffer();
 	Display.swapBuffers();

@@ -248,7 +248,7 @@ example for more examples.
 void drawFixation (void) {
 	ofBackground( backgroundColor );
 
-	ofPoint centerpoint = Display.getCenterOfDisplay();
+	ofPoint centerpoint = Display.getCenter();
 
 	ofSetColor(ofColor(255));
 	Draw::line(ofPoint(centerpoint.x - 10, centerpoint.y), ofPoint(centerpoint.x + 10, centerpoint.y), 3);

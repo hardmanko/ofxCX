@@ -82,7 +82,7 @@ bool CX_Joystick::pollEvents (void) {
 				ev.time = pollTime;
 				ev.uncertainty = ev.time - _lastEventPollTime;
 
-				_joystickEvents.push( ev );
+				_joystickEvents.push_back(ev);
 
 				_axisPositions[i] = axes[i];
 			}
@@ -107,7 +107,7 @@ bool CX_Joystick::pollEvents (void) {
 				ev.time = pollTime;
 				ev.uncertainty = ev.time - _lastEventPollTime;
 
-				_joystickEvents.push( ev );
+				_joystickEvents.push_back( ev );
 
 				_buttonStates[i] = buttons[i];
 			}
@@ -127,11 +127,11 @@ int CX_Joystick::availableEvents (void) {
 	return _joystickEvents.size();
 }
 
-/*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
+/*! Get the next event available for this input device. This is a destructive operation in which the returned event is deleted
 from the input device. */
 CX_Joystick::Event CX_Joystick::getNextEvent (void) {
 	CX_Joystick::Event front = _joystickEvents.front();
-	_joystickEvents.pop();
+	_joystickEvents.pop_front();
 	return front;
 }
 
@@ -140,9 +140,17 @@ CX_Joystick::Event CX_Joystick::getNextEvent (void) {
 responses made between a call to CX_InputManager::pollEvents() and a subsequent call to
 clearEvents() will not be removed by calling clearEvents(). */
 void CX_Joystick::clearEvents (void) {
-	while (!_joystickEvents.empty()) {
-		_joystickEvents.pop();
+	_joystickEvents.clear();
+}
+
+/*! \brief Return a vector containing a copy of the currently stored events. The events stored by
+the input device are unchanged. The first element of the vector is the oldest event. */
+std::vector<CX_Joystick::Event> CX_Joystick::copyEvents(void) {
+	std::vector<CX_Joystick::Event> copy(_joystickEvents.size());
+	for (unsigned int i = 0; i < _joystickEvents.size(); i++) {
+		copy[i] = _joystickEvents.at(i);
 	}
+	return copy;
 }
 
 /*! This function is to be used for direct access to the axis positions of the joystick. It does not 

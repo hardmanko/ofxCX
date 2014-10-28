@@ -1,6 +1,6 @@
 #pragma once
 
-#include <queue>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -48,6 +48,7 @@ namespace CX {
 		int availableEvents (void);
 		CX_Joystick::Event getNextEvent (void);
 		void clearEvents (void);
+		std::vector<CX_Joystick::Event> copyEvents(void);
 
 		std::vector<float> getAxisPositions (void);
 		std::vector<unsigned char> getButtonStates (void);
@@ -56,7 +57,7 @@ namespace CX {
 		int _joystickIndex;
 		std::string _joystickName;
 
-		std::queue<CX_Joystick::Event> _joystickEvents;
+		std::deque<CX_Joystick::Event> _joystickEvents;
 
 		std::vector<float> _axisPositions;
 		std::vector<unsigned char> _buttonStates;

@@ -281,7 +281,7 @@ ofRectangle CX_Display::getResolution (void) {
 }
 
 /*! Returns an ofPoint representing the center of the display. Works in either windowed or full screen mode. */
-ofPoint CX_Display::getCenterOfDisplay (void) {
+ofPoint CX_Display::getCenter (void) {
 	ofPoint rval;
 	rval.x = getResolution().x/2;
 	rval.y = getResolution().y/2;

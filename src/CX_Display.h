@@ -68,7 +68,7 @@ namespace CX {
 		void setWindowResolution(int width, int height);
 		void setWindowTitle(std::string title);
 		ofRectangle getResolution(void);
-		ofPoint getCenterOfDisplay(void);
+		ofPoint getCenter(void);
 
 		void waitForOpenGL(void);
 

@@ -89,7 +89,8 @@ namespace Private {
 
 			bufferSize *= 4;
 			if (bufferSize > 17000) { //Largest possible is 16384 chars.
-				this->log(ofLogLevel::OF_LOG_ERROR, "CX_LoggerChannel", "Could not convert formatted arguments: Resulting message would have been too long.");
+				this->log(ofLogLevel::OF_LOG_ERROR, "CX_LoggerChannel", "Could not convert formatted arguments: "
+						  "Resulting message would have been too long.");
 				break;
 			}
 		}
@@ -144,7 +145,7 @@ void CX_Logger::flush(void) {
 		if (_targetInfo[i].targetType == Private::LogTarget::FILE) {
 			_targetInfo[i].file->open(_targetInfo[i].filename, ofFile::Append, false);
 			if (!_targetInfo[i].file->is_open()) {
-				cerr << "File " << _targetInfo[i].filename << " not opened for logging." << endl;
+				std::cerr << "File " << _targetInfo[i].filename << " not opened for logging." << std::endl;
 			}
 		}
 	}
@@ -171,7 +172,7 @@ void CX_Logger::flush(void) {
 			formattedMessage += "<" + m.module + "> ";
 		}
 
-		*m.message << endl;
+		*m.message << std::endl;
 
 		formattedMessage += m.message->str();
 
@@ -236,7 +237,7 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 		filename = "Log file " + CX::Instances::Clock.getExperimentStartDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
 	}
 	filename = "logfiles/" + filename;
-	filename = ofToDataPath(filename); //Testing
+	filename = ofToDataPath(filename);
 
 	bool fileFound = false;
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
@@ -255,14 +256,14 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 
 		fileTarget.file->open(filename, ofFile::Reference, false);
 		if (fileTarget.file->exists()) {
-			cerr << "Log file already exists with name: " << filename << ". It will be overwritten." << endl;
+			std::cerr << "Log file already exists with name: " << filename << ". It will be overwritten." << std::endl;
 		}
 
 		fileTarget.file->open(filename, ofFile::WriteOnly, false);
 		if (fileTarget.file->is_open()) {
-			cout << "Log file opened" << endl;
+			std::cout << "Log file \"" + filename + "\" opened" << std::endl;
 		}
-		*fileTarget.file << "CX log file. Created " << CX::Instances::Clock.getDateTimeString() << endl;
+		*fileTarget.file << "CX log file. Created " << CX::Instances::Clock.getDateTimeString() << std::endl;
 		fileTarget.file->close();
 
 		_targetInfo.push_back(fileTarget);

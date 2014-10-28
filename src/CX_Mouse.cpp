@@ -30,21 +30,21 @@ void CX_Mouse::enable(bool enable) {
 	}
 }
 
-/*! Returns `true` if the mouse is enabled. */
+/*! \brief Returns `true` if the mouse is enabled. */
 bool CX_Mouse::enabled(void) {
 	return _enabled;
 }
 
-/*! Get the number of new events available for this input device. */
+/*! \brief Get the number of new events available for this input device. */
 int CX_Mouse::availableEvents(void) {
 	return _mouseEvents.size();
 }
 
-/*! Get the next event available for this input device. This is a destructive operation: the returned event is deleted
+/*! Get the next event available for this input device. This is a destructive operation in which the returned event is deleted
 from the input device. */
 CX_Mouse::Event CX_Mouse::getNextEvent(void) {
 	CX_Mouse::Event front = _mouseEvents.front();
-	_mouseEvents.pop();
+	_mouseEvents.pop_front();
 	return front;
 }
 
@@ -53,9 +53,17 @@ CX_Mouse::Event CX_Mouse::getNextEvent(void) {
 responses made between a call to CX_InputManager::pollEvents() and a subsequent call to
 clearEvents() will not be removed by calling clearEvents(). */
 void CX_Mouse::clearEvents(void) {
-	while (!_mouseEvents.empty()) {
-		_mouseEvents.pop();
+	_mouseEvents.clear();
+}
+
+/*! \brief Return a vector containing a copy of the currently stored events. The events stored by
+the input device are unchanged. The first element of the vector is the oldest event. */
+std::vector<CX_Mouse::Event> CX_Mouse::copyEvents(void) {
+	std::vector<CX_Mouse::Event> copy(_mouseEvents.size());
+	for (unsigned int i = 0; i < _mouseEvents.size(); i++) {
+		copy[i] = _mouseEvents.at(i);
 	}
+	return copy;
 }
 
 /*!
@@ -108,16 +116,17 @@ void CX_Mouse::_mouseDraggedEventHandler(ofMouseEventArgs &a) {
 
 void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 	CX_Mouse::Event ev;
-	ev.type = CX_Mouse::SCROLLED;
-
+	
 	ev.time = CX::Instances::Clock.now();
 	ev.uncertainty = ev.time - _lastEventPollTime;
+
+	ev.type = CX_Mouse::SCROLLED;
 
 	ev.button = -1;
 	ev.x = (int)a.x;
 	ev.y = (int)a.y;
 
-	_mouseEvents.push(ev);
+	_mouseEvents.push_back(ev);
 }
 
 void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &a) {
@@ -155,7 +164,7 @@ void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &a) {
 		return;
 	}
 
-	_mouseEvents.push(ev);
+	_mouseEvents.push_back(ev);
 }
 
 void CX_Mouse::_listenForEvents(bool listen) {

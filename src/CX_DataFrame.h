@@ -44,7 +44,7 @@ number. Cells can store many different kinds of data and the data can be inserte
 The standard method of storing data is to use \ref operator(), which dynamically resizes the data frame.
 When an experimental session is complete, the data can be written to a file using printToFile().
 
-See the example dataFrame.cpp for thorough examples of how to use a CX_DataFrame.
+See example-dataFrame for examples of how to use a CX_DataFrame.
 
 Several of the member functions of this class could be blocking if the amount of data in the data frame
 is large enough.
@@ -76,9 +76,9 @@ public:
 			printRowNumbers(true)
 		{}
 
-		bool printRowNumbers; //!< If `true`, a column of row numbers will be printed. The column will be named "rowNumber".
-		std::vector<rowIndex_t> rowsToPrint; //!< The indices of the rows that should be printed. If empty, all rows will be printed.
-		std::set<std::string> columnsToPrint; //!< The names of the columns that should be printed. If empty, all columns will be printed.
+		bool printRowNumbers; //!< If `true`, a column of row numbers will be printed. The column will be named "rowNumber". Defaults to `true`.
+		std::vector<rowIndex_t> rowsToPrint; //!< The indices of the rows that should be printed. If the vector has size 0, all rows will be printed.
+		std::set<std::string> columnsToPrint; //!< The names of the columns that should be printed. If the set has size 0, all columns will be printed.
 	};
 
 	/*! Options for the format of data that are input to a CX_DataFrame. */

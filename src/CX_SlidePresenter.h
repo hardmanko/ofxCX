@@ -24,12 +24,12 @@ namespace CX {
 	slidePresenter.beginDrawingNextSlide(2000, "circle");
 	ofBackground(50);
 	ofSetColor(ofColor::red);
-	ofCircle(Display.getCenterOfDisplay(), 40);
+	ofCircle(Display.getCenter(), 40);
 
 	slidePresenter.beginDrawingNextSlide(1000, "rectangle");
 	ofBackground(50);
 	ofSetColor(ofColor::green);
-	ofRect(Display.getCenterOfDisplay() - ofPoint(100, 100), 200, 200);
+	ofRect(Display.getCenter() - ofPoint(100, 100), 200, 200);
 
 	//The duration of the last slide, as long as it is greater than 0, is ignored.
 	slidePresenter.beginDrawingNextSlide(1, "off");

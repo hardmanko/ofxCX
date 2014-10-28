@@ -85,7 +85,7 @@ void runExperiment (void) {
 		s << keyReminderInstructions << endl;
 		s << "Starting in " << i;
 
-		Draw::centeredString(Display.getCenterOfDisplay(), s.str(), letterFont);
+		Draw::centeredString(Display.getCenter(), s.str(), letterFont);
 	}
 
 	//Now load the first nBack + 1 stimuli into the slide presenter.
@@ -130,7 +130,7 @@ void runExperiment (void) {
 
 	Display.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
-	Draw::centeredString(Display.getCenterOfDisplay(), "Experiment complete!\nPress any key to exit.", letterFont);
+	Draw::centeredString(Display.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
 	Display.endDrawingToBackBuffer();
 	Display.swapBuffers();
 
@@ -229,7 +229,7 @@ void drawStimulusForTrial(unsigned int trial, bool showInstructions) {
 
 	ofBackground(backgroundColor);
 	ofSetColor(textColor);
-	Draw::centeredString(Display.getCenterOfDisplay(), letter, letterFont);
+	Draw::centeredString(Display.getCenter(), letter, letterFont);
 
 	if (showInstructions) {
 		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);

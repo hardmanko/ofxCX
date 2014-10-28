@@ -268,7 +268,7 @@ void drawStuff (void) {
 
 #ifdef CX_RT_USE_TEXTURE
 	//Have a gabor follow the mouse around, pointing toward the center.
-	ofPoint sides = Input.Mouse.getCursorPosition() - Display.getCenterOfDisplay();
+	ofPoint sides = Input.Mouse.getCursorPosition() - Display.getCenter();
 	double theta = atan2(sides.y, sides.x) * 180 / PI;
 
 	Draw::CX_GaborProperties_t prop;
