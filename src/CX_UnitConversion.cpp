@@ -347,7 +347,7 @@ namespace Util {
 	CX_DegreeToPixelConverter d2p(35, 70);
 
 	//During setup:
-	conv.setOrigin(Display.getCenter());
+	conv.setOrigin(Disp.getCenter());
 	conv.setUnitConverter(&d2p); //Use degrees of visual angle as the units of the user coordinate system.
 
 	//Draw a blue circle 2 degrees of visual angle to the left of the origin and 3 degrees above (inverted y-axis) the origin.

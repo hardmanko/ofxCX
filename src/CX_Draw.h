@@ -266,8 +266,8 @@ namespace Draw {
 				}
 
 				if (mev.eventType == CX_Mouse::Event::MOVED) {
-					aOff = mev.x - Display.getCenter().x;
-					bOff = mev.y - Display.getCenter().y;
+					aOff = mev.x - Disp.getCenter().x;
+					bOff = mev.y - Disp.getCenter().y;
 				}
 			}
 
@@ -282,11 +282,11 @@ namespace Draw {
 				wheelColors[i] = Draw::convertToRGB("LAB", L, A, B); //Convert the L, A, and B components to the RGB color space.
 			}
 
-			Display.beginDrawingToBackBuffer();
+			Disp.beginDrawingToBackBuffer();
 			ofBackground(0);
-			Draw::colorWheel(Display.getCenter(), wheelColors, 200, 70, 0);
-			Display.endDrawingToBackBuffer();
-			Display.swapBuffers();
+			Draw::colorWheel(Disp.getCenter(), wheelColors, 200, 70, 0);
+			Disp.endDrawingToBackBuffer();
+			Disp.swapBuffers();
 			}
 		}
 	}

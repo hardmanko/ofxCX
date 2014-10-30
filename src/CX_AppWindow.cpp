@@ -237,21 +237,17 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode, std::function<void(
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);
 
 		if (glVersionMajor >= 4 || (glVersionMajor == 3 && glVersionMinor >= 2)) {
-                //TODO: Reconsider this.
-            #ifdef TARGET_LINUX
-                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //COMPAT profile doesn't work on linux for some reason (nouveau?).
-            #else
-                glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-            #endif
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 		} else {
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
 		}
 
-		if (glVersionMajor >= 3) {
-			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-		} else {
+
+		//if (glVersionMajor >= 3) {
+		//	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+		//} else {
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
-		}
+		//}
 
 
 		#ifdef TARGET_OPENGLES

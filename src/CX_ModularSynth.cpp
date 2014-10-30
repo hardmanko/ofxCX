@@ -9,7 +9,7 @@ double sinc(double x) {
 }
 
 /*! This function returns the frequency that is `semitoneDifference` semitones from `f`.
-\param f The starting frequency. 
+\param f The starting frequency.
 \param semitoneDifference The difference (positive or negative) from `f` to the desired output frequency.
 \return The final frequency. */
 double relativeFrequency(double f, double semitoneDifference) {
@@ -201,18 +201,18 @@ void ModuleBase::_registerParameter(ModuleParameter* p) {
 
 /*! \brief Construct a ModuleParameter with no value. */
 ModuleParameter::ModuleParameter(void) :
-_value(0),
-_updated(true),
+_owner(nullptr),
 _input(nullptr),
-_owner(nullptr)
+_updated(true),
+_value(0)
 {}
 
 /*! \brief Construct a ModuleParameter with the given start value. */
 ModuleParameter::ModuleParameter(double d) :
-_value(d),
-_updated(true),
+_owner(nullptr),
 _input(nullptr),
-_owner(nullptr)
+_updated(true),
+_value(d)
 {}
 
 /*! Update the value of the module parameter. This gets the next sample from the module
@@ -232,7 +232,7 @@ this function was called. This should be called right after updateValue() or wit
 Updates to the value resulting from assignment of a new value with `operator=()` count as updates
 to the value.
 
-If you don't care whether the value has been updated before using it, don't call this function. 
+If you don't care whether the value has been updated before using it, don't call this function.
 Instead, just use updateValue() and getValue().
 
 \param checkForUpdates Check for updates before determining whether the value has been updated.
@@ -396,18 +396,18 @@ std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(Harmo
 	return rval;
 }
 
-/*! This function removes all harmonics that have an amplitude that is less than or equal to a tolerance 
-times the amplitude of the harmonic with the greatest absolute amplitude. 
+/*! This function removes all harmonics that have an amplitude that is less than or equal to a tolerance
+times the amplitude of the harmonic with the greatest absolute amplitude.
 
-The result of this pruning is that the synthesizer will be more computationally efficient but provide a possibly worse 
+The result of this pruning is that the synthesizer will be more computationally efficient but provide a possibly worse
 approximation of the desired waveform.
 
 \param tol `tol` is interpreted differently depending on its value. If `tol` is greater than or equal to 0, it is treated
 as a proportion of the amplitude of the frequency with the greatest amplitude. If `tol` is less than 0, it is treated as
 the difference in decibels between the frequency with the greatest amplitude and the tolerance.
 
-\note Because only harmonics with an amplitude less than or equal to the tolerance times an amplitude are pruned, 
-setting `tol` to 0 will remove harmonics with 0 amplitude, but no others. 
+\note Because only harmonics with an amplitude less than or equal to the tolerance times an amplitude are pruned,
+setting `tol` to 0 will remove harmonics with 0 amplitude, but no others.
 */
 void AdditiveSynth::pruneLowAmplitudeHarmonics(double tol) {
 
@@ -462,12 +462,12 @@ void AdditiveSynth::setStandardHarmonicSeries(unsigned int harmonicCount) {
 }
 
 /*!
-\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE. For HS_MULTIPLE, each 
-harmonic's frequency will be some multiple of the fundamental frequency, depending on the harmonic number and 
+\param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE. For HS_MULTIPLE, each
+harmonic's frequency will be some multiple of the fundamental frequency, depending on the harmonic number and
 controlParameter. For HS_SEMITONE, each harmonic's frequency will be some number of semitones above the previous frequency,
 based on controlParameter (specifying the number of semitones).
-\param controlParameter If `type == HS_MULTIPLE`, the frequency for harmonic `i` will be `i * controlParameter`, where the 
-fundamental gives the value 1 for `i`. If `type == HS_SEMITONE`, the frequency for harmonic `i` will be 
+\param controlParameter If `type == HS_MULTIPLE`, the frequency for harmonic `i` will be `i * controlParameter`, where the
+fundamental gives the value 1 for `i`. If `type == HS_SEMITONE`, the frequency for harmonic `i` will be
 `pow(2, (i - 1) * controlParameter/12)`, where the fundamental gives the value 1 for `i`.
 
 \note If `type == HS_MULTIPLE` and `controlParameter == 1`, then the standard harmonic series will be generated.
@@ -549,8 +549,8 @@ double Clamper::getNextSample(void) {
 
 
 Envelope::Envelope(void) :
-_stage(4),
-gateInput(0.5)
+gateInput(0.5),
+_stage(4)
 {
 	this->_registerParameter(&gateInput);
 	this->_registerParameter(&a);
@@ -568,7 +568,7 @@ double Envelope::getNextSample(void) {
 			this->release();
 		}
 	}
-	
+
 	if (_stage > 3) {
 		return 0;
 	}
@@ -657,13 +657,13 @@ void Envelope::_dataSetEvent(void) {
 ////////////
 
 Filter::Filter(void) :
+cutoff(1000),
+bandwidth(50),
 _filterType(FilterType::LOW_PASS),
 x1(0),
 x2(0),
 y1(0),
-y2(0),
-cutoff(1000),
-bandwidth(50)
+y2(0)
 {
 	this->_registerParameter(&cutoff);
 	this->_registerParameter(&bandwidth);
@@ -751,13 +751,13 @@ void Filter::_recalculateCoefficients(void) {
 
 double Mixer::getNextSample(void) {
 	double d = 0;
-	for (int i = 0; i < _inputs.size(); i++) {
+	for (unsigned int i = 0; i < _inputs.size(); i++) {
 		d += _inputs[i]->getNextSample();
 	}
 	return d;
 }
 
-int Mixer::_maxInputs(void) {
+unsigned int Mixer::_maxInputs(void) {
 	return 32;
 }
 
@@ -891,8 +891,8 @@ void Splitter::_outputAssignedEvent(ModuleBase* out) {
 // SoundBufferInput //
 //////////////////////
 SoundBufferInput::SoundBufferInput(void) :
-	_currentSample(0),
-	_sb(nullptr)
+    _sb(nullptr),
+	_currentSample(0)
 {}
 
 /*! This function sets the CX_SoundBuffer from which data will be drawn. Because the SoundBufferInput is monophonic,
@@ -931,7 +931,7 @@ double SoundBufferInput::getNextSample(void) {
 	return value;
 }
 
-/*! Checks to see if the CX_SoundBuffer that is associated with this SoundBufferInput is able to play. 
+/*! Checks to see if the CX_SoundBuffer that is associated with this SoundBufferInput is able to play.
 It is unable to play if CX_SoundBuffer::isReadyToPlay() is false or if the whole sound has been played.*/
 bool SoundBufferInput::canPlay(void) {
 	return (_sb != nullptr) && (_sb->isReadyToPlay()) && (_currentSample < _sb->getTotalSampleCount());
@@ -951,7 +951,7 @@ void SoundBufferOutput::setup(float sampleRate) {
 	_dataSet(nullptr);
 }
 
-/*! This function samples `t` milliseconds of data at the sample rate given in setup(). 
+/*! This function samples `t` milliseconds of data at the sample rate given in setup().
 The result is stored in the `sb` member of this class. If `sb` is not empty when this function
 is called, the data is appended to `sb`. */
 void SoundBufferOutput::sampleData(CX::CX_Millis t) {
@@ -983,7 +983,7 @@ void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 // StereoSoundBufferOutput //
 /////////////////////////////
 /*! Configure the output to use a particular sample rate. If this function is not called, the sample rate
-of the modular synth may be undefined. 
+of the modular synth may be undefined.
 \param sampleRate The sample rate in Hz. */
 void StereoSoundBufferOutput::setup(float sampleRate) {
 	ModuleControlData_t data;

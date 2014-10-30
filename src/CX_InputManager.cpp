@@ -13,9 +13,9 @@ namespace CX {
 	CX::CX_InputManager CX::Instances::Input = CX::Private::inputManagerFactory();
 
 	CX_InputManager::CX_InputManager(void) :
-		_usingJoystick(false),
 		Keyboard(this),
-		Mouse(this)
+		Mouse(this),
+		_usingJoystick(false)
 	{
 	}
 

@@ -19,17 +19,17 @@ namespace CX {
 
 	\code{.cpp}
 	CX_SlidePresenter slidePresenter;
-	slidePresenter.setup(&Display);
+	slidePresenter.setup(&Disp);
 
 	slidePresenter.beginDrawingNextSlide(2000, "circle");
 	ofBackground(50);
 	ofSetColor(ofColor::red);
-	ofCircle(Display.getCenter(), 40);
+	ofCircle(Disp.getCenter(), 40);
 
 	slidePresenter.beginDrawingNextSlide(1000, "rectangle");
 	ofBackground(50);
 	ofSetColor(ofColor::green);
-	ofRect(Display.getCenter() - ofPoint(100, 100), 200, 200);
+	ofRect(Disp.getCenter() - ofPoint(100, 100), 200, 200);
 
 	//The duration of the last slide, as long as it is greater than 0, is ignored.
 	slidePresenter.beginDrawingNextSlide(1, "off");
@@ -181,7 +181,7 @@ namespace CX {
 
 		/*! Contains information about the presentation timing of the slide. */
 		struct SlideTimingInfo {
-			uint32_t startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by Display.getFrameNumber(). */
+			uint32_t startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by Disp.getFrameNumber(). */
 			uint32_t frameCount; /*!< \brief The number of frames the slide was/should have been presented for. */
 			CX_Millis startTime; /*!< \brief The time at which the slide was/should have been started. Can be compared with values from CX::CX_Clock::now(). */
 			CX_Millis duration; /*!< \brief The amount of time the slide was/should have been presented for. */

@@ -14,12 +14,12 @@ CX_SoundStream::~CX_SoundStream (void) {
 }
 
 /*! Opens the sound stream with the specified configuration. See CX::CX_SoundStream::Configuration for the configuration options.
-If there were errors during configuration, error messages will be logged. If the configuration was successful, the sound stream 
+If there were errors during configuration, error messages will be logged. If the configuration was successful, the sound stream
 will be started automatically.
 \param config The configuration settings that are desired. Some of the configuration options are only suggestions,
 so some of the values that are used may differ from the values that are chosen. In those cases, `config`, which is passed by reference,
 is updated based on the actually used settings. You can alternately check the configuration later using CX::CX_SoundStream::getConfiguration().
-\return `true` if configuration appeared to be successful, `false` otherwise. 
+\return `true` if configuration appeared to be successful, `false` otherwise.
 */
 bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	if (_rtAudio != nullptr) {
@@ -42,7 +42,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 			config.inputDeviceId = _rtAudio->getDefaultInputDevice();
 		}
 		inputParameters.deviceId = config.inputDeviceId;
-		inputParameters.nChannels = config.inputChannels;		
+		inputParameters.nChannels = config.inputChannels;
 	}
 
 	RtAudio::StreamParameters outputParameters;
@@ -63,7 +63,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 
 	int searchDeviceId = (config.outputDeviceId >= 0) ? config.outputDeviceId : config.inputDeviceId;
 
-	for (int i = 0; i < devices.at(searchDeviceId).sampleRates.size(); i++) {
+	for (unsigned int i = 0; i < devices.at(searchDeviceId).sampleRates.size(); i++) {
 		unsigned int thisSampleRate = devices.at(searchDeviceId).sampleRates[i];
 		if (thisSampleRate == config.sampleRate) {
 			closestGreaterSampleRate = numeric_limits<unsigned int>::max();
@@ -88,8 +88,8 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	}
 
 	try {
-		_rtAudio->openStream( 
-			((config.outputChannels > 0) ? &outputParameters : NULL), 
+		_rtAudio->openStream(
+			((config.outputChannels > 0) ? &outputParameters : NULL),
 			((config.inputChannels > 0) ? &inputParameters : NULL),
 			RTAUDIO_FLOAT32,
 			config.sampleRate,
@@ -144,7 +144,7 @@ bool CX_SoundStream::start (void) {
 	return true;
 }
 
-/*! Check whether the sound stream is running. 
+/*! Check whether the sound stream is running.
 \return false if the stream is not setup or not running or if RtAudio has not been initialized. Returns `true` if the stream is running. */
 bool CX_SoundStream::isStreamRunning(void) const {
 	if (_rtAudio == nullptr) {
@@ -160,7 +160,7 @@ bool CX_SoundStream::stop (void) {
 		CX::Instances::Log.error("CX_SoundStream") << "stop: Stream not stopped because instance pointer was NULL. Have you remembered to call setup()?";
 		return false;
 	}
-	
+
 	try {
 		if (_rtAudio->isStreamRunning()) {
     		_rtAudio->stopStream();
@@ -182,7 +182,7 @@ bool CX_SoundStream::closeStream(void) {
 	}
 
 	bool rval = true;
-	
+
 	try {
 		if(_rtAudio->isStreamOpen()) {
     		_rtAudio->closeStream();
@@ -200,7 +200,7 @@ bool CX_SoundStream::closeStream(void) {
 }
 
 /*! This function gets an estimate of the stream latency. However, it should not be relied on as
-it is based on what the sound card driver reports, which is often false. 
+it is based on what the sound card driver reports, which is often false.
 \return The stream latency. */
 CX_Millis CX_SoundStream::getStreamLatency(void) {
 	long latencySamples = _rtAudio->getStreamLatency();
@@ -220,8 +220,8 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 }
 
 /*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::CX_Clock::now(). */
-CX_Millis CX_SoundStream::getLastSwapTime(void) { 
-	return _lastSwapTime; 
+CX_Millis CX_SoundStream::getLastSwapTime(void) {
+	return _lastSwapTime;
 }
 
 /*! Blocks until the next swap of the audio buffers. If the stream is not running, it returns immediately. */
@@ -243,8 +243,8 @@ CX_Millis CX_SoundStream::estimateNextSwapTime(void) {
 	return _lastSwapTime + bufferSwapInterval;
 }
 
-/*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using. 
-This should not be needed most of the time, but there may be cases in which you need to directly 
+/*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using.
+This should not be needed most of the time, but there may be cases in which you need to directly
 access RtAudio. Here is the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
 */
 RtAudio* CX_SoundStream::getRtAudioInstance(void) {
@@ -260,14 +260,14 @@ std::vector<RtAudio::Api> CX_SoundStream::getCompiledApis (void) {
 	return rval;
 }
 
-/*! This helper function converts a vector of RtAudio::Api to a vector of strings, using 
+/*! This helper function converts a vector of RtAudio::Api to a vector of strings, using
 convertApiToString() for the conversion.
 \param apis A vector of apis to convert to strings.
 \return A vector of string names of the apis. */
 std::vector<std::string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) {
 	vector<string> rval;
 
-	for (int i = 0; i < apis.size(); i++) {
+	for (unsigned int i = 0; i < apis.size(); i++) {
 		rval.push_back( convertApiToString(apis.at(i)) );
 	}
 
@@ -301,10 +301,10 @@ std::string CX_SoundStream::convertApiToString (RtAudio::Api api) {
 	return "NULL";
 }
 
-/*! Converts a string name of an RtAudio API to an RtAudio::Api enum constant. 
+/*! Converts a string name of an RtAudio API to an RtAudio::Api enum constant.
 \param apiString The name of the API as a string. Should be one of the following, with no surrounding whitespace:
 UNSPECIFIED, LINUX_ALSA, LINUX_PULSE, LINUX_OSS, UNIX_JACK, MACOSX_CORE, WINDOWS_ASIO, WINDOWS_DS, RTAUDIO_DUMMY
-\return The RtAudio::Api corresponding to the provided string. If the string is not one of the above values, 
+\return The RtAudio::Api corresponding to the provided string. If the string is not one of the above values,
 RtAudio::Api::UNSPECIFIED is returned.
 */
 RtAudio::Api CX_SoundStream::convertStringToApi(std::string apiString) {
@@ -341,7 +341,7 @@ std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std:
 	vector<string> sApis = convertApisToStrings(apis);
 	string rval;
 
-	for (int i = 0; i < sApis.size(); i++) {
+	for (unsigned int i = 0; i < sApis.size(); i++) {
 		rval.append( sApis[i] );
 		if (i < sApis.size() - 1) {
 			rval.append( delim );
@@ -351,15 +351,15 @@ std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std:
 	return rval;
 }
 
-/*! Converts a bitmask of audio formats to a vector of strings. 
+/*! Converts a bitmask of audio formats to a vector of strings.
 \param formats The bitmask of audio formats.
-\return A vector of strings, one string for each bit set in formats for 
+\return A vector of strings, one string for each bit set in formats for
 which there is a corresponding valid audio format that RtAudio supports.
 */
 std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats) {
 	vector<string> rval;
 
-	for (int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
+	for (unsigned int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
 		switch (formats & (1 << i)) {
 		case RTAUDIO_SINT8:
 			rval.push_back( "SINT8" ); break;
@@ -387,7 +387,7 @@ std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats
 std::string CX_SoundStream::formatsToString (RtAudioFormat formats, std::string delim) {
 	vector<string> sFormats = formatsToStrings(formats);
 	string rval;
-	for (int i = 0; i < sFormats.size(); i++) {
+	for (unsigned int i = 0; i < sFormats.size(); i++) {
 		rval.append( sFormats[i] );
 		if (i < sFormats.size() - 1) {
 			rval.append( delim );
@@ -450,15 +450,15 @@ std::string CX_SoundStream::listDevices (RtAudio::Api api) {
 			rval << "Index: " << i << endl;
 			rval << "Name: " << dev.name << endl;
 			rval << "Supported sample rates: ";
-			for (int i = 0; i < dev.sampleRates.size(); i++) {
+			for (unsigned int i = 0; i < dev.sampleRates.size(); i++) {
 				rval << dev.sampleRates.at(i) << "  ";
 			}
 			rval << endl;
 
-			rval << "Is default input/output: " << (dev.isDefaultInput ? "True" : "False") << 
+			rval << "Is default input/output: " << (dev.isDefaultInput ? "True" : "False") <<
 				"/" << (dev.isDefaultOutput ? "True" : "False") << endl;
 
-			rval << "Input/output/duplex channels: " << dev.inputChannels << "/" << 
+			rval << "Input/output/duplex channels: " << dev.inputChannels << "/" <<
 				dev.outputChannels << "/" << dev.duplexChannels << endl;
 
 			rval << "Supported formats: " << formatsToString(dev.nativeFormats, ", ");
@@ -484,7 +484,7 @@ Sample configuration file:
 ss.api = WINDOWS_DS //See convertStringToApi() for valid API names.
 ss.sampleRate = 44100
 ss.bufferSize = 512
-ss.inputChannels = 0 
+ss.inputChannels = 0
 //ss.inputDeviceId //This is not used in this example because no input channels are used. It would take an integer.
 ss.outputChannels = 2
 ss.outputDeviceId = 0 //selects device 0. Can be a negative value, in which case the default output is selected.
@@ -503,14 +503,14 @@ Because this function uses CX::Util::readKeyValueFile() internally, it has the s
 \param filename The name of the file containing configuration data.
 \param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
 \param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
-\param commentString If commentString is not the empty string (i.e. ""), everything on a line 
+\param commentString If commentString is not the empty string (i.e. ""), everything on a line
 following the first instance of commentString will be ignored.
 */
-CX_SoundStream::Configuration CX_SoundStream::readConfigurationFromFile(std::string filename, std::string delimiter, 
-																		bool trimWhitespace, std::string commentString) 
+CX_SoundStream::Configuration CX_SoundStream::readConfigurationFromFile(std::string filename, std::string delimiter,
+																		bool trimWhitespace, std::string commentString)
 {
 	std::map<std::string, std::string> kv = CX::Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
-	
+
 	CX_SoundStream::Configuration ssCon;
 
 	if (kv.find("ss.api") != kv.end()) {
@@ -576,7 +576,7 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 
 	//I don't think that I really need to check for this error. I will check for a while and if it never happens, I might remove the check.
 	if (_config.bufferSize != bufferSize) {
-		CX::Instances::Log.error("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is broken.";	
+		CX::Instances::Log.error("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is broken.";
 	}
 
 	if (_config.inputChannels > 0) {

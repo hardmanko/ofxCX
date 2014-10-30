@@ -95,7 +95,7 @@ int glCompareVersions(CX_GLVersion a, CX_GLVersion b) {
 	} else {
 		if (a.minor > b.minor) {
 			return 1;
-		} else if (a.minor > b.minor) {
+		} else if (a.minor < b.minor) {
 			return -1;
 		} else {
 			if (a.release > b.release) {

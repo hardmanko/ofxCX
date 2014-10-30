@@ -70,7 +70,7 @@ namespace Synth {
 
 		void setData(ModuleControlData_t d);
 		ModuleControlData_t getData(void);
-		
+
 		void disconnectInput(ModuleBase* in);
 		void disconnectOutput(ModuleBase* out);
 
@@ -99,18 +99,18 @@ namespace Synth {
 		//The values returned by these functions directly control how many inputs or outputs a modules can have at once.
 		//If more modules are assigned as input or outputs than are allowed, previously assigned inputs or outputs are
 		//disconnected.
-		virtual int _maxInputs(void) { return 1; }; 
-		virtual int _maxOutputs(void) { return 1; };
+		virtual unsigned int _maxInputs(void) { return 1; };
+		virtual unsigned int _maxOutputs(void) { return 1; };
 
 		//These functions are called whenever an input or output has been assigned to this module.
-		virtual void _inputAssignedEvent(ModuleBase* in) {}; 
+		virtual void _inputAssignedEvent(ModuleBase* in) {};
 		virtual void _outputAssignedEvent(ModuleBase* out) {};
 	};
 
-	/*! This class is used to provide modules with the ability to have their control parameters change as a 
-	function of incoming data from other modules. For example, if you want to change the frequency of an 
-	oscillator, you can feed an LFO into the frequency parameter of the oscillator. 
-	
+	/*! This class is used to provide modules with the ability to have their control parameters change as a
+	function of incoming data from other modules. For example, if you want to change the frequency of an
+	oscillator, you can feed an LFO into the frequency parameter of the oscillator.
+
 	If you create a module that uses a ModuleParameter, you must perform one setup step in the constructor of the
 	module. You must call ModuleBase::_registerParameter() with the ModuleParameter as the argument.
 	\ingroup modSynth
@@ -147,7 +147,7 @@ namespace Synth {
 	void operator>>(ModuleBase& l, ModuleParameter& r);
 
 	/*! This class is an implementation of an additive synthesizer. Additive synthesizers are essentially an
-	inverse fourier transform. You specify at which frequencies you want to have a sine wave and the amplitudes 
+	inverse fourier transform. You specify at which frequencies you want to have a sine wave and the amplitudes
 	of those waves, and they are combined together into a single waveform.
 
 	The frequencies are refered to as harmonics, due to the fact that typical audio applications of additive
@@ -244,7 +244,7 @@ namespace Synth {
 		ModuleParameter amount;
 	};
 
-	/*! This class clamps inputs to be in the interval [`low`, `high`], where `low` and `high` are the members of this class. 
+	/*! This class clamps inputs to be in the interval [`low`, `high`], where `low` and `high` are the members of this class.
 	\ingroup modSynth
 	*/
 	class Clamper : public ModuleBase {
@@ -258,7 +258,7 @@ namespace Synth {
 	};
 
 	/*! This class is a standard ADSR envelope: http://en.wikipedia.org/wiki/Synthesizer#ADSR_envelope.
-	`s` should be in the interval [0,1]. `a`, `d`, and `r` are expressed in seconds. 
+	`s` should be in the interval [0,1]. `a`, `d`, and `r` are expressed in seconds.
 	Call attack() to start the envelope. Once the attack and decay are finished, the envelope will
 	stay at the sustain level until release() is called.
 
@@ -363,7 +363,7 @@ namespace Synth {
 	/*! This class is used within output modules that actually output data. This class serves as
 	an endpoint for data that is then retrieved by the class containing the GenericOutput. See, for
 	example, the StereoStreamOutput class.
-	
+
 	\ingroup modSynth */
 	class GenericOutput : public ModuleBase {
 	public:
@@ -374,7 +374,7 @@ namespace Synth {
 			return _inputs.front()->getNextSample();
 		}
 	private:
-		int _maxOutputs(void) override { return 0; };
+		unsigned int _maxOutputs(void) override { return 0; };
 		void _inputAssignedEvent(ModuleBase* in) override {
 			in->setData(*this->_data);
 		}
@@ -393,7 +393,7 @@ namespace Synth {
 	public:
 		double getNextSample(void) override;
 	private:
-		int _maxInputs(void) override;
+		unsigned int _maxInputs(void) override;
 	};
 
 	/*! This class multiplies an input by an `amount`. You can set the amount in terms of decibels
@@ -445,7 +445,7 @@ namespace Synth {
 
 		void _dataSetEvent(void);
 
-		int _maxInputs(void) override { return 0; };
+		unsigned int _maxInputs(void) override { return 0; };
 	};
 
 	/*! This class splits a signal and sends that signal to multiple outputs. This can be used
@@ -476,10 +476,10 @@ namespace Synth {
 
 	private:
 		void _outputAssignedEvent(ModuleBase* out) override;
-		int _maxOutputs(void) override { return 32; };
+		unsigned int _maxOutputs(void) override { return 32; };
 
 		double _currentSample;
-		int _fedOutputs;
+		unsigned int _fedOutputs;
 	};
 
 	/*! This class allows you to use a CX_SoundBuffer as the input for the modular synth.
@@ -532,7 +532,7 @@ namespace Synth {
 
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
-		int _maxOutputs(void) override { return 0; };
+		unsigned int _maxOutputs(void) override { return 0; };
 		void _inputAssignedEvent(ModuleBase* in) override {
 			in->setData(*this->_data);
 		}
@@ -542,8 +542,8 @@ namespace Synth {
 		void _listenForEvents(bool listen);
 	};
 
-	/*! This class is much like StreamOutput except in stereo. This captures stereo audio by taking the 
-	output of different streams of data into either the `left` or `right` modules that this class has. 
+	/*! This class is much like StreamOutput except in stereo. This captures stereo audio by taking the
+	output of different streams of data into either the `left` or `right` modules that this class has.
 	See the example code for CX::Synth::StereoSoundBufferOutput and CX::Synth::StreamOutput for ideas
 	on how to use this class.
 	\ingroup modSynth
@@ -577,12 +577,12 @@ namespace Synth {
 
 		CX::CX_SoundBuffer sb;
 	private:
-		int _maxOutputs(void) override { return 0; };
+		unsigned int _maxOutputs(void) override { return 0; };
 	};
 
 
 	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer
-	for later use. This captures stereo audio by taking the output of different streams of data into either the 
+	for later use. This captures stereo audio by taking the output of different streams of data into either the
 	`left` or `right` modules that this class has. See the example code.
 
 	\code{.cpp}
@@ -620,12 +620,12 @@ namespace Synth {
 
 		GenericOutput left; //!< The left channel of the buffer.
 		GenericOutput right; //!< The right channel of the buffer.
-	
+
 		CX::CX_SoundBuffer sb;
 	};
 
 
-	/*! This class is used for numerically, rather than auditorily, testing other modules. 
+	/*! This class is used for numerically, rather than auditorily, testing other modules.
 	It produces samples starting at `value` and increasing by `step`. */
 	class TrivialGenerator : public ModuleBase {
 	public:
@@ -639,7 +639,7 @@ namespace Synth {
 	};
 
 
-	/*! This class is a start at implementing a Finite Impulse Response filter (http://en.wikipedia.org/wiki/Finite_impulse_response). 
+	/*! This class is a start at implementing a Finite Impulse Response filter (http://en.wikipedia.org/wiki/Finite_impulse_response).
 	You can use it as a basic low-pass or high-pass	filter, or, if you supply your own coefficients, which cause the
 	filter to do filtering in whatever way you want. See the "signal" package for R for a method of constructing your own coefficients.
 	\ingroup modSynth
@@ -675,7 +675,7 @@ namespace Synth {
 			_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
 		}
 
-		//You can supply your own coefficients. See the fir1 and fir2 functions from the 
+		//You can supply your own coefficients. See the fir1 and fir2 functions from the
 		//"signal" package for R for a good way to design your own filter.
 		void setup(std::vector<double> coefficients) {
 			_filterType = FilterType::FIR_USER_DEFINED;
@@ -763,10 +763,10 @@ namespace Synth {
 
 
 	/* This is a worse version of the Filter class.
-	
+
 	This class emulates an analog RC low-pass filter (http://en.wikipedia.org/wiki/Low-pass_filter#Electronic_low-pass_filters).
 	Setting the breakpoint affects the frequency at which the filter starts to have an effect.
-	\ingroup modSynth 
+	\ingroup modSynth
 	class RCFilter : public ModuleBase {
 	public:
 

@@ -102,7 +102,7 @@ namespace Util {
 	Example use:
 
 	\code{.cpp}
-	CX_CoordinateConverter conv(Display.getCenter(), false, true); //Make the center of the display the origin and invert
+	CX_CoordinateConverter conv(Disp.getCenter(), false, true); //Make the center of the display the origin and invert
 	//the Y-axis. This makes positive x values go to the right and positive y values go up from the center of the display.
 	ofSetColor(255, 0, 0); //Draw a red circle in the center of the display.
 	ofCircle(conv(0, 0), 20);

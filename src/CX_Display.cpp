@@ -5,7 +5,7 @@
 /*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
 is that during CX setup, before reaching user code in runExperiment(), CX_Display::setup() is called.
 \ingroup entryPoint */
-CX::CX_Display CX::Instances::Display;
+CX::CX_Display CX::Instances::Disp;
 
 namespace CX {
 
@@ -27,13 +27,13 @@ CX_Display::~CX_Display (void) {
 
 /*! Set up the display. Must be called for the display to function correctly. */
 void CX_Display::setup (void) {
-	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos 
+	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos
 		//are really verbose when allocated and it is a lot of gibberish.
 
 	_renderer = ofGetGLProgrammableRenderer();
 
-	_swapThread = new Private::CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where 
-		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea 
+	_swapThread = new Private::CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where
+		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea
 		//what too early means) or else there will be a crash.
 
 	estimateFramePeriod( CX_Millis(500) );
@@ -116,7 +116,7 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 /*! Set whether the front and buffers of the display will swap automatically every frame or not.
 You can check to see if a swap has occured by calling hasSwappedSinceLastCheck(). You can
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
-\param autoSwap If true, the front and back buffer will swap automatically every frame. 
+\param autoSwap If true, the front and back buffer will swap automatically every frame.
 \note This function may \ref blockingCode "block" for up to 1 frame to due the requirement that it synchronize with the thread. */
 void CX_Display::setAutomaticSwapping (bool autoSwap) {
 	if (autoSwap) {
@@ -137,16 +137,16 @@ bool CX_Display::isAutomaticallySwapping (void) {
 	return _swapThread->isThreadRunning();
 }
 
-/*! Get the last time at which the front and back buffers were swapped. 
+/*! Get the last time at which the front and back buffers were swapped.
 \return A time value that can be compared with CX::Instances::Clock.now(). */
 CX_Millis CX_Display::getLastSwapTime(void) {
 	return _swapThread->getLastSwapTime();
 }
 
 /*! Get an estimate of the next time the front and back buffers will be swapped.
-This function depends on the precision of the frame period as estimated using 
+This function depends on the precision of the frame period as estimated using
 estimateFramePeriod(). If the front and back buffers are not swapped
-every frame, the result of this function is meaningless because it uses the 
+every frame, the result of this function is meaningless because it uses the
 last buffer swap time as a reference.
 \return A time value that can be compared to CX::Instances::Clock.now(). */
 CX_Millis CX_Display::estimateNextSwapTime(void) {
@@ -185,11 +185,11 @@ void CX_Display::waitForBufferSwap(void) {
 	}
 }
 
-/*! This function returns the number of the last frame presented, as determined by 
-number of front and back buffer swaps. It tracks buffer swaps that result from 
-1) the front and back buffer swapping automatically (as a result of \ref CX_Display::setAutomaticSwapping "setAutomaticSwapping(true)") and 
+/*! This function returns the number of the last frame presented, as determined by
+number of front and back buffer swaps. It tracks buffer swaps that result from
+1) the front and back buffer swapping automatically (as a result of \ref CX_Display::setAutomaticSwapping "setAutomaticSwapping(true)") and
 2) manual swaps resulting from a call to swapBuffers() or swapBuffersInThread().
-\return The number of the last frame. This value can only be compared with other values 
+\return The number of the last frame. This value can only be compared with other values
 returned by this function. */
 uint64_t CX_Display::getFrameNumber (void) {
 	return _swapThread->getFrameNumber() + _manualBufferSwaps;
@@ -198,9 +198,9 @@ uint64_t CX_Display::getFrameNumber (void) {
 /*! Prepares a rendering context for using drawing functions. Must be paired with
 a call to endDrawingToBackBuffer().
 \code{.cpp}
-Display.beginDrawingToBackBuffer();
+Disp.beginDrawingToBackBuffer();
 //Draw stuff...
-Display.endDrawingToBackBuffer();
+Disp.endDrawingToBackBuffer();
 \endcode
 */
 void CX_Display::beginDrawingToBackBuffer (void) {
@@ -218,14 +218,14 @@ void CX_Display::endDrawingToBackBuffer (void) {
 		_renderer->finishRender();
 	}
 	glFlush(); //This is very important, because it seems like commands are buffered in a thread-local fashion initially.
-		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush 
-		//that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush 
-		//here guarantees at least some amount of security that the rendering thread's commands will be executed before 
+		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush
+		//that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush
+		//here guarantees at least some amount of security that the rendering thread's commands will be executed before
 		//the swapping thread queues the swap.
 }
 
 /*! This function queues up a swap of the front and back buffers then
-blocks until the swap occurs. This usually should not be used if 
+blocks until the swap occurs. This usually should not be used if
 `isAutomaticallySwapping() == true`. If it is, a warning will be logged.
 \see \ref blockingCode */
 void CX_Display::swapBuffers (void) {
@@ -241,7 +241,7 @@ void CX_Display::swapBuffers (void) {
 }
 
 /*! This function cues a swap of the front and back buffers. It avoids blocking
-(like swapBuffers()) by spawning a thread in which the 
+(like swapBuffers()) by spawning a thread in which the
 swap is waited for. This does not make it obviously better than swapBuffers(),
 because spawning a thread has a cost and may introduce synchronization problems. Also,
 because this function does not block, in order to know when the buffer swap took place,
@@ -254,7 +254,7 @@ void CX_Display::swapBuffersInThread (void) {
 	_swapThread->swapNFrames(1);
 }
 
-/*! This function blocks until all OpenGL instructions that were given before this was called to complete. 
+/*! This function blocks until all OpenGL instructions that were given before this was called to complete.
 This can be useful if you are trying to determine how long a set of rendering commands takes
 or need to make sure that all rendering is complete before moving on with other tasks.
 \see \ref blockingCode */
@@ -295,7 +295,7 @@ Sets the resolution of the window. Has no effect if called while in full screen 
 */
 void CX_Display::setWindowResolution (int width, int height) {
 	if (width <= 0 || height <= 0) {
-		CX::Instances::Log.error("CX_Display") << "setWindowResolution: width and height must be > 0. Given width == " << 
+		CX::Instances::Log.error("CX_Display") << "setWindowResolution: width and height must be > 0. Given width == " <<
 			width << " and height == " << height << ".";
 		return;
 	}
@@ -335,22 +335,22 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 		swapBuffers();
 		swapTimes.push_back(CX::Instances::Clock.now());
 	}
-	
+
 	if (swapTimes.size() > 1) {
 
 		std::vector<CX_Millis> durations(swapTimes.size() - 1);
-		
+
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			durations[i - 1] = swapTimes[i] - swapTimes[i - 1];
 		}
-		
+
 		_framePeriodStandardDeviation = CX_Millis::standardDeviation(durations);
 		_framePeriod = Util::mean(durations);
-		
+
 	} else {
 		CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occurred during the " << estimationInterval << " ms estimation interval.";
 	}
-	
+
 	setAutomaticSwapping(wasSwapping);
 }
 
@@ -365,10 +365,10 @@ CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
 }
 
 /*! During setup, CX tries to estimate the frame period of the display using CX::CX_Display::estimateFramePeriod().
-However, this does not always work, and the estimated value is wrong. 
+However, this does not always work, and the estimated value is wrong.
 If you know that this is happening, use this function to set the correct frame period. A typical call might be
 \code{.cpp}
-Display.setFramePeriod(CX_Seconds(1.0/60.0));
+Disp.setFramePeriod(CX_Seconds(1.0/60.0));
 \endcode
 to set the frame period for a 60 Hz refresh cycle.
 \param knownPeriod The known refresh period of the monitor.
@@ -378,7 +378,7 @@ void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
 	_framePeriodStandardDeviation = 0;
 }
 
-/*! Set whether the display is full screen or not. If the display is set to full screen, 
+/*! Set whether the display is full screen or not. If the display is set to full screen,
 the resolution may not be the same as the resolution of display in windowed mode, and vice
 versa. */
 void CX_Display::setFullscreen (bool fullscreen) {
@@ -390,7 +390,7 @@ bool CX_Display::isFullscreen(void) {
 	return (CX::Private::appWindow->getWindowMode() == OF_FULLSCREEN);
 }
 
-/*! Sets whether the display is using hardware VSync to control frame presentation. 
+/*! Sets whether the display is using hardware VSync to control frame presentation.
 Without some form of Vsync, vertical tearing may occur.
 \param b If `true`, hardware VSync will be enabled in the video card driver. If `false`, it will be disabled.
 \note This may not work, depending on your video card settings. Modern video card
@@ -398,7 +398,7 @@ drivers allow you to control whether Vsync is used for all applications or not,
 or whether the applications are allowed to choose from themselves whether to use
 Vsync. If your drivers are set to force Vsync to a particular setting, this function
 is unlikely to have an effect. Even when the drivers allow applications to choose
-a Vsync setting, it is still possible that this function will have not have the 
+a Vsync setting, it is still possible that this function will have not have the
 expected effect. OpenGL seems to struggle with VSync.
 \see See \ref framebufferSwapping for information on what VSync is. */
 void CX_Display::useHardwareVSync(bool b) {
@@ -421,7 +421,7 @@ void CX_Display::useSoftwareVSync(bool b) {
 	_swapThread->setGLFinishAfterSwap(b);
 }
 
-/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation. 
+/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation.
 The slowness of the operation is hardware-dependent, with older hardware often being faster at this operation.
 Generally, you should just draw the `ofFbo` directly using its `draw()` function.
 
@@ -435,7 +435,7 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo) {
 	copyFboToBackBuffer(fbo, ofPoint(0, 0));
 }
 
-/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation. 
+/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation.
 The slowness of the operation is hardware-dependent, with older hardware often being faster at this operation.
 Generally, you should just draw the `ofFbo` directly using its `draw()` function.
 
@@ -458,7 +458,7 @@ void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofPoint destination) {
 	_blitFboToBackBuffer(fbo, source, dest);
 }
 
-/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation. 
+/*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation.
 The slowness of the operation is hardware-dependent, with older hardware often being faster at this operation.
 Generally, you should just draw the `ofFbo` directly using its `draw()` function.
 
@@ -472,10 +472,10 @@ is ignored.
 If this function does not provide enough flexibility, you can always draw ofFbo's using the following
 technique, which allows for transparency:
 \code{.cpp}
-Display.beginDrawingToBackBuffer();
+Disp.beginDrawingToBackBuffer();
 ofSetColor( 255 ); //If the color is not set to white, the fbo will be drawn mixed with whatever the current color is.
 fbo.draw( x, y, width, height ); //Replace these variables with the destination location (x,y) and dimensions of the FBO.
-Display.endDrawingToBackBuffer();
+Disp.endDrawingToBackBuffer();
 \endcode
 */
 void CX_Display::copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination) {
@@ -529,7 +529,7 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 }
 
 /*! This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
-are requested in the main thread or in a secondary thread. The tests combine visual inspection and automated 
+are requested in the main thread or in a secondary thread. The tests combine visual inspection and automated
 time measurement. The visual inspection is important because what the computer is told to put on the screen
 and what is actually drawn on the screen are not always the same. It is best to run the tests in full screen
 mode, although that is not enforced. At the end of the tests, the results of the tests are provided to
@@ -538,17 +538,17 @@ are some modes that work better than others for the tested computer.
 
 In the resulting CX_DataFrame, there are three columns that give the test conditions. "thread" indicates
 whether the main thread or a secondary thread was used. "hardVSync" and "softVSync" indicate whether
-hardware or software Vsync were enabled for the test (see useHardwareVSync() and useSoftwareVSync()). 
-Other columns, giving data from the tests, are explained below. Whatever combination of Vsync works 
-best can be set up for use in experiments using useHardwareVSync() and useSoftwareVSync() to set the values. The 
-threading mode is primarily determined by CX_SlidePresenter with the CX::CX_SlidePresenter::Configuration::SwappingMode 
+hardware or software Vsync were enabled for the test (see useHardwareVSync() and useSoftwareVSync()).
+Other columns, giving data from the tests, are explained below. Whatever combination of Vsync works
+best can be set up for use in experiments using useHardwareVSync() and useSoftwareVSync() to set the values. The
+threading mode is primarily determined by CX_SlidePresenter with the CX::CX_SlidePresenter::Configuration::SwappingMode
 setting, although some experiments might want to use threaded swaps directly.
 
 Continuous swapping test
 --------------------------------
 This test examines the case of constantly swapping the front and back buffers. It measures the amount of time
 between swaps, which should always approximately equal the frame period. The data from this test are found
-in columns of the data frame beginning with "cs": "csDurations" gives the raw between-swap durations, and 
+in columns of the data frame beginning with "cs": "csDurations" gives the raw between-swap durations, and
 "csDurationMean" and "csDurationStdDev" give the mean and standard deviation of the durations. If the swapping
 durations are not very consistent, which can be determined by examination or by looking at the standard deviation,
 then there is a problem with the configuration. If the mean duration is different from the monitor's actual
@@ -564,26 +564,26 @@ no swaps being requested. In particular, this function swaps, waits for 2.5 swap
 The idea is that there is a long delay between the first swap (the "long" swap) and the second swap (the "short" swap),
 followed by a standard delay before the third swap (the "normal" swap).
 
-There are graded levels of success in this test. Complete success is when the duration of the first swap is 3P, 
-where P is the standard swap period (i.e. the length of one frame), and the duration of both of the second two swaps is 1P. 
+There are graded levels of success in this test. Complete success is when the duration of the first swap is 3P,
+where P is the standard swap period (i.e. the length of one frame), and the duration of both of the second two swaps is 1P.
 Partial success is if the duration of the long swap is ~2.5P, the duration of the short swap is ~.5P, and the duration
 of the normal swap is 1P. In this case, the short swap at least gets things back on the right track.
 Failure occurs if the short swap duration is ~0P. Mega failure occurs if the normal swap duration is ~0P. In this
 case, it is taking multiple repeated swaps in order to regain vertical synchronization, which is unacceptable behavior.
 
-You can visually check these results. During this test, an attempt is made to draw three bars on the left, 
+You can visually check these results. During this test, an attempt is made to draw three bars on the left,
 middle, and right of the screen. The left bar is drawn for the long duration, the middle bar for the short duration,
 and the right bar for the normal duration.
-Complete success results in all three bars flickering (although you still need to check the timing data). 
+Complete success results in all three bars flickering (although you still need to check the timing data).
 Partial success results in only the left and right bars flickering with the middle bar location flat black.
-For the partial success case, the middle bar is never visible because at the time at which it is swapped in, 
-the screen is in the middle of a refresh cycle. When the next refresh cycle starts, then the middle bar can 
-start to be drawn to the screen. However, before it has a chance to be drawn, the right rectangle is drawn 
+For the partial success case, the middle bar is never visible because at the time at which it is swapped in,
+the screen is in the middle of a refresh cycle. When the next refresh cycle starts, then the middle bar can
+start to be drawn to the screen. However, before it has a chance to be drawn, the right rectangle is drawn
 to the back buffer, overwriting the middle bar (or at least, this is my best explanation for why it isn't visible).
 
 The timing data from the wait swap test can be found in columns of the data frame beginning with "ws". "wsLongMean",
 "wsShortMean", and "wsNormalMean" are the averages of the long, short, and normal swap durations, respectively.
-"wsTotalMean" is the sum of wsLongMean, wsShortMean, and wsNormalMean. But also be sure to check the raw data in 
+"wsTotalMean" is the sum of wsLongMean, wsShortMean, and wsNormalMean. But also be sure to check the raw data in
 "wsDurations", which goes along with the duration type in "wsType".
 
 The wait swap test is not performed for the secondary thread, because the assumption is that if the secondary
@@ -591,7 +591,7 @@ thread is used, in that thread the front and back buffers will be swapped consta
 
 \param desiredTestDuration An approximate amount of time to spend performing all of the tests, so the time if divided among
 all of the tests.
-\param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested. If false, only 
+\param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested. If false, only
 swapping from within the main thread will be tested.
 \return A CX_DataFrame containing timing results from the tests.
 
@@ -637,7 +637,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				//Configure V-Sync for the current test.
 				useHardwareVSync(hardV == 1);
 				useSoftwareVSync(softV == 1);
-		
+
 				std::stringstream ss;
 				ss << "Thread: " << row["thread"].toString() << "\nHardV: " << hardV << "\nSoftV: " << softV;
 				std::string conditionString = ss.str();
@@ -684,7 +684,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				row["csDurationMean"] = Util::mean(durations);
 				row["csDurationStdDev"] = CX_Millis::standardDeviation(durations);
 
-				
+
 				////////////////////
 				// Wait swap test //
 				////////////////////
@@ -706,7 +706,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 					CX_Millis period = Util::mean(durations);
 					while ((CX::Instances::Clock.now() - startTime) < testSegmentDuration) {
 
-						drawWaitSwapScreenData(this, ofColor::black, ofColor::white, 
+						drawWaitSwapScreenData(this, ofColor::black, ofColor::white,
 											   ofRectangle(0, 0, resolution.width / 3, resolution.height),
 											   "Wait swap test\n" + conditionString);
 						swapBuffers();

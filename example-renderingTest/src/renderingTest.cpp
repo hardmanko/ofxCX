@@ -45,8 +45,8 @@ void runExperiment(void) {
 
 	Input.setup(true, true);
 
-	Display.setWindowResolution(800, 600);
-	Display.setWindowTitle("CX Rendering Test");
+	Disp.setWindowResolution(800, 600);
+	Disp.setWindowTitle("CX Rendering Test");
 
 #ifdef CX_RT_USE_FBO
 	//This is the most simple way to use an ofFbo.
@@ -83,7 +83,7 @@ void runExperiment(void) {
 
 	transparency.end(); //Stop drawing to the transparency fbo
 
-	mainFbo.allocate(Display.getResolution().x, Display.getResolution().y, GL_RGBA, CX::Util::getMsaaSampleCount());
+	mainFbo.allocate(Disp.getResolution().x, Disp.getResolution().y, GL_RGBA, CX::Util::getMsaaSampleCount());
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -153,23 +153,23 @@ void updateDrawings (void) {
 		ofClearAlpha();
 		mainFbo.end();
 
-		Display.beginDrawingToBackBuffer();
+		Disp.beginDrawingToBackBuffer();
 		ofSetColor(255);
 		mainFbo.draw(0,0);
-		Display.endDrawingToBackBuffer();
+		Disp.endDrawingToBackBuffer();
 				
-		//Display.copyFboToBackBuffer(mainFbo); //You can use this function to copy directly to the back buffer. However,
+		//Disp.copyFboToBackBuffer(mainFbo); //You can use this function to copy directly to the back buffer. However,
 			//it can be slower (by quite a bit) than drawing the fbo as was done above.
 	} else 
 #endif
 	{
-		Display.beginDrawingToBackBuffer();
+		Disp.beginDrawingToBackBuffer();
 		drawStuff();
 		ofSetColor(255);
 		ofDrawBitmapString("Back buffer", 20, 20);
-		Display.endDrawingToBackBuffer();
+		Disp.endDrawingToBackBuffer();
 	}
-	Display.swapBuffers();
+	Disp.swapBuffers();
 
 }
 
@@ -268,7 +268,7 @@ void drawStuff (void) {
 
 #ifdef CX_RT_USE_TEXTURE
 	//Have a gabor follow the mouse around, pointing toward the center.
-	ofPoint sides = Input.Mouse.getCursorPosition() - Display.getCenter();
+	ofPoint sides = Input.Mouse.getCursorPosition() - Disp.getCenter();
 	double theta = atan2(sides.y, sides.x) * 180 / PI;
 
 	Draw::CX_GaborProperties_t prop;

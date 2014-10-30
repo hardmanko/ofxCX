@@ -49,7 +49,7 @@ ofColor backgroundColor(50);
 void runExperiment (void) {
 	trials = generateTrials(8); //Generate 8 trials (see the definition of generateTrials in this file for how the trials are generated).
 
-	SlidePresenter.setup(&Display); //Associate Display with the SlidePresenter so that the SlidePresenter has something to draw to.
+	SlidePresenter.setup(&Disp); //Associate Disp with the SlidePresenter so that the SlidePresenter has something to draw to.
 
 	Input.setup(true, false); //Use the keyboard for this experiment, but not the mouse.
 
@@ -183,7 +183,7 @@ vector<TrialData_t> generateTrials (int trialCount) {
 	objectColors.push_back(ofColor::purple);
 
 	//Make a 3x3 grid of object locations around the center of the screen.
-	ofPoint screenCenter(Display.getResolution().x / 2, Display.getResolution().y / 2);
+	ofPoint screenCenter(Disp.getResolution().x / 2, Disp.getResolution().y / 2);
 	for (int i = 0; i < 9; i++) {
 		int col = i % 3;
 		int row = i / 3;
@@ -248,7 +248,7 @@ example for more examples.
 void drawFixation (void) {
 	ofBackground( backgroundColor );
 
-	ofPoint centerpoint = Display.getCenter();
+	ofPoint centerpoint = Disp.getCenter();
 
 	ofSetColor(ofColor(255));
 	Draw::line(ofPoint(centerpoint.x - 10, centerpoint.y), ofPoint(centerpoint.x + 10, centerpoint.y), 3);

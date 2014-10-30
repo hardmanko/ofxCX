@@ -9,9 +9,9 @@ namespace CX {
 
 namespace Private {
 	//This should not be used in user code to set the MSAA sample count because if this is set
-	//after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK, 
+	//after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK,
 	//GL_FRONT). Use CX::relaunchWindow() to set the MSAA sample count.
-	void CX::Private::setMsaaSampleCount(unsigned int count) {
+	void setMsaaSampleCount(unsigned int count) {
 		multisamplingSampleCount = count;
 	}
 
@@ -35,7 +35,7 @@ namespace Util {
 			return true;
 		}
 		if (log) {
-			CX::Instances::Log.warning("CX::Util::checkOFVersion") << 
+			CX::Instances::Log.warning("CX::Util::checkOFVersion") <<
 				"openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
 		}
 		return false;
@@ -72,7 +72,7 @@ namespace Util {
 	/*!
 	Rounds the given double to the given power of 10.
 	\param d The number to be rounded.
-	\param roundingPower The power of 10 to round `d` to. For the value 34.56, the results with different rounding powers 
+	\param roundingPower The power of 10 to round `d` to. For the value 34.56, the results with different rounding powers
 	(and `c = ROUND_TO_NEAREST`) are as follows: `RP = 0 -> 35; RP = 1 -> 30; RP = -1 -> 34.6`.
 	\param c The type of rounding to do, from the CX::Util::CX_RoundingConfiguration enum. You can round up, down, to nearest (default), and toward zero.
 	\return The rounded value.

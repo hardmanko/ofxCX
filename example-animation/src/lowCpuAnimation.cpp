@@ -46,8 +46,8 @@ ofPoint getCircleLocation(int circleIndex);
 //This function is the same as in the basic animation example.
 void runExperiment(void) {
 	Input.setup(false, true);
-	Display.setWindowResolution(600, 600);
-	Display.setAutomaticSwapping(true);
+	Disp.setWindowResolution(600, 600);
+	Disp.setAutomaticSwapping(true);
 	while (true) {
 		updateAnimation();
 	}
@@ -61,7 +61,7 @@ void updateAnimation(void) {
 	//Sleeping is effectively telling the operating system "I don't need to do anything for the next N milliseconds,
 	//so give the CPU time I would normally have gotten to some other program." We will just sleep for 1 millisecond,
 	//because we want to regularly check to see if the buffer swap has occured.
-	if (!Display.hasSwappedSinceLastCheck()) {
+	if (!Disp.hasSwappedSinceLastCheck()) {
 		Clock.sleep(1);
 	} else {
 
@@ -93,9 +93,9 @@ void updateAnimation(void) {
 			}
 		}
 
-		Display.beginDrawingToBackBuffer(); 
+		Disp.beginDrawingToBackBuffer(); 
 		drawNextFrameOfAnimation();
-		Display.endDrawingToBackBuffer();
+		Disp.endDrawingToBackBuffer();
 
 
 		//We are now out of the segment of code we want to profile, so we mark time point 2.
@@ -135,7 +135,7 @@ void drawNextFrameOfAnimation(void) {
 }
 
 ofPoint getCircleLocation(int circleIndex) {
-	return Util::getRelativePointFromDistanceAndAngle(Display.getCenter(),
+	return Util::getRelativePointFromDistanceAndAngle(Disp.getCenter(),
 													  distancesFromCenter[circleIndex] * distanceMultiplier,
 													  angles[circleIndex]);
 }

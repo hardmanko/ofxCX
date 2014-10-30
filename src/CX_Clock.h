@@ -17,7 +17,7 @@
 #include "CX_Logger.h"
 #include "CX_Time_t.h"
 
-/*! \defgroup timing Timing 
+/*! \defgroup timing Timing
 This module provides methods for timestamping events in experiments.
 */
 
@@ -76,6 +76,8 @@ namespace CX {
 	*/
 	class CX_BaseClockInterface {
 	public:
+	    virtual ~CX_BaseClockInterface(void) {}
+
 		virtual long long nanos(void) = 0;
 		virtual void resetStartTime(void) = 0;
 		virtual std::string getName(void) {

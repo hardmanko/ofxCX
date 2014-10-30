@@ -132,7 +132,6 @@ bool CX_SoundBufferRecorder::_inputEventHandler(CX_SoundStream::InputEventArgs& 
 
 	unsigned int totalNewSamples = inputData.bufferSize * inputData.inputChannels;
 
-	inputData.inputBuffer;
 	vector<float>& soundData = _buffer->getRawDataReference();
 	unsigned int currentBufferEnd = soundData.size();
 

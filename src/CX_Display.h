@@ -96,8 +96,8 @@ namespace CX {
 
 	};
 
-	namespace Instances {
-		extern CX_Display Display;
+    namespace Instances {
+		extern CX_Display Disp;
 	}
 
 }

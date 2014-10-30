@@ -215,22 +215,22 @@ void runExperiment(void) {
 }
 
 void drawInformation(void) {
-	Display.beginDrawingToBackBuffer();
+	Disp.beginDrawingToBackBuffer();
 	ofBackground(50);
 	ofSetColor(255);
 
-	ofDrawBitmapString("Low\nfrequency", Display.getCenter() + ofPoint(-300, 0));
-	ofDrawBitmapString("High\nfrequency", Display.getCenter() + ofPoint(300, 0));
-	ofDrawBitmapString("Low\nvolume", Display.getCenter() + ofPoint(-30, 230));
-	ofDrawBitmapString("High\nvolume", Display.getCenter() + ofPoint(-30, -230));
+	ofDrawBitmapString("Low\nfrequency", Disp.getCenter() + ofPoint(-300, 0));
+	ofDrawBitmapString("High\nfrequency", Disp.getCenter() + ofPoint(300, 0));
+	ofDrawBitmapString("Low\nvolume", Disp.getCenter() + ofPoint(-30, 230));
+	ofDrawBitmapString("High\nvolume", Disp.getCenter() + ofPoint(-30, -230));
 
 	ofDrawBitmapString("Click to trigger the attack,\nunclick to trigger the release\n\n"
 					   "Move the mouse to change amplitude and frequency.\n\n"
 					   "Press keys to change the waveform.\n"
-					   "Key: Waveform\nt: triangle\nq: square\ni: sine\na: saw\nw: white noise", Display.getCenter() + ofPoint(-150,-50));
+					   "Key: Waveform\nt: triangle\nq: square\ni: sine\na: saw\nw: white noise", Disp.getCenter() + ofPoint(-150,-50));
 
-	Display.endDrawingToBackBuffer();
-	Display.swapBuffers();
+	Disp.endDrawingToBackBuffer();
+	Disp.swapBuffers();
 }
 
 //This function shows a part of how the modules work internally, based on a sample-by-sample model.

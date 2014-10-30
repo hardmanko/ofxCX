@@ -10,11 +10,11 @@ void runExperiment (void) {
 	ofTrueTypeFont font;
 	font.loadFont(OF_TTF_SANS, 20); //Use the system-standard sans-serif font at size 20.
 	
-	//Display is an instance of class CX_Display that is created for you. It is used for drawing on the screen.
+	//Disp is an instance of class CX_Display that is created for you. It is used for drawing on the screen.
 	//Between calls to CX_Display::beginDrawingToBackBuffer and CX_Display::endDrawingToBackBuffer,
 	//any functions that draw something will have the result of the drawing put into the back buffer of the video card.
 	//See Framebuffers and Buffer Swapping in the manual for more information.
-	Display.beginDrawingToBackBuffer();
+	Disp.beginDrawingToBackBuffer();
 
 	ofBackground(0); //Set screen to black.
 
@@ -25,10 +25,10 @@ void runExperiment (void) {
 	font.drawString( "Press any key to exit", 30, 120 ); 
 
 	//Finish drawing to the back buffer, making it ready to be swapped to the front buffer.
-	Display.endDrawingToBackBuffer();
+	Disp.endDrawingToBackBuffer();
 
 	//Swap the front and back buffers, which moves what you drew into the offscreen back buffer into the onscreen front buffer.
-	Display.swapBuffers();
+	Disp.swapBuffers();
 
 	//Wait for any key press before continuing.
 	Input.Keyboard.waitForKeypress(-1);

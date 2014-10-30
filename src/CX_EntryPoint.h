@@ -16,7 +16,7 @@ This namespace contains instances of some classes that are fundamental to the fu
 
 #include "CX_DataFrame.h"
 
-#include "CX_Display.h" //Includes CX::Instances::Display
+#include "CX_Display.h" //Includes CX::Instances::Disp
 #include "CX_Draw.h"
 #include "CX_UnitConversion.h"
 #include "CX_SlidePresenter.h"
@@ -42,7 +42,7 @@ namespace CX {
 			mode(ofWindowMode::OF_WINDOW),
 			width(800),
 			height(600),
-			msaaSampleCount(4), 
+			msaaSampleCount(4),
 			windowTitle("CX Experiment"),
 			preOpeningUserFunction(nullptr)
 		{}
@@ -54,11 +54,11 @@ namespace CX {
 
 		unsigned int msaaSampleCount; //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
 
-		/*! \brief If you want to request a specific renderer, you can provide one here. 
+		/*! \brief If you want to request a specific renderer, you can provide one here.
 		If nothing is provided, a reasonable default is assumed. */
 		ofPtr<ofBaseGLRenderer> desiredRenderer;
 
-		/*! \brief If you want to request a specific OpenGL version, you can provide this value. 
+		/*! \brief If you want to request a specific OpenGL version, you can provide this value.
 		If nothing is provided, the newest OpenGL version available is used. */
 		Private::CX_GLVersion desiredOpenGLVersion;
 
@@ -83,15 +83,15 @@ It also provides declarations (but not definitions) of a function which the user
 (see \ref runExperiment()).
 */
 
-/*! \fn runExperiment 
-The user code should define a function with this name and type signature (takes no arguments and returns nothing). 
+/*! \fn runExperiment
+The user code should define a function with this name and type signature (takes no arguments and returns nothing).
 This function will be called once setup is done for CX. When `runExperiment` returns, the program will exit.
 
 \code{.cpp}
 void runExperiment (void) {
 	//Do your experiment.
 
-	return; //Return when done to exit the program. You don't have to explicity return; you can just fall off the end of the function. 
+	return; //Return when done to exit the program. You don't have to explicity return; you can just fall off the end of the function.
 		//You can alternately call std::exit() at any point.
 }
 \endcode

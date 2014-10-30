@@ -40,10 +40,10 @@ void runExperiment (void) {
 	Input.setup(false, true);
 
 	//The window needs to be about this size in order to fit the circles.
-	Display.setWindowResolution(600, 600);
+	Disp.setWindowResolution(600, 600);
 
 	//See the main comment at the top of this file.
-	Display.setAutomaticSwapping(true);
+	Disp.setAutomaticSwapping(true);
 
 	while (true) {
 		updateAnimation();
@@ -53,13 +53,13 @@ void runExperiment (void) {
 void updateAnimation (void) {
 
 	//See the main comment at the top of this file.
-	if (Display.hasSwappedSinceLastCheck()) {
+	if (Disp.hasSwappedSinceLastCheck()) {
 
-		Display.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.
+		Disp.beginDrawingToBackBuffer(); //Prepare to draw the next frame of the animation.
 
 		drawNextFrameOfAnimation();
 
-		Display.endDrawingToBackBuffer(); //Make sure to call this to end the drawing.
+		Disp.endDrawingToBackBuffer(); //Make sure to call this to end the drawing.
 
 		//Because the front and back buffers are automatically swapping, you don't
 		//need to do anything else here: the new frame will be swapped to the front
@@ -118,7 +118,7 @@ void drawNextFrameOfAnimation (void) {
 }
 
 ofPoint getCircleLocation(int circleIndex) {
-	return Util::getRelativePointFromDistanceAndAngle(Display.getCenter(), 
+	return Util::getRelativePointFromDistanceAndAngle(Disp.getCenter(), 
 													  distancesFromCenter[circleIndex] * distanceMultiplier, 
 													  angles[circleIndex]);
 }

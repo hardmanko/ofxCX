@@ -26,7 +26,7 @@ The way in which you use a drawing function with a CX_SlidePresenter is with the
 function. This function takes three arguments: the drawing function, the duration for which the stimuli
 drawn by that drawing function should be presented, and the name of the slide (optional). When the
 stimuli specified by the drawing function are ready to be presented, the drawing function will be called.
-In the drawing function, you do not need to call Display.beginDrawingToBackBuffer(); the slide presenter
+In the drawing function, you do not need to call Disp.beginDrawingToBackBuffer(); the slide presenter
 does that for you. See drawStimulus() below for an example of what a drawing function might look like.
 
 We can compare the performance of the framebuffer and functor approaches by examining how much time is
@@ -98,16 +98,16 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
-	Display.setFullscreen(false);
-	if (Display.isFullscreen()) {
+	Disp.setFullscreen(false);
+	if (Disp.isFullscreen()) {
 		Clock.sleep(CX_Seconds(1));
 	}
-	Display.useHardwareVSync(true);
+	Disp.useHardwareVSync(true);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
 
-	Log.notice() << "Frame period: " << Display.getFramePeriod() << " (" << Display.getFramePeriodStandardDeviation() << ")";
+	Log.notice() << "Frame period: " << Disp.getFramePeriod() << " (" << Disp.getFramePeriodStandardDeviation() << ")";
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
@@ -121,7 +121,7 @@ void runExperiment(void) {
 	generateTrials(10);
 
 	CX_SlidePresenter::Configuration config;
-	config.display = &Display;
+	config.display = &Disp;
 	config.swappingMode = CX_SlidePresenter::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS;
 	config.finalSlideCallback = &finalSlideFunction;
 	config.deallocateCompletedSlides = useFramebuffersForStimuli; //Only deallocate if using framebuffers
@@ -174,19 +174,19 @@ void runExperiment(void) {
 	}
 	Log.notice() << "Average difference between back buffer copy completion and slide start: " << startMinusCopySum / slides.size();
 	
-	if (Display.isFullscreen()) {
-		Display.setFullscreen(false);
+	if (Disp.isFullscreen()) {
+		Disp.setFullscreen(false);
 	}
 
-	if (Display.isAutomaticallySwapping()) {
-		Display.setAutomaticSwapping(false);
+	if (Disp.isAutomaticallySwapping()) {
+		Disp.setAutomaticSwapping(false);
 	}
 
-	Display.beginDrawingToBackBuffer();
+	Disp.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
-	Draw::centeredString(Display.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
-	Display.endDrawingToBackBuffer();
-	Display.swapBuffers();
+	Draw::centeredString(Disp.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
+	Disp.endDrawingToBackBuffer();
+	Disp.swapBuffers();
 
 	Log.flush();
 
@@ -307,10 +307,10 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 void drawStimulus(string letter, bool showInstructions) {
 	ofBackground(backgroundColor);
 	ofSetColor(textColor);
-	Draw::centeredString(Display.getCenter(), letter, letterFont);
+	Draw::centeredString(Disp.getCenter(), letter, letterFont);
 
 	if (showInstructions) {
-		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);
+		instructionFont.drawString(keyReminderInstructions, 30, Disp.getResolution().y - 30);
 	}
 }
 
@@ -326,5 +326,5 @@ void drawFixationSlide (int remainingTime) {
 	s << keyReminderInstructions << endl;
 	s << "Starting in " << remainingTime << " seconds";
 
-	Draw::centeredString(Display.getCenter(), s.str(), letterFont);
+	Draw::centeredString(Disp.getCenter(), s.str(), letterFont);
 }

@@ -211,7 +211,7 @@ bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>
 	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
-/*! Reduced argument version of printToFile(). 
+/*! Reduced argument version of printToFile().
 Prints all columns and the selected rows. */
 bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
@@ -421,13 +421,13 @@ void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
 
 	//Set up the location at which the new data will be added.
 	rowIndex_t insertedElementIndex = std::min(beforeIndex, this->getRowCount());
-		
+
 	//For each existing column, insert one cell then assign new data to that cell
 	std::vector<std::string> rowNames = row.names();
 	for (auto existingColumn = this->_data.begin(); existingColumn != this->_data.end(); existingColumn++) {
 
-		std::vector<CX_DataFrameCell>::const_iterator insertionIterator = existingColumn->second.end();
-		
+		std::vector<CX_DataFrameCell>::iterator insertionIterator = existingColumn->second.end();
+
 		if (beforeIndex < this->getRowCount()) {
 			insertionIterator = existingColumn->second.begin() + beforeIndex;
 		}
@@ -715,16 +715,16 @@ std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string 
 	rowIndex_t rowCount = this->getRowCount();
 
 	//Copy the data to string vectors.
-	vector<vector<string>> vectors(rowCount); //The original data; stored by row then column
+	std::vector<std::vector<std::string>> vectors(rowCount); //The original data; stored by row then column
 	size_t maxVectorLength = 0;
-	for (int i = 0; i < rowCount; i++) {
-		vectors[i] = this->operator()(i, columnName).toVector<string>();
-		maxVectorLength = max<size_t>(maxVectorLength, vectors[i].size());
+	for (rowIndex_t i = 0; i < rowCount; i++) {
+		vectors[i] = this->operator()(i, columnName).toVector<std::string>();
+		maxVectorLength = std::max<size_t>(maxVectorLength, vectors[i].size());
 	}
 
 	//Create new column names and sort out conflicts.
-	vector<string> columnNames(maxVectorLength);
-	for (int i = 0; i < columnNames.size(); i++) {
+	std::vector<std::string> columnNames(maxVectorLength);
+	for (unsigned int i = 0; i < columnNames.size(); i++) {
 		columnNames[i] = columnName + ofToString(startIndex + i);
 
 		while (columnExists(columnNames[i])) {
@@ -735,10 +735,10 @@ std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string 
 	}
 
 	//Add the new columns and copy over the data
-	for (int i = 0; i < columnNames.size(); i++) {
+	for (unsigned int i = 0; i < columnNames.size(); i++) {
 		this->addColumn(columnNames[i]);
 
-		for (int j = 0; j < rowCount; j++) {
+		for (rowIndex_t j = 0; j < rowCount; j++) {
 			if (vectors[j].size() > i) {
 				this->operator()(j, columnNames[i]) = vectors[j][i];
 			} else {

@@ -148,14 +148,14 @@ void runExperiment (void) {
 
 	Log.flush(); //Check to see if any errors occured during the running of this example.
 
-	Display.setWindowResolution(500, 100);
-	Display.beginDrawingToBackBuffer();
+	Disp.setWindowResolution(500, 100);
+	Disp.beginDrawingToBackBuffer();
 	ofBackground(0);
 	ofSetColor(255);
 	ofDrawBitmapString("Examine the console for various printouts that \ncorrespond to certain parts of the code.\n\n"
 					   "Press any key to exit.", ofPoint(20, 20));
-	Display.endDrawingToBackBuffer();
-	Display.swapBuffers();
+	Disp.endDrawingToBackBuffer();
+	Disp.swapBuffers();
 
 	Input.Keyboard.waitForKeypress(-1);
 }

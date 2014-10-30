@@ -24,7 +24,7 @@ void setupCX(void) {
 		CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding.
 		//This must happen after the window is configured because it relies on GLFW.
 
-		CX::Instances::Display.setup();
+		CX::Instances::Disp.setup();
 
 		Clock.precisionTest(100000);
 
@@ -53,8 +53,8 @@ void reopenWindow080(CX_WindowConfiguration_t config) {
 void reopenWindow084(CX_WindowConfiguration_t config) {
 
 	//////////////////////
-	//Note that this section of code is a nasty hack that is only done because of a bug in openFrameworks. 
-	//They are working on the bug, but in the mean time, I want to work around the bug to use new features of 
+	//Note that this section of code is a nasty hack that is only done because of a bug in openFrameworks.
+	//They are working on the bug, but in the mean time, I want to work around the bug to use new features of
 	//openFrameworks. The bug is that the pointer passed to ofSetupOpenGL is treated as an ofAppGLFWWindow
 	//regardless of whether it is one or not. Because CX_AppWindow is not ofAppGLFWWindow (although it's very close)
 	//passing a pointer to a CX_AppWindow results in, AFAIK, undefined behavior (and we don't want that, do we?).

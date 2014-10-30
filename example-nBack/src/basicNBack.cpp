@@ -57,7 +57,7 @@ void runExperiment (void) {
 
 	//Configure the SlidePresenter:
 	CX_SlidePresenter::Configuration config;
-	config.display = &Display; //Set the SlidePresenter to use Display for the display.
+	config.display = &Disp; //Set the SlidePresenter to use Disp for the display.
 
 	//Set a function that you want to be called every time the SlidePresenter has started to present the last
 	//slide you put in. In your function, you can add more slides to the SlidePresenter. Every time it reaches 
@@ -85,7 +85,7 @@ void runExperiment (void) {
 		s << keyReminderInstructions << endl;
 		s << "Starting in " << i;
 
-		Draw::centeredString(Display.getCenter(), s.str(), letterFont);
+		Draw::centeredString(Disp.getCenter(), s.str(), letterFont);
 	}
 
 	//Now load the first nBack + 1 stimuli into the slide presenter.
@@ -120,19 +120,19 @@ void runExperiment (void) {
 	//Calling this function can give us a lot of information about the last presentation of slides.
 	Log.notice() << "Slide presentation information: " << endl << SlidePresenter.printLastPresentationInformation();
 
-	if (Display.isFullscreen()) {
-		Display.setFullscreen(false);
+	if (Disp.isFullscreen()) {
+		Disp.setFullscreen(false);
 	}
 
-	if (Display.isAutomaticallySwapping()) {
-		Display.setAutomaticSwapping(false);
+	if (Disp.isAutomaticallySwapping()) {
+		Disp.setAutomaticSwapping(false);
 	}
 
-	Display.beginDrawingToBackBuffer();
+	Disp.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
-	Draw::centeredString(Display.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
-	Display.endDrawingToBackBuffer();
-	Display.swapBuffers();
+	Draw::centeredString(Disp.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
+	Disp.endDrawingToBackBuffer();
+	Disp.swapBuffers();
 
 	Log.flush(); //For this experiment, this is probably the best time to flush the logs, but it is hard to say. 
 		//You could do it in each interstimulus blank, but there is more potential for timing problems there.
@@ -229,9 +229,9 @@ void drawStimulusForTrial(unsigned int trial, bool showInstructions) {
 
 	ofBackground(backgroundColor);
 	ofSetColor(textColor);
-	Draw::centeredString(Display.getCenter(), letter, letterFont);
+	Draw::centeredString(Disp.getCenter(), letter, letterFont);
 
 	if (showInstructions) {
-		instructionFont.drawString(keyReminderInstructions, 30, Display.getResolution().y - 30);
+		instructionFont.drawString(keyReminderInstructions, 30, Disp.getResolution().y - 30);
 	}
 }

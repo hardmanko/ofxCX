@@ -287,7 +287,7 @@ struct rectFunctor {
 
 void runExperiment(void) {
 
-	SlidePresenter.setup(&Display);
+	SlidePresenter.setup(&Disp);
 
 
 	//Here we use the functor. We set up the values for position and color and then give the functor to `appendSlideFunction()`.
