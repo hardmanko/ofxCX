@@ -40,7 +40,8 @@ void runExperiment (void) {
 
 	SlidePresenter.setup(&Disp);
 
-	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
+	Log.notice() << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit.";
+	Log.flush();
 
 	for (trialIndex = 0; trialIndex < trialDf.getRowCount(); trialIndex++) {
 		drawStimuli();
@@ -52,7 +53,8 @@ void runExperiment (void) {
 
 	trialDf.printToFile("change detection data.txt"); //This is all you have to do to output the data from the data frame. 
 		//Compare to the data output function from the basicChangeDetectionTask example.
-	cout << "Experiment complete: exiting..." << endl;
+	Log.notice() << "Experiment complete: exiting...";
+	Log.flush();
 	ofSleepMillis(3000);
 }
 

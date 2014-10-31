@@ -140,7 +140,7 @@ namespace CX {
 				finalSlideCallback(nullptr),
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
 				deallocateCompletedSlides(false),
-				swappingMode(CX_SlidePresenter::SwappingMode::MULTI_CORE),
+				swappingMode(CX_SlidePresenter::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS),
 				preSwapCPUHoggingDuration(2),
 				useFenceSync(true),
 				waitUntilFenceSyncComplete(false)

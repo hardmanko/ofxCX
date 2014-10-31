@@ -33,8 +33,6 @@ Known issues
 ------------
 This is beta software, don't expect it to be bug-free. Please report any issues you have in the issue tracker.
 
-There is a silly naming incompatibility on Linux, where an X11 header defines a symbol called Display. CX has a symbol called `CX::Instances::Display` that is used in all of the examples without the namespace qualifiers. As a result, the examples won't compile without aliasing the CX `Display` or adding the `Instances::` namespace qualifier. Aliasing is easily done with `CX_Display& Disp = CX::Instances::Display;` at the top of the examples and then renaming the CX `Display` in the examples to `Disp`. I'll probably cave in and rename the display instance.
-
 Version history
 ------------
 There has not yet been a versioned release of CX.

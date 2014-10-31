@@ -27,7 +27,7 @@ bool CX_SlidePresenter::setup(CX_Display *display) {
 */
 bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	if (config.display == nullptr) {
-		CX::Instances::Log.error("CX_SlidePresenter") << "setup: display is a null pointer. Did you forget to set it to point to a CX_Display?";
+		CX::Instances::Log.error("CX_SlidePresenter") << "setup(): display is a null pointer. Did you forget to set it to point to a CX_Display?";
 		return false;
 	}
 
@@ -512,15 +512,18 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 		s << endl;
 
 		s << "Duration:   \t" << slide.intended.duration << ", " << slide.actual.duration << endl;
-		s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << endl;
 
-		s << "Frame count:\t" << slide.intended.frameCount << ", " << slide.actual.frameCount;
-		if (slide.intended.frameCount != slide.actual.frameCount) {
-			if (i != (_slides.size() - 1)) {
-				s << "***"; //Mark the error, but not for the last slide
+		if (_config.swappingMode == CX_SlidePresenter::SwappingMode::MULTI_CORE) {
+			s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << endl;
+
+			s << "Frame count:\t" << slide.intended.frameCount << ", " << slide.actual.frameCount;
+			if (slide.intended.frameCount != slide.actual.frameCount) {
+				if (i != (_slides.size() - 1)) {
+					s << "***"; //Mark the error, but not for the last slide
+				}
 			}
+			s << endl;
 		}
-		s << endl;
 
 		s << "Copy to back buffer complete time: " << slide.copyToBackBufferCompleteTime;
 		if (slide.copyToBackBufferCompleteTime > slide.actual.startTime) {
@@ -580,6 +583,9 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 			//because if new slides are added, this has to happen for them.
 			if ((_currentSlide + 1) < _slides.size()) {
 				_prepareNextSlide();
+
+				//If the current slide started early, use the intended start time so as to avoid creeping start times.
+				currentSlideOnset = std::max(currentSlideOnset, _slides.at(_currentSlide).intended.startTime);
 
 				_hoggingStartTime = currentSlideOnset + _slides.at(_currentSlide).intended.duration - _config.preSwapCPUHoggingDuration;
 
@@ -646,6 +652,9 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 				//because if new slides are added, this has to happen for them.
 				if ((_currentSlide + 1) < _slides.size()) {
 					_prepareNextSlide();
+
+					//If the current slide started early, use the intended start time so as to avoid creeping start times.
+					currentSlideOnset = std::max(currentSlideOnset, _slides.at(_currentSlide).intended.startTime);
 
 					_hoggingStartTime = currentSlideOnset + _slides.at(_currentSlide).intended.duration - _config.preSwapCPUHoggingDuration;
 					CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_currentSlide + 1) << " hogging start time: " << _hoggingStartTime;

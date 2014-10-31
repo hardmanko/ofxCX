@@ -53,7 +53,8 @@ void runExperiment (void) {
 
 	Input.setup(true, false); //Use the keyboard for this experiment, but not the mouse.
 
-	cout << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit." << endl;
+	Log.notice() << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit.";
+	Log.flush();
 
 	//trialIndex is a global variable
 	for (trialIndex = 0; trialIndex < trials.size(); trialIndex++) {
@@ -68,7 +69,8 @@ void runExperiment (void) {
 
 	outputData();
 
-	cout << "Experiment complete: exiting..." << endl;
+	Log.notice() << "Experiment complete: exiting...";
+	Log.flush();
 	ofSleepMillis(3000);
 
 }
