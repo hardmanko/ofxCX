@@ -1,6 +1,6 @@
 #pragma once
 
-/*! \namespace CX
+/* \namespace CX
 This namespace contains all of the symbols related to CX, except for \ref `runExperiment()`, which is not namespace qualified.
 */
 

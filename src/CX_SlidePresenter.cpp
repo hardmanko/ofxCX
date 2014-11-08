@@ -584,12 +584,10 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 			if ((_currentSlide + 1) < _slides.size()) {
 				_prepareNextSlide();
 
-				//If the current slide started early, use the intended start time so as to avoid creeping start times.
-				currentSlideOnset = std::max(currentSlideOnset, _slides.at(_currentSlide).intended.startTime);
-
-				_hoggingStartTime = currentSlideOnset + _slides.at(_currentSlide).intended.duration - _config.preSwapCPUHoggingDuration;
-
 				_currentSlide++;
+				_hoggingStartTime = _slides.at(_currentSlide).intended.startTime - _config.preSwapCPUHoggingDuration;
+				CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " hogging start time: " << _hoggingStartTime;
+
 				_renderCurrentSlide(); //render the next slide. You can do this because you know the buffers will not swap automatically
 			}
 		}
@@ -653,13 +651,10 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 				if ((_currentSlide + 1) < _slides.size()) {
 					_prepareNextSlide();
 
-					//If the current slide started early, use the intended start time so as to avoid creeping start times.
-					currentSlideOnset = std::max(currentSlideOnset, _slides.at(_currentSlide).intended.startTime);
-
-					_hoggingStartTime = currentSlideOnset + _slides.at(_currentSlide).intended.duration - _config.preSwapCPUHoggingDuration;
-					CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_currentSlide + 1) << " hogging start time: " << _hoggingStartTime;
-
 					_currentSlide++;
+					_hoggingStartTime = _slides.at(_currentSlide).intended.startTime - _config.preSwapCPUHoggingDuration;
+					CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " hogging start time: " << _hoggingStartTime;
+
 					_renderCurrentSlide(); //render the next slide. You can do this because you know the buffers will not swap automatically
 				}
 			}
