@@ -103,8 +103,8 @@ namespace Private {
 
 
 CX_Logger::CX_Logger(void) :
-	_logTimestamps(false),
 	_flushCallback(nullptr),
+	_logTimestamps(false),
 	_timestampFormat("%H:%M:%S"),
 	_defaultLogLevel(CX_LogLevel::LOG_NOTICE)
 {
@@ -373,7 +373,7 @@ std::stringstream& CX_Logger::fatalError(std::string module) {
 	return _log(CX_LogLevel::LOG_FATAL_ERROR, module);
 }
 
-/*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions. 
+/*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions.
 This function is called during CX setup for CX::Instances::Log. You do not need to call it yourself. */
 void CX_Logger::captureOFLogMessages(void) {
 	ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));

@@ -3,15 +3,16 @@
 namespace CX {
 
 CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
-	_playing(false),
-	_playbackStartQueued(false),
-	_buffer(nullptr),
-	_playbackStartSampleFrame(std::numeric_limits<uint64_t>::max()),
-	_currentSampleFrame(0),
 	_soundStream(nullptr),
 	_soundStreamSelfAllocated(false),
 	_listeningForEvents(false),
-	_withinOutputEvent(false)
+	_buffer(nullptr),
+	_withinOutputEvent(false),
+	_playing(false),
+	_playbackStartQueued(false),
+	_playbackStartSampleFrame(std::numeric_limits<uint64_t>::max()),
+	_currentSampleFrame(0),
+	_soundPlaybackSampleFrame(0)
 {}
 
 CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {

@@ -7,7 +7,7 @@ namespace Util {
 	if you want to align to pixel boundaries. However, if you are antialiasing your stimuli you
 	might want to use floating point values to get precise subpixel rendering.
 	\param degrees Number of degrees.
-	\param pixelsPerUnit The number of pixels per distance unit on the target monitor. You can pick any unit of 
+	\param pixelsPerUnit The number of pixels per distance unit on the target monitor. You can pick any unit of
 	distance, as long as `viewingDistance` has the same unit.
 	\param viewingDistance The distance of the viewer from the monitor, with the same distance unit as `pixelsPerUnit`.
 	\return The number of pixels needed. */
@@ -59,7 +59,7 @@ namespace Util {
 	they are running. This function takes the file name of a specially constructed configuration file and reads the
 	key-value pairs in that file in order to configure the CX_DegreeToPixelConverter. The format of the file is
 	provided in the example code below.
-	
+
 	Sample configuration file:
 	\code
 	D2PC.pixelsPerUnit = 35
@@ -224,8 +224,8 @@ namespace Util {
 	setAxisInversion(), setOrigin(), setMultiplier(), and/or setUnitConverter(). */
 	CX_CoordinateConverter::CX_CoordinateConverter(void) :
 		_origin(ofPoint(0,0)),
-		_conv(nullptr),
-		_multiplier(1.0)
+		_multiplier(1.0),
+		_conv(nullptr)
 	{
 		setAxisInversion(false, false, false);
 	}
@@ -233,22 +233,22 @@ namespace Util {
 	/*! Constructs a CX_CoordinateConverter with the given settings.
 	\param origin The location within the standard coordinate system at which the origin (the point at which the x,
 	y, and z values are 0) of the user-defined coordinate system is located.
-	If, for example, you want the center of the display to be the origin within your user-defined coordinate system, 
+	If, for example, you want the center of the display to be the origin within your user-defined coordinate system,
 	you could use CX_Display::getCenter() as the value for this argument.
 	\param invertX Invert the x-axis from the default, which is that x increases to the right.
 	\param invertY Invert the y-axis from the default, which is that y increases downward.
 	\param invertZ Invert the z-axis from the default, which is that z increases toward the user
-	(i.e. pointing out of the front of the screen). The other way of saying this is that smaller 
+	(i.e. pointing out of the front of the screen). The other way of saying this is that smaller
 	(increasingly negative) values are farther away. */
 	CX_CoordinateConverter::CX_CoordinateConverter(ofPoint origin, bool invertX, bool invertY, bool invertZ) :
 		_origin(origin),
-		_conv(nullptr),
-		_multiplier(1.0)
+		_multiplier(1.0),
+		_conv(nullptr)
 	{
 		setAxisInversion(invertX, invertY, invertZ);
 	}
 
-	/*! Sets whether each axis within the user-defined system is inverted from the standard coordinate system. 
+	/*! Sets whether each axis within the user-defined system is inverted from the standard coordinate system.
 	\param invertX Invert the x-axis from the default, which is that x increases to the right.
 	\param invertY Invert the y-axis from the default, which is that y increases downward.
 	\param invertZ Invert the z-axis from the default, which is that z increases toward the viewer
@@ -262,7 +262,7 @@ namespace Util {
 	of the user-defined coordinate system is located.
 	\param newOrigin The location within the standard coordinate system at which the origin (the point at which the x,
 	y, and z values are 0) of the user-defined coordinate system is located.
-	If, for example, you want the center of the display to be the origin within your user-defined coordinate system, 
+	If, for example, you want the center of the display to be the origin within your user-defined coordinate system,
 	you could use CX_Display::getCenter() as the value for this argument. */
 	void CX_CoordinateConverter::setOrigin(ofPoint newOrigin) {
 		_origin = newOrigin;
@@ -270,7 +270,7 @@ namespace Util {
 
 	/*! This function sets the amount by which user coordinates are multiplied
 	before they are converted to standard coordinates. This allows you to easily
-	scale stimuli, assuming that the CX_CoordinateConverter is used throughout. 
+	scale stimuli, assuming that the CX_CoordinateConverter is used throughout.
 	If it has not been set, the multiplier is 1 by default.
 	\param multiplier The amount to multiply user coordinates by.
 	*/
@@ -280,7 +280,7 @@ namespace Util {
 
 	/*! The primary method of conversion between coordinate systems. You supply a point in
 	user coordinates and get in return a point in standard coordinates.
-		
+
 	Example use:
 
 	\code{.cpp}
@@ -336,7 +336,7 @@ namespace Util {
 
 	/*! Sets the unit converter that will be used when converting the coordinate system.
 	In this way you can convert both the coordinate system in use and the units used by
-	the coordinate system in one step. See CX_DegreeToPixelConverter and 
+	the coordinate system in one step. See CX_DegreeToPixelConverter and
 	CX_LengthToPixelConverter for examples of the converters that can be used.
 
 	Example use:
@@ -351,7 +351,7 @@ namespace Util {
 	conv.setUnitConverter(&d2p); //Use degrees of visual angle as the units of the user coordinate system.
 
 	//Draw a blue circle 2 degrees of visual angle to the left of the origin and 3 degrees above (inverted y-axis) the origin.
-	ofSetColor(0, 0, 255); 
+	ofSetColor(0, 0, 255);
 	ofCircle(conv(-2, 3), 20);
 	\endcode
 

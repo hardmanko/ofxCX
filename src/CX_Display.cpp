@@ -10,9 +10,9 @@ CX::CX_Display CX::Instances::Disp;
 namespace CX {
 
 CX_Display::CX_Display (void) :
+    _swapThread(nullptr),
 	_framePeriod(0),
 	_framePeriodStandardDeviation(0),
-	_swapThread(nullptr),
 	_manualBufferSwaps(0),
 	_frameNumberOnLastSwapCheck(0),
 	_softVSyncWithGLFinish(false)
@@ -507,20 +507,16 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 		break;
 	case OF_ORIENTATION_180:
 		std::swap(sx0, sx1);
-		//std::swap(sy0, sy1);
 		break;
 	case OF_ORIENTATION_90_LEFT:
-		//std::swap(y0, y1);
-		//break;
 	case OF_ORIENTATION_90_RIGHT:
-		//std::swap(y0, y1);
-		CX::Instances::Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
+    case OF_ORIENTATION_UNKNOWN:
+        CX::Instances::Log.error("CX_Display") << "drawFboToBackBuffer: FBO copy attempted while the orientation was in an unsupported mode."
 			" Supported orientations are OF_ORIENTATION_DEFAULT and OF_ORIENTATION_180.";
 		break;
 	}
 
 	glDrawBuffer(GL_BACK);
-	//glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo.getFbo());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); //GL_BACK

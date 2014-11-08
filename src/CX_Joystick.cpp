@@ -5,8 +5,8 @@
 namespace CX {
 
 CX_Joystick::CX_Joystick (void) :
-	_joystickName("NULL"),
-	_joystickIndex(-1)
+    _joystickIndex(-1),
+	_joystickName("unnamed")
 {
 }
 
@@ -44,7 +44,7 @@ bool CX_Joystick::setup (int joystickIndex) {
 	return false;
 }
 
-/*! Get the name of the joystick, presumably as set by the joystick driver. 
+/*! Get the name of the joystick, presumably as set by the joystick driver.
 The name may not be very meaningful. */
 std::string CX_Joystick::getJoystickName (void) {
 	return _joystickName;
@@ -70,8 +70,8 @@ bool CX_Joystick::pollEvents (void) {
 
 	CX_Millis pollTime = CX::Instances::Clock.now();
 
-	if (axisCount == _axisPositions.size()) {
-		for (unsigned int i = 0; i < axisCount; i++) {
+	if ((unsigned int)axisCount == _axisPositions.size()) {
+		for (unsigned int i = 0; i < (unsigned int)axisCount; i++) {
 			if (_axisPositions[i] != axes[i]) {
 				CX_Joystick::Event ev;
 
@@ -88,9 +88,9 @@ bool CX_Joystick::pollEvents (void) {
 			}
 		}
 	}
-	
-	if (buttonCount == _buttonStates.size()) {
-		for (unsigned int i = 0; i < buttonCount; i++) {
+
+	if ((unsigned int)buttonCount == _buttonStates.size()) {
+		for (unsigned int i = 0; i < (unsigned int)buttonCount; i++) {
 			if (_buttonStates[i] != buttons[i]) {
 				CX_Joystick::Event ev;
 
@@ -135,7 +135,7 @@ CX_Joystick::Event CX_Joystick::getNextEvent (void) {
 	return front;
 }
 
-/*! Clear (delete) all events from this input device. 
+/*! Clear (delete) all events from this input device.
 \note This function only clears already existing events from the device, which means that
 responses made between a call to CX_InputManager::pollEvents() and a subsequent call to
 clearEvents() will not be removed by calling clearEvents(). */
@@ -153,8 +153,8 @@ std::vector<CX_Joystick::Event> CX_Joystick::copyEvents(void) {
 	return copy;
 }
 
-/*! This function is to be used for direct access to the axis positions of the joystick. It does not 
-generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and 
+/*! This function is to be used for direct access to the axis positions of the joystick. It does not
+generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and
 uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
 vector<float> CX_Joystick::getAxisPositions (void) {
 	vector<float> pos;
@@ -171,8 +171,8 @@ vector<float> CX_Joystick::getAxisPositions (void) {
 	return pos;
 }
 
-/*! This function is to be used for direct access to the button states of the joystick. It does not 
-generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and 
+/*! This function is to be used for direct access to the button states of the joystick. It does not
+generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and
 uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
 vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	vector<unsigned char> but;

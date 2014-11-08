@@ -1,6 +1,6 @@
 #pragma once
 
-/*! \defgroup sound Sound 
+/*! \defgroup sound Sound
 There are a few different ways to deal with sounds in CX. The thing that most people want to do is to
 play sounds, which is done with the CX_SoundBufferPlayer. See the soundBuffer tutorial for information
 on how to do that.
@@ -22,7 +22,7 @@ Finally, if you want to have direct control of the data going to and from a soun
 
 namespace CX  {
 
-	
+
 	/*!
 	This class is used for playing CX_SoundBuffers. See the soundBuffer tutorial for an example of how to use this class.
 
@@ -47,10 +47,10 @@ namespace CX  {
 		bool isPlaying (void) const { return _playing; };
 
 		//! Check if the sound is queued to play.
-		bool isQueuedToStart(void) const { return _playbackStartQueued; }; 
+		bool isQueuedToStart(void) const { return _playbackStartQueued; };
 
 		Configuration getConfiguration(void);
-		
+
 		bool setSoundBuffer (CX_SoundBuffer *sound);
 		CX_SoundBuffer* getSoundBuffer(void);
 
@@ -79,7 +79,7 @@ namespace CX  {
 		bool _playbackStartQueued;
 		uint64_t _playbackStartSampleFrame;
 		uint64_t _currentSampleFrame; //This is an absolute: It is never reset. At a sample rate of 48000 Hz, this will overflow every 12186300 years.
-		uint64_t _soundPlaybackSampleFrame;	
+		uint64_t _soundPlaybackSampleFrame;	//This is relative to the current playback of the current sound buffer.
 	};
 
 }
