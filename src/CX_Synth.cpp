@@ -1,4 +1,4 @@
-#include "CX_ModularSynth.h"
+#include "CX_Synth.h"
 
 namespace CX {
 namespace Synth {
@@ -295,15 +295,15 @@ double AdditiveSynth::getNextSample(void) {
 	double rval = 0;
 
 	for (unsigned int i = 0; i < _harmonics.size(); i++) {
-		_harmonics[i].waveformPosition += _harmonics[i].positionChangePerSample;
-		if (_harmonics[i].waveformPosition >= 1) {
-			_harmonics[i].waveformPosition = fmod(_harmonics[i].waveformPosition, 1);
-		}
+		double waveformPos = _harmonics[i].waveformPosition + _harmonics[i].positionChangePerSample;
 
-		rval += Oscillator::sine(_harmonics[i].waveformPosition) * _harmonics[i].amplitude;
+		waveformPos = fmod(waveformPos, 1);
+
+		rval += Oscillator::sine(waveformPos) * _harmonics[i].amplitude;
+		_harmonics[i].waveformPosition = waveformPos;
 	}
-	return rval;
 
+	return rval;
 }
 
 /*! This sets the fundamental frequency being used by the AdditiveSynth. All harmonics are adjusted
@@ -316,10 +316,10 @@ void AdditiveSynth::setFundamentalFrequency(double f) {
 
 /*! This function sets the amplitudes of the harmonics based on the chosen type. The resulting waveform
 will only be correct if the harmonic series is the standard harmonic series (see setStandardHarmonicSeries()).
-\param type The type of wave calculate amplitudes for.
+\param a The type of wave calculate amplitudes for.
 */
-void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType type) {
-	vector<AdditiveSynth::amplitude_t> amps = calculateAmplitudes(type, _harmonics.size());
+void AdditiveSynth::setAmplitudes(AmplitudePresets a) {
+	vector<AdditiveSynth::amplitude_t> amps = calculateAmplitudes(a, _harmonics.size());
 
 	for (unsigned int i = 0; i < _harmonics.size(); i++) {
 		_harmonics[i].amplitude = amps[i];
@@ -329,10 +329,13 @@ void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType type) {
 /*! This function sets the amplitudes of the harmonics based on a mixture of the chosen types. The resulting waveform
 will only be correct if the harmonic series is the standard harmonic series (see setStandardHarmonicSeries()).
 This is a convenient way to morph between waveforms.
+\param a1 The first preset.
+\param a2 The second present.
+\param mixture Should be in the interval [0,1]. The proportion of `a1` that will be used, with the remainder (`1 - mixture`) used from `a2`.
 */
-void AdditiveSynth::setAmplitudes(HarmonicAmplitudeType t1, HarmonicAmplitudeType t2, double mixture) {
-	vector<AdditiveSynth::amplitude_t> amps1 = calculateAmplitudes(t1, _harmonics.size());
-	vector<AdditiveSynth::amplitude_t> amps2 = calculateAmplitudes(t2, _harmonics.size());
+void AdditiveSynth::setAmplitudes(AmplitudePresets a1, AmplitudePresets a2, double mixture) {
+	vector<AdditiveSynth::amplitude_t> amps1 = calculateAmplitudes(a1, _harmonics.size());
+	vector<AdditiveSynth::amplitude_t> amps2 = calculateAmplitudes(a2, _harmonics.size());
 
 	mixture = CX::Util::clamp<double>(mixture, 0, 1);
 
@@ -357,21 +360,21 @@ void AdditiveSynth::setAmplitudes(std::vector<amplitude_t> amps) {
 
 /*! This is a specialty function that only works when the standard harmonic series is being used. If so,
 it calculates the amplitudes needed for the hamonics so as to produce the specified waveform type.
-\param type The type of waveform that should be output from the additive synth.
+\param a The type of waveform that should be output from the additive synth.
 \param count The number of harmonics.
 \return A vector of amplitudes.
 */
-std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(HarmonicAmplitudeType type, unsigned int count) {
+std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(AmplitudePresets a, unsigned int count) {
 	std::vector<amplitude_t> rval(count, 0.0);
 
-	if (type == AdditiveSynth::HarmonicAmplitudeType::SAW) {
+	if (a == AmplitudePresets::SAW) {
 		for (unsigned int i = 0; i < count; i++) {
 			rval[i] = 2 / (PI * (i + 1));
 			if ((i % 2) == 1) { //Is even-numbered harmonic
 				rval[i] *= -1;
 			}
 		}
-	} else if (type == AdditiveSynth::HarmonicAmplitudeType::SQUARE) {
+	} else if (a == AmplitudePresets::SQUARE) {
 		for (unsigned int i = 0; i < count; i++) {
 			if ((i % 2) == 0) { //Is odd-numbered harmonic
 				//rval[i] = 2 / (PI * (i + 1));
@@ -379,7 +382,7 @@ std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(Harmo
 			}
 			//Do nothing for even harmonics: they remain at 0.
 		}
-	} else if (type == AdditiveSynth::HarmonicAmplitudeType::TRIANGLE) {
+	} else if (a == AmplitudePresets::TRIANGLE) {
 		for (unsigned int i = 0; i < count; i++) {
 			if ((i % 2) == 0) { //Is odd-numbered harmonic
 				rval[i] = 8 / ((PI * PI) * pow(i + 1, 2));
@@ -389,7 +392,7 @@ std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(Harmo
 			}
 			//Do nothing for even harmonics: they remain at 0.
 		}
-	} else if (type == AdditiveSynth::HarmonicAmplitudeType::SINE) {
+	} else if (a == AmplitudePresets::SINE) {
 		rval[0] = 1;
 	}
 
@@ -397,14 +400,13 @@ std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(Harmo
 }
 
 /*! This function removes all harmonics that have an amplitude that is less than or equal to a tolerance
-times the amplitude of the harmonic with the greatest absolute amplitude.
-
-The result of this pruning is that the synthesizer will be more computationally efficient but provide a possibly worse
-approximation of the desired waveform.
+times the amplitude of the harmonic with the greatest absolute amplitude. The result of this pruning is that 
+the synthesizer will be more computationally efficient but provide a less precise approximation of the desired 
+waveform.
 
 \param tol `tol` is interpreted differently depending on its value. If `tol` is greater than or equal to 0, it is treated
 as a proportion of the amplitude of the frequency with the greatest amplitude. If `tol` is less than 0, it is treated as
-the difference in decibels between the frequency with the greatest amplitude and the tolerance.
+the difference in decibels between the frequency with the greatest amplitude and the tolerance cutoff point.
 
 \note Because only harmonics with an amplitude less than or equal to the tolerance times an amplitude are pruned,
 setting `tol` to 0 will remove harmonics with 0 amplitude, but no others.
@@ -432,33 +434,12 @@ void AdditiveSynth::pruneLowAmplitudeHarmonics(double tol) {
 	}
 }
 
-
-void AdditiveSynth::_recalculateWaveformPositions(void) {
-
-	//generalWaveData.baseFrequency = fundamental;
-
-	wavePos_t firstHarmonicPos = _harmonics[0].waveformPosition;
-
-	double normalizedFrequency = _fundamental / _data->sampleRate;
-
-	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
-		_harmonics[i].positionChangePerSample = normalizedFrequency * _relativeFrequenciesOfHarmonics[i];
-
-		_harmonics[i].waveformPosition = firstHarmonicPos * _relativeFrequenciesOfHarmonics[i];
-		//_harmonics[i].waveformPosition = 0;
-	}
-}
-
-void AdditiveSynth::_dataSetEvent(void) {
-	_recalculateWaveformPositions();
-}
-
 /*! The standard harmonic series begins with the fundamental frequency f1 and each seccuessive
 harmonic has a frequency equal to f1 * n, where n is the harmonic number for the harmonic.
 This is the natural harmonic series, one that occurs, e.g., in a vibrating string.
 */
 void AdditiveSynth::setStandardHarmonicSeries(unsigned int harmonicCount) {
-	this->setHarmonicSeries(harmonicCount, HarmonicSeriesType::HS_MULTIPLE, 1.0);
+	this->setHarmonicSeries(harmonicCount, HarmonicSeriesType::MULTIPLE, 1.0);
 }
 
 /*!
@@ -475,43 +456,61 @@ fundamental gives the value 1 for `i`. If `type == HS_SEMITONE`, the frequency f
 */
 void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter) {
 	_harmonics.resize(harmonicCount);
-	_harmonicSeriesControlParameter = controlParameter;
-	_harmonicSeriesType = type;
-	_calculateRelativeFrequenciesOfHarmonics();
 
-	_recalculateWaveformPositions();
-}
-
-/*! This function calculates the harmonic series from a function supplied by the user.
-\param harmonicCount The number of harmonics to generate.
-\param userFunction The user function takes an integer representing the harmonic number, where the fundamental has the value 1, and returns
-the frequency that should be used for that harmonic.
-*/
-void AdditiveSynth::setHarmonicSeries(unsigned int harmonicCount, std::function<double(unsigned int)> userFunction) {
-	_harmonics.resize(harmonicCount);
-	_harmonicSeriesType = HS_USER_FUNCTION;
-	_harmonicSeriesUserFunction = userFunction;
-	_calculateRelativeFrequenciesOfHarmonics();
-
-	_recalculateWaveformPositions();
-}
-
-void AdditiveSynth::_calculateRelativeFrequenciesOfHarmonics(void) {
-	_relativeFrequenciesOfHarmonics.resize(_harmonics.size());
-
-	if (_harmonicSeriesType == HS_MULTIPLE) {
+	if (type == HarmonicSeriesType::MULTIPLE) {
 		for (unsigned int i = 0; i < _harmonics.size(); i++) {
-			_relativeFrequenciesOfHarmonics[i] = (i + 1) * _harmonicSeriesControlParameter;
+			_harmonics[i].relativeFrequency = (i + 1) * controlParameter;
 		}
-	} else if (_harmonicSeriesType == HS_SEMITONE) {
+	} else if (type == HarmonicSeriesType::SEMITONE) {
 		for (unsigned int i = 0; i < _harmonics.size(); i++) {
-			_relativeFrequenciesOfHarmonics[i] = pow(2.0, i * _harmonicSeriesControlParameter / 12);
-		}
-	} else if (_harmonicSeriesType == HS_USER_FUNCTION) {
-		for (unsigned int i = 0; i < _harmonics.size(); i++) {
-			_relativeFrequenciesOfHarmonics[i] = _harmonicSeriesUserFunction(i + 1);
+			_harmonics[i].relativeFrequency = pow(2.0, i * controlParameter / 12);
 		}
 	}
+
+	_recalculateWaveformPositions();
+}
+
+/*! This function applies the harmonic series from a vector of harmonics supplied by the user.
+
+\param harmonicSeries A vector frequencies that create a harmonic series. These values
+will be multiplied by the fundamental frequency in order to obtain the final frequency
+of each harmonic. The multiplier for the first harmonic is at index 0, so by convention 
+you might want to set harmonicSeries[0] equal to 1, so that when the fundamental frequency 
+is set with setFundamentalFrequency(), the first harmonic is actually the fundamental 
+frequency, but this is not enforced.
+
+\note If `harmonicSeries.size()` is greater than the current number of harmonics, the 
+new harmonics will have an amplitude of 0. If `harmonicSeries.size()` is less than the
+current number of harmonics, the number of harmonics will be reduced to the size of
+`harmonicSeries`.
+*/
+void AdditiveSynth::setHarmonicSeries(std::vector<frequency_t> harmonicSeries) {
+	_harmonics.resize(harmonicSeries.size());
+
+	for (unsigned int i = 0; i < _harmonics.size(); i++) {
+		_harmonics[i].relativeFrequency = harmonicSeries[i];
+	}
+
+	_recalculateWaveformPositions();
+}
+
+
+void AdditiveSynth::_recalculateWaveformPositions(void) {
+	double firstHarmonicPos = _harmonics[0].waveformPosition;
+
+	double normalizedFrequency = _fundamental / _data->sampleRate;
+
+	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
+		double relativeFrequency = _harmonics[i].relativeFrequency;
+
+		_harmonics[i].positionChangePerSample = normalizedFrequency * relativeFrequency;
+
+		_harmonics[i].waveformPosition = firstHarmonicPos * relativeFrequency;
+	}
+}
+
+void AdditiveSynth::_dataSetEvent(void) {
+	_recalculateWaveformPositions();
 }
 
 
@@ -803,10 +802,7 @@ double Oscillator::getNextSample(void) {
 	frequency.updateValue();
 	double addAmount = frequency.getValue() / _sampleRate;
 
-	_waveformPos += addAmount;
-	if (_waveformPos >= 1) {
-		_waveformPos = fmod(_waveformPos, 1);
-	}
+	_waveformPos = fmod(_waveformPos + addAmount, 1);
 
 	return _generatorFunction(_waveformPos);
 }
@@ -1120,78 +1116,110 @@ double TrivialGenerator::getNextSample(void) {
 	return value.getValue() - step;
 }
 
-/*
-class Noisemaker {
-public:
 
-	Noisemaker(void) :
-		frequency(0),
-		maxAmplitude(0),
-		_waveformPos(0)
-	{
-		_generatorFunction = Noisemaker::sine;
-	}
 
-	void setOuputStream(CX_SoundStream& stream) {
-		ofAddListener(stream.outputEvent, this, &Noisemaker::_callback);
-	}
 
-	void setGeneratorFunction(std::function<double(double)> f) {
-		_generatorFunction = f;
-	}
+///////////////
+// FIRFilter //
+///////////////
 
-	double frequency;
-	float maxAmplitude;
+FIRFilter::FIRFilter(void) :
+_filterType(FilterType::LOW_PASS),
+_coefCount(-1)
+{}
 
-	static double sine(double wp) {
-		return sin(wp * 2 * PI);
-	}
-
-	static double triangle(double wp) {
-		if (wp < .5) {
-			return ((4 * wp) - 1);
-		} else {
-			return (3 - (4 * wp));
-		}
-	}
-
-	static double square(double wp) {
-		if (wp < .5) {
-			return 1;
-		} else {
-			return -1;
-		}
-	}
-
-	static double saw(double wp) {
-		return (2 * wp) - 1;
-	}
-
-private:
-
-	std::function<double(double)> _generatorFunction;
-
-	float _waveformPos;
-
-	void _callback(CX_SoundStream::OutputEventArgs& d) {
-
-		float addAmount = frequency / d.instance->getConfiguration().sampleRate;
-
-		for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-			_waveformPos += addAmount;
-			if (_waveformPos >= 1) {
-				_waveformPos = fmod(_waveformPos, 1);
-			}
-			double value = CX::Util::clamp<float>(_generatorFunction(_waveformPos) * maxAmplitude, -1, 1);
-			for (int ch = 0; ch < d.outputChannels; ch++) {
-				d.outputBuffer[(sample * d.outputChannels) + ch] = value;
-			}
-		}
-
-	}
-
-};
+/*! Set up the FIRFilter with the given filter type and number of coefficients to use.
+You can
+\param filterType Should be a type of filter other than FIRFilter::FilterType::FIR_USER_DEFINED. If you want
+to define your own filter type, use FIRFilter::setup(std::vector<double>) instead.
+\param coefficientCount The number of coefficients sets the length of time, in samples, that the filter will
+produce a non-zero output following an impulse. In other words, the filter operates on `coefficientCount`
+samples at a time to produce each output sample.
 */
+void FIRFilter::setup(FilterType filterType, unsigned int coefficientCount) {
+	if (filterType == FIRFilter::FilterType::USER_DEFINED) {
+		CX::Instances::Log.error("FIRFilter") << "setup(): FilterType::FIR_USER_DEFINED should not be used explicity."
+			"Use FIRFilter::setup(std::vector<double>) if you want to define your own filter type.";
+	}
+	_filterType = filterType;
+
+	if ((coefficientCount % 2) == 0) {
+		coefficientCount++; //Must be odd in this implementation
+	}
+
+	_coefCount = coefficientCount;
+	_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
+}
+
+//You can supply your own coefficients. See the fir1 and fir2 functions from the
+//"signal" package for R for a good way to design your own filter.
+void FIRFilter::setup(std::vector<double> coefficients) {
+	_filterType = FilterType::USER_DEFINED;
+
+	_coefficients = coefficients;
+
+	_coefCount = coefficients.size();
+	_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
+}
+
+void FIRFilter::setCutoff(double cutoff) {
+	if (_filterType == FilterType::USER_DEFINED) {
+		CX::Instances::Log.error("FIRFilter") << "setCutoff() should not be used when the filter type is USER_DEFINED.";
+		return;
+	}
+
+	double omega = PI * cutoff / (_data->sampleRate / 2); //This is pi * normalized frequency, where normalization is based on the nyquist frequency.
+
+	_coefficients.clear();
+
+	//Set up LPF coefficients
+	for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
+		_coefficients.push_back(_calcH(i, omega));
+	}
+
+	if (_filterType == FilterType::HIGH_PASS) {
+		for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
+			_coefficients[i] *= pow(-1, i);
+		}
+	}
+
+
+	//Do nothing for rectangular window
+	if (_windowType == WindowType::HANNING) {
+		for (int i = 0; i < _coefCount; i++) {
+			_coefficients[i] *= 0.5*(1 - cos(2 * PI*i / (_coefCount - 1)));
+		}
+	} else if (_windowType == WindowType::BLACKMAN) {
+		for (int i = 0; i < _coefCount; i++) {
+			double a0 = 7938 / 18608;
+			double a1 = 9240 / 18608;
+			double a2 = 1430 / 18608;
+
+			_coefficients[i] *= a0 - a1 * cos(2 * PI*i / (_coefCount - 1)) + a2*cos(4 * PI*i / (_coefCount - 1));
+		}
+	}
+}
+
+double FIRFilter::getNextSample(void) {
+	//Because _inputSamples is set up to have _coefCount elements, you just always pop off an element to start.
+	_inputSamples.pop_front();
+	_inputSamples.push_back(_inputs.front()->getNextSample());
+
+	double y_n = 0;
+
+	for (int i = 0; i < _coefCount; i++) {
+		y_n += _inputSamples[i] * _coefficients[i];
+	}
+
+	return y_n;
+}
+
+double FIRFilter::_calcH(int n, double omega) {
+	if (n == 0) {
+		return omega / PI;
+	}
+	return omega / PI * sinc(n*omega);
+}
 
 } //namespace Synth
 } //namespace CX

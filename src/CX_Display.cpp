@@ -37,15 +37,16 @@ void CX_Display::setup (void) {
 		//what too early means) or else there will be a crash.
 
 	estimateFramePeriod( CX_Millis(500) );
+
+	CX_Millis measuredPeriod = this->getFramePeriod();
 }
 
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
 due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
 they are running. This function takes the file name of a specially constructed configuration file and reads the
-key-value pairs in that file in order to configure the CX_Display. The format of the file is
-provided in the example code below.
+key-value pairs in that file in order to configure the CX_Display. The format of the file is provided in the 
+example below:
 
-Sample configuration file:
 \code
 display.windowWidth = 600
 display.windowHeight = 300
@@ -55,6 +56,7 @@ display.hardwareVSync = true
 //display.softwareVSync = false //Commented out: no change
 //display.swapAutomatically = false //Commented out: no change
 \endcode
+
 All of the configuration keys are used in this example.
 Configuration options can be omitted, in which case there is no change in the configuration of the CX_Display for that option.
 Note that the "display" prefix allows this configuration to be embedded in a file that also performs other configuration functions.
@@ -62,7 +64,7 @@ Note that the "display" prefix allows this configuration to be embedded in a fil
 Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
 \param filename The name of the file containing configuration data.
 \param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
-\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
+\param trimWhitespace If `true`, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
 \param commentString If `commentString` is not the empty string (""), everything on a line
 following the first instance of `commentString` will be ignored.
 */
@@ -324,6 +326,9 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 
 	std::vector<CX_Millis> swapTimes;
 
+	CX_Millis minFramePeriod = CX_Seconds((1.0 / 60) * 0.8);
+	CX_Millis maxFramePeriod = CX_Seconds((1.0 / 120) * 1.2);
+
 	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
 	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
 	for (int i = 0; i < 3; i++) {
@@ -336,19 +341,30 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 		swapTimes.push_back(CX::Instances::Clock.now());
 	}
 
-	if (swapTimes.size() > 1) {
+	if (swapTimes.size() >= 2) {
 
-		std::vector<CX_Millis> durations(swapTimes.size() - 1);
+		std::vector<CX_Millis> cleanedDurations;
 
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
-			durations[i - 1] = swapTimes[i] - swapTimes[i - 1];
+			CX_Millis dur = swapTimes[i] - swapTimes[i - 1];
+
+			if (dur >= minFramePeriod && dur <= maxFramePeriod) {
+				cleanedDurations.push_back(dur);
+			}
 		}
 
-		_framePeriodStandardDeviation = CX_Millis::standardDeviation(durations);
-		_framePeriod = Util::mean(durations);
+		if (cleanedDurations.size() >= 2) {
+			_framePeriodStandardDeviation = CX_Millis::standardDeviation(cleanedDurations);
+			_framePeriod = Util::mean(cleanedDurations);
+		} else {
+			CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough valid swaps occurred during the " <<
+				estimationInterval << " ms estimation interval.";
+		}
+
 
 	} else {
-		CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod: Not enough swaps occurred during the " << estimationInterval << " ms estimation interval.";
+		CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough swaps occurred during the " << 
+			estimationInterval << " ms estimation interval.";
 	}
 
 	setAutomaticSwapping(wasSwapping);
@@ -366,11 +382,13 @@ CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
 
 /*! During setup, CX tries to estimate the frame period of the display using CX::CX_Display::estimateFramePeriod().
 However, this does not always work, and the estimated value is wrong.
-If you know that this is happening, use this function to set the correct frame period. A typical call might be
+If you know that this is happening, you can use this function to set the correct frame period. A typical call might be
 \code{.cpp}
 Disp.setFramePeriod(CX_Seconds(1.0/60.0));
 \endcode
-to set the frame period for a 60 Hz refresh cycle.
+to set the frame period for a 60 Hz refresh cycle. However, note that this will not fix the underlying problem
+that prevented the frame period from being estimated correctly, which usually has to do with problems with
+the video card doing vertical synchronization incorrectly. Thus, this may not fix anything.
 \param knownPeriod The known refresh period of the monitor.
 */
 void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
@@ -532,68 +550,118 @@ mode, although that is not enforced. At the end of the tests, the results of the
 you to interpret based on the guidelines described here. The outcome of the test will usually be that there
 are some modes that work better than others for the tested computer.
 
-In the resulting CX_DataFrame, there are three columns that give the test conditions. "thread" indicates
-whether the main thread or a secondary thread was used. "hardVSync" and "softVSync" indicate whether
-hardware or software Vsync were enabled for the test (see useHardwareVSync() and useSoftwareVSync()).
+In the resulting data, there are three test conditions. "thread" indicates whether the main thread or a 
+secondary thread was used. "hardVSync" and "softVSync" indicate whether hardware or software Vsync were 
+enabled for the test (see CX_Display::useHardwareVSync() and CX_Display::useSoftwareVSync()).
 Other columns, giving data from the tests, are explained below. Whatever combination of Vsync works
-best can be set up for use in experiments using useHardwareVSync() and useSoftwareVSync() to set the values. The
-threading mode is primarily determined by CX_SlidePresenter with the CX::CX_SlidePresenter::Configuration::SwappingMode
-setting, although some experiments might want to use threaded swaps directly.
+best can be set up for use in experiments using CX_Display::useHardwareVSync() and CX_Display::useSoftwareVSync() 
+to set the Vsync mode in code or with CX_Display::configureFromFile() to set the values based on a configuration 
+file. 
+
+The threading mode that is used in stimulus presentation is primarily determined by CX_SlidePresenter with 
+the CX::CX_SlidePresenter::Configuration::SwappingMode setting, although some experiments might want to use 
+threaded swaps directly. If you are not using a multi-threaded swapping mode with a CX_SlidePresenter, you
+probably don't need to do these tests with a secondary thread, which you can do by setting the argument 
+`testSecondaryThread` to false when you call this function.
 
 Continuous swapping test
 --------------------------------
 This test examines the case of constantly swapping the front and back buffers. It measures the amount of time
-between swaps, which should always approximately equal the frame period. The data from this test are found
-in columns of the data frame beginning with "cs": "csDurations" gives the raw between-swap durations, and
-"csDurationMean" and "csDurationStdDev" give the mean and standard deviation of the durations. If the swapping
-durations are not very consistent, which can be determined by examination or by looking at the standard deviation,
-then there is a problem with the configuration. If the mean duration is different from the monitor's actual
-refresh period, then there is a serious problem with the configuration.
+between swaps, which should always approximately equal the frame period. The raw data from this test can be found
+in the "continuousSwapping" CX_DataFrame in the returned map. The raw data are in flat field format, with the 
+duration data in the "duration" column and the test conditions in the "hardVSync", "softVSync", and "thread" columns.
+A summary of this test can be found in the "summary" data frame in the returned map. In the summary, columns related
+to this test are prefixed with "cs" and give the mean, standard deviation, minimum, and maximum swap duration in each 
+of the conditions that were tested.
 
-During this test, you should see the screen very rapidly flickering between black and white. If you see
-slow flickering or a constant color, that is an error.
+If the swapping durations are not very consistent, which can be determined by visual examination and by looking at 
+the standard deviation, min, and max, then there is a problem with the configuration. If the mean duration 
+is different from the monitor's actual refresh period, then there is a serious problem with the configuration.
+
+During this test, you should see the screen very rapidly flickering between black and white, so that it might nearly 
+appear to be a shade of grey. If you see slow flickering or solid black or white, that is an error. If there are 
+horizontal lines that alternate black and white, that is a signature of vertical tearing, which is an error (except
+for when both kinds of Vsync are turned off, in which case it is allowable and a good demonstration of the value of Vsync). 
 
 Wait swap test
 --------------------------------
 One case that this function checks for is what happens if a swap is requested after a long period of
 no swaps being requested. In particular, this function swaps, waits for 2.5 swap periods and then swaps twice in a row.
 The idea is that there is a long delay between the first swap (the "long" swap) and the second swap (the "short" swap),
-followed by a standard delay before the third swap (the "normal" swap).
+followed by a standard delay before the third swap (the "normal" swap). The raw swap durations for this test can be 
+found in the "waitSwap" data frame in the returned map, with the test conditions given in the "hardVSync", "softVSync", 
+and "thread" columns. The "type" column indicates whether a given swap duration was long, short, or normal and the 
+"duration" column gives the durations of the swaps. Summary data from this test can be found in the "summary" data 
+frame in the returned map. The columns in the summary data that correspond to this test are prefixed "ws".
 
 There are graded levels of success in this test. Complete success is when the duration of the first swap is 3P,
 where P is the standard swap period (i.e. the length of one frame), and the duration of both of the second two swaps is 1P.
 Partial success is if the duration of the long swap is ~2.5P, the duration of the short swap is ~.5P, and the duration
 of the normal swap is 1P. In this case, the short swap at least gets things back on the right track.
-Failure occurs if the short swap duration is ~0P. Mega failure occurs if the normal swap duration is ~0P. In this
+Failure occurs if the short swap duration is ~0P. Mega-failure occurs if the normal swap duration is ~0P. In this
 case, it is taking multiple repeated swaps in order to regain vertical synchronization, which is unacceptable behavior.
 
 You can visually check these results. During this test, an attempt is made to draw three bars on the left,
 middle, and right of the screen. The left bar is drawn for the long duration, the middle bar for the short duration,
 and the right bar for the normal duration.
-Complete success results in all three bars flickering (although you still need to check the timing data).
+Complete success results in all three bars flickering on and off (although you still need to check the timing data).
 Partial success results in only the left and right bars flickering with the middle bar location flat black.
 For the partial success case, the middle bar is never visible because at the time at which it is swapped in,
 the screen is in the middle of a refresh cycle. When the next refresh cycle starts, then the middle bar can
 start to be drawn to the screen. However, before it has a chance to be drawn, the right rectangle is drawn
-to the back buffer, overwriting the middle bar (or at least, this is my best explanation for why it isn't visible).
+to the back buffer, overwriting the middle bar.
 
-The timing data from the wait swap test can be found in columns of the data frame beginning with "ws". "wsLongMean",
-"wsShortMean", and "wsNormalMean" are the averages of the long, short, and normal swap durations, respectively.
-"wsTotalMean" is the sum of wsLongMean, wsShortMean, and wsNormalMean. But also be sure to check the raw data in
-"wsDurations", which goes along with the duration type in "wsType".
+If there are horizontal lines that alternate between black and white, that is a sign of vertical tearing, which is
+an error.
 
-The wait swap test is not performed for the secondary thread, because the assumption is that if the secondary
-thread is used, in that thread the front and back buffers will be swapped constantly so there will be no wait swaps.
+Note: The wait swap test is not performed for the secondary thread, because the assumption is that if the secondary
+thread is used, in that thread the front and back buffers will be swapped constantly in the secondary thread so 
+there will be no wait swaps. You can enable constant swapping in the secondary thread with CX_Display::setAutomaticSwapping().
+
+Remedial measures
+-----------------
+
+If all of the tests fail, there are a number of possible reasons. 
+
+One of the primary reasons for failure is that the video card driver is not honoring the requested vertical 
+synchronization settings that CX tries during the test. A workaround for this issue is to force vertical 
+synchronization on in the video driver settings, which can be done through the GUIs for the drivers. In my 
+experience, this is a good first thing to try and often improves things substantially.
+
+It should not be assumed that using both hardware and software Vsync is better than using only one of the two.
+The failure case I typically observe if both are enabled is that each buffer swap will take twice the nominal
+frame period. If this error occurrs, try using just one type of Vsync.
+
+If none of the wait swap test configurations result in acceptable behavior, the implication is that there is an
+error in the implementation of Vsync for your computer. If this is the case, you should be careful about using
+stimulus presentation code that requests two or more swaps in a row (i.e. to swap in two different stimuli on 
+two consecutive frames) following a multi-frame interval in which there were no buffer swaps. What may happen
+is that the first stimulus may never be presented (especially if the "short" duration on the test is ~0).
+If the short duration is not 0, then that stimulus should be presented, but if the long duration is less than 3P,
+the preceding stimulus may be cut short. In cases like this, you may want to configure the CX_Display to swap
+buffers automatically in a secondary thread all the time (see CX_Display::setAutomaticSwapping()), so that 
+there are never swaps after several frames without swaps. The "animation" example shows how to use 
+CX_Display::hasSwappedSinceLastCheck() to synchronize rendering in the main thread with buffer swaps in the 
+secondary thread. Note that if your computer does not have at least a 2 core CPU, using a secondary thread to
+constantly swap buffers is not a good solution, because the secondary thread will peg 1 CPU at 100% usage.
+
+If none of these remedial measures corrects you problems, you may want to try another psychology experiment
+package. However, many of them use OpenGL and so the problem is your OpenGL configuration (hardware and 
+software), switching to another package that uses OpenGL is unlikely to fix your problem (if it does,
+let me know because that could point to an issue in CX or openFrameworks). 
+
 
 \param desiredTestDuration An approximate amount of time to spend performing all of the tests, so the time if divided among
 all of the tests.
 \param testSecondaryThread If true, buffer swapping from within a secondary thread will be tested. If false, only
 swapping from within the main thread will be tested.
-\return A CX_DataFrame containing timing results from the tests.
+\return A map containing CX_DataFrames. One data frame, named "summary" in the map, contains summary statistics. Another
+data frame, named "constantSwapping", contains raw data from the constant swapping test. Another data frame, named "waitSwap",
+contains raw data from the wait swap test.
 
 \note This function blocks for approximately `desiredTestDuration` or more. See \ref blockingCode.
 */
-CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread) {
+std::map<std::string, CX_DataFrame> CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread) {
 
 	auto drawScreenData = [](CX_Display* display, ofColor color, string information) {
 		display->beginDrawingToBackBuffer();
@@ -616,7 +684,13 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 	CX_Millis testSegmentDuration = desiredTestDuration / 12; //8 continuous swapping tests, but only 4 wait swap tests
 	testSegmentDuration *= testSecondaryThread ? 1 : 1.5; //If not doing the secondary thread, make everything else go longer.
 
-	CX_DataFrame data;
+	
+
+	//CX_DataFrame rawData;
+
+	CX_DataFrame summary;
+	CX_DataFrame waitSwap;
+	CX_DataFrame constantSwapping;
 
 	for (int thread = (testSecondaryThread ? 0 : 1); thread < 2; thread++) {
 
@@ -625,17 +699,20 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 
 		for (int hardV = 0; hardV < 2; hardV++) {
 			for (int softV = 0; softV < 2; softV++) {
-				CX_DataFrameRow row;
-				row["thread"] = mainThread ? "main" : "secondary";
-				row["hardVSync"] = hardV;
-				row["softVSync"] = softV;
+				CX_DataFrameRow summaryRow;
+
+				std::string threadName = mainThread ? "main" : "secondary";
+
+				summaryRow["thread"] = threadName;
+				summaryRow["hardVSync"] = hardV;
+				summaryRow["softVSync"] = softV;
 
 				//Configure V-Sync for the current test.
 				useHardwareVSync(hardV == 1);
 				useSoftwareVSync(softV == 1);
 
 				std::stringstream ss;
-				ss << "Thread: " << row["thread"].toString() << "\nHardV: " << hardV << "\nSoftV: " << softV;
+				ss << "Thread: " << threadName << "\nHardV: " << hardV << "\nSoftV: " << softV;
 				std::string conditionString = ss.str();
 
 				std::vector<CX_Millis> swapTimes;
@@ -664,7 +741,7 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 					CX_Millis startTime = CX::Instances::Clock.now();
 					while ((CX::Instances::Clock.now() - startTime) < testSegmentDuration) {
 						if (_swapThread->hasSwappedSinceLastCheck()) {
-							swapTimes.push_back(this->getLastSwapTime());
+							swapTimes.push_back(_swapThread->getLastSwapTime());
 
 							drawScreenData(this, (swapTimes.size() % 2) ? ofColor(255) : ofColor(0), "Continuous swapping test\n" + conditionString);
 						}
@@ -674,24 +751,29 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 				std::vector<CX_Millis> durations(swapTimes.size() - 1);
 				for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
 					durations[i] = swapTimes[i + 1] - swapTimes[i];
+
+					CX_DataFrame::rowIndex_t row = constantSwapping.getRowCount();
+
+					constantSwapping(row, "thread") = threadName;
+					constantSwapping(row, "hardVSync") = hardV;
+					constantSwapping(row, "softVSync") = softV;
+					constantSwapping(row, "duration") = durations[i];
 				}
 
-				row["csDurations"] = durations;
-				row["csDurationMean"] = Util::mean(durations);
-				row["csDurationStdDev"] = CX_Millis::standardDeviation(durations);
-
+				summaryRow["csDurationMean"] = Util::mean(durations);
+				summaryRow["csDurationStdDev"] = CX_Millis::standardDeviation(durations);
+				summaryRow["csDurationMin"] = Util::min(durations);
+				summaryRow["csDurationMax"] = Util::max(durations);
 
 				////////////////////
 				// Wait swap test //
 				////////////////////
 				if (!mainThread) {
 					//Wait swap test is not performed for secondary thread.
-					row["wsDurations"] = "NULL";
-					row["wsType"] = "NULL";
-					row["wsLongMean"] = "NULL";
-					row["wsShortMean"] = "NULL";
-					row["wsNormalMean"] = "NULL";
-					row["wsTotalMean"] = "NULL";
+					summaryRow["wsLongMean"] = "NULL";
+					summaryRow["wsShortMean"] = "NULL";
+					summaryRow["wsNormalMean"] = "NULL";
+					summaryRow["wsTotalMean"] = "NULL";
 				} else {
 					swapTimes.clear();
 					std::vector<std::string> durationType;
@@ -733,10 +815,16 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 					durations.resize(swapTimes.size() - 1);
 					for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
 						durations[i] = swapTimes[i + 1] - swapTimes[i];
-					}
 
-					row["wsDurations"] = durations;
-					row["wsType"] = durationType;
+						CX_DataFrame::rowIndex_t row = waitSwap.getRowCount();
+
+						waitSwap(row, "thread") = threadName;
+						waitSwap(row, "hardVSync") = hardV;
+						waitSwap(row, "softVSync") = softV;
+						waitSwap(row, "type") = durationType[i];
+						waitSwap(row, "duration") = durations[i];
+
+					}
 
 					CX_Millis longSwapSum = 0;
 					unsigned int longSwapCount = 0;
@@ -758,20 +846,28 @@ CX_DataFrame CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool 
 						}
 					}
 
-					row["wsLongMean"] = longSwapSum / longSwapCount;
-					row["wsShortMean"] = shortSwapSum / shortSwapCount;
-					row["wsNormalMean"] = normalSwapSum / normalSwapCount;
-					row["wsTotalMean"] = row["wsLongMean"].toDouble() + row["wsShortMean"].toDouble() + row["wsNormalMean"].toDouble();
+					summaryRow["wsLongMean"] = longSwapSum / longSwapCount;
+					summaryRow["wsShortMean"] = shortSwapSum / shortSwapCount;
+					summaryRow["wsNormalMean"] = normalSwapSum / normalSwapCount;
+					summaryRow["wsTotalMean"] = summaryRow["wsLongMean"].toDouble() + 
+						summaryRow["wsShortMean"].toDouble() + 
+						summaryRow["wsNormalMean"].toDouble();
 				}
 
-				data.appendRow(row);
+				summary.appendRow(summaryRow);
+
 			}
 		}
 	}
 
 	setAutomaticSwapping(wasSwapping);
 
+	std::map<std::string, CX_DataFrame> data;
+	data["summary"] = summary;
+	data["constantSwapping"] = constantSwapping;
+	data["waitSwap"] = waitSwap;
+
 	return data;
 }
 
-}
+} //namespace CX

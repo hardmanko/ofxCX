@@ -181,6 +181,65 @@ void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font) {
 	Draw::centeredString(center.x, center.y, s, font);
 }
 
+/*! Performs a word wrapping procedure, splitting `s` into multiple lines so
+that each line is no more than `width` wide. The algorithm attempts to end lines
+at whitespace, so as to avoid splitting up words. However, if there is no whitespace
+on a line, the line will be broken just before it would exceed the width
+and a hyphen is inserted. If the width is absurdly narrow (less than 2 characters), 
+the algorithm will break.
+\param s The string to wrap.
+\param width The maxmimum width of each line of `s`, in pixels.
+\param font A configured ofTrueTypeFont.
+\return A string with newlines inserted to keep lines to be less than `width` wide.
+*/
+std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
+	unsigned int lineStart = 0;
+	unsigned int lastWS = 0;
+	std::vector<std::string> lines;
+	for (unsigned int i = 0; i < s.size(); i++) {
+
+		if (s[i] == ' ') {
+			lastWS = i;
+		}
+
+		std::string sub = s.substr(lineStart, i - lineStart);
+		float currentW = font.getStringBoundingBox(sub, 0, 0).width;
+		if (currentW >= width) {
+			if (lastWS > lineStart) {
+				sub = s.substr(lineStart, lastWS - lineStart + 1);
+				lineStart = lastWS;
+			} else {
+				int poppedChars = 0;
+				if (sub.length() >= 2) {
+					sub.pop_back(); //pop off two letters to 1) make the string shorter and 
+					sub.pop_back(); //2) make room for the hyphen.
+					poppedChars = 2;
+				}
+
+				//If no whitespace on this line, do the gross thing and split mid-word
+				sub += '-'; //and stick in a lame hyphen
+				lineStart = i - poppedChars;
+			}
+
+
+			lines.push_back(sub);
+		} else if (i == s.size() - 1) {
+			sub = s.substr(lineStart);
+			lines.push_back(sub);
+		}
+	}
+
+	std::string rval;
+	for (std::string l : lines) {
+		while (l[0] == ' ') {
+			l = l.substr(1);
+		}
+		rval += l + "\n";
+	}
+
+	return rval;
+}
+
 /*! This function draws a greyscale pattern, like a gabor, to an ofPixels object.
 The results of this function are not intended to be used directly, but to be applied
 to an image, for example. The pattern lacks color information, but can be used as an alpha mask

@@ -27,7 +27,7 @@ This namespace contains instances of some classes that are fundamental to the fu
 
 #include "CX_SoundBufferPlayer.h"
 #include "CX_SoundBufferRecorder.h"
-#include "CX_ModularSynth.h"
+#include "CX_Synth.h"
 
 #include "CX_Algorithm.h"
 #include "CX_Utilities.h"

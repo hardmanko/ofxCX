@@ -152,73 +152,7 @@ recorder.setSoundBuffer(nullptr); //Make it so that no buffers are associated wi
 \endcode
 
 
-Synthesizing Audio
-------------------
-
-You can synthesize audio in real time, or ahead of time, using the classes in the CX::Synth namespace. See also the modularSynth example.
-
-Direct Control of Audio IO
---------------------------
-
-If you want to be really fancy, you can directly read and modify the audio data that a CX_SoundStream is sending or receiving. This is a relatively advanced operation and is unlikely to be needed in very many cases, but it's there if need be.
-
-In order to directly access the data that a CX_SoundStream is transmitting, you need to create a class containing a function that will be called every time the CX_SoundStream needs to send more data to the sound card. For example, you could have a class like this that creates a sine wave.
-
-\code{.cpp}
-class ExampleOutputClass {
-public:
-	void callbackFunction(CX_SoundStream::OutputEventArgs& args) {
-		static float wavePosition = 0;
-
-		float sampleRate = args.instance->getConfiguration().sampleRate;
-		float frequency = 524;
-		float positionChangePerSampleFrame = 2 * PI * frequency / sampleRate;
-
-		for (unsigned int sampleFrame = 0; sampleFrame < args.bufferSize; sampleFrame++) {
-			for (unsigned int channel = 0; channel < args.outputChannels; channel++) {
-				args.outputBuffer[(sampleFrame * args.outputChannels) + channel] = sin(wavePosition);
-			}
-			
-			wavePosition += positionChangePerSampleFrame;
-			if (wavePosition >= 2 * PI) {
-				wavePosition = 0;
-			}
-		}
-	}
-};
-\endcode
-
-Of course, if you really wanted to create sine waves in real time, use CX::Synth::Oscillator and CX::Synth::StreamOutput, but for the sake of exaple, lets use this class.
-Then create an instance of your class and add it as a listener to the `outputEvent` of a CX_SoundStream.
-
-\code{.cpp}
-	CX_SoundStream soundStream; //Assume this has been or will be set up elsewhere.
-	ExampleOutputClass sineOut;
-	
-	//For event soundStream.outputEvent, targeting class instance sineOut, call callbackFunction of that class instance.
-	ofAddListener(soundStream.outputEvent, &sineOut, &ExampleOutputClass::callbackFunction);
-\endcode
-
-From now on, whenever `soundStream` needs more output data, `sineOut.callbackFunction` will be called automatically. The data that you put into the output buffer must be `float` and bounded between -1 and 1, inclusive. You can remove a listener to an event with ofRemoveListener. More information about the events used by openFrameworks can be found here: http://www.openframeworks.cc/documentation/events/ofEvent.html.
-
-Directly accessing input data works in a very similar way. You need a class with a function that takes a reference to a CX_SoundStream::inputEventArgs struct and returns void. Instead of putting data into the output buffer, you would read data out of the input buffer.
-
-
-Troubleshooting Audio Problems 
-------------------------------
-
-It is often the case that audio playback problems arise due to the wrong input or output device being used. For this reason, CX_SoundStream has a utility function that lists the available devices on your system so that you can select the correct one. You do this with CX::CX_SoundStream::listDevices() like so:
-\code{.cpp}
-cout << CX_SoundStream::listDevices() << endl;
-\endcode
-Note that `listDevices()` is a static function, so you use the name of the CX_SoundStream class and `::` to access it.
-
-CX_SoundStream uses RtAudio (http://www.music.mcgill.ca/~gary/rtaudio/) internally. It is possible that some problems could be solved with help from the RtAudio documentation. For example, one of the configuration options for CX_SoundStream is the low level audio API to use (see \ref CX::CX_SoundStream::Configuration::api), about which the RtAudio documentation provides some help (http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849). You can get a pointer to the RtAudio instance being used by the CX_SoundStream by calling CX::CX_SoundStream::getRtAudioInstance(), which should allow you to do just about anything with RtAudio.
-
-
-
-
-The whole example:
+All of the pieces of code from above in one place:
 \code{.cpp}
 #include "CX_EntryPoint.h"
 
@@ -227,10 +161,14 @@ void runExperiment(void) {
 	CX_SoundStream::Configuration ssConfig;
 	ssConfig.outputChannels = 2; //Stereo output
 	//ssConfig.api = RtAudio::Api::WINDOWS_DS; //The most likely thing you will need to change is the low-level audio API.
-	
+
+	//Create the CX_SoundStream and set it up with the configuration.
 	CX_SoundStream soundStream;
 	soundStream.setup(ssConfig);
-	
+
+	//Check for any error messages.
+	Log.flush();
+
 	//If things aren't working, try uncommenting this line to learn about the devices available on your system for the given api.
 	//cout << CX_SoundStream::listDevices(RtAudio::Api::WINDOWS_DS) << endl;
 
@@ -240,7 +178,6 @@ void runExperiment(void) {
 
 	CX_SoundBufferPlayer player;
 	player.setup(&soundStream);
-
 	player.setSoundBuffer(&soundBuffer);
 
 	player.play();
@@ -263,20 +200,18 @@ void runExperiment(void) {
 	Log.flush();
 
 
-	//Multiple sounds at once
-	Log.notice() << "Merge together 2 CX_SoundBuffers:";
-	
+	//Playing multiple sounds at once
 	CX_SoundBuffer otherBuffer;
 	otherBuffer.loadFile("other_sound_file.wav");
 
 	CX_SoundBuffer combinedBuffer = soundBuffer;
 
 	combinedBuffer.addSound(otherBuffer, 500); //Add the second sound to the first, 
-		//with the second starting 500 ms after the first.
-		
+	//with the second starting 500 ms after the first.
+
 	player.setSoundBuffer(&combinedBuffer);
 	player.play();
-	while(player.isPlaying())
+	while (player.isPlaying())
 		;
 
 	CX_SoundBufferPlayer player2;
@@ -289,10 +224,12 @@ void runExperiment(void) {
 	while (player.isPlaying() || player2.isPlaying())
 		;
 
+
 	//Recording
 	soundStream.stop();
 	ssConfig.inputChannels = 1; //Most microphones are mono.
 	soundStream.setup(ssConfig);
+
 
 	CX_SoundBufferRecorder recorder;
 	recorder.setup(&soundStream);
@@ -312,8 +249,74 @@ void runExperiment(void) {
 	player.play();
 	while (player.isPlaying())
 		;
-	
-	recorder.setSoundBuffer(nullptr); //Make it so that no buffers are associated with the recorder.
 
+	recorder.setSoundBuffer(nullptr); //Make it so that no buffers are associated with the recorder.
 }
 \endcode
+
+
+
+Synthesizing Audio
+------------------
+
+You can synthesize audio in real time, or ahead of time, using the classes in the CX::Synth namespace. See also the modularSynth example.
+
+Direct Control of Audio IO
+--------------------------
+
+If you want to be really fancy, you can directly read and modify the audio data that a CX_SoundStream is sending or receiving. This is a relatively advanced operation and is unlikely to be needed in very many cases, but it's there if need be.
+
+In order to directly access the data that a CX_SoundStream is transmitting, you need to create a class containing a function that will be called every time the CX_SoundStream needs to send more data to the sound card. For example, you could have a class like this that creates a sine wave.
+
+\code{.cpp}
+class ExampleOutputClass {
+public:
+	void callbackFunction(CX_SoundStream::OutputEventArgs& args) {
+		static float wavePosition = 0;
+
+		float sampleRate = args.instance->getConfiguration().sampleRate;
+		const float frequency = 524;
+		float positionChangePerSampleFrame = 2 * PI * frequency / sampleRate;
+
+		for (unsigned int sampleFrame = 0; sampleFrame < args.bufferSize; sampleFrame++) {
+
+			//For every channel, put the same data on that channel. This is like playing a mono stream on every channel at the same time.
+			for (unsigned int channel = 0; channel < args.outputChannels; channel++) {
+				args.outputBuffer[(sampleFrame * args.outputChannels) + channel] = sin(wavePosition);
+			}
+
+			//Update where in the sine wave we are. A single sine wave happens every 2 * PI.
+			wavePosition = fmod(wavePosition + positionChangePerSampleFrame, 2 * PI);
+		}
+	}
+};
+\endcode
+
+The only thing going on in this class is `callbackFunction`. This function takes a reference to a CX_SoundStream::OutputEventArgs struct, which contains important data. Most importantly, `args`, as I have called it in this example, contains a pointer to an array of data that should be filled by the function, called `outputBuffer`. The number of sample frames of data that should be put into `outputBuffer` is given by `bufferSize`. It is important here to be clear about the fact that a sample frame contains 1 sample per channel of sound data, so if `bufferSize` is 256 and the stream is running in stereo (2 channels), the total number of samples that need to be put into `outputBuffer` must be 512. Also note that the sound samples must be interleaved, which means that samples within a sample frame are stored contiguously in the buffer, which means that for the stereo example, even numbered indices would contain data for channel 0 and off numbered indices would contain data for channel 1.
+
+Of course, if you really wanted to create sine waves in real time, you would use CX::Synth::Oscillator and CX::Synth::StreamOutput, but for the sake of example, lets use this class.
+Once you have defined a class that creates the sound data, create an instance of your class and add it as a listener to the `outputEvent` of a CX_SoundStream.
+
+\code{.cpp}
+	CX_SoundStream soundStream; //Assume this has been or will be set up elsewhere.
+	ExampleOutputClass sineOut; //Make an instance of the class.
+	
+	//For event soundStream.outputEvent, targeting class instance sineOut, call callbackFunction of that class instance.
+	ofAddListener(soundStream.outputEvent, &sineOut, &ExampleOutputClass::callbackFunction);
+\endcode
+
+From now on, whenever `soundStream` needs more output data, `sineOut.callbackFunction` will be called automatically. The data that you put into the output buffer must be of type `float` and bounded between -1 and 1, inclusive. You can remove a listener to an event with `ofRemoveListener`. More information about the events used by openFrameworks can be found here: http://www.openframeworks.cc/documentation/events/ofEvent.html.
+
+Directly accessing input data works in a very similar way. You need a class with a function that takes a reference to a \ref CX_SoundStream::inputEventArgs struct and returns `void`. Instead of putting data into the output buffer, you would read data out of the input buffer.
+
+
+Troubleshooting Audio Problems 
+------------------------------
+
+It is often the case that audio playback problems arise due to the wrong input or output device being used. For this reason, CX_SoundStream has a utility function that lists the available devices on your system so that you can select the correct one. You do this with CX::CX_SoundStream::listDevices() like so:
+\code{.cpp}
+cout << CX_SoundStream::listDevices() << endl;
+\endcode
+Note that `listDevices()` is a static function, so you use the name of the CX_SoundStream class and `::` to access it.
+
+CX_SoundStream uses RtAudio (http://www.music.mcgill.ca/~gary/rtaudio/) internally. It is possible that some problems could be solved with help from the RtAudio documentation. For example, one of the configuration options for CX_SoundStream is the low level audio API to use (see \ref CX::CX_SoundStream::Configuration::api), about which the RtAudio documentation provides some help (http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849). You can get a pointer to the RtAudio instance being used by the CX_SoundStream by calling CX::CX_SoundStream::getRtAudioInstance(), which should allow you to do just about anything with RtAudio.

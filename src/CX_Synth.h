@@ -165,42 +165,37 @@ namespace Synth {
 	class AdditiveSynth : public ModuleBase {
 	public:
 
-		typedef float wavePos_t;
-		typedef float amplitude_t;
+		typedef double amplitude_t;
+		typedef double frequency_t;
 
-		enum HarmonicSeriesType {
-			HS_MULTIPLE, //Includes the standard harmonic series as a special case
-			HS_SEMITONE, //Includes all of the strange thirds, fourths, tritones, etc.
-			HS_USER_FUNCTION
+		enum class HarmonicSeriesType {
+			MULTIPLE, //Includes the standard harmonic series as a special case
+			SEMITONE //Includes all of the strange thirds, fourths, tritones, etc.
+			//USER_DEFINED
 		};
 
 		/*! Assuming that the standard harmonic series is being used, the values in this
 		enum, when passed to setAmplitudes(), cause the amplitudes of the harmonics to be
 		set in such a way as to produce the desired waveform. */
-		enum HarmonicAmplitudeType {
+		enum class AmplitudePresets {
 			SINE,
 			SQUARE,
 			SAW,
 			TRIANGLE
 		};
 
-		struct Configuration {
-			unsigned int desiredHarmonicCount;
-			HarmonicSeriesType hsType;
-			double harmonicPruningTol;
-		};
-
-		void setFundamentalFrequency(double f);
-
 		void setStandardHarmonicSeries(unsigned int harmonicCount);
 		void setHarmonicSeries (unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter);
-		void setHarmonicSeries(unsigned int harmonicCount, std::function<double(unsigned int)> userFunction);
+		void setHarmonicSeries(std::vector<frequency_t> harmonicSeries);
 
-		void setAmplitudes (HarmonicAmplitudeType type);
-		void setAmplitudes(HarmonicAmplitudeType t1, HarmonicAmplitudeType t2, double mixture);
+		void setAmplitudes(AmplitudePresets a);
+		void setAmplitudes(AmplitudePresets a1, AmplitudePresets a2, double mixture);
 		void setAmplitudes(std::vector<amplitude_t> amps);
-		std::vector<amplitude_t> calculateAmplitudes(HarmonicAmplitudeType type, unsigned int count);
+		std::vector<amplitude_t> calculateAmplitudes(AmplitudePresets a, unsigned int count);
+
 		void pruneLowAmplitudeHarmonics(double tol);
+
+		void setFundamentalFrequency(double f);
 
 		double getNextSample(void) override;
 
@@ -211,22 +206,25 @@ namespace Synth {
 		double _fundamental;
 
 		struct HarmonicInfo {
-			wavePos_t waveformPosition;
-			wavePos_t positionChangePerSample;
+			HarmonicInfo(void) :
+				relativeFrequency(1),
+				amplitude(0)
+			{}
+
+			//set
+			frequency_t relativeFrequency;
 			amplitude_t amplitude;
+
+			//calculated
+			double positionChangePerSample;
+
+			//updated
+			double waveformPosition;
 		};
 
 		std::vector<HarmonicInfo> _harmonics;
 
 		void _recalculateWaveformPositions(void);
-
-		//Harmonic series stuff
-		HarmonicSeriesType _harmonicSeriesType;
-		double _harmonicSeriesMultiple;
-		double _harmonicSeriesControlParameter;
-		std::function<double(unsigned int)> _harmonicSeriesUserFunction;
-		vector<float> _relativeFrequenciesOfHarmonics;
-		void _calculateRelativeFrequenciesOfHarmonics (void);
 
 		void _dataSetEvent(void) override;
 
@@ -651,7 +649,7 @@ namespace Synth {
 		enum class FilterType {
 			LOW_PASS,
 			HIGH_PASS,
-			FIR_USER_DEFINED
+			USER_DEFINED //!< Should not be used directly.
 		};
 
 		enum WindowType {
@@ -660,87 +658,14 @@ namespace Synth {
 			BLACKMAN
 		};
 
-		FIRFilter(void) :
-			_filterType(FilterType::LOW_PASS),
-			_coefCount(-1)
-		{}
+		FIRFilter(void);
 
-		void setup(FilterType filterType, unsigned int coefficientCount) {
-			if ((coefficientCount % 2) == 0) {
-				coefficientCount++; //Must be odd in this implementation
-			}
+		void setup(FilterType filterType, unsigned int coefficientCount);
+		void setup(std::vector<double> coefficients);
 
-			_coefCount = coefficientCount;
+		void setCutoff(double cutoff);
 
-			_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
-		}
-
-		//You can supply your own coefficients. See the fir1 and fir2 functions from the
-		//"signal" package for R for a good way to design your own filter.
-		void setup(std::vector<double> coefficients) {
-			_filterType = FilterType::FIR_USER_DEFINED;
-
-			_coefficients = coefficients;
-
-			_coefCount = coefficients.size();
-			_inputSamples.assign(_coefCount, 0);
-		}
-
-		void setCutoff(double cutoff) {
-			if (_filterType == FilterType::FIR_USER_DEFINED) {
-				return;
-			}
-
-			double omega = PI * cutoff / (_data->sampleRate / 2); //This is pi * normalized frequency, where normalization is based on the nyquist frequency.
-
-			_coefficients.clear();
-
-			for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
-				_coefficients.push_back(_calcH(i, omega));
-			}
-
-			if (_filterType == FilterType::HIGH_PASS) {
-				for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
-					_coefficients[i] *= pow(-1, i);
-				}
-			}
-
-
-			//Do nothing for rectangular window
-			if (_windowType == WindowType::HANNING) {
-				for (int i = 0; i < _coefCount; i++) {
-					_coefficients[i] *= 0.5*(1 - cos(2*PI*i / (_coefCount - 1)));
-				}
-			} else if (_windowType == WindowType::BLACKMAN) {
-				for (int i = 0; i < _coefCount; i++) {
-					double a0 = 7938 / 18608;
-					double a1 = 9240 / 18608;
-					double a2 = 1430 / 18608;
-
-					_coefficients[i] *= a0 - a1 * cos(2*PI*i / (_coefCount - 1)) + a2*cos(4*PI*i / (_coefCount - 1));
-				}
-			}
-
-			//else if (_filterType == FilterType::BAND_PASS) {
-			//	for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
-			//		_convolutionCoefficients[i] *= 2 * cos(i * PI / 2);
-			//	}
-			//}
-		}
-
-		double getNextSample(void) {
-			//Because _inputSamples is set up to have _coefCount elements, you just always pop off an element to start.
-			_inputSamples.pop_front();
-			_inputSamples.push_back(_inputs.front()->getNextSample());
-
-			double y_n = 0;
-
-			for (int i = 0; i < _coefCount; i++) {
-				y_n += _inputSamples[i] * _coefficients[i];
-			}
-
-			return y_n;
-		}
+		double getNextSample(void);
 
 	private:
 
@@ -752,51 +677,8 @@ namespace Synth {
 		vector<double> _coefficients;
 		deque<double> _inputSamples;
 
-		double _calcH(int n, double omega) {
-			if (n == 0) {
-				return omega / PI;
-			}
-			return omega / PI * sinc(n*omega);
-		}
+		double _calcH(int n, double omega);
 	};
-
-
-
-	/* This is a worse version of the Filter class.
-
-	This class emulates an analog RC low-pass filter (http://en.wikipedia.org/wiki/Low-pass_filter#Electronic_low-pass_filters).
-	Setting the breakpoint affects the frequency at which the filter starts to have an effect.
-	\ingroup modSynth
-	class RCFilter : public ModuleBase {
-	public:
-
-		RCFilter(void) :
-			_v0(0),
-			breakpoint(2000)
-		{
-			this->_registerParameter(&breakpoint);
-		}
-
-		double getNextSample(void) override {
-			if (_inputs.size() > 0) {
-				return _update(_inputs.front()->getNextSample());
-			}
-			return 0;
-		}
-
-		ModuleParameter breakpoint;
-
-	private:
-
-		double _v0;
-
-		double _update(double v1) {
-			breakpoint.updateValue();
-			_v0 += (v1 - _v0) * 2 * PI * breakpoint.getValue() / _data->sampleRate;
-			return _v0;
-		}
-	};
-	*/
 
 } //namespace Synth
 } //namespace CX

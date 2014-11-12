@@ -72,7 +72,7 @@ namespace CX {
 
 		void waitForOpenGL(void);
 
-		CX_DataFrame testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
+		std::map<std::string, CX_DataFrame> testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
 		void copyFboToBackBuffer(ofFbo &fbo);
 		void copyFboToBackBuffer(ofFbo &fbo, ofPoint destination);
