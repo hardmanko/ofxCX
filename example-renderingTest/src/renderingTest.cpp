@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 //Because this example is in part a test of the rendering capabilities of your hardware, if you are
 //experiencing crashes, you can try commenting out these defines in order to eliminate certain types

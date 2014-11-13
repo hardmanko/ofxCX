@@ -28,6 +28,8 @@ going wrong by checking out the page for RtAudio: http://www.music.mcgill.ca/~ga
 class CX_SoundStream {
 public:
 
+	typedef RtAudio::Api Api;
+
 	/*! This struct controls the configuration of the CX_SoundStream. */
 	struct Configuration {
 
@@ -37,7 +39,7 @@ public:
 			sampleRate(44100),
 			bufferSize(4096),
 
-			api(RtAudio::UNSPECIFIED),
+			api(Api::UNSPECIFIED),
 
 			inputDeviceId(-1),
 			outputDeviceId(-1)

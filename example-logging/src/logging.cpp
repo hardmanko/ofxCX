@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 //The body of this function is commented out so as to not interfere with reading what is in the console.
 //You can uncomment it to see the result of this callback.

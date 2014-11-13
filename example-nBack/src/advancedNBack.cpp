@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 /*
 In this example, we are going to consider two different ways of using the slide presenter

@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 /*
 This example shows some of the ways in which a modular synthesizer can be constructed using

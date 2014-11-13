@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 /*
 This example is a more advanced version of the change detection task presented in

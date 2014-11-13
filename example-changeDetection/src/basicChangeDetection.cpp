@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 /*
 This example shows how to do a simple change-detection experiment using CX.

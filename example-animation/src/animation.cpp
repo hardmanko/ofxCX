@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 /*
 It is not immediately obvious how to do animations using CX while not blocking, 

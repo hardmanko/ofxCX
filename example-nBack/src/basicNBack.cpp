@@ -1,4 +1,4 @@
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 /*
 This example shows how to implement an N-Back task using an advanced feature of the CX_SlidePresenter 

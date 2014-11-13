@@ -672,9 +672,9 @@ void CX_SoundBuffer::multiplySpeed (float speedMultiplier) {
 }
 
 /*!
-Apply gain to the channel in terms of decibels.
-\param decibels Gain to apply. 0 does nothing. Positive values increase volume, negative values decrease volume. Negative infinity is essentially mute,
-although see multiplyAmplitudeBy() for a more obvious way to do that same operation.
+Apply gain in terms of decibels.
+\param decibels Gain to apply. 0 does nothing. Positive values increase volume, negative values decrease volume. 
+Negative infinity is essentially mute, although see multiplyAmplitudeBy() for a more obvious way to mute.
 \param channel The channel that the gain should be applied to. If channel is less than 0, the gain is applied to all channels.
 */
 bool CX_SoundBuffer::applyGain (float decibels, int channel) {
@@ -683,9 +683,12 @@ bool CX_SoundBuffer::applyGain (float decibels, int channel) {
 }
 
 /*!
-Apply gain to the sound. The original value is simply multiplied by the amount and then clamped to be within [-1, 1].
-\param amount The gain that should be applied. A value of 0 mutes the channel. 1 does nothing. 2 doubles the amplitude. -1 inverts the waveform.
-\param channel The channel that the given multiplier should be applied to. If channel is less than 0, the amplitude multiplier is applied to all channels.
+Apply gain in terms of amplitude. The original value is simply multiplied by `amount` 
+and then clamped to be within [-1, 1].
+\param amount The gain that should be applied. A value of 0 mutes the channel. 
+1 does nothing. 2 doubles the amplitude. -1 inverts the waveform.
+\param channel The channel that the given multiplier should be applied to. If channel 
+is less than 0, the amplitude multiplier is applied to all channels.
 */
 bool CX_SoundBuffer::multiplyAmplitudeBy (float amount, int channel) {
 
