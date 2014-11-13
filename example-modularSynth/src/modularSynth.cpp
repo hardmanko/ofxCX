@@ -30,7 +30,7 @@ void runExperiment(void) {
 	ss.setup(ssConfig);
 	ss.start();
 
-	output.setOuputStream(&ss); //Set the CX_SoundStream ss as the sound stream for the StreamOutput.
+	output.setup(&ss); //Set the CX_SoundStream ss as the sound stream for the StreamOutput.
 
 
 	//Now that we have an output, we can make a really basic synthesizer:

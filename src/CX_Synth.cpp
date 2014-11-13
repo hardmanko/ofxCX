@@ -80,8 +80,8 @@ ModuleControlData_t ModuleBase::getData(void) {
 	return *_data;
 }
 
-/*! This is a reciprocal operation: This module's input is disconnected and `in`'s output to this module
-is disconnected. */
+/*! Disconnect a module that is an input to this module. This is a reciprocal operation: 
+This module's input is disconnected and `in`'s output to this module is disconnected. */
 void ModuleBase::disconnectInput(ModuleBase* in) {
 	auto input = std::find(_inputs.begin(), _inputs.end(), in);
 	if (input != _inputs.end()) {
@@ -91,8 +91,8 @@ void ModuleBase::disconnectInput(ModuleBase* in) {
 	}
 }
 
-/*! This is a reciprocal operation: This module's output is disconnected and `out`'s input from this module
-is disconnected. */
+/*! Disconnect a module that this module outputs to. This is a reciprocal operation: 
+This module's output is disconnected and `out`'s input from this module is disconnected. */
 void ModuleBase::disconnectOutput(ModuleBase* out) {
 	auto output = std::find(_outputs.begin(), _outputs.end(), out);
 	if (output != _outputs.end()) {
@@ -102,6 +102,18 @@ void ModuleBase::disconnectOutput(ModuleBase* out) {
 	}
 }
 
+/*! \brief Fully disconnect a module from all inputs and outputs. */
+void ModuleBase::disconnect(void) {
+	while (_inputs.size() > 0) {
+		this->disconnectInput(_inputs[0]);
+	}
+
+	while (_outputs.size() > 0) {
+		this->disconnectOutput(_outputs[0]);
+	}
+}
+
+//This is not a reciprocal operation
 void ModuleBase::_assignInput(ModuleBase* in) {
 	if (_maxInputs() == 0) {
 		return;
@@ -119,6 +131,7 @@ void ModuleBase::_assignInput(ModuleBase* in) {
 	}
 }
 
+//This is not a reciprocal operation
 void ModuleBase::_assignOutput(ModuleBase* out) {
 	if (_maxOutputs() == 0) {
 		return;
@@ -291,8 +304,18 @@ double Adder::getNextSample(void) {
 // AdditiveSynth //
 ///////////////////
 
+AdditiveSynth::AdditiveSynth(void) :
+	fundamental(1)
+{
+	this->_registerParameter(&fundamental);
+}
+
 double AdditiveSynth::getNextSample(void) {
 	double rval = 0;
+
+	if (fundamental.valueUpdated(true)) {
+		_recalculateWaveformPositions();
+	}
 
 	for (unsigned int i = 0; i < _harmonics.size(); i++) {
 		double waveformPos = _harmonics[i].waveformPosition + _harmonics[i].positionChangePerSample;
@@ -304,14 +327,6 @@ double AdditiveSynth::getNextSample(void) {
 	}
 
 	return rval;
-}
-
-/*! This sets the fundamental frequency being used by the AdditiveSynth. All harmonics are adjusted
-based on the new fundamental. */
-void AdditiveSynth::setFundamentalFrequency(double f) {
-	_fundamental = f;
-
-	_recalculateWaveformPositions();
 }
 
 /*! This function sets the amplitudes of the harmonics based on the chosen type. The resulting waveform
@@ -498,14 +513,14 @@ void AdditiveSynth::setHarmonicSeries(std::vector<frequency_t> harmonicSeries) {
 void AdditiveSynth::_recalculateWaveformPositions(void) {
 	double firstHarmonicPos = _harmonics[0].waveformPosition;
 
-	double normalizedFrequency = _fundamental / _data->sampleRate;
+	double normalizedFrequency = fundamental.getValue() / _data->sampleRate;
 
 	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
 		double relativeFrequency = _harmonics[i].relativeFrequency;
 
 		_harmonics[i].positionChangePerSample = normalizedFrequency * relativeFrequency;
 
-		_harmonics[i].waveformPosition = firstHarmonicPos * relativeFrequency;
+		_harmonics[i].waveformPosition = firstHarmonicPos * relativeFrequency; //This keeps the harmonics in phase
 	}
 }
 
@@ -770,6 +785,12 @@ amount(1)
 	this->_registerParameter(&amount);
 }
 
+Multiplier::Multiplier(double amount_) :
+amount(amount_)
+{
+	this->_registerParameter(&amount);
+}
+
 double Multiplier::getNextSample(void) {
 	if (_inputs.size() == 0) {
 		return 0;
@@ -857,7 +878,24 @@ double Oscillator::whiteNoise(double wp) {
 	return CX::Instances::RNG.randomDouble(-1, 1);
 }
 
+///////////////////
+// RingModulator //
+///////////////////
 
+double RingModulator::getNextSample(void) {
+	if (_inputs.size() == 2) {
+		double i1 = _inputs[0]->getNextSample();
+		double i2 = _inputs[1]->getNextSample();
+		return i1 * i2;
+	} else if (_inputs.size() == 1) {
+		return _inputs.front()->getNextSample();
+	}
+	return 0;
+}
+
+unsigned int RingModulator::_maxInputs(void) {
+	return 2;
+}
 
 //////////////
 // Splitter //
@@ -868,7 +906,11 @@ _currentSample(0.0),
 _fedOutputs(0)
 {}
 
-
+//The way this works is that each output gets the same value from a single
+//input, so only once all of the outputs have been fed do we update the
+//sample value. If the splitter is feeding, e.g., two different stream outputs, 
+//there is the potential for substantial desynchronization. Basically, samples
+//from all outputs of the splitter must happen at adjacent times.
 double Splitter::getNextSample(void) {
 	if (_fedOutputs >= _outputs.size()) {
 		_currentSample = _inputs.front()->getNextSample();
@@ -1020,7 +1062,7 @@ StereoStreamOutput::~StereoStreamOutput(void) {
 	_listenForEvents(false);
 }
 
-void StereoStreamOutput::setOuputStream(CX::CX_SoundStream* stream) {
+void StereoStreamOutput::setup(CX::CX_SoundStream* stream) {
 	_soundStream = stream;
 	_listenForEvents(true);
 
@@ -1051,6 +1093,74 @@ void StereoStreamOutput::_listenForEvents(bool listen) {
 	_listeningForEvents = listen;
 }
 
+/////////////////
+// StreamInput //
+/////////////////
+StreamInput::StreamInput(void) :
+_maxBufferSize(4096),
+_soundStream(nullptr),
+_listeningForEvents(false)
+{}
+
+StreamInput::~StreamInput(void) {
+	_listenForEvents(false);
+}
+
+void StreamInput::setup(CX::CX_SoundStream* stream) {
+	if (stream->getConfiguration().inputChannels != 1) {
+		CX::Instances::Log.error("StreamInput") << "setInputStream(): The provided stream must be configured with a single input channel, but it is not.";
+	}
+	_soundStream = stream;
+
+	_listenForEvents(true);
+}
+
+double StreamInput::getNextSample(void) {
+	double rval = 0;
+	if (_maxBufferSize != 0) {
+		while (_buffer.size() > _maxBufferSize) {
+			_buffer.pop_front();
+		}
+	}
+
+	if (_buffer.size() > 0) {
+		rval = _buffer.front();
+		_buffer.pop_front();
+	}
+	return rval;
+}
+
+void StreamInput::clear(void) {
+	_buffer.clear();
+}
+
+void StreamInput::setMaximumBufferSize(unsigned int size) {
+	_maxBufferSize = size;
+}
+
+void StreamInput::_callback(CX::CX_SoundStream::InputEventArgs& in) {
+	for (unsigned int sampleFrame = 0; sampleFrame < in.bufferSize; sampleFrame++) {
+		_buffer.push_back(in.inputBuffer[sampleFrame]);
+	}
+}
+
+void StreamInput::_listenForEvents(bool listen) {
+	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
+		return;
+	}
+
+	if (listen) {
+		ofAddListener(_soundStream->inputEvent, this, &StreamInput::_callback);
+	} else {
+		ofRemoveListener(_soundStream->inputEvent, this, &StreamInput::_callback);
+	}
+	_listeningForEvents = listen;
+}
+
+unsigned int StreamInput::_maxInputs(void) {
+	return 0;
+}
+
 
 //////////////////
 // StreamOutput //
@@ -1060,7 +1170,7 @@ StreamOutput::~StreamOutput(void) {
 	_listenForEvents(false);
 }
 
-void StreamOutput::setOuputStream(CX::CX_SoundStream* stream) {
+void StreamOutput::setup(CX::CX_SoundStream* stream) {
 	_soundStream = stream;
 	_listenForEvents(true);
 

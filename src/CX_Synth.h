@@ -74,16 +74,21 @@ namespace Synth {
 		void disconnectInput(ModuleBase* in);
 		void disconnectOutput(ModuleBase* out);
 
+		void disconnect(void);
+
 	protected:
 
 		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
 		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
-		vector<ModuleBase*> _inputs;
-		vector<ModuleBase*> _outputs;
-		vector<ModuleParameter*> _parameters;
+		std::vector<ModuleBase*> _inputs;
+		std::vector<ModuleBase*> _outputs;
+		std::vector<ModuleParameter*> _parameters;
 		ModuleControlData_t *_data;
 
+		//This function is called whenever _dataSet is called. Within this function, you should do things for
+		//your module that depend on the new data values. You should not attempt to propogate the data values
+		//to inputs, outputs, or parameters: that is all done for you.
 		virtual void _dataSetEvent(void) { return; }
 
 		void _dataSet(ModuleBase* caller);
@@ -103,8 +108,8 @@ namespace Synth {
 		virtual unsigned int _maxOutputs(void) { return 1; };
 
 		//These functions are called whenever an input or output has been assigned to this module.
-		virtual void _inputAssignedEvent(ModuleBase* in) {};
-		virtual void _outputAssignedEvent(ModuleBase* out) {};
+		virtual void _inputAssignedEvent(ModuleBase* in) { return; };
+		virtual void _outputAssignedEvent(ModuleBase* out) { return; };
 	};
 
 	/*! This class is used to provide modules with the ability to have their control parameters change as a
@@ -129,14 +134,13 @@ namespace Synth {
 
 		ModuleParameter& operator=(double d);
 
-
 		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
 	private:
 		friend class ModuleBase;
 
-		ModuleBase* _owner;
-		ModuleBase* _input; //Parameters have one input and no outputs.
+		ModuleBase* _owner; // A pointer to the module that this ModuleParameter is owned by.
+		ModuleBase* _input; // The input to the parameter. Parameters have one input and no outputs.
 
 		bool _updated;
 		double _value;
@@ -184,6 +188,10 @@ namespace Synth {
 			TRIANGLE
 		};
 
+		AdditiveSynth(void);
+
+		ModuleParameter fundamental; //!< The fundamental frequency (the first harmonic) of the synth.
+
 		void setStandardHarmonicSeries(unsigned int harmonicCount);
 		void setHarmonicSeries (unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter);
 		void setHarmonicSeries(std::vector<frequency_t> harmonicSeries);
@@ -195,15 +203,9 @@ namespace Synth {
 
 		void pruneLowAmplitudeHarmonics(double tol);
 
-		void setFundamentalFrequency(double f);
-
 		double getNextSample(void) override;
 
 	private:
-
-		void _configure (std::vector<double> frequencies, std::vector<double> amplitudes);
-
-		double _fundamental;
 
 		struct HarmonicInfo {
 			HarmonicInfo(void) :
@@ -360,7 +362,8 @@ namespace Synth {
 
 	/*! This class is used within output modules that actually output data. This class serves as
 	an endpoint for data that is then retrieved by the class containing the GenericOutput. See, for
-	example, the StereoStreamOutput class.
+	example, the StereoStreamOutput class. This class does nothing useful on its own (getNextSample()
+	is just a passthrough).
 
 	\ingroup modSynth */
 	class GenericOutput : public ModuleBase {
@@ -374,12 +377,12 @@ namespace Synth {
 	private:
 		unsigned int _maxOutputs(void) override { return 0; };
 		void _inputAssignedEvent(ModuleBase* in) override {
-			in->setData(*this->_data);
+			in->setData(this->getData());
 		}
 	};
 
 	/*! This class mixes together a number of inputs. It does no mixing in the usual sense of
-	setting levels of the inputs. Use Multipliers on the inputs for that. This class simply
+	setting levels of the inputs, which is done with Multipliers. This class simply
 	adds together all of the inputs with no amplitude correction, so it is possible for the
 	output of the mixer to have very large amplitudes.
 
@@ -402,6 +405,8 @@ namespace Synth {
 	class Multiplier : public ModuleBase {
 	public:
 		Multiplier(void);
+		Multiplier(double amount);
+
 		double getNextSample(void) override;
 		void setGain(double decibels);
 		ModuleParameter amount;
@@ -445,6 +450,45 @@ namespace Synth {
 
 		unsigned int _maxInputs(void) override { return 0; };
 	};
+
+
+	/*! This class is an implementation of a very basic ring modulator.
+	It is not an analog emulation and it does nothing to deal with aliasing, so it may not work well
+	with non-sinusoidal carriers.
+
+	Ringmods need two inputs: the source and the carrier. The order doesn't matter, for this class.
+	If only one source is given, it will just pass that source through.
+
+	\code{.cpp}
+
+	StreamInput input;
+	input.setup(&ss); //Assume that ss is a CX_SoundStream that is configured for input.
+
+	StreamOutput output;
+	output.setup(&ss); //Assume that ss is also configured for output.
+
+	Oscillator carrier;
+	carrier.setGeneratorFunction(Oscillator::sine);
+	carrier.frequency = 250;
+
+	RingModulator rm;
+
+	carrier >> rm; //Connect the carrier
+	input >> rm; //And the source
+
+	Multiplier m(0.1);
+
+	rm >> m >> output;
+
+	\endcode
+	*/
+	class RingModulator : public ModuleBase {
+	public:
+		double getNextSample(void) override;
+	private:
+		unsigned int _maxInputs(void) override;
+	};
+
 
 	/*! This class splits a signal and sends that signal to multiple outputs. This can be used
 	for panning effects, for example.
@@ -503,6 +547,42 @@ namespace Synth {
 
 	};
 
+
+	/*! This class is a module that takes input from a CX_SoundStream configured for input, so
+	it is good for getting sounds from a microphone or line in. This class is strictly monophonic.
+
+	In order to be compatible with the other modules, this module takes in sound data and stores
+	it in an internal buffer. Requests for samples from this class will takes samples from the
+	buffer. If the buffer is empty, this will output 0. If there are no requests for samples from
+	this class for a long time, its buffer can get very large. Then, when samples are requested,
+	the samples it gives out will be very old. For this reason, user code can configure a maximum
+	buffer size using setMaximumBufferSize(). The maximum buffer size defaults to 4096 samples.
+	User code can clear the buffer with clear().
+	*/
+	class StreamInput : public ModuleBase {
+	public:
+		StreamInput(void);
+		~StreamInput(void);
+
+		void setup(CX::CX_SoundStream* stream);
+
+		double getNextSample(void) override;
+
+		void clear(void);
+		void setMaximumBufferSize(unsigned int size);
+	private:
+
+		unsigned int _maxBufferSize;
+		std::deque<float> _buffer;
+
+		CX::CX_SoundStream* _soundStream;
+		bool _listeningForEvents;
+
+		void _callback(CX::CX_SoundStream::InputEventArgs& in);
+		void _listenForEvents(bool listen);
+		unsigned int _maxInputs(void) override;
+	};
+
 	/*! This class provides a method of playing the output of a modular synth using a CX_SoundStream.
 	In order to use this class, you need to configure a CX_SoundStream for use. See the soundBuffer
 	example and the CX::CX_SoundStream class for more information.
@@ -514,7 +594,7 @@ namespace Synth {
 	Oscillator osc;
 
 	Synth::StreamOutput output;
-	output.setOutputStream(&ss);
+	output.setup(&ss);
 
 	osc >> output; //Sound should be playing past this point.
 	\endcode
@@ -523,16 +603,14 @@ namespace Synth {
 	*/
 	class StreamOutput : public ModuleBase {
 	public:
-
 		~StreamOutput(void);
-
-		void setOuputStream(CX::CX_SoundStream* stream);
+		void setup(CX::CX_SoundStream* stream);
 
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
 		unsigned int _maxOutputs(void) override { return 0; };
 		void _inputAssignedEvent(ModuleBase* in) override {
-			in->setData(*this->_data);
+			in->setData(this->getData());
 		}
 
 		CX_SoundStream* _soundStream;
@@ -551,10 +629,10 @@ namespace Synth {
 
 		~StereoStreamOutput(void);
 
-		void setOuputStream(CX::CX_SoundStream* stream);
+		void setup(CX::CX_SoundStream* stream);
 
-		GenericOutput left;
-		GenericOutput right;
+		GenericOutput left; //!< The left channel of the stream.
+		GenericOutput right; //!< The right channel of the stream.
 
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
@@ -565,7 +643,7 @@ namespace Synth {
 	};
 
 	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer
-	for later use.
+	for later use. See the documentation for CX::Synth::StereoSoundBufferOutput to get an idea of how to use this class.
 	\ingroup modSynth
 	*/
 	class SoundBufferOutput : public ModuleBase {
@@ -674,8 +752,8 @@ namespace Synth {
 
 		int _coefCount;
 
-		vector<double> _coefficients;
-		deque<double> _inputSamples;
+		std::vector<double> _coefficients;
+		std::deque<double> _inputSamples;
 
 		double _calcH(int n, double omega);
 	};
