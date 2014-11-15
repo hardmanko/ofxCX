@@ -58,6 +58,12 @@ ModuleBase::~ModuleBase(void) {
 	delete _data;
 }
 
+/*! This function should be overloaded for any derived class that can be used as the input for another module. 
+\return The value of the next sample from the module. */
+double ModuleBase::getNextSample(void) {
+	return 0;
+}
+
 /*! This function sets the data needed by this module in order to function properly. Many modules need this data,
 specifically the sample rate that the synth using. If several modules are connected together, you will only need
 to set the data for one module and the change will propagate to the other connected modules automatically.
@@ -113,7 +119,8 @@ void ModuleBase::disconnect(void) {
 	}
 }
 
-//This is not a reciprocal operation
+/*! Assigns a module as an input to this module. This is not a reciprocal operation. 
+\param in The module to assign as an input. */
 void ModuleBase::_assignInput(ModuleBase* in) {
 	if (_maxInputs() == 0) {
 		return;
@@ -131,7 +138,8 @@ void ModuleBase::_assignInput(ModuleBase* in) {
 	}
 }
 
-//This is not a reciprocal operation
+/*! Assigns a module as an output from this module. This is not a reciprocal operation. 
+\param out The module to asssign as an output. */
 void ModuleBase::_assignOutput(ModuleBase* out) {
 	if (_maxOutputs() == 0) {
 		return;
@@ -149,6 +157,8 @@ void ModuleBase::_assignOutput(ModuleBase* out) {
 	}
 }
 
+/*! This function is called on a module after the data for that module has been set.
+\param caller The module that set the data for this module. */
 void ModuleBase::_dataSet(ModuleBase* caller) {
 	this->_dataSetEvent();
 
@@ -171,13 +181,24 @@ void ModuleBase::_dataSet(ModuleBase* caller) {
 	}
 }
 
+/*! This function is a sort of callback that is called whenever _dataSet is called. Within this 
+function, you should do things for your module that depend on the new data values. You should 
+not attempt to propagate the data values to inputs, outputs, or parameters: that is all done 
+for you. */
+void ModuleBase::_dataSetEvent(void) {
+	return;
+}
+
+/*! This function sets the data for a target module if the data for that module has not been set.
+\param target The target module to set the data for. */
 void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
+
+	//If this is not initialized, don't set data for the target.
 	if (!this->_data->initialized) {
 		return;
 	}
 
-	//Compare both pointers and contents. The pointer comparison is currently useless because the pointers will always be different.
-	if ((target->_data != this->_data) || (*target->_data != *this->_data)) {
+	if (*target->_data != *this->_data) {
 		*target->_data = *this->_data;
 		target->_dataSet(this);
 	}
@@ -206,6 +227,26 @@ void ModuleBase::_registerParameter(ModuleParameter* p) {
 		_parameters.push_back(p);
 		p->_owner = this;
 	}
+}
+
+/*! Returns the maximum number of inputs to this module. */
+unsigned int ModuleBase::_maxInputs(void) { 
+	return 1; 
+}
+
+/*! Returns the maximum numer of outputs from this module. */
+unsigned int ModuleBase::_maxOutputs(void) { 
+	return 1; 
+}
+
+/*! Does nothing by default, but can be overridden by inheriting classes. */
+void ModuleBase::_inputAssignedEvent(ModuleBase* in) { 
+	return; 
+} 
+
+/*! Does nothing by default, but can be overridden by inheriting classes. */
+void ModuleBase::_outputAssignedEvent(ModuleBase* out) { 
+	return; 
 }
 
 /////////////////////
@@ -457,7 +498,8 @@ void AdditiveSynth::setStandardHarmonicSeries(unsigned int harmonicCount) {
 	this->setHarmonicSeries(harmonicCount, HarmonicSeriesType::MULTIPLE, 1.0);
 }
 
-/*!
+/*! Set the harmonic series for the AdditiveSynth.
+\param harmonicCount The number of harmonics to use.
 \param type The type of harmonic series to generate. Can be either HS_MULTIPLE or HS_SEMITONE. For HS_MULTIPLE, each
 harmonic's frequency will be some multiple of the fundamental frequency, depending on the harmonic number and
 controlParameter. For HS_SEMITONE, each harmonic's frequency will be some number of semitones above the previous frequency,
@@ -785,6 +827,9 @@ amount(1)
 	this->_registerParameter(&amount);
 }
 
+/*! Convenience constructor.
+\param amount_ The amount to multiply the input by.
+*/
 Multiplier::Multiplier(double amount_) :
 amount(amount_)
 {
@@ -850,14 +895,32 @@ void Oscillator::_dataSetEvent(void) {
 	_sampleRate = _data->sampleRate;
 }
 
+/*! Produces a sawtooth wave.
+\param wp The waveform position to sample, in the interval [0, 1), where 0 is the 
+start of the waveform and 1 is the end of the waveform. 
+\return A value normalized to the interval [-1, 1] containing the value of the waveform
+function at the given waveform position.
+*/
 double Oscillator::saw(double wp) {
 	return (2 * wp) - 1;
 }
 
+/*! Produces a sine wave.
+\param wp The waveform position to sample, in the interval [0, 1), where 0 is the
+start of the waveform and 1 is the end of the waveform. 
+\return A value normalized to the interval [-1, 1] containing the value of the waveform
+function at the given waveform position.
+*/
 double Oscillator::sine(double wp) {
 	return sin(wp * 2 * PI);
 }
 
+/*! Produces a square wave.
+\param wp The waveform position to sample, in the interval [0, 1), where 0 is the
+start of the waveform and 1 is the end of the waveform. 
+\return A value normalized to the interval [-1, 1] containing the value of the waveform
+function at the given waveform position.
+*/
 double Oscillator::square(double wp) {
 	if (wp < .5) {
 		return 1;
@@ -866,6 +929,12 @@ double Oscillator::square(double wp) {
 	}
 }
 
+/*! Produces a triangle wave.
+\param wp The waveform position to sample, in the interval [0, 1), where 0 is the
+start of the waveform and 1 is the end of the waveform. 
+\return A value normalized to the interval [-1, 1] containing the value of the waveform
+function at the given waveform position.
+*/
 double Oscillator::triangle(double wp) {
 	if (wp < .5) {
 		return ((4 * wp) - 1);
@@ -874,6 +943,10 @@ double Oscillator::triangle(double wp) {
 	}
 }
 
+/*! Produces white noise.
+\param wp This argument is ignored. 
+\return A random value in the interval [-1, 1].
+*/
 double Oscillator::whiteNoise(double wp) {
 	return CX::Instances::RNG.randomDouble(-1, 1);
 }
@@ -1062,6 +1135,8 @@ StereoStreamOutput::~StereoStreamOutput(void) {
 	_listenForEvents(false);
 }
 
+/*! Set up the StereoStreamOutput with the given CX_SoundStream.
+\param stream A CX_SoundStream that is configured for stereo output. */
 void StereoStreamOutput::setup(CX::CX_SoundStream* stream) {
 	_soundStream = stream;
 	_listenForEvents(true);
@@ -1106,9 +1181,12 @@ StreamInput::~StreamInput(void) {
 	_listenForEvents(false);
 }
 
+/*! Set up the StreamInput with a CX_SoundStream configured for input. 
+\param stream A pointer to the sound stream. */
 void StreamInput::setup(CX::CX_SoundStream* stream) {
 	if (stream->getConfiguration().inputChannels != 1) {
-		CX::Instances::Log.error("StreamInput") << "setInputStream(): The provided stream must be configured with a single input channel, but it is not.";
+		CX::Instances::Log.error("StreamInput") << "setInputStream(): The provided stream must be"
+			"configured with a single input channel, but it is not.";
 	}
 	_soundStream = stream;
 
@@ -1130,10 +1208,13 @@ double StreamInput::getNextSample(void) {
 	return rval;
 }
 
+/*! \brief Clear the contents of the input buffer. */
 void StreamInput::clear(void) {
 	_buffer.clear();
 }
 
+/*! Set the maximum number of samples that the input buffer can contain. 
+\param size The size of the input buffer, in samples. */
 void StreamInput::setMaximumBufferSize(unsigned int size) {
 	_maxBufferSize = size;
 }
@@ -1170,6 +1251,8 @@ StreamOutput::~StreamOutput(void) {
 	_listenForEvents(false);
 }
 
+/*! Set up the StereoStreamOutput with the given CX_SoundStream.
+\param stream A CX_SoundStream that is configured for output to any number of channels. */
 void StreamOutput::setup(CX::CX_SoundStream* stream) {
 	_soundStream = stream;
 	_listenForEvents(true);
@@ -1239,7 +1322,6 @@ _coefCount(-1)
 {}
 
 /*! Set up the FIRFilter with the given filter type and number of coefficients to use.
-You can
 \param filterType Should be a type of filter other than FIRFilter::FilterType::FIR_USER_DEFINED. If you want
 to define your own filter type, use FIRFilter::setup(std::vector<double>) instead.
 \param coefficientCount The number of coefficients sets the length of time, in samples, that the filter will
@@ -1261,8 +1343,11 @@ void FIRFilter::setup(FilterType filterType, unsigned int coefficientCount) {
 	_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
 }
 
-//You can supply your own coefficients. See the fir1 and fir2 functions from the
-//"signal" package for R for a good way to design your own filter.
+/*! You can use this function to supply your own filter coefficients, which allows a great
+deal of flexibility in the use of the FIRFilter.  See the fir1 and fir2 functions from the
+//"signal" package for R for a way to design your own filter. 
+\param coefficients The filter coefficients to use.
+*/
 void FIRFilter::setup(std::vector<double> coefficients) {
 	_filterType = FilterType::USER_DEFINED;
 
@@ -1272,6 +1357,9 @@ void FIRFilter::setup(std::vector<double> coefficients) {
 	_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
 }
 
+/*! If using either FilterType::LOW_PASS or FilterType::HIGH_PASS, this function allows you to
+change the cutoff frequency for the filter. This causes the filter coefficients to be recalculated.
+\param cutoff The cutoff frequency, in Hz. */
 void FIRFilter::setCutoff(double cutoff) {
 	if (_filterType == FilterType::USER_DEFINED) {
 		CX::Instances::Log.error("FIRFilter") << "setCutoff() should not be used when the filter type is USER_DEFINED.";

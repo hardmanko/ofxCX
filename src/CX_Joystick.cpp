@@ -50,6 +50,7 @@ std::string CX_Joystick::getJoystickName (void) {
 	return _joystickName;
 }
 
+/*! Get the integer index of the currently selected joystick. */
 int CX_Joystick::getJoystickIndex(void) {
 	return _joystickIndex;
 }

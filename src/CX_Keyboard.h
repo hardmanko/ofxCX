@@ -31,7 +31,7 @@ namespace CX {
 		struct Event {
 			/*! The key involved in this event. The value of this can be compared with character literals for many of
 			the standard keyboard keys. For example, you could use (myKeyEvent.key == 'e') to test if the key was the E key.
-			Always check for lower case letters, because shift/capslock are ignored when setting the value for ::key.
+			Always check for lower case letters, because shift/capslock are ignored when setting the value for the key.
 
 			For special keys, `key` can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
 

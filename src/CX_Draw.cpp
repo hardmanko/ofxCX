@@ -6,9 +6,46 @@ namespace CX {
 namespace Draw {
 
 
-/*!
-This function draws an approximation of a squircle (http://en.wikipedia.org/wiki/Squircle) using Bezier curves.
-The squircle will be centered on (0,0) in the ofPath.
+
+//These are some local functions and classes that are not part of the CX api.
+// \cond INTERNAL_DOCS
+struct LineSegment;
+
+bool isPointInRegion(ofPoint p, ofPoint r1, ofPoint r2, float tolerance);
+bool arePointsInLine(ofPoint p1, ofPoint p2, ofPoint p3, float angleTolerance);
+ofPoint findIntersectionOfLines(LineSegment ls1, LineSegment ls2);
+std::vector<LineSegment> getParallelLineSegments(LineSegment ls, float distance);
+
+struct LineSegment {
+	LineSegment(void) :
+		p1(-1, -1),
+		p2(-1, -1)
+	{}
+
+	LineSegment(ofPoint p1_, ofPoint p2_) :
+		p1(p1_),
+		p2(p2_)
+	{}
+
+	ofPoint pointAlong(float p) {
+		p = CX::Util::clamp<float>(p, 0, 1);
+		return (p2 - p1)*p + p1;
+	}
+
+	bool doesPointLieOnSegment(ofPoint p, float locationTolerance = 1e-3, float angleTolerance = 0.5) {
+		return isPointInRegion(p, p1, p2, locationTolerance) && arePointsInLine(p, p1, p2, angleTolerance);
+
+	}
+
+	ofPoint p1;
+	ofPoint p2;
+};
+
+// \endcond
+
+
+/*! This function draws an approximation of a squircle (http://en.wikipedia.org/wiki/Squircle) using Bezier curves
+to an ofPath. The squircle will be centered on (0,0) in the ofPath.
 \param radius The radius of the largest circle that can be enclosed in the squircle.
 \param amount The "squircliness" of the squircle. The default (0.9) seems like a pretty good amount for a good 
 approximation of a squircle, but different amounts can give different sorts of shapes.
@@ -36,6 +73,25 @@ ofPath squircleToPath(double radius, double amount) {
 	}
 
 	return sq;
+}
+
+/*! This function draws an approximation of a squircle (http://en.wikipedia.org/wiki/Squircle) using Bezier curves.
+\param center The squircle will be drawn centered at `center`.
+\param radius The radius of the largest circle that can be enclosed in the squircle.
+\param amount The "squircliness" of the squircle. The default (0.9) seems like a pretty good amount for a good
+approximation of a squircle, but different amounts can give different sorts of shapes.
+\param rotationDeg The amount to rotate the squircle, in degrees.
+\note If more control over the drawing of the squircle is desired, use squircleToPath() and then modify the ofPath.
+*/
+void squircle(ofPoint center, double radius, double amount, double rotationDeg) {
+	ofPath sq = squircleToPath(radius, amount);
+
+	sq.setColor(ofGetStyle().color);
+	sq.setFilled(true);
+
+	sq.rotate(rotationDeg, ofVec3f(0, 0, 1));
+
+	sq.draw(center.x, center.y);
 }
 
 /*! Draws an arrow to an ofPath. The outline of the arrow is drawn with strokes, so you can
@@ -337,6 +393,9 @@ ofPixels greyscalePatternToPixels(const CX_PatternProperties_t& properties) {
 	return pix;
 }
 
+/*! Just like Draw::gabor(ofPoint, const CX_GaborProperties_t&), except that instead of drawing the
+pattern, it returns it in an ofPixels object.
+*/
 ofPixels gaborToPixels (const CX_GaborProperties_t& properties) {
 	ofPixels pattern = greyscalePatternToPixels(properties.pattern);
 	
@@ -348,6 +407,9 @@ ofPixels gaborToPixels (const CX_GaborProperties_t& properties) {
 	return pix;
 }
 
+/*! Just like Draw::gabor(ofPoint, const CX_GaborProperties_t&), except that instead of drawing the
+pattern, it returns it in an ofTexture object.
+*/
 ofTexture gaborToTexture (const CX_GaborProperties_t& properties) {
 	ofPixels pix = gaborToPixels(properties);
 	ofTexture tex;
@@ -366,347 +428,6 @@ void gabor(ofPoint center, const CX_GaborProperties_t& properties) {
 	tex.draw(center.x - tex.getWidth() / 2, center.y - tex.getHeight() / 2); //Draws centered
 }
 
-
-
-
-bool isPointInRegion(ofPoint p, ofPoint r1, ofPoint r2, float tolerance) {
-	float lowerX = min(r1.x, r2.x) - tolerance;
-	float upperX = max(r1.x, r2.x) + tolerance;
-	float lowerY = min(r1.y, r2.y) - tolerance;
-	float upperY = max(r1.y, r2.y) + tolerance;
-
-	return (p.x >= lowerX) && (p.x <= upperX) && (p.y >= lowerY) && (p.y <= upperY);
-}
-
-bool arePointsInLine(ofPoint p1, ofPoint p2, ofPoint p3, float angleTolerance) {
-	float a1 = Util::getAngleBetweenPoints(p1, p2);
-	float a2 = Util::getAngleBetweenPoints(p2, p3);
-
-	float dif = a1 - a2;
-	if (abs(dif) > 90.0) {
-		dif = abs(dif) - 180.0;
-	}
-
-	if (abs(dif) < angleTolerance) {
-		return true;
-	}
-	return false;
-}
-
-
-struct LineSegment {
-	LineSegment(void) :
-		p1(-1, -1),
-		p2(-1, -1)
-	{}
-
-	LineSegment(ofPoint p1_, ofPoint p2_) :
-		p1(p1_),
-		p2(p2_)
-	{}
-
-	ofPoint pointAlong(float p) {
-		p = CX::Util::clamp<float>(p, 0, 1);
-		return (p2 - p1)*p + p1;
-	}
-
-	bool doesPointLieOnSegment(ofPoint p, float locationTolerance = 1e-3, float angleTolerance = 0.5) {
-		return isPointInRegion(p, p1, p2, locationTolerance) && arePointsInLine(p, p1, p2, angleTolerance);
-
-	}
-
-	ofPoint p1;
-	ofPoint p2;
-};
-
-struct LineStandardCoefs {
-
-	LineStandardCoefs(LineSegment ls) {
-		findCoefs(ls.p1, ls.p2);
-	}
-
-	void findCoefs(ofPoint p1, ofPoint p2) {
-		if (p1.x == p2.x) {
-			A = 1 / p1.x;
-			B = 0;
-			C = 1;
-			return;
-		}
-
-		float m = (p1.y - p2.y) / (p1.x - p2.x);
-		float b = p1.y - (m * p1.x);
-
-		findCoefs(m, b);
-	}
-
-	void findCoefs(float m, float b) {
-		if (b == 0) {
-			B = 1;
-			C = b * B;
-			A = -B * m;
-		} else {
-			C = 1;
-			B = C / b;
-			A = -B * m;
-		}
-	}
-
-	float A;
-	float B;
-	float C;
-};
-
-
-//This does not find the intersection of the line segments, but the intersection of the lines defined by the two points
-//in each line segment.
-ofPoint findIntersectionOfLines(LineSegment ls1, LineSegment ls2) {
-	LineStandardCoefs c1(ls1);
-	LineStandardCoefs c2(ls2);
-
-	float det = 1 / (c1.A*c2.B - c2.A*c1.B);
-	return ofPoint(det*(c2.B - c1.B), det*(c1.A - c2.A));
-}
-
-std::vector<LineSegment> getParallelLineSegments(LineSegment ls, float distance) {
-	float d = distance;
-
-	std::vector<LineSegment> rval(2);
-
-	float xOffset = 0;
-	float yOffset = 0;
-
-	if (ls.p1.x == ls.p2.x) {
-		xOffset = d;
-		yOffset = 0;
-	} else if (ls.p1.y == ls.p2.y) {
-		xOffset = 0;
-		yOffset = d;
-	} else {
-		float origM = (ls.p1.y - ls.p2.y) / (ls.p1.x - ls.p2.x);
-		float m = -1 / origM;
-		xOffset = d / (sqrt(1 + pow(m, 2)));
-		yOffset = m*xOffset;
-	}
-
-	rval[0].p1.x = ls.p1.x + xOffset;
-	rval[0].p1.y = ls.p1.y + yOffset;
-	rval[0].p2.x = ls.p2.x + xOffset;
-	rval[0].p2.y = ls.p2.y + yOffset;
-
-	rval[1].p1.x = ls.p1.x - xOffset;
-	rval[1].p1.y = ls.p1.y - yOffset;
-	rval[1].p2.x = ls.p2.x - xOffset;
-	rval[1].p2.y = ls.p2.y - yOffset;
-
-	return rval;
-}
-
-ofVec3f getCornerOuterVector(ofPoint p1, ofPoint p2, ofPoint p3, float vectorLength) {
-	ofVec3f offset = (p2 - p1) + (p2 - p3);
-	float d = sqrt(offset.x * offset.x + offset.y*offset.y);
-	float s = vectorLength / d;
-	ofVec3f result;
-	result.x = sqrt(vectorLength*vectorLength - pow(s*offset.y, 2));
-	result.y = sqrt(vectorLength*vectorLength - pow(s*offset.x, 2));
-	return result;
-}
-
-struct CornerPoint {
-	enum Type {
-		INNER,
-		OUTER,
-		PERPENDICULAR
-	};
-
-	CornerPoint(void) :
-		p(-1, -1)
-	{}
-
-	CornerPoint(ofPoint p_, CornerPoint::Type type_) :
-		p(p_),
-		type(type_)
-	{}
-
-	ofPoint p;
-	Type type;
-};
-
-ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode) {
-	bool isClosed = (points.front() == points.back());
-
-	
-	for (unsigned int i = 0; i < points.size() - 2; i++) {
-		//Clean out points that are in a line with each other
-		if (arePointsInLine(points[i], points[i + 1], points[i + 2], 0) && 
-			isPointInRegion(points[i + 1], points[i], points[i + 2], width / 100)) 
-		{
-			points.erase(points.begin() + i + 1);
-			i--;
-			continue;
-		}
-		//Remove identical points
-		if (points[i] == points[i + 1]) {
-			points.erase(points.begin() + i + 1);
-			i--;
-			continue;
-		}
-	}
-
-	std::vector< std::vector< LineSegment > > parallelSegments(points.size() - 1);
-	std::vector< std::vector<int> > lineSegmentSide(parallelSegments.size());
-	std::vector< std::vector< CornerPoint > > cornerPoints(2);
-	std::vector< CornerPoint > allCornerPoints;
-
-	for (unsigned int i = 0; i < parallelSegments.size(); i++) {
-		parallelSegments[i] = getParallelLineSegments(LineSegment(points[i], points[i + 1]), width / 2);
-		lineSegmentSide[i].resize(2);
-	}
-
-	lineSegmentSide[0][0] = 0;
-	lineSegmentSide[0][1] = 1;
-
-	unsigned int endIndex = isClosed ? parallelSegments.size() : parallelSegments.size() - 1;
-
-	for (unsigned int i = 0; i < endIndex; i++) {
-
-		unsigned int i2 = i + 1;
-		if (isClosed && (i == (parallelSegments.size() - 1))) {
-			i2 = 0;
-		}
-
-		for (unsigned int j = 0; j < 2; j++) {
-			for (unsigned int k = 0; k < 2; k++) {
-
-				LineSegment& ls1 = parallelSegments[i][j];
-				LineSegment& ls2 = parallelSegments[i2][k];
-
-				ofPoint intersection = findIntersectionOfLines(ls1, ls2);
-
-				bool inLs1 = isPointInRegion(intersection, ls1.p1, ls1.p2, width / 100);
-				bool inLs2 = isPointInRegion(intersection, ls2.p1, ls2.p2, width / 100);
-
-				//cout << "i,j,k: " << i << "," << j << "," << k << ": " << inLs1 << ", " << inLs2 << endl;
-
-				int side = lineSegmentSide[i][j];
-
-				if (arePointsInLine(points[i], points[i2], points[i2 + 1], 0)) {
-					if (isPointInRegion(points[i2], points[i], points[i2 + 1], width / 100)) {
-						//Middle point is between others. This should have been removed earlier, so do nothing now.
-					} else {
-						//Middle point is not between others, it is at the end of a line sticking out.
-						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
-					}
-				} else if (inLs1 && inLs2) {
-
-					lineSegmentSide[i2][k] = side;
-
-					if (!isClosed && (i == 0)) {
-						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
-						allCornerPoints.push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
-					}
-					cornerPoints[side].push_back(CornerPoint(intersection, CornerPoint::INNER));
-					allCornerPoints.push_back(CornerPoint(intersection, CornerPoint::INNER));
-					if (!isClosed && (i == (endIndex - 1))) {
-						cornerPoints[side].push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
-						allCornerPoints.push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
-					}
-
-					ls1.p2 = intersection;
-					ls2.p1 = intersection;
-				} else if (!inLs1 && !inLs2) {
-					lineSegmentSide[i2][k] = side;
-
-					if (!isClosed && (i == 0)) {
-						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
-						allCornerPoints.push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
-					}
-					cornerPoints[side].push_back(CornerPoint(ls1.p2, CornerPoint::PERPENDICULAR));
-					cornerPoints[side].push_back(CornerPoint(intersection, CornerPoint::OUTER));
-					cornerPoints[side].push_back(CornerPoint(ls2.p1, CornerPoint::PERPENDICULAR));
-
-					allCornerPoints.push_back(CornerPoint(ls1.p2, CornerPoint::PERPENDICULAR));
-					allCornerPoints.push_back(CornerPoint(intersection, CornerPoint::OUTER));
-					allCornerPoints.push_back(CornerPoint(ls2.p1, CornerPoint::PERPENDICULAR));
-
-					if (!isClosed && (i == (endIndex - 1))) {
-						cornerPoints[side].push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
-						allCornerPoints.push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
-					}
-
-					ls1.p2 = intersection;
-					ls2.p1 = intersection;
-				}
-			}
-		}
-	}
-
-	if (isClosed) {
-		cornerPoints[0].push_back(cornerPoints[0][0]);
-		cornerPoints[1].push_back(cornerPoints[1][0]);
-
-		allCornerPoints.push_back(cornerPoints[0][0]);
-		allCornerPoints.push_back(cornerPoints[1][0]);
-	}
-
-
-	
-	ofPath path;
-	path.setFilled(true);
-	path.setStrokeWidth(0);
-	path.setPolyWindingMode(ofPolyWindingMode::OF_POLY_WINDING_NONZERO);
-
-	if (cornerMode == LineCornerMode::OUTER_POINT) {
-
-		path.moveTo(cornerPoints[0][0].p);
-		for (unsigned int i = 1; i < cornerPoints[0].size(); i++) {
-			path.lineTo(cornerPoints[0][i].p); //You could do a check to make sure that perpendicular points that are not at the ends are not drawn,
-				//but why bother?
-		}
-
-		for (unsigned int i = cornerPoints[1].size() - 1; i < cornerPoints[1].size(); i--) {
-			path.lineTo(cornerPoints[1][i].p);
-		}
-		path.lineTo(cornerPoints[0][0].p);
-
-	} else if (cornerMode == LineCornerMode::STRAIGHT_LINE) {
-		path.moveTo(cornerPoints[0][0].p);
-		for (unsigned int i = 1; i < cornerPoints[0].size(); i++) {
-			if (cornerPoints[0][i].type != CornerPoint::OUTER) {
-				path.lineTo(cornerPoints[0][i].p);
-			}
-		}
-
-		for (unsigned int i = cornerPoints[1].size() - 1; i < cornerPoints[1].size(); i--) {
-			if (cornerPoints[1][i].type != CornerPoint::OUTER) {
-				path.lineTo(cornerPoints[1][i].p);
-			}
-		}
-		path.lineTo(cornerPoints[0][0].p);
-
-	} else if (cornerMode == LineCornerMode::BEZIER_ARC) {
-		path.moveTo(cornerPoints[0][0].p);
-		for (unsigned int i = 1; i < cornerPoints[0].size(); i++) {
-			if (cornerPoints[0][i].type == CornerPoint::OUTER) {
-				path.bezierTo(cornerPoints[0][i - 1].p, cornerPoints[0][i].p, cornerPoints[0][i + 1].p);
-				i++;
-			} else {
-				path.lineTo(cornerPoints[0][i].p);
-			}
-		}
-
-		for (unsigned int i = cornerPoints[1].size() - 1; i < cornerPoints[1].size(); i--) {
-			if (cornerPoints[1][i].type == CornerPoint::OUTER) {
-				path.bezierTo(cornerPoints[1][i + 1].p, cornerPoints[1][i].p, cornerPoints[1][i - 1].p);
-				i--;
-			} else {
-				path.lineTo(cornerPoints[1][i].p);
-			}
-		}
-		path.lineTo(cornerPoints[0][0].p);
-	}
-
-	return path;
-}
 
 /*! This function draws a series of line segments to connect the given points.
 At each point, the line segments are joined with a circle, which results in overdraw.
@@ -867,7 +588,9 @@ Ranges for the values for some common color spaces:
 cannot exist (an "imaginary color"). However, in general, A and B should be in the approximate range [-128,128],
 although the edges are likely to be imaginary.
 
-\param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB. S2 and S3 follow as expected.
+\param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB.
+\param S2 Source coordinate 2. Corresponds to, e.g., the G in RGB.
+\param S3 Source coordinate 3. Corresponds to, e.g., the B in RGB.
 \return An vector of length 3 containing the converted coordinates in the destination color space.
 The value at index 0 corresponds to the first letter in the resulting color space and the next two
 indices proceed as expected.
@@ -909,7 +632,9 @@ uses CX::Draw::convertColors(std::string, double, double, double), which provide
 coordinates, you would provde the string "LAB". See this page for more options for the color space:
 http://www.getreuer.info/home/colorspace#TOC-MATLAB-Usage (ignore the MATLAB title on that page; it's 
 the same interface in both the MATLAB and C versions).
-\param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB. S2 and S3 follow as expected.
+\param S1 Source coordinate 1. Corresponds to, e.g., the R in RGB.
+\param S2 Source coordinate 2. Corresponds to, e.g., the G in RGB.
+\param S3 Source coordinate 3. Corresponds to, e.g., the B in RGB.
 \return An `ofFloatColor` contaning the RGB coordinates. Instances of `ofFloatColor` can be implicitly 
 converted in assignment to other `ofColor` types.
 
@@ -994,6 +719,331 @@ void saveFboToFile(ofFbo& fbo, std::string filename) {
 	fbo.readToPixels(pix);
 	ofSaveImage(pix, filename, OF_IMAGE_QUALITY_BEST);
 }
+
+
+
+// \cond INTERNAL_DOCS
+
+bool isPointInRegion(ofPoint p, ofPoint r1, ofPoint r2, float tolerance) {
+	float lowerX = min(r1.x, r2.x) - tolerance;
+	float upperX = max(r1.x, r2.x) + tolerance;
+	float lowerY = min(r1.y, r2.y) - tolerance;
+	float upperY = max(r1.y, r2.y) + tolerance;
+
+	return (p.x >= lowerX) && (p.x <= upperX) && (p.y >= lowerY) && (p.y <= upperY);
+}
+
+bool arePointsInLine(ofPoint p1, ofPoint p2, ofPoint p3, float angleTolerance) {
+	float a1 = Util::getAngleBetweenPoints(p1, p2);
+	float a2 = Util::getAngleBetweenPoints(p2, p3);
+
+	float dif = a1 - a2;
+	if (abs(dif) > 90.0) {
+		dif = abs(dif) - 180.0;
+	}
+
+	if (abs(dif) < angleTolerance) {
+		return true;
+	}
+	return false;
+}
+
+
+
+
+struct LineStandardCoefs {
+
+	LineStandardCoefs(LineSegment ls) {
+		findCoefs(ls.p1, ls.p2);
+	}
+
+	void findCoefs(ofPoint p1, ofPoint p2) {
+		if (p1.x == p2.x) {
+			A = 1 / p1.x;
+			B = 0;
+			C = 1;
+			return;
+		}
+
+		float m = (p1.y - p2.y) / (p1.x - p2.x);
+		float b = p1.y - (m * p1.x);
+
+		findCoefs(m, b);
+	}
+
+	void findCoefs(float m, float b) {
+		if (b == 0) {
+			B = 1;
+			C = b * B;
+			A = -B * m;
+		} else {
+			C = 1;
+			B = C / b;
+			A = -B * m;
+		}
+	}
+
+	float A;
+	float B;
+	float C;
+};
+
+
+//This does not find the intersection of the line segments, but the intersection of the lines defined by the two points
+//in each line segment.
+ofPoint findIntersectionOfLines(LineSegment ls1, LineSegment ls2) {
+	LineStandardCoefs c1(ls1);
+	LineStandardCoefs c2(ls2);
+
+	float det = 1 / (c1.A*c2.B - c2.A*c1.B);
+	return ofPoint(det*(c2.B - c1.B), det*(c1.A - c2.A));
+}
+
+std::vector<LineSegment> getParallelLineSegments(LineSegment ls, float distance) {
+	float d = distance;
+
+	std::vector<LineSegment> rval(2);
+
+	float xOffset = 0;
+	float yOffset = 0;
+
+	if (ls.p1.x == ls.p2.x) {
+		xOffset = d;
+		yOffset = 0;
+	} else if (ls.p1.y == ls.p2.y) {
+		xOffset = 0;
+		yOffset = d;
+	} else {
+		float origM = (ls.p1.y - ls.p2.y) / (ls.p1.x - ls.p2.x);
+		float m = -1 / origM;
+		xOffset = d / (sqrt(1 + pow(m, 2)));
+		yOffset = m*xOffset;
+	}
+
+	rval[0].p1.x = ls.p1.x + xOffset;
+	rval[0].p1.y = ls.p1.y + yOffset;
+	rval[0].p2.x = ls.p2.x + xOffset;
+	rval[0].p2.y = ls.p2.y + yOffset;
+
+	rval[1].p1.x = ls.p1.x - xOffset;
+	rval[1].p1.y = ls.p1.y - yOffset;
+	rval[1].p2.x = ls.p2.x - xOffset;
+	rval[1].p2.y = ls.p2.y - yOffset;
+
+	return rval;
+}
+
+ofVec3f getCornerOuterVector(ofPoint p1, ofPoint p2, ofPoint p3, float vectorLength) {
+	ofVec3f offset = (p2 - p1) + (p2 - p3);
+	float d = sqrt(offset.x * offset.x + offset.y*offset.y);
+	float s = vectorLength / d;
+	ofVec3f result;
+	result.x = sqrt(vectorLength*vectorLength - pow(s*offset.y, 2));
+	result.y = sqrt(vectorLength*vectorLength - pow(s*offset.x, 2));
+	return result;
+}
+
+struct CornerPoint {
+	enum Type {
+		INNER,
+		OUTER,
+		PERPENDICULAR
+	};
+
+	CornerPoint(void) :
+		p(-1, -1)
+	{}
+
+	CornerPoint(ofPoint p_, CornerPoint::Type type_) :
+		p(p_),
+		type(type_)
+	{}
+
+	ofPoint p;
+	Type type;
+};
+
+// \endcond
+
+/*! This function is an experimental attempt to draw a collection of lines in an idealized way. */
+ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode) {
+	bool isClosed = (points.front() == points.back());
+
+
+	for (unsigned int i = 0; i < points.size() - 2; i++) {
+		//Clean out points that are in a line with each other
+		if (arePointsInLine(points[i], points[i + 1], points[i + 2], 0) &&
+			isPointInRegion(points[i + 1], points[i], points[i + 2], width / 100))
+		{
+			points.erase(points.begin() + i + 1);
+			i--;
+			continue;
+		}
+		//Remove identical points
+		if (points[i] == points[i + 1]) {
+			points.erase(points.begin() + i + 1);
+			i--;
+			continue;
+		}
+	}
+
+	std::vector< std::vector< LineSegment > > parallelSegments(points.size() - 1);
+	std::vector< std::vector<int> > lineSegmentSide(parallelSegments.size());
+	std::vector< std::vector< CornerPoint > > cornerPoints(2);
+	std::vector< CornerPoint > allCornerPoints;
+
+	for (unsigned int i = 0; i < parallelSegments.size(); i++) {
+		parallelSegments[i] = getParallelLineSegments(LineSegment(points[i], points[i + 1]), width / 2);
+		lineSegmentSide[i].resize(2);
+	}
+
+	lineSegmentSide[0][0] = 0;
+	lineSegmentSide[0][1] = 1;
+
+	unsigned int endIndex = isClosed ? parallelSegments.size() : parallelSegments.size() - 1;
+
+	for (unsigned int i = 0; i < endIndex; i++) {
+
+		unsigned int i2 = i + 1;
+		if (isClosed && (i == (parallelSegments.size() - 1))) {
+			i2 = 0;
+		}
+
+		for (unsigned int j = 0; j < 2; j++) {
+			for (unsigned int k = 0; k < 2; k++) {
+
+				LineSegment& ls1 = parallelSegments[i][j];
+				LineSegment& ls2 = parallelSegments[i2][k];
+
+				ofPoint intersection = findIntersectionOfLines(ls1, ls2);
+
+				bool inLs1 = isPointInRegion(intersection, ls1.p1, ls1.p2, width / 100);
+				bool inLs2 = isPointInRegion(intersection, ls2.p1, ls2.p2, width / 100);
+
+				//cout << "i,j,k: " << i << "," << j << "," << k << ": " << inLs1 << ", " << inLs2 << endl;
+
+				int side = lineSegmentSide[i][j];
+
+				if (arePointsInLine(points[i], points[i2], points[i2 + 1], 0)) {
+					if (isPointInRegion(points[i2], points[i], points[i2 + 1], width / 100)) {
+						//Middle point is between others. This should have been removed earlier, so do nothing now.
+					} else {
+						//Middle point is not between others, it is at the end of a line sticking out.
+						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
+					}
+				} else if (inLs1 && inLs2) {
+
+					lineSegmentSide[i2][k] = side;
+
+					if (!isClosed && (i == 0)) {
+						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
+						allCornerPoints.push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
+					}
+					cornerPoints[side].push_back(CornerPoint(intersection, CornerPoint::INNER));
+					allCornerPoints.push_back(CornerPoint(intersection, CornerPoint::INNER));
+					if (!isClosed && (i == (endIndex - 1))) {
+						cornerPoints[side].push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
+						allCornerPoints.push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
+					}
+
+					ls1.p2 = intersection;
+					ls2.p1 = intersection;
+				} else if (!inLs1 && !inLs2) {
+					lineSegmentSide[i2][k] = side;
+
+					if (!isClosed && (i == 0)) {
+						cornerPoints[side].push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
+						allCornerPoints.push_back(CornerPoint(ls1.p1, CornerPoint::PERPENDICULAR));
+					}
+					cornerPoints[side].push_back(CornerPoint(ls1.p2, CornerPoint::PERPENDICULAR));
+					cornerPoints[side].push_back(CornerPoint(intersection, CornerPoint::OUTER));
+					cornerPoints[side].push_back(CornerPoint(ls2.p1, CornerPoint::PERPENDICULAR));
+
+					allCornerPoints.push_back(CornerPoint(ls1.p2, CornerPoint::PERPENDICULAR));
+					allCornerPoints.push_back(CornerPoint(intersection, CornerPoint::OUTER));
+					allCornerPoints.push_back(CornerPoint(ls2.p1, CornerPoint::PERPENDICULAR));
+
+					if (!isClosed && (i == (endIndex - 1))) {
+						cornerPoints[side].push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
+						allCornerPoints.push_back(CornerPoint(ls2.p2, CornerPoint::PERPENDICULAR));
+					}
+
+					ls1.p2 = intersection;
+					ls2.p1 = intersection;
+				}
+			}
+		}
+	}
+
+	if (isClosed) {
+		cornerPoints[0].push_back(cornerPoints[0][0]);
+		cornerPoints[1].push_back(cornerPoints[1][0]);
+
+		allCornerPoints.push_back(cornerPoints[0][0]);
+		allCornerPoints.push_back(cornerPoints[1][0]);
+	}
+
+
+
+	ofPath path;
+	path.setFilled(true);
+	path.setStrokeWidth(0);
+	path.setPolyWindingMode(ofPolyWindingMode::OF_POLY_WINDING_NONZERO);
+
+	if (cornerMode == LineCornerMode::OUTER_POINT) {
+
+		path.moveTo(cornerPoints[0][0].p);
+		for (unsigned int i = 1; i < cornerPoints[0].size(); i++) {
+			path.lineTo(cornerPoints[0][i].p); //You could do a check to make sure that perpendicular points that are not at the ends are not drawn,
+			//but why bother?
+		}
+
+		for (unsigned int i = cornerPoints[1].size() - 1; i < cornerPoints[1].size(); i--) {
+			path.lineTo(cornerPoints[1][i].p);
+		}
+		path.lineTo(cornerPoints[0][0].p);
+
+	} else if (cornerMode == LineCornerMode::STRAIGHT_LINE) {
+		path.moveTo(cornerPoints[0][0].p);
+		for (unsigned int i = 1; i < cornerPoints[0].size(); i++) {
+			if (cornerPoints[0][i].type != CornerPoint::OUTER) {
+				path.lineTo(cornerPoints[0][i].p);
+			}
+		}
+
+		for (unsigned int i = cornerPoints[1].size() - 1; i < cornerPoints[1].size(); i--) {
+			if (cornerPoints[1][i].type != CornerPoint::OUTER) {
+				path.lineTo(cornerPoints[1][i].p);
+			}
+		}
+		path.lineTo(cornerPoints[0][0].p);
+
+	} else if (cornerMode == LineCornerMode::BEZIER_ARC) {
+		path.moveTo(cornerPoints[0][0].p);
+		for (unsigned int i = 1; i < cornerPoints[0].size(); i++) {
+			if (cornerPoints[0][i].type == CornerPoint::OUTER) {
+				path.bezierTo(cornerPoints[0][i - 1].p, cornerPoints[0][i].p, cornerPoints[0][i + 1].p);
+				i++;
+			} else {
+				path.lineTo(cornerPoints[0][i].p);
+			}
+		}
+
+		for (unsigned int i = cornerPoints[1].size() - 1; i < cornerPoints[1].size(); i--) {
+			if (cornerPoints[1][i].type == CornerPoint::OUTER) {
+				path.bezierTo(cornerPoints[1][i + 1].p, cornerPoints[1][i].p, cornerPoints[1][i - 1].p);
+				i--;
+			} else {
+				path.lineTo(cornerPoints[1][i].p);
+			}
+		}
+		path.lineTo(cornerPoints[0][0].p);
+	}
+
+	return path;
+}
+
+
 
 } //namespace Draw
 } //namespace CX

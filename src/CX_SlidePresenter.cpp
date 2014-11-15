@@ -261,7 +261,7 @@ One of the most tedious parts of using drawing functions is the fact that they c
 ways to get around that limitation using `std::bind` and function objects ("functors"):
 
 \code{.cpp}
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 CX_SlidePresenter SlidePresenter;
 

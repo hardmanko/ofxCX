@@ -19,13 +19,15 @@ namespace CX {
 
 	\code{.cpp}
 	CX_SlidePresenter slidePresenter;
-	slidePresenter.setup(&Disp);
+	slidePresenter.setup(&Disp); //Set up the slide presenter to use Disp as the display.
 
-	slidePresenter.beginDrawingNextSlide(2000, "circle");
+	//Everything drawn after beginDrawingNextSlide and before the next call to it will be drawn to that slide.
+	slidePresenter.beginDrawingNextSlide(2000, "circle"); //We need to give a duration for the slide, plus an optional name.
 	ofBackground(50);
 	ofSetColor(ofColor::red);
 	ofCircle(Disp.getCenter(), 40);
 
+	//Begin drawing another slide.
 	slidePresenter.beginDrawingNextSlide(1000, "rectangle");
 	ofBackground(50);
 	ofSetColor(ofColor::green);
@@ -34,14 +36,18 @@ namespace CX {
 	//The duration of the last slide, as long as it is greater than 0, is ignored.
 	slidePresenter.beginDrawingNextSlide(1, "off");
 	ofBackground(50);
-	slidePresenter.endDrawingCurrentSlide(); //it is not necessary to call this, but the slide presenter will complain if you don't.
+	slidePresenter.endDrawingCurrentSlide(); //it is not necessary to call this, but the slide presenter will warn if you don't.
 
 	slidePresenter.startSlidePresentation();
 
 	//Update the slide presenter while waiting for slide presentation to complete
 	while (slidePresenter.isPresentingSlides()) {
 		slidePresenter.update(); //You must remember to call update() regularly while slides are being presented!
+		Input.pollEvents(); //It's also a good idea to poll for input events constantly.
 	}
+
+	//Or you could just call this function, which does the updating and polling operations for you.
+	//slidePresenter.presentSlides();
 	\endcode
 
 	\ingroup video

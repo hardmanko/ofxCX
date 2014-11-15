@@ -2,12 +2,6 @@
 
 namespace CX {
 
-/*! An instance of CX::CX_Clock that is hooked into the CX backend. Anything in CX
-that requires timing information uses this instance. You should use this instance in
-your code and not make your own instance of CX_Clock. You should never need another instance. 
-You should never use another instance, as the experiment start times will not agree between 
-instances.
-\ingroup timing */
 CX_Clock CX::Instances::Clock;
 
 CX_Clock::CX_Clock (void) {
@@ -171,13 +165,13 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 
 #define CX_NANOS_PER_SECOND 1000000000LL
 
-CX::CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
+CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 	_resetFrequency();
 	resetStartTime();
 }
 
 //This only has at best 1 microsecond precision.
-long long CX::CX_WIN32_PerformanceCounterClock::nanos(void) {
+long long CX_WIN32_PerformanceCounterClock::nanos(void) {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
 
@@ -191,13 +185,21 @@ long long CX::CX_WIN32_PerformanceCounterClock::nanos(void) {
 	return (seconds * CX_NANOS_PER_SECOND) + nanos;
 }
 
-void CX::CX_WIN32_PerformanceCounterClock::resetStartTime(void) {
+void CX_WIN32_PerformanceCounterClock::resetStartTime(void) {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
 	_startTime = count.QuadPart;
 }
 
-void CX::CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
+void CX_WIN32_PerformanceCounterClock::setStartTime(long long ticks) {
+	_startTime = ticks;
+}
+
+std::string CX_WIN32_PerformanceCounterClock::getName(void) {
+	return "CX_WIN32_PerformanceCounterClock";
+}
+
+void CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
 	LARGE_INTEGER li;
 	QueryPerformanceFrequency(&li);
 	_frequency = li.QuadPart;

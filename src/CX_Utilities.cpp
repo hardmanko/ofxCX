@@ -28,6 +28,9 @@ namespace Util {
 
 	/*! Checks that the version of oF that is used during compilation matches the requested version. If the desired version
 	was 0.8.1, simply input (0, 8, 1) for `versionMajor`, `versionMinor`, and `versionPatch`, respectively.
+	\param versionMajor The major version (the X in X.0.0).
+	\param versionMinor The minor version (0.X.0).
+	\param versionPatch The patch version (0.0.X).
 	\param log If `true`, a version mismatch will result in a warning being logged.
 	\return `true` if the versions match, `false` otherwise. */
 	bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log) {

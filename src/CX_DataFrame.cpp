@@ -54,16 +54,30 @@ CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
 	}
 }
 
-/*! Equivalent to `CX_DataFrame::at(rowIndex_t, std::string)`. */
+/*! Equivalent to `CX::CX_DataFrame::at(rowIndex_t, std::string)`. */
 CX_DataFrameCell CX_DataFrame::at(std::string column, rowIndex_t row) {
 	return at(row, column);
 }
 
-/*!  */
+/*! Extract a column from the data frame. Note that the returned value is not a 
+copy of the original column. Rather, it represents the original column so that
+if the returned column is modified, it will also modify the original data in the
+parent data frame.
+\param column The name of the column to extract.
+\return A CX_DataFrameColumn.
+\see See also copyColumn() for a way to copy out a column of data.
+*/
 CX_DataFrameColumn CX_DataFrame::operator[] (std::string column) {
 	return CX_DataFrameColumn(this, column);
 }
 
+/*! Extract a row from the data frame. Note that the returned value is not a
+copy of the original row. Rather, it represents the original row so that
+if the returned row is modified, it will also modify the original data in the
+parent data frame.
+\param row The index of the row to extract.
+\return A CX_DataFrameRow.
+*/
 CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
 	return CX_DataFrameRow(this, row);
 }
@@ -110,6 +124,7 @@ stored in the data frame and commas are used for element delimiters within each 
 vectors.
 \param printRowNumbers If true, a column will be printed with the header "rowNumber" with the contents of the column
 being the selected row indices. If false, no row numbers will be printed.
+
 \return A string containing the printed version of the data frame.
 
 \note This function may be \ref blockingCode if the data frame is large enough.
@@ -125,7 +140,9 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, const std:
 	return print(oOpt);
 }
 
-/*! Prints the contents of the CX_DataFrame to a string with formatting options specified in oOpt. */
+/*! Prints the contents of the CX_DataFrame to a string with formatting options specified in oOpt.
+\param oOpt Output formatting options. 
+\return A string containing a formatted representation of the data frame contents. */
 std::string CX_DataFrame::print(OutputOptions oOpt) const {
 
 	if (oOpt.columnsToPrint.empty()) {
@@ -211,8 +228,7 @@ bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>
 	return CX::Util::writeToFile(filename, this->print(columns, delimiter, printRowNumbers), false);
 }
 
-/*! Reduced argument version of printToFile().
-Prints all columns and the selected rows. */
+/*! Reduced argument version of printToFile(). Prints all columns and the selected rows. */
 bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
 	return CX::Util::writeToFile(filename, this->print(rows, delimiter, printRowNumbers), false);
 }
@@ -222,6 +238,16 @@ printed contents of the data frame, the string is printed directly to a file. If
 All paramters shared with print() are simply passed along to print(), so they have the same behavior.
 \param filename Name of the file to print to. If it is an absolute path, the file will be put there. If it is
 a local path, the file will be placed relative to the data directory of the project.
+
+\param columns Columns to print. Column names not found in the data frame will be ignored with a warning.
+\param rows Rows to print. Row indices not found in the data frame will be ignored with a warning.
+\param delimiter Delimiter to be used between cells of the data frame. Using comma or semicolon for the
+delimiter is not recommended because semicolons are used as element delimiters in the string-encoded vectors
+stored in the data frame and commas are used for element delimiters within each element of the string-encoded
+vectors.
+\param printRowNumbers If true, a column will be printed with the header "rowNumber" with the contents of the column
+being the selected row indices. If false, no row numbers will be printed.
+
 \return `true` for success, `false` if there was some problem writing to the file (insufficient permissions, etc.) */
 bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows,
 							   std::string delimiter, bool printRowNumbers) const
@@ -229,6 +255,13 @@ bool CX_DataFrame::printToFile(std::string filename, const std::set<std::string>
 	return CX::Util::writeToFile(filename, this->print(columns, rows, delimiter, printRowNumbers), false);
 }
 
+/*! This function is equivalent in behavior to CX::CX_DataFrame::print() except that instead of returning a string containing the
+printed contents of the data frame, the string is printed directly to a file. If the file exists, it will be overwritten.
+All paramters shared with print() are simply passed along to print(), so they have the same behavior.
+\param filename The name of the output file.
+\param oOpt Output formatting options.
+\param oOpt The output options.
+\return `true` for success, `false` if there was some problem writing to the file (insufficient permissions, etc.) */
 bool CX_DataFrame::printToFile(std::string filename, OutputOptions oOpt) const {
 	return CX::Util::writeToFile(filename, this->print(oOpt), false);
 }
@@ -247,6 +280,7 @@ void CX_DataFrame::clear (void) {
 vectors are enclosed in double quotes ("). This indicates to most software that it should treat the contents of the quotes "as-is", i.e.
 if it finds a delimiter within the quotes, it should not split there, but wait until out of the quotes. If vectorEncloser is the empty
 string, this function will not attempt to read in vectors: everything that looks like a vector will just be treated as a string.
+\param vectorElementDelimiter The delimiter between the elements of the vector.
 \return `false` if an error occurred, `true` otherwise.
 
 \note The contents of the data frame will be deleted before attempting to read in the file.
@@ -777,6 +811,7 @@ void CX_DataFrame::convertAllVectorColumnsToMultipleColumns(int startIndex, bool
 // CX_DataFrameColumn //
 ////////////////////////
 
+/*! Constructs a CX_DataFrameColumn without linking it to a CX_DataFrame. */
 CX_DataFrameColumn::CX_DataFrameColumn(void) :
 	_df(nullptr),
 	_columnName("")
@@ -796,7 +831,7 @@ CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
 	}
 }
 
-/*! Get the number of rows in the column. */
+/*! \brief Returns the number of rows in the column. */
 CX_DataFrame::rowIndex_t CX_DataFrameColumn::size(void) {
 	if (_df) {
 		return _df->getRowCount();
@@ -810,16 +845,19 @@ CX_DataFrame::rowIndex_t CX_DataFrameColumn::size(void) {
 // CX_DataFrameRow //
 /////////////////////
 
+/*! Construct a CX_DataFrameRow without linking it to a CX_DataFrame. */
 CX_DataFrameRow::CX_DataFrameRow(void) :
 	_df(nullptr),
 	_rowNumber(-1)
 {}
 
+//This is a private constructor
 CX_DataFrameRow::CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::rowIndex_t rowNumber) :
 	_df(df),
 	_rowNumber(rowNumber)
 {}
 
+/*! Accesses the element in the specified column of the row. */
 CX_DataFrameCell CX_DataFrameRow::operator[] (std::string column) {
 	if (_df) {
 		return _df->operator()(column, _rowNumber);
@@ -828,7 +866,7 @@ CX_DataFrameCell CX_DataFrameRow::operator[] (std::string column) {
 	}
 }
 
-
+/*! \brief Returns a vector containing the names of the columns in this row. */
 std::vector<std::string> CX_DataFrameRow::names(void) {
 	if (_df) {
 		return _df->getColumnNames();
@@ -841,6 +879,7 @@ std::vector<std::string> CX_DataFrameRow::names(void) {
 	}
 }
 
+/*! \brief Clears the contents of the row. */
 void CX_DataFrameRow::clear(void) {
 	if (_df) {
 		std::vector<std::string> names = _df->getColumnNames();

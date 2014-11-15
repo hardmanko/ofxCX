@@ -58,6 +58,12 @@ namespace CX {
 	};
 
 	namespace Instances {
+		/*! An instance of CX::CX_Clock that is hooked into the CX backend. Anything in CX
+		that requires timing information uses this instance. You should use this instance in
+		your code and not make your own instance of CX_Clock. You should never need another instance.
+		You should never use another instance, as the experiment start times will not agree between
+		instances.
+		\ingroup timing */
 		extern CX_Clock Clock;
 	}
 
@@ -78,10 +84,12 @@ namespace CX {
 	public:
 	    virtual ~CX_BaseClockInterface(void) {}
 
-		virtual long long nanos(void) = 0;
-		virtual void resetStartTime(void) = 0;
+		virtual long long nanos(void) = 0; //!< Returns the current time in nanoseconds.
+		virtual void resetStartTime(void) = 0; //!< Resets the start time, so that an immediate call to nanos() would return 0.
+
+		/*! \brief Returns a helpful name describing the clock implementation. */
 		virtual std::string getName(void) {
-			return "CX_BaseClock";
+			return "CX_BaseClockInterface";
 		}
 	};
 
@@ -121,13 +129,9 @@ namespace CX {
 
 		long long nanos(void) override;
 		void resetStartTime(void) override;
-		void setStartTime(long long ticks) {
-			_startTime = ticks;
-		}
+		void setStartTime(long long ticks);
 
-		std::string getName(void) override {
-			return "CX_WIN32_PerformanceCounterClock";
-		}
+		std::string getName(void) override;
 
 	private:
 		void _resetFrequency(void);

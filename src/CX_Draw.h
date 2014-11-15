@@ -21,11 +21,12 @@ namespace Draw {
 	std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 	ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
 
+	/*! Settings for how the corners are drawn for the lines() function. */
 	enum class LineCornerMode {
 		OUTER_POINT,
 		BEZIER_ARC,
-		STRAIGHT_LINE,
-		ARC //unimplemented
+		STRAIGHT_LINE //,
+		//ARC //unimplemented
 	};
 	ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode);
 	void lines(std::vector<ofPoint> points, float lineWidth);
@@ -40,7 +41,7 @@ namespace Draw {
 	ofPath arrowToPath(float length, float headOffsets, float headSize, float lineWidth);
 
 	ofPath squircleToPath(double radius, double amount = 0.9);
-	//void squircle(ofPoint center, double radius, double rotationDeg = 0, double amount = 0.9);
+	void squircle(ofPoint center, double radius, double amount = 0.9, double rotationDeg = 0);
 
 	ofPath starToPath(unsigned int numberOfPoints, float innerRadius, float outerRadius);
 	void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float outerRadius, float rotationDeg = 0);
@@ -247,7 +248,7 @@ namespace Draw {
 	\code{.cpp}
 	//This code snippet draws an isoluminant color wheel to the screen using color conversion from LAB to RGB.
 	//Move the mouse and turn the scroll wheel to see different slices of the LAB space.
-	#include "CX_EntryPoint.h"
+	#include "CX.h"
 
 	void runExperiment(void) {
 
@@ -303,9 +304,10 @@ namespace Draw {
 
 
 	/*! This function draws a pattern mask created with a large number of small squares.
+	\param center The mask will be centered at this point.
 	\param width The width of the area to draw to, in pixels.
 	\param height The height of the are ato draw to, in pixels.
-	\param pixelSize The size of each small square making up the shape, in pixels.
+	\param squareSize The size of each small square making up the shape, in pixels.
 	\param colors Optional. If a vector of colors is provided, colors will be sampled in blocks
 	using an Algo::BlockSampler from the provided colors. If no colors are provided, each color will
 	be chosen randomly by sampling a hue value in the HSB color space, with the S and B held constant

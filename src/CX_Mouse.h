@@ -26,6 +26,7 @@ namespace CX {
 			RIGHT = OF_MOUSE_BUTTON_RIGHT
 		};
 
+		/*! The type event that caused the creation of a CX_Mouse::Event. */
 		enum EventType {
 			MOVED, //!< The mouse has been moved without a button being held. Event::button should be -1 (meaningless).
 			PRESSED, //!< A mouse button has been pressed. Check Event::button for the button index and Event::x and Event::y for the location.

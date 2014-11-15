@@ -63,10 +63,7 @@ namespace Synth {
 		ModuleBase(void);
 		~ModuleBase(void);
 
-		/*! This function should be overloaded for any derived class that can be used as the input for another module. */
-		virtual double getNextSample(void) {
-			return 0;
-		}
+		virtual double getNextSample(void);
 
 		void setData(ModuleControlData_t d);
 		ModuleControlData_t getData(void);
@@ -81,35 +78,31 @@ namespace Synth {
 		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
 		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
-		std::vector<ModuleBase*> _inputs;
-		std::vector<ModuleBase*> _outputs;
-		std::vector<ModuleParameter*> _parameters;
-		ModuleControlData_t *_data;
-
-		//This function is called whenever _dataSet is called. Within this function, you should do things for
-		//your module that depend on the new data values. You should not attempt to propogate the data values
-		//to inputs, outputs, or parameters: that is all done for you.
-		virtual void _dataSetEvent(void) { return; }
+		std::vector<ModuleBase*> _inputs; //!< The inputs to this module.
+		std::vector<ModuleBase*> _outputs; //!< The outputs from this module.
+		std::vector<ModuleParameter*> _parameters; //!< The ModuleParameters of this module.
+		ModuleControlData_t *_data; //!< The data for this module.
 
 		void _dataSet(ModuleBase* caller);
 		void _setDataIfNotSet(ModuleBase* target);
 		void _registerParameter(ModuleParameter* p);
 
-		virtual void _assignInput(ModuleBase* in);
-		virtual void _assignOutput(ModuleBase* out);
+		void _assignInput(ModuleBase* in);
+		void _assignOutput(ModuleBase* out);
 
+		//Feel free to overload any of the virtual functions in dervied modules.
 
-		//Feel free to overload these functions (_maxInputs, _maxOutputs, _inputAssignedEvent, _outputAssignedEvent) in your own modules.
+		virtual void _dataSetEvent(void);
 
 		//The values returned by these functions directly control how many inputs or outputs a modules can have at once.
 		//If more modules are assigned as input or outputs than are allowed, previously assigned inputs or outputs are
 		//disconnected.
-		virtual unsigned int _maxInputs(void) { return 1; };
-		virtual unsigned int _maxOutputs(void) { return 1; };
+		virtual unsigned int _maxInputs(void);
+		virtual unsigned int _maxOutputs(void);
 
 		//These functions are called whenever an input or output has been assigned to this module.
-		virtual void _inputAssignedEvent(ModuleBase* in) { return; };
-		virtual void _outputAssignedEvent(ModuleBase* out) { return; };
+		virtual void _inputAssignedEvent(ModuleBase* in);
+		virtual void _outputAssignedEvent(ModuleBase* out);
 	};
 
 	/*! This class is used to provide modules with the ability to have their control parameters change as a
@@ -169,13 +162,13 @@ namespace Synth {
 	class AdditiveSynth : public ModuleBase {
 	public:
 
-		typedef double amplitude_t;
-		typedef double frequency_t;
+		typedef double amplitude_t; //!< A floating-point type used for the waveform amplitudes.
+		typedef double frequency_t; //!< A floating-point type used for the frequencies of the waves.
 
+		/*! The type of function that will be used to create the harmonic series for the additive synth. */
 		enum class HarmonicSeriesType {
 			MULTIPLE, //Includes the standard harmonic series as a special case
 			SEMITONE //Includes all of the strange thirds, fourths, tritones, etc.
-			//USER_DEFINED
 		};
 
 		/*! Assuming that the standard harmonic series is being used, the values in this
@@ -241,7 +234,8 @@ namespace Synth {
 	public:
 		Adder(void);
 		double getNextSample(void) override;
-		ModuleParameter amount;
+
+		ModuleParameter amount; //!< The amount that will be added to the input signal.
 	};
 
 	/*! This class clamps inputs to be in the interval [`low`, `high`], where `low` and `high` are the members of this class.
@@ -253,8 +247,8 @@ namespace Synth {
 
 		double getNextSample(void) override;
 
-		ModuleParameter low;
-		ModuleParameter high;
+		ModuleParameter low; //!< The lowest possible output value.
+		ModuleParameter high; //!< The highest possible output value.
 	};
 
 	/*! This class is a standard ADSR envelope: http://en.wikipedia.org/wiki/Synthesizer#ADSR_envelope.
@@ -360,6 +354,24 @@ namespace Synth {
 		double y2;
 	};
 
+	/*! This class is an easy way to apply an arbitrary function to modular synth data.
+	The user function, `f`, takes a `double` and returns a `double`. Each time getNextSample()
+	is called, the next sample from the input to this module will be taken and passed to `f`,
+	and the the result of `f` will be returned.
+	*/
+	class FunctionModule : public ModuleBase {
+	public:
+		double getNextSample(void) override {
+			double v = 0;
+			if (_inputs.size() >= 1) {
+				v = _inputs.front()->getNextSample();
+			}
+			return f(v);
+		}
+
+		std::function<double(double)> f; //!< The user function, which will be called each time getNextSample() is called.
+	};
+
 	/*! This class is used within output modules that actually output data. This class serves as
 	an endpoint for data that is then retrieved by the class containing the GenericOutput. See, for
 	example, the StereoStreamOutput class. This class does nothing useful on its own (getNextSample()
@@ -409,7 +421,8 @@ namespace Synth {
 
 		double getNextSample(void) override;
 		void setGain(double decibels);
-		ModuleParameter amount;
+
+		ModuleParameter amount; //!< The amount that the input signal will be multiplied by.
 	};
 
 	/*! This class provides one of the simplest ways of generating waveforms. The output
@@ -433,7 +446,7 @@ namespace Synth {
 
 		void setGeneratorFunction(std::function<double(double)> f);
 
-		ModuleParameter frequency;
+		ModuleParameter frequency; //!< The fundamental frequency of the oscillator.
 
 		static double saw(double wp);
 		static double sine(double wp);
@@ -452,12 +465,12 @@ namespace Synth {
 	};
 
 
-	/*! This class is an implementation of a very basic ring modulator.
-	It is not an analog emulation and it does nothing to deal with aliasing, so it may not work well
-	with non-sinusoidal carriers.
+	/*! This class is an implementation of a very basic ring modulator.	Ringmods need two inputs: 
+	the source and the carrier. The order doesn't matter, for this class. If only one input is 
+	given, it will just pass that input through.
 
-	Ringmods need two inputs: the source and the carrier. The order doesn't matter, for this class.
-	If only one source is given, it will just pass that source through.
+	This is not an analog emulation and it does nothing to deal with aliasing, so it may not work well
+	with non-sinusoidal carriers.
 
 	\code{.cpp}
 
@@ -584,6 +597,9 @@ namespace Synth {
 	};
 
 	/*! This class provides a method of playing the output of a modular synth using a CX_SoundStream.
+	This class can only take data from one input, so it is monophonic. However, the sound stream
+	does not need to be configured to only use 1 output channel because this class will put
+	the same data on all available output channels.
 	In order to use this class, you need to configure a CX_SoundStream for use. See the soundBuffer
 	example and the CX::CX_SoundStream class for more information.
 
@@ -651,7 +667,7 @@ namespace Synth {
 		void setup(float sampleRate);
 		void sampleData(CX_Millis t);
 
-		CX::CX_SoundBuffer sb;
+		CX::CX_SoundBuffer sb; //!< The sound buffer that will be filled with samples with sampleData() is called.
 	private:
 		unsigned int _maxOutputs(void) override { return 0; };
 	};
@@ -662,7 +678,7 @@ namespace Synth {
 	`left` or `right` modules that this class has. See the example code.
 
 	\code{.cpp}
-	#include "CX_EntryPoint.h"
+	#include "CX.h"
 
 	using namespace CX::Synth;
 
@@ -697,7 +713,7 @@ namespace Synth {
 		GenericOutput left; //!< The left channel of the buffer.
 		GenericOutput right; //!< The right channel of the buffer.
 
-		CX::CX_SoundBuffer sb;
+		CX::CX_SoundBuffer sb; //!< The sound buffer that will be filled with samples with sampleData() is called.
 	};
 
 
@@ -708,8 +724,8 @@ namespace Synth {
 
 		TrivialGenerator(void);
 
-		ModuleParameter value;
-		ModuleParameter step;
+		ModuleParameter value; //!< The start value.
+		ModuleParameter step; //!< The amount to change on each step.
 
 		double getNextSample(void) override;
 	};
@@ -730,6 +746,7 @@ namespace Synth {
 			USER_DEFINED //!< Should not be used directly.
 		};
 
+		/*! The type of windowing function to apply after convolution. */
 		enum WindowType {
 			RECTANGULAR,
 			HANNING,

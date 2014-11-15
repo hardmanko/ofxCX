@@ -41,8 +41,9 @@ This module is related to storing experimental data. CX_DataFrame is the most im
 at the end of the experiment. A CX_DataFrame is a square two-dimensional array of cells, but each cell
 is capable of holding a vector of data. Each cell is indexed with a column name (a string) and a row
 number. Cells can store many different kinds of data and the data can be inserted or extracted easily.
-The standard method of storing data is to use \ref operator(), which dynamically resizes the data frame.
-When an experimental session is complete, the data can be written to a file using printToFile().
+The standard method of storing data is to use CX_DataFrame::operator(), which dynamically resizes 
+the data frame. When an experimental session is complete, the data can be written to a file using 
+CX_DataFrame::printToFile().
 
 See example-dataFrame for examples of how to use a CX_DataFrame.
 
@@ -54,7 +55,7 @@ is large enough.
 class CX_DataFrame {
 public:
 
-	typedef std::vector<CX_DataFrameCell>::size_type rowIndex_t;
+	typedef std::vector<CX_DataFrameCell>::size_type rowIndex_t; //!< An unsigned integer type used for indexing the rows of a CX_DataFrame.
 
 	/*! \class IoOptions
 	Options for the format of files that are output to or input from a CX_DataFrame.
@@ -121,9 +122,9 @@ public:
 	bool readFromFile(std::string filename, InputOptions iOpt);
 	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
 
-	void clear (void);
-	bool deleteColumn (std::string columnName);
-	bool deleteRow (rowIndex_t row);
+	void clear(void);
+	bool deleteColumn(std::string columnName);
+	bool deleteRow(rowIndex_t row);
 
 	std::vector<std::string> getColumnNames(void) const;
 	bool columnExists(std::string columnName) const;
@@ -131,17 +132,17 @@ public:
 
 	rowIndex_t getRowCount(void) const;
 
-	bool reorderRows (const vector<CX_DataFrame::rowIndex_t>& newOrder);
-	CX_DataFrame copyRows (vector<CX_DataFrame::rowIndex_t> rowOrder) const;
-	CX_DataFrame copyColumns (vector<std::string> columns);
-	void shuffleRows (void);
-	void shuffleRows (CX_RandomNumberGenerator &rng);
+	bool reorderRows(const vector<CX_DataFrame::rowIndex_t>& newOrder);
+	CX_DataFrame copyRows(vector<CX_DataFrame::rowIndex_t> rowOrder) const;
+	CX_DataFrame copyColumns(vector<std::string> columns);
+	void shuffleRows(void);
+	void shuffleRows(CX_RandomNumberGenerator &rng);
 
 	template <typename T> std::vector<T> copyColumn(std::string column) const;
 	std::vector<std::string> convertVectorColumnToColumns(std::string columnName, int startIndex, bool deleteOriginal, std::string newBaseName = "");
 	void convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals);
 
-protected:
+private:
 	friend class CX_DataFrameRow;
 	friend class CX_DataFrameColumn;
 
@@ -176,7 +177,12 @@ template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column
 	return rval;
 }
 
-/*! \ingroup dataManagement */
+/*! This class represents a column from a CX_DataFrame. It has special behavior that may not be obvious.
+If it is extracted from a CX_DataFrame with the use of CX_DataFrame::operator[](std::string),
+then the extracted column is linked to the original column of data such that if either are modified, both
+will see the effects.
+
+\ingroup dataManagement */
 class CX_DataFrameColumn {
 public:
 	CX_DataFrameColumn (void);
@@ -188,16 +194,44 @@ private:
 	CX_DataFrameColumn(CX_DataFrame *df, std::string column);
 
 	CX_DataFrame *_df;
-	vector<CX_DataFrameCell> _data;
+	std::vector<CX_DataFrameCell> _data;
 	std::string _columnName;
 };
 
-/*! \ingroup dataManagement */
+/*! This class represents a row from a CX_DataFrame. It has special behavior that may not be obvious.
+If it is extracted from a CX_DataFrame with the use of CX_DataFrame::operator[](CX_DataFrame::rowIndex_t),
+then the extracted row is linked to the original row of data such that if either are modified, both
+will see the effects. See the code example.
+If a CX_DataFrameRow is constructed normally (not extracted from a CX_DataFrame) it is not linked to any
+data frame.
+
+\code{.cpp}
+//Create a CX_DataFrame and put some stuff in it.
+CX_DataFrame df;
+df(0, "a") = 2;
+df(0, "b") = 5;
+
+CX_DataFrameRow row0 = df[0]; //Extract row 0 from the data frame.
+row0["a"] = 10; //Modify it.
+
+cout << df.print() << endl; //See that the data frame has been modified.
+
+df.appendRow(row0); //Append the row to the end of the data frame.
+
+cout << df.print() << endl;
+
+row0["a"] = 3; //Although row0 has been appended, it still only refers to row 0, not both rows,
+//so this will only affect row 0 and not row 1.
+
+cout << df.print() << endl;
+\endcode
+
+\ingroup dataManagement */
 class CX_DataFrameRow {
 public:
 	CX_DataFrameRow (void);
 	CX_DataFrameCell operator[] (std::string column);
-	vector<std::string> names (void);
+	std::vector<std::string> names (void);
 	void clear (void);
 
 private:

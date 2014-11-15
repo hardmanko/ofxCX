@@ -15,6 +15,7 @@ void CX_DataFrameCell::setFloatingPointPrecision(unsigned int prec) {
 	_floatingPointPrecision = prec;
 }
 
+/*! Get the current floating point precision, set by CX_DataFrameCell::setFloatingPointPrecision(). */
 unsigned int CX_DataFrameCell::getFloatingPointPrecision(void) {
 	return _floatingPointPrecision;
 }
@@ -62,6 +63,8 @@ std::string CX_DataFrameCell::getStoredType(void) const {
 	return *_type;
 }
 
+/*! If for whatever reason the type of the data stored in the CX_DataFrameCell should
+be ignored, you can delete it with this function. */
 void CX_DataFrameCell::deleteStoredType(void) {
 	*_ignoreStoredType = true;
 }

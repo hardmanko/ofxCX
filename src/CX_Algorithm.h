@@ -88,7 +88,7 @@ namespace CX {
 		every four trials, you could use this class.
 
 		\code{.cpp}
-		#include "CX_EntryPoint.h"
+		#include "CX.h"
 
 		void runExperiment(void) {
 			//Construct a BlockSampler using RNG as the random number generator

@@ -307,7 +307,7 @@ Once you have defined a class that creates the sound data, create an instance of
 
 From now on, whenever `soundStream` needs more output data, `sineOut.callbackFunction` will be called automatically. The data that you put into the output buffer must be of type `float` and bounded between -1 and 1, inclusive. You can remove a listener to an event with `ofRemoveListener`. More information about the events used by openFrameworks can be found here: http://www.openframeworks.cc/documentation/events/ofEvent.html.
 
-Directly accessing input data works in a very similar way. You need a class with a function that takes a reference to a \ref CX_SoundStream::inputEventArgs struct and returns `void`. Instead of putting data into the output buffer, you would read data out of the input buffer.
+Directly accessing input data works in a very similar way. You need a class with a function that takes a reference to a \ref CX::CX_SoundStream::InputEventArgs struct and returns `void`. Instead of putting data into the output buffer, you would read data out of the input buffer.
 
 
 Troubleshooting Audio Problems 

@@ -66,7 +66,7 @@ bool CX_SoundBufferRecorder::setup(CX_SoundStream* ss) {
 
 /*! This function associates a CX_SoundBuffer with the CX_SoundBufferRecorder. The CX_SoundBuffer
 will be recorded to when start() is called.
-\param so The CX_SoundBuffer to associate with the CX_SoundBufferRecorder. The sound buffer will be cleared
+\param soundBuffer The CX_SoundBuffer to associate with the CX_SoundBufferRecorder. The sound buffer will be cleared
 and it will be configured to have the same number of channels and sample rate that the CX_SoundBufferRecorder
 was configured to use.
 */
