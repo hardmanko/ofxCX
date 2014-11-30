@@ -73,7 +73,7 @@ namespace CX {
 
 		template <typename T> std::vector<T> unique(std::vector<T> vals);
 		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
-		template <typename T> std::vector<T> exclude(const std::vector<T>& A, const std::vector<T>& B);
+		template <typename T> std::vector<T> exclude(const std::vector<T>& vals, const std::vector<T>& exclude);
 
 		template <typename T> T max(std::vector<T> vals);
 		template <typename T> T min(std::vector<T> vals);
@@ -190,15 +190,15 @@ std::vector<T> CX::Util::stringToVector(std::string s, std::string delimiter) {
 
 
 /*!
-Creates a sequence of numbers from start to end by steps of size stepSize. start may be geater than end, but only if
-stepSize is less than 0. If start is less than end, stepSize must be greater than 0.
+Creates a sequence of numbers from `start` to `end` by steps of size `stepSize`. `end` may be less than `start`, but only if
+`stepSize` is less than 0. If `end` is greater than `start`, `stepSize` must be greater than 0.
 
 Example call: `sequence<double>(1, 3.3, 2)` results in a vector containing {1, 3}
 
-\param start The start of the sequence. You are guaranteed to get this value in the sequence.
+\param start The start of the sequence.
 \param end The number past which the sequence should end. You are not guaranteed to get this value.
 \param stepSize A nonzero number.
-\return A vector containing the sequence.
+\return A vector containing the sequence. It may be empty.
 */
 template <typename T>
 std::vector<T> CX::Util::sequence(T start, T end, T stepSize) {
@@ -229,7 +229,7 @@ std::vector<T> CX::Util::sequence(T start, T end, T stepSize) {
 	return rval;
 }
 
-/*! Make a sequence starting from start and taking steps steps of stepSize.
+/*! Make a sequence starting from that value given by `start` and taking `steps` steps of `stepSize`.
 
     sequenceSteps( 1.5, 4, 2.5 );
 
@@ -436,7 +436,7 @@ std::vector<T> CX::Util::concatenate(const std::vector<T>& A, const std::vector<
 }
 
 /*! Gets the values from `values` that do not match the values in `exclude`.
-\param values The set of values to select from.
+\param values The starting set of values.
 \param exclude The set of values to exclude from `values`.
 \return A vector containing the values that were not excluded. This vector may be empty. */
 template <typename T>

@@ -116,10 +116,10 @@ public:
 	~CX_SoundStream (void);
 
 	bool setup(CX_SoundStream::Configuration &config);
-	bool closeStream (void);
+	bool closeStream(void);
 
-	bool start (void);
-	bool stop (void);
+	bool start(void);
+	bool stop(void);
 
 	bool isStreamRunning(void) const;
 	
@@ -134,30 +134,33 @@ public:
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
 
-	CX_Millis getStreamLatency (void);
+	CX_Millis estimateTotalLatency(void) const;
+	CX_Millis estimateLatencyPerBuffer(void) const;
 
-	bool hasSwappedSinceLastCheck (void);
+	bool hasSwappedSinceLastCheck(void);
 	void waitForBufferSwap(void);
-	CX_Millis getLastSwapTime(void);
-	CX_Millis estimateNextSwapTime(void);
+	CX_Millis getLastSwapTime(void) const;
+	CX_Millis estimateNextSwapTime(void) const;
 
-	RtAudio* getRtAudioInstance(void);
+	RtAudio* getRtAudioInstance(void) const;
 
-	static std::vector<RtAudio::Api> getCompiledApis (void);
-	static std::vector<std::string> convertApisToStrings (vector<RtAudio::Api> apis);
-	static std::string convertApisToString (vector<RtAudio::Api> apis, std::string delim = "\r\n");
-	static std::string convertApiToString (RtAudio::Api api);
+	static std::vector<RtAudio::Api> getCompiledApis(void);
+	static std::vector<std::string> convertApisToStrings(vector<RtAudio::Api> apis);
+	static std::string convertApisToString(vector<RtAudio::Api> apis, std::string delim = "\r\n");
+	static std::string convertApiToString(RtAudio::Api api);
 	static RtAudio::Api convertStringToApi(std::string apiString);
 
-	static std::vector<std::string> formatsToStrings (RtAudioFormat formats);
-	static std::string formatsToString (RtAudioFormat formats, std::string delim = "\r\n");
+	static std::vector<std::string> formatsToStrings(RtAudioFormat formats);
+	static std::string formatsToString(RtAudioFormat formats, std::string delim = "\r\n");
 
-	static std::vector<RtAudio::DeviceInfo> getDeviceList (RtAudio::Api api);
+	static std::vector<RtAudio::DeviceInfo> getDeviceList(RtAudio::Api api);
 	static std::string listDevices(RtAudio::Api api);
 
 	static CX_SoundStream::Configuration readConfigurationFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
 
 private:
+
+	static unsigned int _getBestSampleRate(unsigned int requestedSampleRate, RtAudio::Api api, int deviceIndex);
 
 	static int _rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data);
 

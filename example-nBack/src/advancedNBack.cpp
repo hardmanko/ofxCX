@@ -59,8 +59,8 @@ ofColor textColor(255);
 ofTrueTypeFont letterFont;
 ofTrueTypeFont instructionFont;
 
-char targetKey = 'f';
-char nonTargetKey = 'j';
+char targetKey = 'F';
+char nonTargetKey = 'J';
 string keyReminderInstructions;
 
 CX_Millis stimulusPresentationDuration = 1000;

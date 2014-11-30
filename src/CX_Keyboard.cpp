@@ -6,6 +6,7 @@ namespace CX {
 
 CX_Keyboard::CX_Keyboard(CX_InputManager* owner) :
 	_owner(owner),
+	_enabled(false),
 	_listeningForEvents(false)
 {
 }
@@ -63,14 +64,15 @@ std::vector<CX_Keyboard::Event> CX_Keyboard::copyEvents(void) {
 }
 
 /*! This function checks to see if the given key is held, which means a keypress has been received, but not a key release.
-\param key The key code or character for the key you are interested in. See the
-documentation for \ref CX_Keyboard::Event::key for more information about this value.
-\return True iff the given key is held. */
+This function is specific to openFrameworks keycodes. See CX_Keyboard::Event for discussion of the different keycode types.
+\param key The character literal for the key you are interested in or special key code from CX::Keycode. 
+\return `true` if the given key is held, `false` otherwise. */
 bool CX_Keyboard::isKeyHeld(int key) const {
-	return (_heldKeys.find(key) != _heldKeys.end());
+	return _heldKeys.find(key) != _heldKeys.end();
 }
 
-/*! Identical to waitForKeypress() that takes a vector of keys except with a length 1 vector. */
+
+/*! Identical to CX_Keyboard::waitForKeypress() that takes a vector of keys except with a length 1 vector. */
 CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear, bool eraseEvent) {
 	std::vector<int> keys;
 	keys.push_back(key);
@@ -83,7 +85,7 @@ held at the time this function was called and then released, it will have to be 
 function will return. Returns a CX_Keyboard::Event for the key that was waited on, optionally removing that event from the
 stored events if `eraseEvent` is `true`.
 \param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will
-cause this function to return.
+cause this function to return. Should be character literals or from CX::Keycode.
 \param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all keyboard events
 will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
 is possible that one of the available events will include a keypress for a given key, in which case this function
@@ -108,25 +110,28 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 	CX_Keyboard::Event rval;
 	bool waiting = true;
 	while (waiting) {
-		if (_owner->pollEvents()) {
-			for (auto it = _keyEvents.begin(); it != _keyEvents.end(); it++) {
-				if (it->type == CX_Keyboard::PRESSED) {
-					if ((std::find(keys.begin(), keys.end(), -1) != keys.end()) ||
-						(std::find(keys.begin(), keys.end(), it->key) != keys.end())) 
-					{
+		if (!_owner->pollEvents()) {
+			continue;
+		}
 
-						rval = *it;
+		for (auto it = _keyEvents.begin(); it != _keyEvents.end(); it++) {
+			if (it->type == CX_Keyboard::PRESSED) {
+				bool minus1Found = std::find(keys.begin(), keys.end(), -1) != keys.end();
+				bool keyFound = std::find(keys.begin(), keys.end(), it->key) != keys.end();
 
-						if (eraseEvent) {
-							_keyEvents.erase(it);
-						}
+				if (minus1Found || keyFound) {
+					rval = *it;
 
-						waiting = false;
-						break;
+					if (eraseEvent) {
+						_keyEvents.erase(it);
 					}
+
+					waiting = false;
+					break;
 				}
 			}
 		}
+		
 	}
 
 	if (clear) {
@@ -188,41 +193,44 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::PRESSED;
-	ev.key = a.key;
+
+	ev.codes = Keycodes(a.key, a.keycode, a.scancode, a.codepoint);
+
 	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::RELEASED;
-	ev.key = a.key;
+
+	ev.codes = Keycodes(a.key, a.keycode, a.scancode, a.codepoint);
+
 	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::REPEAT;
-	ev.key = a.key;
+
+	ev.codes = Keycodes(a.key, a.keycode, a.scancode, a.codepoint);
+
 	_keyEventHandler(ev);
 }
 
 void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
-	switch (ev.key) {
+	ev.time = CX::Instances::Clock.now();
+	ev.uncertainty = ev.time - _lastEventPollTime;
+
+	ev.key = ev.codes.glfw;
+
+	switch (ev.codes.oF) {
 	case OF_KEY_CONTROL:
 	case OF_KEY_ALT:
 	case OF_KEY_SHIFT:
 	case OF_KEY_SUPER:
 		return; //These keys are reported by oF twice: once as OF_KEY_X and again as 
-		//OF_KEY_RIGHT_X or OF_KEY_LEFT_X. This ignores the generic version.
+			//OF_KEY_RIGHT_X or OF_KEY_LEFT_X. This ignores the generic version.
 	}
-
-	//Make all keys lower (counteract oF behavior of uppercasing letter keys if shift is held).
-	if (ev.key <= std::numeric_limits<unsigned char>::max()) {
-		ev.key = ::tolower(ev.key);
-	}
-
-	ev.time = CX::Instances::Clock.now();
-	ev.uncertainty = ev.time - _lastEventPollTime;
 
 	switch (ev.type) {
 	case CX_Keyboard::PRESSED:

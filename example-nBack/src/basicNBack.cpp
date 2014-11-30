@@ -31,8 +31,8 @@ ofColor textColor(255);
 ofTrueTypeFont letterFont;
 ofTrueTypeFont instructionFont;
 
-char targetKey = 'f';
-char nonTargetKey = 'j';
+char targetKey = 'F';
+char nonTargetKey = 'J';
 string keyReminderInstructions;
 
 CX_Millis stimulusPresentationDuration = 1000;
@@ -196,8 +196,7 @@ void generateTrials(int numberOfTrials) {
 	trialCount = numberOfTrials;
 
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
-	vector<string> letters = Util::arrayToVector(letterArray, 8); //Once c++11 is fully implemented, you will be able 
-		//to use an initializer list for vectors as well as arrays. Until then, arrayToVector can be useful.
+	vector<string> letters = Util::arrayToVector(letterArray, 8);
 
 	//Draw trialCount deviates from a bernoulli distribution with 40% probability of a success (i.e. trialCount slightly unfair coin flips).
 	//For a real N-Back task, you would probably use a more complicated way of determining the trial sequence.

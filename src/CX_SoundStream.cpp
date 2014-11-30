@@ -21,7 +21,7 @@ so some of the values that are used may differ from the values that are chosen. 
 is updated based on the actually used settings. You can alternately check the configuration later using CX::CX_SoundStream::getConfiguration().
 \return `true` if configuration appeared to be successful, `false` otherwise.
 */
-bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
+bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 	if (_rtAudio != nullptr) {
 		closeStream();
 	}
@@ -29,7 +29,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 	try {
 		_rtAudio = new RtAudio( config.api );
 	} catch (RtError err) {
-		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
 		_rtAudio = nullptr;
 		return false;
 	}
@@ -56,36 +56,9 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 
 	config.bufferSize = ofNextPow2(config.bufferSize);
 
-	//Try to pick a sample rate >= the requested sample rate. If that is impossible, pick the next smallest sample rate.
-	vector<RtAudio::DeviceInfo> devices = getDeviceList(config.api);
-	unsigned int closestGreaterSampleRate = numeric_limits<unsigned int>::max();
-	unsigned int closestLesserSampleRate = 0;
-
+	//Pick a sample rate.
 	int searchDeviceId = (config.outputDeviceId >= 0) ? config.outputDeviceId : config.inputDeviceId;
-
-	for (unsigned int i = 0; i < devices.at(searchDeviceId).sampleRates.size(); i++) {
-		unsigned int thisSampleRate = devices.at(searchDeviceId).sampleRates[i];
-		if (thisSampleRate == config.sampleRate) {
-			closestGreaterSampleRate = numeric_limits<unsigned int>::max();
-			closestLesserSampleRate = 0;
-			break;
-		}
-		if (thisSampleRate > config.sampleRate && thisSampleRate < closestGreaterSampleRate) {
-			closestGreaterSampleRate = thisSampleRate;
-		}
-		if (thisSampleRate < config.sampleRate && thisSampleRate > closestLesserSampleRate) {
-			closestLesserSampleRate = thisSampleRate;
-		}
-	}
-
-	//If not at max, the desired sample rate must not have been possible and there was a greater sample rate available, so pick that sample rate.
-	if (closestGreaterSampleRate != numeric_limits<unsigned int>::max()) {
-		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << config.sampleRate << ") not available. " << closestGreaterSampleRate << " chosen instead.";
-		config.sampleRate = closestGreaterSampleRate;
-	} else if (closestLesserSampleRate != 0) {
-		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << config.sampleRate << ") not available. " << closestLesserSampleRate << " chosen instead.";
-		config.sampleRate = closestLesserSampleRate;
-	}
+	config.sampleRate = _getBestSampleRate(config.sampleRate, config.api, searchDeviceId);
 
 	try {
 		_rtAudio->openStream(
@@ -103,7 +76,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 		config.sampleRate = _rtAudio->getStreamSampleRate(); //Check that the desired sample rate was used.
 
 	} catch (RtError err) {
-		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
 
@@ -114,7 +87,7 @@ bool CX_SoundStream::setup (CX_SoundStream::Configuration &config) {
 
 /*! Starts the sound stream. The stream must already be have been set up (see setup()).
 \return `false` if the stream was not started, `true` if the stream was started or if it was already running. */
-bool CX_SoundStream::start (void) {
+bool CX_SoundStream::start(void) {
 
 	if(_rtAudio == nullptr) {
 		CX::Instances::Log.error("CX_SoundStream") << "start: Stream not started because instance pointer was NULL. Have you remembered to call setup()?";
@@ -199,13 +172,21 @@ bool CX_SoundStream::closeStream(void) {
 	return rval;
 }
 
-/*! This function gets an estimate of the stream latency. However, it should not be relied on as
-it is based on what the sound card driver reports, which is often false.
-\return The stream latency. */
-CX_Millis CX_SoundStream::getStreamLatency(void) {
-	long latencySamples = _rtAudio->getStreamLatency();
-	CX_Millis latency = (((long long)latencySamples * 1000000.0) / _rtAudio->getStreamSampleRate());
-	return latency;
+/*! This function gets an estimate of the total stream latency, calculated based on the buffer size, number of buffers, and sample rate.
+The calculation is N_b * S_b / SR, where N_b is the number of buffers, S_b is the size of the buffers (in sample frames), and
+SR is the sample rate, in sample frames per second. This is a conservative upper bound on latency. Note that latency is not
+constant, but it depends on where in the buffer swapping process you start playing a sound. See \ref audioIO for more information.
+\return An estimate of the stream latency. */
+CX_Millis CX_SoundStream::estimateTotalLatency(void) const {
+	return _config.streamOptions.numberOfBuffers * estimateLatencyPerBuffer();
+}
+
+/*! This function calculates an estimate of the amount of latency per buffer full of data. It is calculated by
+S_b / SR, where S_b is the size of each buffer in sample frames and SR is the sample rate in samples per second.
+\return Latency per buffer.
+*/
+CX_Millis CX_SoundStream::estimateLatencyPerBuffer(void) const {
+	return CX_Seconds((double)_config.bufferSize / _config.sampleRate); //Samples per buffer / samples per second = seconds per buffer
 }
 
 /*! This function checks to see if the audio buffers have been swapped since the last time
@@ -219,12 +200,8 @@ bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
 	return false;
 }
 
-/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::CX_Clock::now(). */
-CX_Millis CX_SoundStream::getLastSwapTime(void) {
-	return _lastSwapTime;
-}
-
-/*! Blocks until the next swap of the audio buffers. If the stream is not running, it returns immediately. */
+/*! Blocks until the next swap of the audio buffers. If the stream is not running, it returns immediately.
+\see See \ref blockingCode */
 void CX_SoundStream::waitForBufferSwap(void) {
 	if (_rtAudio == nullptr || !_rtAudio->isStreamRunning()) {
 		CX::Instances::Log.warning("CX_SoundStream") << "waitForBufferSwap(): Wait for buffer swap requested while stream not running. Returning immediately.";
@@ -236,18 +213,23 @@ void CX_SoundStream::waitForBufferSwap(void) {
 		;
 }
 
-/*! Estimate the time at which the next buffer swap will occur.
+/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::CX_Clock::now(). */
+CX_Millis CX_SoundStream::getLastSwapTime(void) const {
+	return _lastSwapTime;
+}
+
+/*! Estimate the time at which the next buffer swap will occur. The estimate is based on the buffer size
+and sample rate, not empirical measurement.
 \return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.now(). */
-CX_Millis CX_SoundStream::estimateNextSwapTime(void) {
-	CX_Millis bufferSwapInterval = ((long long)_config.bufferSize * 1000000) / _config.sampleRate;
-	return _lastSwapTime + bufferSwapInterval;
+CX_Millis CX_SoundStream::estimateNextSwapTime(void) const {
+	return _lastSwapTime + this->estimateLatencyPerBuffer();
 }
 
 /*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using.
 This should not be needed most of the time, but there may be cases in which you need to directly
 access RtAudio. Here is the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
 */
-RtAudio* CX_SoundStream::getRtAudioInstance(void) {
+RtAudio* CX_SoundStream::getRtAudioInstance(void) const {
 	return _rtAudio;
 }
 
@@ -356,7 +338,7 @@ std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std:
 \return A vector of strings, one string for each bit set in formats for
 which there is a corresponding valid audio format that RtAudio supports.
 */
-std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats) {
+std::vector<std::string> CX_SoundStream::formatsToStrings(RtAudioFormat formats) {
 	vector<string> rval;
 
 	for (unsigned int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
@@ -384,7 +366,7 @@ std::vector<std::string> CX_SoundStream::formatsToStrings (RtAudioFormat formats
 \param delim The delimiter.
 \return A string containing string representations of the valid formats in `formats`.
 */
-std::string CX_SoundStream::formatsToString (RtAudioFormat formats, std::string delim) {
+std::string CX_SoundStream::formatsToString(RtAudioFormat formats, std::string delim) {
 	vector<string> sFormats = formatsToStrings(formats);
 	string rval;
 	for (unsigned int i = 0; i < sFormats.size(); i++) {
@@ -401,7 +383,7 @@ std::string CX_SoundStream::formatsToString (RtAudioFormat formats, std::string 
 \return A machine-readable list of information. See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1DeviceInfo.html
 for information about the members of the RtAudio::DeviceInfo struct.
 */
-std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList (RtAudio::Api api) {
+std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api) {
 	RtAudio *tempRt;
 	vector<RtAudio::DeviceInfo> devices;
 
@@ -431,7 +413,7 @@ input and output channels, etc.
 \param api Devices that support this API are scanned.
 \return A human-readable formatted string containing the scanned information. Can be printed directly to std::cout or elsewhere.
 */
-std::string CX_SoundStream::listDevices (RtAudio::Api api) {
+std::string CX_SoundStream::listDevices(RtAudio::Api api) {
 	vector<RtAudio::DeviceInfo> devices = getDeviceList(api);
 
 	stringstream rval;
@@ -566,7 +548,7 @@ CX_SoundStream::Configuration CX_SoundStream::readConfigurationFromFile(std::str
 }
 
 
-int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
+int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
 
 	_lastSwapTime = CX::Instances::Clock.now();
 
@@ -618,8 +600,42 @@ int CX_SoundStream::_rtAudioCallbackHandler (void *outputBuffer, void *inputBuff
 	return 0; //Return 0 to keep the stream going.
 }
 
-int CX_SoundStream::_rtAudioCallback (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data) {
+int CX_SoundStream::_rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data) {
 	return ((CX_SoundStream*)data)->_rtAudioCallbackHandler(outputBuffer, inputBuffer, bufferSize, streamTime, status);
+}
+
+//Try to pick a sample rate >= the requested sample rate for the api and device combination. 
+//If that is impossible, pick the next smallest sample rate.
+unsigned int CX_SoundStream::_getBestSampleRate(unsigned int requestedSampleRate, RtAudio::Api api, int deviceId) {
+
+	unsigned int closestGreaterSampleRate = numeric_limits<unsigned int>::max();
+	unsigned int closestLesserSampleRate = 0;
+
+	std::vector<unsigned int> sampleRates = getDeviceList(api).at(deviceId).sampleRates;
+
+	for (unsigned int i = 0; i < sampleRates.size(); i++) {
+		unsigned int thisSampleRate = sampleRates[i];
+		if (thisSampleRate == requestedSampleRate) {
+			return requestedSampleRate;
+		}
+		if (thisSampleRate > requestedSampleRate && thisSampleRate < closestGreaterSampleRate) {
+			closestGreaterSampleRate = thisSampleRate;
+		}
+		if (thisSampleRate < requestedSampleRate && thisSampleRate > closestLesserSampleRate) {
+			closestLesserSampleRate = thisSampleRate;
+		}
+	}
+
+	//If not at max, the desired sample rate must not have been possible and there was a greater sample rate available, so pick that sample rate.
+	if (closestGreaterSampleRate != numeric_limits<unsigned int>::max()) {
+		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << ") not available. " << closestGreaterSampleRate << " chosen instead.";
+		return closestGreaterSampleRate;
+	} else if (closestLesserSampleRate != 0) {
+		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << ") not available. " << closestLesserSampleRate << " chosen instead.";
+		return closestLesserSampleRate;
+	}
+
+	return 0;
 }
 
 }

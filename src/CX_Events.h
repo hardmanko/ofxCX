@@ -13,7 +13,17 @@ namespace Private {
 	};
 
 	struct CX_KeyRepeatEventArgs_t {
+		CX_KeyRepeatEventArgs_t(void) :
+			key(0),
+			keycode(0),
+			scancode(0),
+			codepoint(0)
+		{}
+
 		int key;
+		int keycode;
+		int scancode;
+		unsigned int codepoint;
 	};
 
 	class CX_Events {

@@ -94,7 +94,7 @@ namespace Util {
 	the standard computer monitor coordinate system. When user coordinates are input into this class,
 	they will be converted into the standard monitor coordinate system. This lets you use coordinates 
 	in your own system and convert those coordinates into the standard coordinates that are used by the 
-	drawing functions of openFrameworks.
+	drawing functions. Note that this does not always play nicely when dealing with angles.
 
 	See CX_CoordinateConverter::setUnitConverter() for a way to do change the units of the coordinate 
 	system to, for example, inches or degrees of visual angle.
@@ -113,6 +113,8 @@ namespace Util {
 	\endcode
 
 	Another example of the use of this class can be found in the advancedChangeDetection example experiment.
+
+	If you want to invert the y-axis, you may be better off using CX::CX_Display::setYIncreasesUp().
 
 	\ingroup utility */
 	class CX_CoordinateConverter {

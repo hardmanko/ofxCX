@@ -41,14 +41,23 @@ namespace CX {
 		simply movement, a button press or release, a drag event (mouse button held while mouse is moved), or movement
 		of the scroll wheel. */
 		struct Event {
-			int button; /*!< \brief The relevant mouse button if the event `type` is PRESSED, RELEASED, or DRAGGED.
-						Can be compared with elements of enum CX_Mouse::Buttons to find out about the named buttons. */
+			/*! \brief The relevant mouse button if the event `type` is PRESSED, RELEASED, or DRAGGED.
+			Can be compared with elements of enum CX_Mouse::Buttons to find out about the named buttons. */
+			int button;
 
-			int x; //!< The x position of the cursor at the time of the event, or the change in the x-axis scroll if the `type` is EventType::SCROLLED.
-			int y; //!< The y position of the cursor at the time of the event, or the change in the y-axis scroll if the `type` is SCROLLED.
+			/*! \brief The x position of the cursor at the time of the event, or the change in 
+			the x-axis scroll if the `type` is EventType::SCROLLED. */
+			float x;
+
+			/*! \brief The y position of the cursor at the time of the event, or the change in 
+			the y-axis scroll if the `type` is EventType::SCROLLED. */
+			float y;
 
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
-			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between `time` and `time` minus uncertainty.
+
+			/*! \brief The uncertainty in `time`, which represents the difference between the time at which this
+			event was timestamped by CX and the last time that events were checked for. */
+			CX_Millis uncertainty;
 
 			EventType type; //!< The type of the event.
 		};
@@ -58,14 +67,14 @@ namespace CX {
 		void enable(bool enable);
 		bool enabled(void);
 
-		int availableEvents (void);
-		CX_Mouse::Event getNextEvent (void);
+		int availableEvents(void);
+		CX_Mouse::Event getNextEvent(void);
 		std::vector<CX_Mouse::Event> copyEvents(void);
-		void clearEvents (void);
+		void clearEvents(void);
 
-		void showCursor (bool show);
-		void setCursorPosition (ofPoint pos);
-		ofPoint getCursorPosition (void);
+		void showCursor(bool show);
+		void setCursorPosition(ofPoint pos);
+		ofPoint getCursorPosition(void);
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime
@@ -84,10 +93,12 @@ namespace CX {
 		void _mouseDraggedEventHandler (ofMouseEventArgs &a);
 		void _mouseWheelScrollHandler (Private::CX_MouseScrollEventArgs_t &a);
 
-		void _mouseEventHandler (ofMouseEventArgs &a);
+		void _mouseEventHandler(ofMouseEventArgs& ofEvent);
 
 		bool _listeningForEvents;
 		void _listenForEvents (bool listen);
+
+		ofPoint _cursorPos;
 
 	};
 

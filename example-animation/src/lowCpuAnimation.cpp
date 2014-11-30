@@ -4,7 +4,7 @@
 Because CX is supposed to be for high-performance real-time applications, generally code
 written for it is run in very tight loops that are constantly checking something, like
 if a response has been received or a if buffer swap has occured. This has the side
-effect of making CX programs huge CPU hogs, because they are never not doing something,
+effect of making CX programs huge CPU hogs, because they are always doing something,
 so they ask for maximum CPU time from the operating system. This is not a problem if
 you are using a modern computer with a multi-core CPU because the CX program can peg one
 core to 100% and everything else that needs to happen in other programs can happen

@@ -118,7 +118,8 @@ namespace CX {
 				lateCopiesToBackBuffer(0)
 			{}
 
-			//how about indices for the frames with errors?
+			/*! \brief The names of all of the slides that had any errors. */
+			std::set< std::string > namesOfSlidesWithErrors;
 
 			/*! \brief True if presentation errors were successfully checked for. This does not mean that there were
 			no presentation errors, but that there were no presentation error checking errors. */
@@ -152,7 +153,7 @@ namespace CX {
 				waitUntilFenceSyncComplete(false)
 			{}
 
-			CX_Display *display; //!< A pointer to the display to use.
+			CX_Display *display; //!< A pointer to the display on which to present the slides.
 
 			/*! \brief A pointer to a user function that will be called as soon as the final slide is presented. In this function,
 			you can add additional slides to the slide presenter and do other tasks, like process input. */
@@ -174,13 +175,16 @@ namespace CX {
 			the back buffer to the front buffer, that the CPU is put into a spinloop waiting for the buffers to swap. */
 			CX_Millis preSwapCPUHoggingDuration;
 
-			/*! \brief Hint that fence sync should be used to check that slides are fully copied to the back buffer
-			before they are swapped in. This can help prevent vertical tearing. */
+			/*! \brief Hint that fence sync should be used to check that slides are fully rendered to the back buffer
+			before they are swapped in. This will allow the slide presenter to notify you if slides are swapped into
+			the front buffer before it is confirmed that they were fully rendered. Defaults to `true`. See also 
+			\ref waitUntilFenceSyncComplete. */
 			bool useFenceSync;
 
-			/*! \brief If useFenceSync is false, this is also forced to false. If this is true, new slides will not be swapped in until
-			there is confirmation that the slide has been fully copied into the back buffer. This prevents vertical tearing, but
-			may cause slides to be swapped in late if the copy confirmation is delayed but the copy has actually occurred.
+			/*! \brief If \ref useFenceSync is false, this is also forced to false. If this is true, new slides will not 
+			be swapped in until there is confirmation that the slide has been fully rendered into the back buffer. 
+			This prevents vertical tearing, but may cause slides to be swapped in late if the confirmation that 
+			rendering has completed is delayed but the rendering has actually occurred on time.
 			Does nothing if `swappingMode` is `MULTI_CORE`. */
 			bool waitUntilFenceSyncComplete;
 		};
@@ -197,29 +201,31 @@ namespace CX {
 		struct Slide {
 
 			Slide() :
-				slideName("unnamed"),
+				name(""),
 				drawingFunction(nullptr),
-				slideStatus(NOT_STARTED)
+				presentationStatus(Status::NOT_STARTED)
 			{}
 
-			std::string slideName; //!< The name of the slide. Set by the user during slide creation.
+			std::string name; //!< The name of the slide. Set by the user during slide creation.
 
 			ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
-							   If drawingFunction points to a user function, framebuffer will not be drawn. */
+							   If drawingFunction points to a user function, `framebuffer` will not be drawn. */
 			std::function<void(void)> drawingFunction; /*!< \brief Pointer to a user function that will be called to draw the slide.
 										   If this points to a user function, it overrides `framebuffer`. The drawing function is
 										   not required to call ofBackground() or otherwise clear the display before drawing, which
 										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer.
 										   However, if you want a blank framebuffer, you will have to clear it manually. */
 
-			/*! \brief Status of the current slide vis a vis presentation. This should not be modified by the user. */
-			enum {
-				NOT_STARTED,
-				COPY_TO_BACK_BUFFER_PENDING,
-				SWAP_PENDING,
-				IN_PROGRESS,
-				FINISHED
-			} slideStatus;
+			/*! The possible presentation statuses of the slide. */
+			enum class Status : int {
+				NOT_STARTED = 0, //!< The slide is somewhere in the queue awaiting start.
+				RENDERING = 1, //!< The slide is next in line for presentation and its rendering has started
+				SWAP_PENDING = 2, //!< The slide is next in line for presentation and its rendering has completed, but it has not been swapped in.
+				IN_PROGRESS = 3, //!< The slide has been swapped in and is now on screen, assuming that the rending completed before the swap.
+				FINISHED = 4 //!< The slide has been replaced with a new slide.
+			};
+
+			Status presentationStatus; //!< Presentation status of the slide. This should not be modified by the user.
 
 			SlideTimingInfo intended; //!< The intended timing parameters (i.e. what should have happened if there were no presentation errors).
 			SlideTimingInfo actual; //!< The actual timing parameters.
@@ -233,24 +239,25 @@ namespace CX {
 
 		CX_SlidePresenter (void);
 
-		bool setup (CX_Display *display);
-		bool setup (const CX_SlidePresenter::Configuration &config);
-		void update (void);
+		bool setup(CX_Display *display);
+		bool setup(const CX_SlidePresenter::Configuration &config);
+		void update(void);
 
-		void appendSlide (CX_SlidePresenter::Slide slide);
-		void appendSlideFunction (std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
+		void appendSlide(CX_SlidePresenter::Slide slide);
+		void appendSlideFunction(std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
 		void beginDrawingNextSlide(CX_Millis slideDuration, std::string slideName = "");
-		void endDrawingCurrentSlide (void);
+		void endDrawingCurrentSlide(void);
 
-		bool startSlidePresentation (void);
-		void stopSlidePresentation (void);
-		bool isPresentingSlides (void) const;
+		bool startSlidePresentation(void);
+		void stopSlidePresentation(void);
+		bool isPresentingSlides(void) const;
 		bool presentSlides(void);
 
-		void clearSlides (void);
+		void clearSlides(void);
 
 		std::vector<CX_SlidePresenter::Slide>& getSlides(void);
 		CX_SlidePresenter::Slide& getSlideByName(std::string name);
+		std::string getLastPresentedSlideName(void) const;
 
 		std::vector<CX_Millis> getActualPresentationDurations(void);
 		std::vector<unsigned int> getActualFrameCounts(void);

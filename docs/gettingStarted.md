@@ -7,7 +7,7 @@ In brief, you need a few things to use CX:
 + [openFrameworks](http://www.openframeworks.cc), which CX relies on.
 + A copy of CX, which you can get from the github repository (https://github.com/hardmanko/ofxCX).
 
-The sections below go into a more detail about these things.
+The sections below go into a more detail about each of these things.
 
 System Requirements
 -------------------
@@ -45,17 +45,17 @@ The latest version of openFrameworks can be downloaded from [here](http://openfr
 The main openFrameworks download page (http://openframeworks.cc/download/) has information about how to install openFrameworks, depending on what development environment you are using.
 
 ### Linux openFramworks 0.8.0 installation notes ###
-There are two issues with installing openFrameworks 0.8.0 on Linux. openFrameworks 0.8.4 does not have these issues. All directories are given relative to where you installed openFramworks.
+There are two issues with installing openFrameworks 0.8.0 on Linux. openFrameworks 0.8.4 does not have these issues. All directories are given relative to where you installed openFrameworks.
 
 #### Problem 1: 
 For at least some Linux distributions, `scripts/linux/WHATEVER_OS/install_dependencies.sh` must be modified so as to ignore some of the gstreamer-ffmpeg stuff, 
 because the script doesn't seem to properly deal with the case of gstreamer_0.1-ffmpeg not existing in the available software sources. 
 A newer version of gstreamer can be installed by commenting out everything related to selecting a gstreamer version, except
 
-    GSTREAMER_VERSION=1.0
-    GSTREAMER_FFMPEG=gstreamer${GSTREAMER_VERSION}-libav
+	GSTREAMER_VERSION=1.0
+	GSTREAMER_FFMPEG=gstreamer${GSTREAMER_VERSION}-libav
 
-which does the trick for me. I'm not sure that 1.0 is the latest version of gstreamer, but this WORKFORME.
+which does the trick for me. I'm not sure that 1.0 is the latest version of gstreamer, but this works for me.
 
 #### Problem 2: 
 `ofTrueTypeFont.cpp` cannot compile because of some strange folder structure issue. All you need to do is 
@@ -75,9 +75,7 @@ Installing CX
 -------------
 
 Once you have installed openFrameworks, you can install CX.
-First, download CX from its [github repository](https://github.com/hardmanko/ofxCX) by clicking on the "Download ZIP" button on the right (or by using git clone, if you want to be fancy).
-
-Put the contents of the zip file into into a directory named `ofxCX` in `OFDIR/addons`, where OFDIR is where you put openFrameworks when you installed it. You are now done installing things!
+First, download CX from its [github repository](https://github.com/hardmanko/ofxCX) by clicking on the "Download ZIP" button on the right (or by using git clone, if you want to be fancy). Put the contents of the zip file into into a directory named `ofxCX` in `OFDIR/addons`, where OFDIR is where you put openFrameworks when you installed it. You are now done installing things!
 
 
 Creating Your First CX Project
@@ -86,57 +84,53 @@ Creating Your First CX Project
 To use CX in a project, you will use the openFrameworks project generator, so you might want to have a look at it's help page [here](http://openframeworks.cc/tutorials/introduction/002_projectGenerator.html), but it's really easy to use, so you might not need to read up on it.
 
 1. Use the oF project generator to create a new project that uses the ofxCX addon.
-The project generator asks you what to name your project and allows you to change where to put it (defaults to `OFDIR/apps/myApps/`).
-Once you have dont that, click the "Addons" button and check the box next to ofxCX. If ofxCX does not appear in the list of addons, you probably didn't put the ofxCX directory in the right place (it must be in the openFrameworks addons directory). Click on the "Generate" button to create the project.
++ The project generator asks you what to name your project and allows you to change where to put it (defaults to `OFDIR/apps/myApps/myAppName`, where `myAppName` is the name you picked for your app).
++ Once you have selected a name and location for the project, click the "Addons" button. On that page, check the box next to ofxCX and click on the back button. If ofxCX does not appear in the list of addons, you probably didn't put the ofxCX directory in the right place when installing it. 
++ Once ofxCX has been added as an addon, click on the "Generate" button to create the project. There are usually no errors when generating a project.
 2. Go to the newly-created project directory (that you chose when creating the project in step 1) and go into the `src` subdirectory.
-3. Delete all of the files in the src directory (main.cpp, testApp.h, and testApp.cpp). The project generator creates these files, but you don't need them for CX.
-4. Create a new .cpp file in the `src` subdirectory and give it a name, like "MyFirstExperiment.cpp". In new file, you will need to include CX_EntryPoint.h and define a function called `runExperiment`, just like in the example below:
+3. Delete all of the files in the src directory (main.cpp, testApp.h, and testApp.cpp). The project generator creates these files for normal openFrameworks apps, but you don't need them for CX apps.
+4. Create a new .cpp file in the `src` subdirectory and give it a name, like "MyFirstExperiment.cpp". In new file, you will need to include CX.h and define a function called `runExperiment`, just like in the example below:
 \code{.cpp}
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 void runExperiment (void) {
 	//Do everything you need to do for your experiment
 }
 \endcode
-Including CX_EntryPoint.h brings into your program all of the classes and functions from CX and openFrameworks so that you can use them. 
+Including CX.h brings into your program all of the classes and functions from CX and openFrameworks so that you can use them. 
 `runExperiment` is the CX version of a `main` function: It is called once, after CX has been set up, and the program closes after `runExperiment` returns.
 5. Now you need to tell the compiler that it should compile the whole project, including openFrameworks, CX, and your new .cpp file. This step depends on your exact compiler and operating system, but I have provided information for two common configurations.
 + For Visual Studio (VS), you go to the root directory for your application (up one level from `src`) and open the file with the same name as your project with the `.sln` extension. This should open VS and your project. On the left side of the VS window, there should be a pane called "Solution Explorer". Within the Solution Explorer, there should be a few items. One will be called "Solution 'APP_NAME' (2 projects)", which contains your project, called APP_NAME, and a project called `openframeworksLib`. You should expand your project until you can see a folder called `src`. It will have the same files as you deleted in step 3 listed there, so get rid of them by highlighting them and pressing the delete key (or right click on them and select "Exclude From Project"). Now right click on the `src` folder in VS and select "Add" -> "Existing item...". In the file selector that opens, navigate your way to the `src` folder in your project directory and select the .cpp file you made in step 4. You can alternately drag and drop your cpp file onto the `src` folder within VS. Now press F5, or select "DEBUG" -> "Start Debugging" from the menu bar at the top of the VS window. This will compile and run your project in debug mode. It will take a long time to compile the first time, because it has to compile all of openFrameworks and all of CX the first time. However, subsequent builds will only need to compile your code and will be much faster.
-+ On Linux, if you are using Code::Blocks, you don't need to tell Code::Blocks about the new file you made. The build process simply compiles everything in the `src` directory of your project. After opening the Code::Blocks workspace file, you click on the Compile and Run button (looks like a yellow gear and a green play symbol) to compile the project. Note that on Linux, you need to explicitly enable C++11 features of the compiler before compiling. When the openFrameworks project generator creates a new project on Linux, it creates a file called config.make in the root directory of your project. Find the line in config.make that has "#PROJECT_CFLAGS" on it and change that line to "PROJECT_CFLAGS = -std=c++11". This will enable C++11 features of the compiler.
++ On Linux, if you are using Code::Blocks, you don't need to tell Code::Blocks about the new file you made. The build process simply compiles everything in the `src` directory of your project. Note that on Linux, you need to explicitly enable C++11 features of the compiler before compiling. When the openFrameworks project generator creates a new project on Linux, it creates a file called config.make in the root directory of your project. Find the line in config.make that has "#PROJECT_CFLAGS" on it and change that line to "PROJECT_CFLAGS = -std=c++11". This will enable C++11 features of the compiler. After opening the Code::Blocks workspace file, you click on the Compile and Run button (looks like a yellow gear and a green play symbol) to compile and run the project. 
 
-That's all you need to do to get started with a blank experiment. However, you probably have no idea what to put into `runExperiment` at this point. You should look at the CX examples in order to learn more about how CX works. You should start with the helloWorld example and work your way from there.
+That's all you need to do to get started with a blank experiment. However, you probably have no idea what to put into `runExperiment` at this point. You should look at the CX examples in order to learn more about how CX works. You should start with the helloWorld example and go from there.
 
 \section examples_section Examples
 
 There are several examples of how to use CX. The example files can be found in the CX directory (`OF_DIR/addons/ofxCX`) in subfolders with names beginning with "example-". Some of the examples are on a specific topic and others are sample experiments that integrate together different features of CX. 
 
-In order to use the examples and tutorials, do everything for creating a new CX project (above) up until step 3. Then, instead of creating a new .cpp file in step 4, copy one of the example .cpp files from the example folders into the `src` directory of a project that uses CX as an addon. 
+In order to use the examples, do everything for creating a new CX project (above) up until step 3. Then, instead of creating a new .cpp file in step 4, copy one of the example .cpp files from the example folders into the `src` directory of a project that uses CX as an addon. 
 
 Some of the examples have data files that they need run. For example, the runderingTest example has a picture of some birds that it uses. 
 If the example has data, in the example directory there will be a directory called `bin` with a directory under it called `data` containing the necessary files. These should be copied to `PROJECT_NAME/bin/data`. The `bin/data` folder in the project directory might not exist immediately after creating a new project. You can create it if not.
 
-Tutorials:
+Specific topics:
 -----------------------
-+ soundBuffer - Tutorial covering a number of things that you can do with CX_SoundBuffers, including loading sound 
-files, combining sounds, and playing them.
++ soundBuffer - Tutorial covering a number of things that you can do with CX_SoundBuffers, including loading sound files, combining sounds, and playing them.
 + modularSynth - This tutorial demonstrates a number of ways to generate auditory stimuli using the synthesizer modules in the CX::Synth namespace.
 + dataFrame - Tutorial covering use of CX_DataFrame, which is a container for storing data of various types that is collected in an experiment.
 + logging - Tutoral explaining how the error logging system of CX works and how you can use it in your experiments.
-+ animation - A simple example of a simple way to draw moving things in CX. Also includes some mouse input handling: cursor movement, clicks, and scroll wheel activity.
++ animation - A simple example of a way to draw moving things in CX without using blocking code. Also includes some mouse input handling: cursor movement, clicks, and scroll wheel activity.
 
 Experiments:
 ------------------------
-+ changeDetection - A very straightforward working memory change-detection task demonstrating some of the features of CX 
-like presentation of time-locked stimuli, keyboard response collection, and use of the CX_RandomNumberGenerator.
-There is also an advanced version of the changeDetection task that shows how to do data storage and output with a CX_DataFrame 
-and how to use a custom coordinate system with visual stimuli so that you don't have to work in pixels.
-+ nBack - Demonstrates advanced use of CX_SlidePresenter in the implementation of an N-Back task. An advanced version of this
-example contrasts two methods of rendering stimuli with a CX_SlidePresenter, demonstrating the advantages of each.
++ changeDetection - A very straightforward working memory change-detection task demonstrating some of the features of CX like presentation of time-locked stimuli, keyboard response collection, and use of the CX_RandomNumberGenerator.
+There is also an advanced version of the changeDetection task that shows how to do data storage and output with a CX_DataFrame and how to use a custom coordinate system with visual stimuli so that you don't have to work in pixels.
++ nBack - Demonstrates advanced use of CX_SlidePresenter in the implementation of an N-Back task. An advanced version of this example contrasts two methods of rendering stimuli with a CX_SlidePresenter, demonstrating the advantages of each.
 
 Misc.:
 -----------------------
 + helloWorld - A very basic getting started program.
-+ renderingTest - Includes several examples of how to draw stuff using ofFbo (a kind 
-of offscreen buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions 
-(ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace that supplement
-openFramework's drawing capabilities.
++ renderingTest - Includes several examples of how to draw stuff using ofFbo (a kind of offscreen buffer), ofImage (for opening image files: .png, .jpg, etc.), a variety of basic oF drawing functions (ofCircle, ofRect, ofTriangle, etc.), and a number of CX drawing functions from the CX::Draw namespace that supplement openFramework's drawing capabilities.
+
+

@@ -137,8 +137,9 @@ void getResponse(void) {
 			//just fine without this check for this experiment, but it is generally a good idea to filter your input.
 			if (keyEvent.type == CX_Keyboard::PRESSED) {
 
-				//Ignore all responses that are not s or d.
-				if (keyEvent.key == 's' || keyEvent.key == 'd') {
+				//Ignore all responses that are not s or d. For a lot of keys, you can compare 
+				//CX_Keyboard::Event.key to a character literal for many keys.
+				if (keyEvent.key == 'S' || keyEvent.key == 'D') {
 
 					//Figure out the response time. CX does no automatic response time calculation. You have
 					//to find out when the stimulus that the participant is responding to was presented. In
@@ -152,8 +153,8 @@ void getResponse(void) {
 
 					bool changeTrial = trials.at(trialIndex).changeTrial;
 
-					//Code the response. For a lot of keys, you can compare CX_Keyboard::Event.key to a character literal for many keys.
-					if ((changeTrial && keyEvent.key == 'd') || (!changeTrial && keyEvent.key == 's')) {
+					//Code the response.
+					if ((changeTrial && keyEvent.key == 'D') || (!changeTrial && keyEvent.key == 'S')) {
 						trials.at(trialIndex).responseCorrect = true;
 						Log.notice() << "Response correct!";
 					} else {

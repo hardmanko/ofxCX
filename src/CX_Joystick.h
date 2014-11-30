@@ -32,7 +32,10 @@ namespace CX {
 			float axisPosition; //!< If `type` is AXIS_POSITION_CHANGE, this contains the amount by which the axis changed.
 
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
-			CX_Millis uncertainty; //!< The uncertainty in eventTime. The event occured some time between eventTime and eventTime minus uncertainty.
+
+			/*! \brief The uncertainty in `time`, which represents the difference between the time at which this
+			event was timestamped by CX and the last time that events were checked for. */
+			CX_Millis uncertainty;
 
 			EventType type; //!< The type of the event, from the CX_Joystick::EventType enum.
 		};

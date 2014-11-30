@@ -1127,9 +1127,16 @@ void CX_AppWindow::keyboard_cb(GLFWwindow* windowP_, int keycode, int scancode, 
 #endif
 		break;
 	case GLFW_REPEAT:
+		{
 		CX::Private::CX_KeyRepeatEventArgs_t args;
 		args.key = key;
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
+		args.keycode = keycode;
+		args.scancode = scancode;
+		args.codepoint = codepoint;
+#endif
 		ofNotifyEvent(CX::Private::getEvents().keyRepeatEvent, args);
+		}
 		break;
 	case GLFW_RELEASE:
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0

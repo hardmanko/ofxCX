@@ -2,15 +2,17 @@
 
 #include "CX_InputManager.h"
 
-#include "ofAppRunner.h" //ofShowCursor()/ofHideCursor()
 #include "GLFW/glfw3.h"
 #include "CX_Private.h"
+#include "CX_Display.h"
 
 namespace CX {
 
 CX_Mouse::CX_Mouse(CX_InputManager* owner) :
 	_owner(owner),
-	_listeningForEvents(false)
+	_enabled(false),
+	_listeningForEvents(false),
+	_cursorPos(ofPoint(0,0))
 {
 }
 
@@ -71,6 +73,7 @@ Sets the position of the cursor, relative to the program the window. The window 
 \param pos The location within the window to set the cursor.
 */
 void CX_Mouse::setCursorPosition(ofPoint pos) {
+	_cursorPos = pos;
 	glfwSetCursorPos(CX::Private::glfwContext, pos.x, pos.y);
 }
 
@@ -78,24 +81,24 @@ void CX_Mouse::setCursorPosition(ofPoint pos) {
 this will return the last known position of the cursor within the window.
 \return An ofPoint with the last cursor position. */
 ofPoint CX_Mouse::getCursorPosition(void) {
-	return ofPoint(ofGetMouseX(), ofGetMouseY());
+	return _cursorPos;
+	//return ofPoint(ofGetMouseX(), ofGetMouseY());
 }
 
 /*! Show or hide the mouse cursor within the program window. If in windowed mode, the cursor will be visible outside of the window.
 \param show If true, the cursor will be shown, if false it will not be shown. */
 void CX_Mouse::showCursor(bool show) {
 	if (show) {
-		ofShowCursor();
+		CX::Private::appWindow->showCursor();
 	} else {
-		ofHideCursor();
+		CX::Private::appWindow->hideCursor();
 	}
 }
 
 
-
+//As of oF 084 (at least), the type of the event is properly marked by oF, so these functions are depreciated once oF 080 support is dropped.
 void CX_Mouse::_mouseButtonPressedEventHandler(ofMouseEventArgs &a) {
-	a.type = ofMouseEventArgs::Pressed; //To be clear, the only reason for this function and for mouseReleasedEventHandler are that OF does not
-	//already mark the type properly. Maybe in the next version...
+	a.type = ofMouseEventArgs::Pressed;
 	_mouseEventHandler(a);
 }
 
@@ -123,45 +126,49 @@ void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 	ev.type = CX_Mouse::SCROLLED;
 
 	ev.button = -1;
-	ev.x = (int)a.x;
-	ev.y = (int)a.y;
+	ev.x = a.x;
+	ev.y = a.y;
 
 	_mouseEvents.push_back(ev);
 }
 
-void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &a) {
+void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &ofEvent) {
 	CX_Mouse::Event ev;
 	ev.time = CX::Instances::Clock.now();
 	ev.uncertainty = ev.time - _lastEventPollTime;
 
-	ev.button = a.button;
-	ev.x = (int)a.x;
-	ev.y = (int)a.y;
+	ev.button = ofEvent.button;
+	ev.x = ofEvent.x;
+	ev.y = ofEvent.y;
+	if (CX::Instances::Disp.getYIncreasesUpwards()) {
+		ev.y = CX::Instances::Disp.getResolution().y - ev.y; //Not good if multiple displays are possible
+	}
 
+	_cursorPos = ofPoint(ev.x, ev.y);
 
-	if (a.type == ofMouseEventArgs::Pressed) {
+	switch (ofEvent.type) {
+	case ofMouseEventArgs::Pressed:
 		ev.type = CX_Mouse::PRESSED;
-		_heldMouseButtons.insert(a.button);
-
-	} else if (a.type == ofMouseEventArgs::Released) {
+		_heldMouseButtons.insert(ofEvent.button);
+		break;
+	case ofMouseEventArgs::Released:
 		ev.type = CX_Mouse::RELEASED;
-		_heldMouseButtons.erase(a.button);
-
-	} else if (a.type == ofMouseEventArgs::Moved) {
+		_heldMouseButtons.erase(ofEvent.button);
+		break;
+	case ofMouseEventArgs::Moved:
 		ev.type = CX_Mouse::MOVED;
 		ev.button = -1; //To be obvious that the button data is garbage.
-
-	} else if (a.type == ofMouseEventArgs::Dragged) {
+		break;
+	case ofMouseEventArgs::Dragged:
 		ev.type = CX_Mouse::DRAGGED;
 		//It isn't clear what the button data should be set to in this case. The last mouse button pressed?
 		//The last mouse button pressed before the drag started? User code just needs to check which mouse buttons are held, I guess.
 		//GLFW sets it to something called "buttonInUse", which is the last mouse button pressed. This means that drags can start with one
 		//mouse button and then continue with another. Let's just say that the button is gargage and user code has to deal with it.
 		ev.button = -1; //To be obvious that the button data is garbage.
-
-	} else {
-		//This function should not be getting this event.
-		return;
+		break;
+	default:
+		return; //This function should not be getting this event.
 	}
 
 	_mouseEvents.push_back(ev);

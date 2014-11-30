@@ -97,14 +97,14 @@ void getResponse (void) {
 			CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent();
 			if (keyEvent.type == CX_Keyboard::PRESSED) {
 
-				if (keyEvent.key == 's' || keyEvent.key == 'd') {
+				if (keyEvent.key == 'S' || keyEvent.key == 'D') {
 
 					CX_Millis testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
 					trialDf(trialIndex, "responseLatency") = keyEvent.time - testArrayOnset;
 
 					bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();
 
-					if ((changeTrial && keyEvent.key == 'd') || (!changeTrial && keyEvent.key == 's')) {
+					if ((changeTrial && keyEvent.key == 'D') || (!changeTrial && keyEvent.key == 'S')) {
 						trialDf(trialIndex, "responseCorrect") = true;
 						Log.notice() << "Response correct!";
 					} else {

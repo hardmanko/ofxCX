@@ -23,8 +23,8 @@ void runExperiment(void) {
 	ssConfig.api = RtAudio::Api::WINDOWS_DS;
 	ssConfig.outputChannels = 2;
 	ssConfig.sampleRate = 48000;
-	ssConfig.bufferSize = 256;
-	ssConfig.streamOptions.numberOfBuffers = 4;
+	ssConfig.bufferSize = 4096;
+	ssConfig.streamOptions.numberOfBuffers = 2;
 
 	CX_SoundStream ss;
 	ss.setup(ssConfig);
@@ -186,23 +186,23 @@ void runExperiment(void) {
 					;
 
 				switch (ev.key) {
-				case 't': 
+				case 'T': 
 					osc.setGeneratorFunction(Oscillator::triangle);
 					doublingOsc.setGeneratorFunction(Oscillator::triangle);
 					break;
-				case 'q': 
+				case 'Q': 
 					osc.setGeneratorFunction(Oscillator::square);
 					doublingOsc.setGeneratorFunction(Oscillator::square);
 					break;
-				case 'i': 
+				case 'I': 
 					osc.setGeneratorFunction(Oscillator::sine);
 					doublingOsc.setGeneratorFunction(Oscillator::sine);
 					break;
-				case 'a': 
+				case 'A': 
 					osc.setGeneratorFunction(Oscillator::saw);
 					doublingOsc.setGeneratorFunction(Oscillator::saw);
 					break;
-				case 'w': 
+				case 'W': 
 					osc.setGeneratorFunction(Oscillator::whiteNoise);
 					doublingOsc.setGeneratorFunction(Oscillator::whiteNoise);
 					break;

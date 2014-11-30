@@ -287,7 +287,6 @@ void CX_SoundBuffer::setLength(CX_Millis length) {
 \return The length. */
 CX_Millis CX_SoundBuffer::getLength(void) {
 	return CX_Seconds((double)_soundData.size() / (getChannelCount() * (double)getSampleRate()));
-	//return (long long)(((uint64_t)_soundData.size() * 1000000)/(getChannelCount() * (uint64_t)getSampleRate()));
 }
 
 
@@ -306,9 +305,10 @@ float CX_SoundBuffer::getNegativePeak (void) {
 }
 
 /*! Normalizes the contents of the sound buffer.
-\param amount Must be in the interval [0,1]. The peak with the greatest absolute amplitude will be
-set to `amount` and all other samples will be scaled proportionally so as to retain their relationship with
-the greatest absolute peak.
+\param amount The peak with the greatest absolute amplitude will be set to `amount` and all other 
+samples will be scaled proportionally so as to retain their relationship with the greatest absolute peak.
+Should be in the interval [0,1], unless clipping is desired. Should be positive unless you want to invert
+the waveform.
 */
 void CX_SoundBuffer::normalize(float amount) {
 	float peak = std::max(abs(getPositivePeak()), abs(getNegativePeak()));
@@ -422,7 +422,8 @@ If `average == false`, the `N - O` new channels are set to 0.
 If `average == true` the data from the `O - N` to-be-removed channels are averaged and added on to the `N` remaining channels.
 The averaging is done in an unusual way, so that the average intensitity of the kept channels is equal to the average intensity of the removed channels.
 An example to show why this is done:
-Assume that you have 3 channels -- a, b, and c -- and are switching to 2 channels, removing c. The average of c is just c, so when c is added to a and b, you now have c in 2 channels,
+Assume that you have 3 channels -- a, b, and c -- and are switching to 2 channels, removing c. 
+The average of c is just c, so when c is added to a and b, you now have c in 2 channels,
 whereas it was just in 1 channel originally: (a + c) + (b + c) = a + b + 2c. Thus, the final intensity of c is too high.
 What we want to do is scale c down by the number of channels it is being added to so that the total amount of c is equal
 both before and after changing the number of channels, so you divide c by the number of channels it is being added to (2).
@@ -432,8 +433,6 @@ Now we need to scale each sample so that it is constrained to the proper range.
 We do that by multiplying by the number of kept channels (2) by the original number of channels (3).
 Now we have 2/3 * (a + c/2) = 2a/3 + c/3, which is bounded between -1 and 1, as long as a and c are both bounded.
 Also, 2/3 * [(a + c/2) + (b + c/2)] = 2a/3 + 2b/3 + 2c/3, so the ratios of the components of the original sound are equal.
-
-
 
 \param newChannelCount The number of channels the CX_SoundBuffer will have after the conversion.
 \param average If `true` and case `N < O` is reached, then the `O - N` old channels that are being removed will be averaged and this
@@ -726,7 +725,7 @@ void CX_SoundBuffer::clear(void) {
 be encoded as 16-bit PCM. The sample rate is determined by the sample rate of the sound buffer.
 \param filename The name of the file to save the sound data to. `filename` should have a .wav extension. If it does not,
 ".wav" will be appended to the file name and a warning will be logged.
-\return False if there was an error while opening the file. If so, an error will be logged.
+\return `true` for successfully saving the file. `false` if there was an error while opening the file. If so, an error will be logged.
 */
 bool CX_SoundBuffer::writeToFile(std::string filename) {
 	//This function was taken from the ofSoundFile additions suggested here: https://github.com/openframeworks/openFrameworks/pull/2626
@@ -793,24 +792,5 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 	file.close();
 	return true;
 }
-
-
-
-/*
-float CX_SoundBuffer::_readSample (int channel, unsigned int sample) {
-	unsigned int newIndex = (sample * _soundChannels) + channel;
-	return _soundData.at( newIndex );
-}
-
-vector<float> CX_SoundBuffer::_getChannelData (int channel) {
-	vector<float> rval( (unsigned int)getSampleFrameCount() );
-
-	for (unsigned int sample = 0; sample < rval.size(); sample++) {
-		rval[sample] = _soundData.at( (sample * _soundChannels) + channel );
-	}
-
-	return rval;
-}
-*/
 
 } //namespace CX

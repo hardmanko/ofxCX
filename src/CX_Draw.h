@@ -9,6 +9,9 @@
 #include "CX_Utilities.h"
 #include "CX_RandomNumberGenerator.h"
 #include "CX_Algorithm.h"
+#include "CX_Synth.h"
+
+#include "CX_Gabor.h"
 
 namespace CX {
 
@@ -54,76 +57,6 @@ namespace Draw {
 	void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
 	void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font);
 	std::string wordWrap(std::string s, float width, ofTrueTypeFont& font);
-
-	/*! \class CX_PatternProperties_t
-	This structure contains settings controlling the creation of greyscale patterns using CX::Draw::greyscalePatternToPixels().
-	The pattern that is created looks like a simple gabor pattern.
-	*/
-	struct CX_PatternProperties_t {
-		CX_PatternProperties_t(void) :
-			minValue(0),
-			maxValue(255),
-			width(100),
-			height(100),
-			angle(0),
-			period(30),
-			phase(0),
-			maskType(CX_PatternProperties_t::SINE_WAVE),
-			apertureType(CX_PatternProperties_t::AP_CIRCLE),
-			fallOffPower(std::numeric_limits<float>::min())
-		{}
-
-		unsigned char minValue; //!< The minimum value that will be used in the pattern.
-		unsigned char maxValue; //!< The maximum value that will be used in the pattern.
-
-		/*! The width of the pattern, or if `apertureType` is `AP_CIRCLE`, the diameter of the circle enclosing the pattern. */
-		float width;
-
-		/*! The height of the pattern. ignored if `apertureType` is `AP_CIRCLE`. */
-		float height;
-
-		/*! The angle at which the waves are oriented. */
-		float angle;
-
-		float period; //!< The distance, in pixels, between the center of each wave within the pattern.
-		float phase; //!< The offset, in degrees, of the waves.
-
-		/*! The type of waves that will be used in the pattern. */
-		enum {
-			SINE_WAVE,
-			SQUARE_WAVE,
-			TRIANGLE_WAVE
-		} maskType;
-
-		/*! Because the pattern created with these settings extends to infinity in every direction,
-		an aperture through which it is to be viewed must be specified. The aperture can either be a circle or a rectangle. */
-		enum {
-			AP_CIRCLE,
-			AP_RECTANGLE
-		} apertureType;
-
-		/*! The intensity of each pixel is decreased slightly based on how far from the center of the pattern
-		that pixel is, depending on the value of `fallOffPower`. By default, there is no falloff. A value of 1
-		produces a standard cosine falloff. The falloff is computed as `(cos((d/r)^falloffPower * PI) + 1)/2`,
-		where `d` is the distance of the current pixel from the center of the pattern and `r` is the radius of
-		the pattern. */
-		float fallOffPower;
-	};
-
-	struct CX_GaborProperties_t {
-		CX_GaborProperties_t(void) :
-		color(255, 255, 255, 255)
-		{}
-
-		ofColor color;
-		CX_PatternProperties_t pattern;
-	};
-
-	ofPixels greyscalePatternToPixels(const CX_PatternProperties_t& patternProperties);
-
-	ofPixels gaborToPixels (const CX_GaborProperties_t& properties);
-	ofTexture gaborToTexture (const CX_GaborProperties_t& properties);
-	void gabor (ofPoint center, const CX_GaborProperties_t& properties);
 
 	void saveFboToFile(ofFbo& fbo, std::string filename);
 
@@ -171,12 +104,22 @@ namespace Draw {
 
 
 
-	/*! See CX::Draw::colorArc(ofPoint, std::vector<ofColor_<T>>, float, float, float, float, float) for documentation. 
+	/*! See CX::Draw::colorArc(ofPoint, std::vector<ofColor_<T>>, float, float, float, float, float) for documentation
+	of the parameters for this function.
 	The only difference is that this function returns an ofVbo,
-	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html 
-	The ofFbo is ready to be drawn without any further processing. */
+	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html
+	The ofVbo is ready to be drawn without any further processing as in the following code snippet.
+	\code{.cpp}
+	ofVbo colorArc = colorArcToVbo( ***arguments go here*** );
+	colorArc.draw(GL_TRIANGLE_STRIP, 0, colorArc.getNumVertices());
+	\endcode
+	The arguments given to the draw function should be given exactly as in the example, except for
+	the name of the ofVbo instance.
+	*/
 	template <typename T>
-	ofVbo colorArcToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, float width, float angleBegin, float angleEnd) {
+	ofVbo colorArcToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radiusX, float radiusY, 
+						float width, float angleBegin, float angleEnd) 
+	{
 		float d = width / 2;
 
 		angleBegin *= -PI / 180;
@@ -296,7 +239,6 @@ namespace Draw {
 	*/
 	template <typename T>
 	void colorWheel(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
-
 		ofVbo vbo = colorWheelToVbo(center, colors, radius, width, angle);
 		vbo.draw(GL_TRIANGLE_STRIP, 0, vbo.getNumVertices());
 	}

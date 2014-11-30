@@ -93,23 +93,29 @@ bool CX_SoundBufferPlayer::play(void) {
 }
 
 /*! Stop the currently playing sound buffer, or, if a playback start was cued, cancel the cued playback.
-\return Always returns `true` currently.
-*/
+\return Always returns `true`. */
 bool CX_SoundBufferPlayer::stop(void) {
 	_playing = false;
 	//_startTime = std::numeric_limits<CX_Micros>::max();
 	return true;
 }
 
-/*! Queue the start time of the sound in experiment time with an offset to account for latency.
+/*! Queue the start time of the sound in experiment time with an offset to account for latency. 
 
-\param experimentTime The desired experiment time at which the sound should start playing. This time
-plus the offset should be in the future. If it is not, the sound will start playing immediately.
+The start time is adjusted by an estimate of the latency of the sound stream. This is calculated
+as (N_b - 1) * S_b / SR, where N_b is the number of buffers, S_b is the size of the buffers (in sample 
+frames), and SR is the sample rate, in sample frames per second.
+
+In order for this function to have any meaningful effect, the request start time, plus any latency 
+adjustments, must be in the future. If `experimentTime` plus `latencyOffset` minus the estimated 
+stream latency is not in the future, the sound will start playing immediately and a warning will be logged.
+
+\param experimentTime The desired experiment time at which the sound should start playing.
 \param latencyOffset An offset that accounts for latency. If, for example, you called this function with
 an offset of 0 and discovered that the sound played 200 ms later than you were expecting it to,
 you would set offset to -200 in order to queue the start time 200 ms earlier than the
 desired experiment time.
-\return False if the start time plus the offset is in the past. True otherwise.
+\return `false` if the start time plus the latency offset is in the past. `true` otherwise.
 \note See CX_SoundBufferPlayer::seek() for a way to choose the current time point within the sound.
 */
 bool CX_SoundBufferPlayer::startPlayingAt(CX_Millis experimentTime, CX_Millis latencyOffset) {
@@ -118,7 +124,9 @@ bool CX_SoundBufferPlayer::startPlayingAt(CX_Millis experimentTime, CX_Millis la
 		return false;
 	}
 
-	CX_Millis adjustedStartTime = experimentTime + latencyOffset;
+	CX_Millis partialStreamLatency = _soundStream->estimateTotalLatency() - _soundStream->estimateLatencyPerBuffer();
+
+	CX_Millis adjustedStartTime = experimentTime + latencyOffset - partialStreamLatency;
 
 	if (adjustedStartTime <= CX::Instances::Clock.now()) {
 		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "startPlayingAt: Desired start time has already passed. Starting immediately.";
@@ -140,9 +148,12 @@ bool CX_SoundBufferPlayer::startPlayingAt(CX_Millis experimentTime, CX_Millis la
 time in the sound. If the sound buffer is currently playing, this will jump to that point
 in the sound.
 \param time The time in the sound to seek to.
+\note If used while the sound is playing, a warning will be logged but the function will still
+have its normal effect.
 */
 void CX_SoundBufferPlayer::seek(CX_Millis time) {
 	if (_playing) {
+		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "seek() used while sound was playing.";
 		while (_withinOutputEvent)
 			;
 	}
@@ -210,7 +221,10 @@ bool CX_SoundBufferPlayer::setSoundBuffer(CX_SoundBuffer *sound) {
 	return true;
 }
 
-/*!This function provides direct access to the CX_SoundBuffer that is in use by the CX_SoundBufferPlayer. */
+/*! This function provides access to the CX_SoundBuffer that is in use by the CX_SoundBufferPlayer.
+If this function is called during playback of the sound buffer, a warning will be logged, but the 
+buffer pointer will still be returned. 
+\return A pointer to the CX_SoundBuffer that is currently assigned to the CX_SoundBufferPlayer. */
 CX_SoundBuffer* CX_SoundBufferPlayer::getSoundBuffer(void) {
 	if (_playing) {
 		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "getSoundBuffer: Sound buffer pointer accessed while playback was in progress.";
@@ -219,7 +233,7 @@ CX_SoundBuffer* CX_SoundBufferPlayer::getSoundBuffer(void) {
 }
 
 bool CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &outputData) {
-	//This check is a bit strange, but if !_playing and _playbackStartQueued, then we are checking for playback start and not returning false.
+	
 	if ((!_playing && !_playbackStartQueued) || (_buffer == nullptr)) {
 		return false;
 	}

@@ -5,6 +5,7 @@
 namespace CX {
 
 CX_SlidePresenter::CX_SlidePresenter(void) :
+	_hoggingStartTime(0),
 	_presentingSlides(false),
 	_synchronizing(false),
 	_currentSlide(0),
@@ -68,26 +69,31 @@ be logged, true otherwise.
 */
 bool CX_SlidePresenter::startSlidePresentation (void) {
 	if (_config.display == nullptr) {
-		CX::Instances::Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid CX_Display attached. Use setup() to attach a CX_Display to the SlidePresenter.";
+		CX::Instances::Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid CX_Display attached. "
+			"Use setup() to attach a CX_Display to the slide presenter.";
 		return false;
 	}
 
 	if (_slides.size() == 0) {
-		CX::Instances::Log.warning("CX_SlidePresenter") << "startSlidePresentation was called without any slides to present.";
+		CX::Instances::Log.warning("CX_SlidePresenter") << "startSlidePresentation() was called without any slides to present.";
 		return false;
 	}
 
 	if (_config.swappingMode == SwappingMode::MULTI_CORE) {
 		if (!_config.display->isAutomaticallySwapping()) {
 			_config.display->setAutomaticSwapping(true);
-			CX::Instances::Log.notice("CX_SlidePresenter") << "Display was not set to automatically swap at start of presentation. It was set to swap automatically in order for the slide presentation to occur.";
+			CX::Instances::Log.notice("CX_SlidePresenter") << "startSlidePresentation(): The swapping mode was MULTI_CORE but "
+				"at the start of presentation, the display attached to the slide presenter was not set to swap automatically. "
+				"It was set to swap automatically in order for the slide presentation to occur.";
 		}
 	}
 
 	if (_config.swappingMode == SwappingMode::SINGLE_CORE_BLOCKING_SWAPS) {
 		if (_config.display->isAutomaticallySwapping()) {
 			_config.display->setAutomaticSwapping(false);
-			CX::Instances::Log.notice("CX_SlidePresenter") << "Display was set to automatically swap at start of presentation. It was set to not swap automatically in order for the slide presentation to occur.";
+			CX::Instances::Log.notice("CX_SlidePresenter") << "startSlidePresentation(): The swapping mode was "
+				"SINGLE_CORE_BLOCKING_SWAPS but the display was set to automatically swap at start of presentation. "
+				"It was set to not swap automatically in order for the slide presentation to occur.";
 		}
 	}
 
@@ -97,13 +103,14 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	}
 
 	for (unsigned int i = 0; i < _slides.size(); i++) {
-		_slides.at(i).slideStatus = CX_SlidePresenter::Slide::NOT_STARTED;
+		_slides.at(i).presentationStatus = Slide::Status::NOT_STARTED;
 	}
-
+	
 	_synchronizing = true;
 	_presentingSlides = false;
 
 	//Wait for any ongoing rendering operations to complete before starting slide presentation.
+	//If a lot of really complex slides were rendered, they may take some time to complete.
 	_config.display->waitForOpenGL();
 
 	if (_config.swappingMode == SwappingMode::MULTI_CORE) {
@@ -152,7 +159,8 @@ commands given between a call to beginDrawingNextSlide() and endDrawingCurrentSl
 will cause stimuli to be drawn to the framebuffer of the slide.
 
 \param slideDuration The amount of time to present the slide for. If this is less than or equal to 0, the slide will be ignored.
-\param slideName The name of the slide. This can be anything and is purely for the user to use to help identify the slide.
+\param slideName The name of the slide. This can be anything and is purely for the user to use to help identify the slide. If equal
+to the empty string (`""`; the default), the name will be set to "Slide N", where N is the slide number, indexed from 0.
 
 \code{.cpp}
 CX_SlidePresenter sp; //Assume that this has been set up.
@@ -165,7 +173,7 @@ ofCircle(210, 50, 20);
 sp.endDrawingCurrentSlide();
 \endcode
 */
-void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string slideName) {
+void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, std::string slideName) {
 
 	if (_lastFramebufferActive) {
 		CX::Instances::Log.verbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
@@ -173,7 +181,8 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 	}
 
 	if (_config.display == nullptr) {
-		CX::Instances::Log.error("CX_SlidePresenter") << "Cannot draw slides without a valid CX_Display attached. Call setup() before calling beginDrawingNextSlide.";
+		CX::Instances::Log.error("CX_SlidePresenter") << "Cannot draw slides without a valid CX_Display attached. "
+			"Call CX_SlidePresenter::setup() before calling CX_SlidePresenter::beginDrawingNextSlide().";
 		return;
 	}
 
@@ -185,9 +194,16 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 	_slides.push_back(CX_SlidePresenter::Slide());
 	_slideInfo.push_back(ExtraSlideInfo());
 
-	_slides.back().slideName = slideName;
+	if (slideName == "") {
+		slideName = "Slide " + ofToString(_slides.size() - 1);
+	}
+	_slides.back().name = slideName;
+
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Allocating framebuffer...";
-	_slides.back().framebuffer.allocate(_config.display->getResolution().x, _config.display->getResolution().y, GL_RGB, CX::Util::getMsaaSampleCount());
+	_slides.back().framebuffer.allocate(_config.display->getResolution().x, 
+										_config.display->getResolution().y, 
+										GL_RGB, //Because we are always drawing over the whole display, there is no reason to have an alpha channel
+										CX::Util::getMsaaSampleCount());
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Finished allocating.";
 
 	_slides.back().intended.duration = slideDuration;
@@ -197,7 +213,7 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, string sl
 	_slides.back().framebuffer.begin();
 	_lastFramebufferActive = true;
 
-	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().slideName << ") drawing begun. Frame count: " << _slides.back().intended.frameCount;
+	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().name << ") drawing begun. Frame count: " << _slides.back().intended.frameCount;
 }
 
 /*! Ends drawing to the framebuffer of the slide that is currently being drawn to. See beginDrawingNextSlide(). */
@@ -207,38 +223,44 @@ void CX_SlidePresenter::endDrawingCurrentSlide (void) {
 }
 
 /*! Add a fully configured slide to the end of the list of slides. The user code
-must configure several components of the slide:
+must configure a few components of the slide:
 
 + If the framebuffer will be used, the framebuffer must be allocated and drawn to.
 + If the drawing function will be used, a valid function pointer must be given. A check is made that either the
 drawing function is set or the framebuffer is allocated and an error is logged if neither is configured.
 + The intended duration must be set.
-+ The name may be set (optional).
++ The name may be set (optional). If equal to the empty string (`""`; the default), the name will be set to 
+"Slide N", where N is the slide number, indexed from 0.
 
 \param slide The slide to append.
 */
 void CX_SlidePresenter::appendSlide (CX_SlidePresenter::Slide slide) {
 	if (slide.intended.duration <= CX_Millis(0)) {
-		CX::Instances::Log.warning("CX_SlidePresenter") << "Slide named \"" << slide.slideName << "\" with duration <= 0 ignored.";
+		CX::Instances::Log.warning("CX_SlidePresenter") << "appendSlide(): Slide named \"" << slide.name << "\" with duration <= 0 ignored.";
 		return;
 	}
 
 	if (_lastFramebufferActive) {
-		CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlide: The previous slide was not finished before new slide was appended."
+		CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlide(): The previous slide was not finished before new slide was appended."
 			" Call endDrawingCurrentSlide() before appending a slide.";
 		endDrawingCurrentSlide();
 	}
 
 	if (!slide.framebuffer.isAllocated() && (slide.drawingFunction == nullptr)) {
-		CX::Instances::Log.error("CX_SlidePresenter") << "appendSlide: The framebuffer was not allocated and the drawing function was a nullptr.";
+		CX::Instances::Log.error("CX_SlidePresenter") << "appendSlide(): The framebuffer was not allocated and the drawing function was a nullptr.";
 		return;
+	}
+
+	if (slide.name == "") {
+		slide.name = "Slide " + ofToString(_slides.size());
 	}
 
 	_slides.push_back( slide );
 	_slideInfo.push_back(ExtraSlideInfo());
 	_slides.back().intended.frameCount = _calculateFrameCount(slide.intended.duration);
 
-	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().slideName << ") appended. Frame count: " << _slides.back().intended.frameCount;
+	CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlide(): Slide #" << (_slides.size() - 1) << " (" << 
+		_slides.back().name << ") appended. Frame count: " << _slides.back().intended.frameCount;
 }
 
 /*! Appends a slide to the slide presenter that will call the given drawing function when it comes time
@@ -253,9 +275,10 @@ back buffer than to copy an FBO to the back buffer (although this depends on var
 the back buffer are not cleared before this function is called, so the function must clear the background
 to the desired color.
 \param slideDuration The amount of time to present the slide for. If this is less than or equal to 0, the slide will be ignored.
-\param slideName The name of the slide. This can be anything and is purely for the user to use to help identify the slide.
+\param slideName The name of the slide. This can be anything and is purely for the user to use to help identify the slide. If equal
+to the empty string (`""`; the default), the name will be set to "Slide N", where N is the slide number, indexed from 0.
 
-\note See \ref framebufferSwapping for more information about framebuffers.
+\note See \ref visualStimuli for more information about framebuffers.
 
 One of the most tedious parts of using drawing functions is the fact that they can take no arguments. Here are two
 ways to get around that limitation using `std::bind` and function objects ("functors"):
@@ -314,33 +337,49 @@ void runExperiment(void) {
 }
 \endcode
 */
-void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFunction, CX_Millis slideDuration, string slideName) {
+void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName) {
 
 	if (slideDuration <= CX_Millis(0)) {
-		CX::Instances::Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration <= 0 ignored.";
+		CX::Instances::Log.warning("CX_SlidePresenter") << "appendSlideFunction(): Slide named \"" << slideName << "\" with duration <= 0 ignored.";
 		return;
 	}
 
 	if (drawingFunction == nullptr) {
-		CX::Instances::Log.error("CX_SlidePresenter") << "Null pointer to drawing function given.";
+		CX::Instances::Log.error("CX_SlidePresenter") << "appendSlideFunction(): Null pointer to drawing function given.";
 		return;
 	}
 
 	if (_lastFramebufferActive) {
-		CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlideFunction: The previous slide was not finished before new slide function was appended."
-			" Call endDrawingCurrentSlide() before appending a slide function.";
+		CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlideFunction(): The previous slide was not finished "
+			"before a new slide function was appended. Call endDrawingCurrentSlide() before appending a slide function.";
 		endDrawingCurrentSlide();
 	}
 
+	
 	_slides.push_back(CX_SlidePresenter::Slide());
 	_slideInfo.push_back(ExtraSlideInfo());
 
 	_slides.back().drawingFunction = drawingFunction;
 	_slides.back().intended.duration = slideDuration;
 	_slides.back().intended.frameCount = _calculateFrameCount(slideDuration);
-	_slides.back().slideName = slideName;
 
-	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << slideName << ") function appended. Frame count: " << _slides.back().intended.frameCount;
+	if (slideName == "") {
+		slideName = "Slide " + ofToString(_slides.size() - 1);
+	}
+	_slides.back().name = slideName;
+	
+	/* maybe simplify things and use appendSlide in each function? The errors would have to be moved around.
+	CX_SlidePresenter::Slide slide;
+	slide.drawingFunction = drawingFunction;
+	slide.intended.duration = slideDuration;
+	slide.name = slideName;
+
+	this->appendSlide(slide);
+	*/
+
+	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().name <<
+		") function appended. Frame count: " << _slides.back().intended.frameCount;
+
 }
 
 
@@ -365,13 +404,28 @@ the name matches.
 */
 CX_SlidePresenter::Slide& CX_SlidePresenter::getSlideByName(std::string name) {
 	for (unsigned int i = 0; i < _slides.size(); i++) {
-		if (_slides[i].slideName == name) {
+		if (_slides[i].name == name) {
 			return _slides[i];
 		}
 	}
 	std::string errorString = "Slide named \"" + name + "\" not found in CX_SlidePresenter::getSlideByName().";
 	CX::Instances::Log.error("CX_SlidePresenter") << errorString;
 	throw(std::out_of_range(errorString.c_str()));
+}
+
+/*!
+\return The name of the last slide to be presented. If no slides have been presented yet during 
+the current slide presentation, returns "NO_SLIDE_PRESENTED".
+*/
+std::string CX_SlidePresenter::getLastPresentedSlideName(void) const {
+	std::string rval = "NO_SLIDE_PRESENTED";
+
+	for (unsigned int i = 0; i < _slides.size(); i++) {
+		if (_slides.at(i).presentationStatus == Slide::Status::IN_PROGRESS) {
+			rval = _slides.at(i).name;
+		}
+	}
+	return rval;
 }
 
 /* Get a reference to the slide at a given index.
@@ -466,11 +520,13 @@ CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentation
 			//This error does not apply to the last slide because the duration of the last slide is undefined.
 			if (i != _slides.size() - 1) {
 				errors.incorrectFrameCounts++;
+				errors.namesOfSlidesWithErrors.insert(sl.name);
 			}
 		}
 
 		if (sl.copyToBackBufferCompleteTime > sl.actual.startTime) {
 			errors.lateCopiesToBackBuffer++;
+			errors.namesOfSlidesWithErrors.insert(sl.name);
 		}
 	}
 
@@ -482,7 +538,8 @@ CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentation
 It prints the total number of errors and the types of the errors. For each slide,
 it prints the slide index and name, and various information about the slide presentation
 timing. All of the printed information can also be accessed programmatically by using getSlides().
-\return A string containing formatted presentation information.
+\return A string containing formatted presentation information. Errors are marked with two
+asterisks (**).
 */
 std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 	PresentationErrorInfo errors = checkForPresentationErrors();
@@ -502,24 +559,27 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 
 		s << "-----------------------------------" << endl;
 		s << "Index: " << i;
-		s << " Name: " << slide.slideName << endl;
+		s << " Name: " << slide.name << endl;
 
 		s << "Measure:\tIntended,\tActual" << endl;
 		s << "Start time: \t" << slide.intended.startTime << ", " << slide.actual.startTime;
-		if (slide.intended.startTime > slide.actual.startTime) {
-			s << "*";
+
+		CX_Millis earliness = slide.intended.startTime - slide.actual.startTime;
+
+		if ((_config.swappingMode != SwappingMode::MULTI_CORE && earliness > _config.preSwapCPUHoggingDuration) || earliness < CX_Millis(0)) {
+			s << "**";
 		}
 		s << endl;
 
 		s << "Duration:   \t" << slide.intended.duration << ", " << slide.actual.duration << endl;
 
-		if (_config.swappingMode == CX_SlidePresenter::SwappingMode::MULTI_CORE) {
+		if (_config.swappingMode == SwappingMode::MULTI_CORE) {
 			s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << endl;
 
 			s << "Frame count:\t" << slide.intended.frameCount << ", " << slide.actual.frameCount;
 			if (slide.intended.frameCount != slide.actual.frameCount) {
 				if (i != (_slides.size() - 1)) {
-					s << "***"; //Mark the error, but not for the last slide
+					s << "**"; //Mark the error, but not for the last slide
 				}
 			}
 			s << endl;
@@ -527,7 +587,7 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 
 		s << "Copy to back buffer complete time: " << slide.copyToBackBufferCompleteTime;
 		if (slide.copyToBackBufferCompleteTime > slide.actual.startTime) {
-			s << "***"; //Mark the error
+			s << "**"; //Mark the error
 		}
 
 		s << endl << endl;
@@ -538,17 +598,19 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 
 
 void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
+	_waitSyncCheck();
 
 	if (_presentingSlides) {
 
+		Slide::Status status = _slides.at(_currentSlide).presentationStatus;
+
 		//If the current slide should be swapped in
-		if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) ||
-			(!_config.waitUntilFenceSyncComplete && (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)))
+		if ((status == Slide::Status::SWAP_PENDING) ||
+			(!_config.waitUntilFenceSyncComplete && (_currentSlide != 0) && (status == Slide::Status::RENDERING)))
 		{
 
 			//Check to see if we are within the CPU hogging phase of presentation
-			CX_Millis currentTime = CX::Instances::Clock.now();
-			if (currentTime >= _hoggingStartTime) {
+			if (CX::Instances::Clock.now() >= _hoggingStartTime) {
 				_config.display->swapBuffersInThread();
 			}
 		}
@@ -557,9 +619,10 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 
 			CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
 
-			CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " in progress. Started at " << currentSlideOnset;
+			CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(_currentSlide).name <<
+				"\" in progress. Started at " << currentSlideOnset;
 
-			_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::IN_PROGRESS;
+			_slides.at(_currentSlide).presentationStatus = Slide::Status::IN_PROGRESS;
 			//_slides.at(_currentSlide).actual.startFrame = currentFrameNumber; //Don't have frame number information.
 			_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
 
@@ -591,9 +654,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 				_renderCurrentSlide(); //render the next slide. You can do this because you know the buffers will not swap automatically
 			}
 		}
-	}
-
-	if (_synchronizing) {
+	} else if (_synchronizing) {
 		_config.display->swapBuffers();
 		_currentSlide = 0;
 		_renderCurrentSlide();
@@ -602,31 +663,32 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 
 		_hoggingStartTime = CX::Instances::Clock.now();
 	}
-
-	_waitSyncCheck();
 }
 
 void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
-	static CX_Millis _hoggingStartTime = 0;
+
+	_waitSyncCheck();
 
 	if (_presentingSlides) {
 
+		Slide::Status status = _slides.at(_currentSlide).presentationStatus;
+
 		//If the current slide should be swapped in
-		if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) ||
-			(!_config.waitUntilFenceSyncComplete && (_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING)))
+		if ((status == Slide::Status::SWAP_PENDING) ||
+			(!_config.waitUntilFenceSyncComplete && (_currentSlide != 0) && (status == Slide::Status::RENDERING)))
 		{
 
 			//Check to see if we are within the CPU hogging phase of presentation
-			CX_Millis currentTime = CX::Instances::Clock.now();
-			if (currentTime >= _hoggingStartTime) {
+			if (CX::Instances::Clock.now() >= _hoggingStartTime) {
 
 				_config.display->swapBuffers();
 
 				CX_Millis currentSlideOnset = CX::Instances::Clock.now();
+				
+				CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(_currentSlide).name <<
+					"\" in progress. Started at " << currentSlideOnset;
 
-				CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " in progress. Started at " << currentSlideOnset;
-
-				_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::IN_PROGRESS;
+				_slides.at(_currentSlide).presentationStatus = Slide::Status::IN_PROGRESS;
 				_slides.at(_currentSlide).actual.startFrame = 0; //Don't have frame number information.
 				_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
 
@@ -659,20 +721,21 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 				}
 			}
 		}
-	}
+	} else if (_synchronizing) {
 
-	if (_synchronizing) {
-
-		//This is kind of a shitty hack to force v-sync
-		//CX_Millis syncSwapStart = Clock.now();
+		//This is kind of a shitty hack to force v-sync by swapping the buffers a few times
+		CX_Millis syncSwapStart = CX::Instances::Clock.now();
 		CX_Millis swapStart;
 		do {
 			swapStart = CX::Instances::Clock.now();
 			_config.display->swapBuffers();
-			//Log.notice("CX_SlidePresenter") << "swapped during sync";
-		} while (CX::Instances::Clock.now() - swapStart < _config.display->getFramePeriod() - CX_Millis(1));
+			//CX::Instances::Log.notice("CX_SlidePresenter") << "swapped during sync";
 
-		//Log.notice("CX_SlidePresenter") << "Sync swap duration: " << Clock.now() - syncSwapStart;
+			//Don't wait more than 100 ms
+			if (CX::Instances::Clock.now() - syncSwapStart > CX_Millis(100)) {
+				break;
+			}
+		} while (CX::Instances::Clock.now() - swapStart < _config.display->getFramePeriod() - CX_Millis(1));
 
 		_currentSlide = 0;
 		_renderCurrentSlide();
@@ -681,8 +744,6 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 
 		_hoggingStartTime = CX::Instances::Clock.now();
 	}
-
-	_waitSyncCheck();
 }
 
 void CX_SlidePresenter::_multiCoreUpdate(void) {
@@ -697,15 +758,16 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 		uint64_t currentFrameNumber = _config.display->getFrameNumber();
 
 		//Was the current frame just swapped in? If so, store information about the swap time.
-		if ((_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::SWAP_PENDING) ||
-			(_slides.at(_currentSlide).slideStatus == CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING))
+		if ((_slides.at(_currentSlide).presentationStatus == Slide::Status::SWAP_PENDING) ||
+			(_slides.at(_currentSlide).presentationStatus == Slide::Status::RENDERING))
 		{
 
 			CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
+			
+			CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(_currentSlide).name <<
+				"\" in progress. Started at " << currentSlideOnset;
 
-			CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " in progress. Started at " << currentSlideOnset;
-
-			_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::IN_PROGRESS;
+			_slides.at(_currentSlide).presentationStatus = Slide::Status::IN_PROGRESS;
 			_slides.at(_currentSlide).actual.startFrame = currentFrameNumber;
 			_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
 
@@ -763,7 +825,7 @@ void CX_SlidePresenter::update(void) {
 
 void CX_SlidePresenter::_finishPreviousSlide(void) {
 	CX_SlidePresenter::Slide &previousSlide = _slides.at(_currentSlide - 1);
-	previousSlide.slideStatus = CX_SlidePresenter::Slide::FINISHED;
+	previousSlide.presentationStatus = Slide::Status::FINISHED;
 
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_currentSlide - 1) << " marked as finished.";
 
@@ -792,7 +854,7 @@ void CX_SlidePresenter::_handleFinalSlide(void) {
 
 	//Start from the first new slide and go to the last new slide. This is not strictly neccessary.
 	for (unsigned int i = previousSlideCount; i < _slides.size(); i++) {
-		_slides.at(i).slideStatus = CX_SlidePresenter::Slide::NOT_STARTED;
+		_slides.at(i).presentationStatus = Slide::Status::NOT_STARTED;
 	}
 
 	//If there are no new slides, or if the user requested a stop, or if there is no user function,
@@ -878,14 +940,14 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 
 	for (unsigned int i = 0; i < _slideInfo.size(); i++) {
 		if (_slideInfo[i].awaitingFenceSync) {
-			GLenum result = glClientWaitSync(_slideInfo[i].fenceSyncObject, 0, 10);
+			GLenum result = glClientWaitSync(_slideInfo[i].fenceSyncObject, 0, 0);
 			if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
 
 				_slides.at(i).copyToBackBufferCompleteTime = CX::Instances::Clock.now();
 				_slideInfo[i].awaitingFenceSync = false;
 
-				if (_slides[i].slideStatus == Slide::COPY_TO_BACK_BUFFER_PENDING) {
-					_slides[i].slideStatus = Slide::SWAP_PENDING;
+				if (_slides[i].presentationStatus == Slide::Status::RENDERING) {
+					_slides[i].presentationStatus = Slide::Status::SWAP_PENDING;
 					CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << i << " copied to back buffer at " <<
 						_slides[i].copyToBackBufferCompleteTime;
 				} else if (_config.waitUntilFenceSyncComplete) {
@@ -899,31 +961,29 @@ void CX_SlidePresenter::_waitSyncCheck(void) {
 }
 
 void CX_SlidePresenter::_renderCurrentSlide(void) {
+
+	_config.display->beginDrawingToBackBuffer();
 	if (_slides.at(_currentSlide).drawingFunction != nullptr) {
-		_config.display->beginDrawingToBackBuffer();
 		_slides.at(_currentSlide).drawingFunction();
-		_config.display->endDrawingToBackBuffer();
 	} else {
-		//_config.display->copyFboToBackBuffer(_slides.at(_currentSlide).framebuffer);
-		_config.display->beginDrawingToBackBuffer();
 		ofPushStyle();
 		ofDisableAlphaBlending();
 		ofSetColor(255);
 		_slides.at(_currentSlide).framebuffer.draw(0, 0);
 		ofPopStyle();
-		_config.display->endDrawingToBackBuffer();
 	}
+	_config.display->endDrawingToBackBuffer();
 
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " rendering started at " << CX::Instances::Clock.now();
 
 	if (_config.useFenceSync) {
 		_slideInfo.at(_currentSlide).fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-		glFlush(); //This flush assures that the funce sync object gets pushed into the command queue.
+		glFlush(); //This glFlush assures that the fence sync object gets pushed into the command queue.
 		_slideInfo.at(_currentSlide).awaitingFenceSync = true;
 
-		_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::COPY_TO_BACK_BUFFER_PENDING;
+		_slides.at(_currentSlide).presentationStatus = Slide::Status::RENDERING;
 	} else {
-		_slides.at(_currentSlide).slideStatus = CX_SlidePresenter::Slide::SWAP_PENDING;
+		_slides.at(_currentSlide).presentationStatus = Slide::Status::SWAP_PENDING;
 	}
 }
 

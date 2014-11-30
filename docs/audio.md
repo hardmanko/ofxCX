@@ -71,7 +71,7 @@ Playing Multiple Sounds Simultaneously
 --------------------------------------
 
 A CX_SoundBufferPlayer can have a single CX_SoundBuffer assigned to it as the active sound buffer. This means that you cannot play more than one sound at once with a CX_SoundBufferPlayer. 
-This limitation is by design, but also by design there are ways to play multiple sounds at once. The preferred way involves merging together multiple CX_SoundBuffers using \ref CX::CX_SoundBuffer::addSound() "CX_SoundBuffer::addSound()". What this does is take a CX_SoundBuffer and add it to an another CX_SoundBuffer at a given offset. This guarantees that the two sounds will be played at the correct time relative to one another, because there is no additional statup latency when the second sound starts playing. For example:
+This limitation is by design, but also by design there are ways to play multiple sounds at once. The preferred way involves merging together multiple CX_SoundBuffers using \ref CX::CX_SoundBuffer::addSound() "CX_SoundBuffer::addSound()". What this does is take a CX_SoundBuffer and add it to an another CX_SoundBuffer at a given offset. This guarantees that the two sounds will be played at the correct time relative to one another, because there is no latency when the second sound starts playing. An example of merging sound buffers:
 
 \code{.cpp}
 CX_SoundBuffer otherBuffer;
@@ -154,7 +154,7 @@ recorder.setSoundBuffer(nullptr); //Make it so that no buffers are associated wi
 
 All of the pieces of code from above in one place:
 \code{.cpp}
-#include "CX_EntryPoint.h"
+#include "CX.h"
 
 void runExperiment(void) {
 	//Sound stream configuration
@@ -255,16 +255,16 @@ void runExperiment(void) {
 \endcode
 
 
-
 Synthesizing Audio
 ------------------
 
-You can synthesize audio in real time, or ahead of time, using the classes in the CX::Synth namespace. See also the modularSynth example.
+You can synthesize audio in real time, or ahead of time, using the classes in the CX::Synth namespace. See the modularSynth example for some uses of synthesizer modules.
+
 
 Direct Control of Audio IO
 --------------------------
 
-If you want to be really fancy, you can directly read and modify the audio data that a CX_SoundStream is sending or receiving. This is a relatively advanced operation and is unlikely to be needed in very many cases, but it's there if need be.
+If you want to be really fancy, you can directly read and write the audio data that a CX_SoundStream is sending or receiving. This is a relatively advanced operation and is unlikely to be needed in very many cases, but it's there if need be.
 
 In order to directly access the data that a CX_SoundStream is transmitting, you need to create a class containing a function that will be called every time the CX_SoundStream needs to send more data to the sound card. For example, you could have a class like this that creates a sine wave.
 
@@ -320,3 +320,23 @@ cout << CX_SoundStream::listDevices() << endl;
 Note that `listDevices()` is a static function, so you use the name of the CX_SoundStream class and `::` to access it.
 
 CX_SoundStream uses RtAudio (http://www.music.mcgill.ca/~gary/rtaudio/) internally. It is possible that some problems could be solved with help from the RtAudio documentation. For example, one of the configuration options for CX_SoundStream is the low level audio API to use (see \ref CX::CX_SoundStream::Configuration::api), about which the RtAudio documentation provides some help (http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849). You can get a pointer to the RtAudio instance being used by the CX_SoundStream by calling CX::CX_SoundStream::getRtAudioInstance(), which should allow you to do just about anything with RtAudio.
+
+
+Audio Latency
+-------------
+
+OpenFrameworks and, by extension, CX use the RtAudio library, which provides a cross-platform wrapper for different audio APIs. RtAudio provides a consistent interface across platforms and APIs and that interface is what will be described here.
+
+The core of how audio data is given to the hardware that creates the physical stimuls is very similar to the way in which visual stimuli are presented. For visual stimuli, there are two data buffers. One of the buffers is actively being presented while the other buffer is being filled with data in preparation for presentation. Similarly, for audio data, there are at least two buffers. One buffer is presented while another buffer is being filled with data. Whenever the sound hardware finishes presenting one buffer's worth of data, it starts presenting the next buffer of data and it requests a new buffer of data from the audio data source (e.g. a CX_SoundBufferPlayer). When the hardware is done presenting a buffer of data, if the next buffer is not ready, an audio glitch will occur. Typically what happens is that there is a brief moment of silence before the next buffer of data is ready. Also, "clicks" or "pops" are often heard surrounding the silence. Due to these glitches, it is very important that the next buffer of audio data can consistently be filled before the active buffer is emptied. Glitches can be reduced or eliminated by 1) using multiple buffers (which is possible with some audio APIs, but not many) or 2) increasing the size of the buffers. By increasing the size of the buffers, it increases the probability that a buffer of new data will be filled before the active buffer is emptied.
+
+On the other hand, we would like to minimize latency. Latency occurs in audio data because at the time at which you request a sound to be played, there is already some amount of data already in the buffers ahead of the sound you want to play. The new sound that you requested is put at the back of the queue. Typically, the next time that a new buffer worth of data is requested, your sound data will be put into the start of that buffer. The fewer buffers that are in front of the new data, the sooner the new data will make its way to the front of the line and actually get presented. The smaller the buffers are, the smaller the delays between buffers, so your data can be queued more quickly. The best way to minimize latency is to 1) have fewer buffers (minimum of 2: the active buffer and the buffer being filled) and 2) reduce the size of the buffers. Clearly, there is a tradeoff between latency and glitches. The standard recommendation is to aggressively minimize latency until you start to notice glitches, then back off until you stop detecting glitches.
+
+Notice that the latency as determined by the buffer size and number of buffers, while typically represented as a constant value, is not actually a constant. At the time at which the playback of a sound is requested, it could be that the buffers have just swapped, so the new sound will need to wait nearly the whole length of time that it takes to present a buffer before it even gets put into the queue. Another possibility is that the sound playback is requested right before a buffer swap, so the new data will be put into the queue right away. Thus, the typical latency measurement is more of an upper bound than a constant. CX_SoundBufferPlayer has functionality to help deal with this fact, in that you can request that sounds start at a specified time in the future using CX_SoundBufferPlayer::startPlayingAt(). When this function is used, when the sound data is to be put into a buffer, it is not necessarily put at the beginning of the buffer, but is put wherever in the buffer it needs to be in order to be played at the right time relative to the buffer onset. However, note that there may still be some constant latency involved even when this function is used that it does not account for.
+
+CX_SoundStream has some functions like CX_Display for learning about the buffer swapping process. There are CX_SoundStream::hasSwappedSinceLastCheck(), CX_SoundStream::waitForBufferSwap(), CX_SoundStream::getLastSwapTime(), and CX_SoundStream::estimateNextSwapTime().
+
+CX tries to use audio in as latency-controlled a way as possible. The way it does this is by opening an audio stream and keeping it open throughout an experiment. This helps to avoid the latency associated with creating a new audio stream every time a sound is played. This makes it so that the only latency comes from the number and size of the buffers that are used. By keeping an audio stream open all the time, there is a small CPU cost, but it is fairly small. In spite of the design of CX audio, there will always be latency, so understanding the reasons for the latency can help you to deal with it appropriately. 
+
+One downside of the use of only a single stream of audio data is that if multiple sounds are to be played at once, the sound levels need to be adjusted in software in CX to prevent clipping. To explain why this is, a little background is needed. Sound data in CX is treated as a `float` and the amplitudes of the data go from -1 to 1. If an amplitude goes outside of this range, it will be clipped, which produces a type of distortion because the waveform is deformed by flattening the peaks of the waves. When multiple sounds are played at once in a single stream, their amplitudes are added, which means that even if each sound in within an acceptable range, once added together, they will be outside of the interval [-1,1] and clipping will occur. For this reason, when multiple sounds are to played together, regardless of whether more than one CX_SoundBufferPlayer is used or the sounds are merged together in a single CX_SoundBuffer, the ampltudes of the sounds need to be constrained. The easiest way of doing this is to use CX_SoundBuffer::normalize() on the sounds. Normalizing a sound means to make the highest peak in the sound have some set amplitude. Assume you had two sounds with unknown maximum amplitudes. If they were both normalized to have a maximum amplitude of 0.5 each, then when added together, they could never clip.
+
+

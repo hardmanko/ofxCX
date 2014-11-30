@@ -36,7 +36,6 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 		durations[i] = t2 - t1;
 	}
 
-	//uint64_t differenceSum = 0;
 	long long maxDifference = 0;
 	long long minDifference = std::numeric_limits<long long>::max();
 	long long minNonzeroDuration = std::numeric_limits<long long>::max();
@@ -45,8 +44,6 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 
 		long long duration = durations[i];
 		durations[i] = duration;
-
-		//differenceSum += duration;
 
 		if (duration > maxDifference) {
 			maxDifference = duration;
@@ -63,7 +60,7 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 
 	if (minNonzeroDuration > 1000000) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
-			"millisecond precision. Observed tick period of the system clock is " << minNonzeroDuration / 1000000.0 << " milliseconds. "
+			"millisecond precision. Observed tick period of the system clock is " << (double)minNonzeroDuration / 1000000.0 << " milliseconds. "
 			"See CX_Clock::setImplementation() for information about using a different underlying clock implementation.";
 	}
 

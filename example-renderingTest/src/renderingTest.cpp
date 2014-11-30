@@ -4,10 +4,12 @@
 //experiencing crashes, you can try commenting out these defines in order to eliminate certain types
 //of rendering in order to help localize the source of the problem.
 #define CX_RT_USE_FBO //ofFbo
+#define CX_RT_USE_VBO //ofVbo
 #define CX_RT_USE_PATH //ofPath
 #define CX_RT_USE_TEXTURE //ofTexture
 #define CX_RT_USE_IMAGE //ofImage
 #define CX_RT_USE_TTF //ofTrueTypeFont
+#define CX_RT_USE_SHADER //ofShader (shaders are used for all kinds of drawing is ofGLProgammableRenderer is being used)
 
 #ifdef CX_RT_USE_FBO
 ofFbo mainFbo;
@@ -33,7 +35,13 @@ ofTrueTypeFont smallFont;
 ofTrueTypeFont largeFont;
 #endif
 
+#ifdef CX_RT_USE_VBO
 ofVbo rainbowVbo;
+#endif
+
+#ifdef CX_RT_USE_SHADER
+Draw::Gabor gabor;
+#endif
 
 bool drawingToFboFirst = false;
 float starSize = .8;
@@ -48,10 +56,13 @@ void runExperiment(void) {
 	Disp.setWindowResolution(800, 600);
 	Disp.setWindowTitle("CX Rendering Test");
 
+	Disp.setYIncreasesUpwards(false);
+
 #ifdef CX_RT_USE_FBO
-	//This is the most simple way to use an ofFbo.
-	trivialFbo.allocate(100, 100, GL_RGB); //You must allocate the fbo before you use it. 
-		//Make it 100 X 100 pixels. GL_RGB means that is should be in color (red, green, and blue channels).
+	//This is the most simple way to use an ofFbo. You must allocate the fbo before you use it.
+	//Make it 100 X 100 pixels. GL_RGB means that is should be in color (red, green, and blue channels).
+	trivialFbo.allocate(100, 100, GL_RGB); 
+		
 	trivialFbo.begin(); //All drawing that happens between begin() and end() causes the drawing to be rendered to the ofFbo.
 	ofBackground(0, 255, 0); //Draw a green background.
 	trivialFbo.end(); //Finish drawing to the fbo.
@@ -117,8 +128,19 @@ void runExperiment(void) {
 	largeFont.loadFont(OF_TTF_SERIF, 40);
 #endif
 
+#ifdef CX_RT_USE_VBO
 	vector<ofFloatColor> rainbowColors = Draw::getRGBSpectrum<ofFloatColor>(90);
 	rainbowVbo = Draw::colorArcToVbo(ofPoint(400, 550), rainbowColors, 100, 70, 30, 0, 180);
+#endif
+
+#ifdef CX_RT_USE_SHADER
+	gabor.setup(Draw::Gabor::Wave::sine, Draw::Gabor::Envelope::gaussian);
+	gabor.color1 = ofColor::white;
+	gabor.color2 = ofColor::black;
+	gabor.envelope.controlParameter = 30;
+	gabor.wave.wavelength = 40;
+	gabor.radius = 300;
+#endif
 
 	while (true) {
 		updateDrawings();
@@ -147,16 +169,18 @@ void updateDrawings (void) {
 #ifdef CX_RT_USE_FBO
 	if (drawingToFboFirst) {
 		mainFbo.begin();
-		drawStuff();
-		ofSetColor(255);
-		ofDrawBitmapString("FBO", 20, 20);
-		ofClearAlpha();
+			drawStuff();
+			ofSetColor(255);
+			ofDrawBitmapString("FBO", 20, 20);
+			ofClearAlpha(); //Remove transparency
 		mainFbo.end();
 
+		//Disp.setYIncreasesUpwards(false);
 		Disp.beginDrawingToBackBuffer();
 		ofSetColor(255);
 		mainFbo.draw(0,0);
 		Disp.endDrawingToBackBuffer();
+		//Disp.setYIncreasesUpwards(true);
 				
 		//Disp.copyFboToBackBuffer(mainFbo); //You can use this function to copy directly to the back buffer. However,
 			//it can be slower (by quite a bit) than drawing the fbo as was done above.
@@ -176,8 +200,7 @@ void updateDrawings (void) {
 void drawStuff (void) {
 	ofBackground( 50 ); //Fill the whole image with this color
 
-	ofSetColor( 200, 100, 100 ); //Set the color of the next thing to be drawn
-	Draw::line(ofPoint(180, 30), ofPoint(240, 70), 6); //Draw a line with the specified width from point to point.
+	ofSetColor(200, 100, 100); //Set the color of the next thing to be drawn
 
 	ofSetCircleResolution(6); //This sets the number of lines that will be used to draw the outer edge of the circle.
 	ofCircle( 50, 50, 20 ); //This is really a hexagon.
@@ -187,7 +210,9 @@ void drawStuff (void) {
 	
 	Draw::ring(ofPoint(150, 50), 20, 5, 40); //This can draw unfilled circles with variable thickness edges.
 
-	Draw::arc(ofPoint(400, 50), 20, 30, 0, 135, 5, 40);
+	Draw::line(ofPoint(180, 30), ofPoint(230, 70), 6); //Draw a line with the specified width from point to point.
+
+	Draw::arc(ofPoint(260, 50), 20, 30, 10, 315, 90, 40);
 
 	ofSetColor(ofColor::blue);
 	ofRect(20, 100, 60, 40); //Draw a rectangle
@@ -200,11 +225,11 @@ void drawStuff (void) {
 
 	ofSetColor(ofColor::darkorange);
 	ofNoFill(); //Don't fill basic shapes
-	ofTriangle( 100, 100, 150, 150, 100, 150 );
+	ofTriangle( 100, 100, 150, 150, 100, 150 ); //This will just be outlined
 	ofFill(); //Fill them again
 
 	vector<ofPoint> cps(4);
-	cps[0] = ofPoint(240, 180);
+	cps[0] = ofPoint(170, 120);
 	cps[1] = cps[0] + ofPoint(60, 0);
 	cps[2] = cps[1] + ofPoint(0, 60);
 	cps[3] = cps[2] + ofPoint(60, 0);
@@ -212,8 +237,8 @@ void drawStuff (void) {
 	Draw::bezier(cps, 10, 20);
 
 #ifdef CX_RT_USE_FBO
-	ofSetColor(255); //Before drawing an ofFbo that has transparent elements, if the color is not set to white, 
-		//the output of the draw command looks wrong (merged with the current color).
+	ofSetColor(255); //Before drawing an ofFbo, if the color is not set to white, 
+		//the output looks wrong (merged with the current color that was set).
 	transparency.draw(30, 280);
 
 	ofSetColor(255);
@@ -227,24 +252,28 @@ void drawStuff (void) {
 #endif
 
 #ifdef CX_RT_USE_IMAGE
-	//Here we get a greyscale pattern
-	Draw::CX_PatternProperties_t patternProps;
-	patternProps.width = birds.width;
-	patternProps.height = birds.height;
-	patternProps.period = 40;
-	patternProps.phase = 360.0 * fmod(Clock.now().seconds(), 1);
-	patternProps.apertureType = Draw::CX_PatternProperties_t::AP_RECTANGLE;
-	patternProps.angle = 15;
-	ofPixels birdPattern = CX::Draw::greyscalePatternToPixels(patternProps);
+	//Here we get a greyscale pattern that will be used as an alpha mask
+	Draw::WaveformProperties waveProps;
+	waveProps.width = birds.width;
+	waveProps.height = birds.height;
+	waveProps.wavelength = 40;
+	waveProps.phase = 360.0 * fmod(Clock.now().seconds(), 1); //shift the phase depending on the current time
+	waveProps.angle = 15;
+	waveProps.waveFunction = Draw::WaveformProperties::sine;
+	ofPixels birdPattern = Draw::waveformToPixels(waveProps);
 
 	//The bird image may not have any transparency data, so set it to have an alpha channel
 	birds.setImageType(ofImageType::OF_IMAGE_COLOR_ALPHA);
-	birds.getPixelsRef().setChannel(3, birdPattern.getChannel(0)); //Set the alpha channel (channel 3) of the birds image to 
-		//the single channel of the greyscale pattern.
+
+	//Set the alpha channel (channel 3) of the birds image to the single channel of the greyscale pattern.
+	birds.getPixelsRef().setChannel(3, birdPattern.getChannel(0));
+
 	birds.draw(500, 20);
 #endif
 
+#ifdef CX_RT_USE_VBO
 	rainbowVbo.draw(GL_TRIANGLE_STRIP, 0, rainbowVbo.getNumVertices());
+#endif
 
 #ifdef CX_RT_USE_TTF
 	ofSetColor(255);
@@ -254,38 +283,27 @@ void drawStuff (void) {
 #endif
 
 #ifdef CX_RT_USE_PATH
-	//This squircle is rotated around all three axes at once. If you want to rotate ofPaths only around the Z axis (i.e. the normal 2D rotation),
-	//use ofVec3f(0,0,1) for the axis argument (no x, no y, yes z).
-	squirclePath.rotate(.5, ofVec3f(1, 1, 1)); //The current rotation is saved by the ofPath, so each time this called, it rotates a little more.
-	squirclePath.draw(300, 70);
+
+	//This squircle is rotated around all three axes at once. If you want to rotate ofPaths only around 
+	//the Z axis (i.e. the normal 2D rotation), use ofVec3f(0,0,1) for the axis argument (no x, no y, yes z).
+	//The current rotation is saved by the ofPath, so each time this called, it rotates a little more.
+	squirclePath.rotate(.5, ofVec3f(1, 1, 1));
+	squirclePath.draw(400, 70);
 
 	arrowPath.draw(650, 400);
 
 	//The size of this star can be changed with the mouse wheel
 	ofSetColor(ofColor::turquoise);
 	Draw::star(ofPoint(500, 400), 5, 30 * starSize, 70 * starSize);
+
 #endif
 
-#ifdef CX_RT_USE_TEXTURE
-	//Have a gabor follow the mouse around, pointing toward the center.
-	ofPoint sides = Input.Mouse.getCursorPosition() - Disp.getCenter();
-	double theta = atan2(sides.y, sides.x) * 180 / PI;
+#ifdef CX_RT_USE_SHADER
+	//Set the angle depending on the mouse position.
+	gabor.wave.angle = Util::getAngleBetweenPoints(Disp.getCenter(), Input.Mouse.getCursorPosition());
+	gabor.wave.phase = starSize * 360;
 
-	Draw::CX_GaborProperties_t prop;
-	
-	prop.color = ofColor::green;
-	prop.pattern.angle = theta;
-	prop.pattern.width = 150;
-	prop.pattern.height = 100;
-	prop.pattern.maskType = Draw::CX_PatternProperties_t::SINE_WAVE;
-	prop.pattern.period = 20;
-	prop.pattern.phase = starSize * 360;
-	prop.pattern.apertureType = Draw::CX_PatternProperties_t::AP_CIRCLE;
-	prop.pattern.fallOffPower = 1;
-	CX::Draw::gabor(Input.Mouse.getCursorPosition(), prop);
+	gabor.draw(Input.Mouse.getCursorPosition());
 #endif
-
-	
 
 }
-

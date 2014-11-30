@@ -26,10 +26,10 @@ namespace CX {
 	this algorithm).
 
 	The monolithic structure of CX_RandomNumberGenerator provides a certain important feature that a collection
-	of loose function does not have, which is the ability to trivially track the random seed being used
+	of loose functions does not have, which is the ability to easily track the random seed being used
 	for the random number generator. The function CX_RandomNumberGenerator::setSeed() sets the seed for
-	all random number generation tasks performed by this class. Likewise, CX_RandomNumberGenerator::getSeed()
-	allows you to easily find the seed that is being used for random number generation. Due to this structure,
+	all random number generation tasks performed by an instance of this class. CX_RandomNumberGenerator::getSeed()
+	allows you to recover the seed that is being used for random number generation. Due to this structure,
 	you can easily save the seed that was used for each participant, which allows you to repeat the exact
 	randomizations used for that participant (unless random number generation varies as a function of the 
 	responses given by a participant).
@@ -39,7 +39,7 @@ namespace CX {
 
 	Because the underlying C++ std library random number generators are not thread safe, CX_RandomNumberGenerator
 	is not thread safe. If you want to use a CX_RandomNumberGenerator in a thread, that thread should have its
-	own CX_RandomNumberGenerator. You may seed the thread's CX_RandomNumberGenerator with CX::Instances::RNG.
+	own CX_RandomNumberGenerator. You may seed the thread's new CX_RandomNumberGenerator with CX::Instances::RNG.
 
 	\ingroup randomNumberGeneration
 	*/

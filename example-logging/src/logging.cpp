@@ -7,15 +7,17 @@ void loggerFlushCallback (CX_MessageFlushData& mfd) {
 }
 
 void runExperiment (void) {
-	Log.levelForFile(CX_LogLevel::LOG_ALL); //Calling levelForFile() without a filename causes a log file with a date/time string filename to be created.
+	Log.levelForFile(CX_LogLevel::LOG_ALL); //Calling levelForFile() without a filename causes a log file with a 
+		//date/time string filename to be created.
+
 	Log.levelForFile(CX_LogLevel::LOG_ERROR, "Errors only.txt"); //You can have different log levels for different files.
 		//You can log to any number of files at once, although for each additional file there is a linear performance 
-		//penalty that occurs when flush() is called.
+		//cost that occurs when flush() is called.
 
 	Log.levelForConsole(CX_LogLevel::LOG_WARNING); //The log level for the console is also independent of the file log levels.
 
 	Log.timestamps(true); //You can log a timestamp for each message, with an optional time format 
-		//argument (defaults to hours:minutes:seconds.milliseconds).
+		//argument that defaults to hours:minutes:seconds.milliseconds.
 
 	Log.verbose() << "A verbose detail"; //Send log messages at various levels.
 	Log.notice() << "A notice...";
@@ -32,14 +34,15 @@ void runExperiment (void) {
 	Log.setMessageFlushCallback(loggerFlushCallback); //You can also set up a function that is called every time a message is flushed.
 		//The body of loggerFlushCallback is commented out above, so you won't see a result from this unless it is uncommented.
 
-	//By default all messages logged using the oF logging system (everything internal to oF is logged that way) are 
+	//By default, all messages logged using the oF logging system (everything internal to oF is logged that way) are 
 	//routed into Log, from which they can be flushed.
 	ofLogWarning("using ofLogWarning") << "You have been warned about oF logging!";
 
 	ofLogError("using ofLogError", "%d plus %f is %f", 50, 0.5, 50 + 0.5); //You can also use C-style formatting with oF logging.
-	//If you want openFramworks messages to be logged normally, you can call ofLogToConsole() or ofLogToFile(), although this 
-	//is not recommended becuase there is no way to control when messages are flushed when using the standard oF logging.
-	//See the documentation http://openframeworks.cc/documentation/utils/ofLog.html for more information about oF logging
+		//If you want openFrameworks messages to be logged normally (i.e. not by CX::Instances::Log.flush()), you can call 
+		//ofLogToConsole() or ofLogToFile(), although this is not recommended becuase there is no way to control when messages are 
+		//flushed when using the standard oF logging. See the documentation on oF logging at 
+		//http://openframeworks.cc/documentation/utils/ofLog.html for more information about oF logging.
 
 	Log.flush(); //Flush the stored messages to the various logging targets (console and files). 
 		//This is a potentially blocking operation, depending on the number of stored log messages that haven't been flushed.

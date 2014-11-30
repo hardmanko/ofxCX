@@ -9,7 +9,7 @@ CX::CX_Display CX::Instances::Disp;
 
 namespace CX {
 
-CX_Display::CX_Display (void) :
+CX_Display::CX_Display(void) :
     _swapThread(nullptr),
 	_framePeriod(0),
 	_framePeriodStandardDeviation(0),
@@ -19,14 +19,14 @@ CX_Display::CX_Display (void) :
 {
 }
 
-CX_Display::~CX_Display (void) {
+CX_Display::~CX_Display(void) {
 	_swapThread->stopThread();
 	_swapThread->waitForThread(false);
 	delete _swapThread;
 }
 
 /*! Set up the display. Must be called for the display to function correctly. */
-void CX_Display::setup (void) {
+void CX_Display::setup(void) {
 	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos
 		//are really verbose when allocated and it is a lot of gibberish.
 
@@ -36,7 +36,7 @@ void CX_Display::setup (void) {
 		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea
 		//what too early means) or else there will be a crash.
 
-	estimateFramePeriod( CX_Millis(500) );
+	estimateFramePeriod(CX_Millis(500));
 
 	CX_Millis measuredPeriod = this->getFramePeriod();
 }
@@ -120,7 +120,7 @@ You can check to see if a swap has occured by calling hasSwappedSinceLastCheck()
 check to see if the display is automatically swapping by calling isAutomaticallySwapping().
 \param autoSwap If true, the front and back buffer will swap automatically every frame.
 \note This function may \ref blockingCode "block" for up to 1 frame to due the requirement that it synchronize with the thread. */
-void CX_Display::setAutomaticSwapping (bool autoSwap) {
+void CX_Display::setAutomaticSwapping(bool autoSwap) {
 	if (autoSwap) {
 		if (!_swapThread->isThreadRunning()) {
 			_swapThread->startThread(true);
@@ -135,13 +135,13 @@ void CX_Display::setAutomaticSwapping (bool autoSwap) {
 /*! Determine whether the display is configured to automatically swap the front and back buffers
 every frame.
 See \ref setAutomaticSwapping for more information. */
-bool CX_Display::isAutomaticallySwapping (void) {
+bool CX_Display::isAutomaticallySwapping(void) const{
 	return _swapThread->isThreadRunning();
 }
 
 /*! Get the last time at which the front and back buffers were swapped.
 \return A time value that can be compared with CX::Instances::Clock.now(). */
-CX_Millis CX_Display::getLastSwapTime(void) {
+CX_Millis CX_Display::getLastSwapTime(void) const {
 	return _swapThread->getLastSwapTime();
 }
 
@@ -151,7 +151,7 @@ estimateFramePeriod(). If the front and back buffers are not swapped
 every frame, the result of this function is meaningless because it uses the
 last buffer swap time as a reference.
 \return A time value that can be compared to CX::Instances::Clock.now(). */
-CX_Millis CX_Display::estimateNextSwapTime(void) {
+CX_Millis CX_Display::estimateNextSwapTime(void) const {
 	return this->getLastSwapTime() + this->getFramePeriod();
 }
 
@@ -163,7 +163,7 @@ or with an individual threaded swap of the buffers (swapBuffersInThread()). This
 with swapBuffers(), but given that that function only returns once the buffers have
 swapped, using this function to check that the buffers have swapped is redundant.
 \return True if a swap has been made since the last call to this function, false otherwise. */
-bool CX_Display::hasSwappedSinceLastCheck (void) {
+bool CX_Display::hasSwappedSinceLastCheck(void) {
 	uint64_t currentFrameNumber = this->getFrameNumber();
 	if (currentFrameNumber != _frameNumberOnLastSwapCheck) {
 		_frameNumberOnLastSwapCheck = currentFrameNumber;
@@ -193,7 +193,7 @@ number of front and back buffer swaps. It tracks buffer swaps that result from
 2) manual swaps resulting from a call to swapBuffers() or swapBuffersInThread().
 \return The number of the last frame. This value can only be compared with other values
 returned by this function. */
-uint64_t CX_Display::getFrameNumber (void) {
+uint64_t CX_Display::getFrameNumber (void) const {
 	return _swapThread->getFrameNumber() + _manualBufferSwaps;
 }
 
@@ -205,7 +205,7 @@ Disp.beginDrawingToBackBuffer();
 Disp.endDrawingToBackBuffer();
 \endcode
 */
-void CX_Display::beginDrawingToBackBuffer (void) {
+void CX_Display::beginDrawingToBackBuffer(void) {
 	if (_renderer) {
 		_renderer->startRender();
 	}
@@ -215,7 +215,7 @@ void CX_Display::beginDrawingToBackBuffer (void) {
 }
 
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
-void CX_Display::endDrawingToBackBuffer (void) {
+void CX_Display::endDrawingToBackBuffer(void) {
 	if (_renderer) {
 		_renderer->finishRender();
 	}
@@ -230,9 +230,10 @@ void CX_Display::endDrawingToBackBuffer (void) {
 blocks until the swap occurs. This usually should not be used if
 `isAutomaticallySwapping() == true`. If it is, a warning will be logged.
 \see \ref blockingCode */
-void CX_Display::swapBuffers (void) {
+void CX_Display::swapBuffers(void) {
 	if (isAutomaticallySwapping()) {
-		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffers() while automatic buffer swapping mode was in use.";
+		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffers()"
+			"while automatic buffer swapping mode was in use.";
 	}
 
 	glfwSwapBuffers(CX::Private::glfwContext);
@@ -248,9 +249,10 @@ swap is waited for. This does not make it obviously better than swapBuffers(),
 because spawning a thread has a cost and may introduce synchronization problems. Also,
 because this function does not block, in order to know when the buffer swap took place,
 you need to check hasSwappedSinceLastCheck() in order to know when the buffer swap has taken place. */
-void CX_Display::swapBuffersInThread (void) {
+void CX_Display::swapBuffersInThread(void) {
 	if (isAutomaticallySwapping()) {
-		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffersInThread() while automatic buffer swapping mode was in use.";
+		Instances::Log.warning("CX_Display") << "Manual buffer swap requested with swapBuffersInThread()"
+			"while automatic buffer swapping mode was in use.";
 	}
 
 	_swapThread->swapNFrames(1);
@@ -259,18 +261,10 @@ void CX_Display::swapBuffersInThread (void) {
 /*! This function blocks until all OpenGL instructions that were given before this was called to complete.
 This can be useful if you are trying to determine how long a set of rendering commands takes
 or need to make sure that all rendering is complete before moving on with other tasks.
+To demystify things, this function simply calls glFinish().
 \see \ref blockingCode */
-void CX_Display::waitForOpenGL (void) {
+void CX_Display::waitForOpenGL(void) {
 	glFinish();
-	/*
-	if (CX::Private::glFenceSyncSupported()) {
-		GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-		glFlush();
-		glWaitSync(fence, 0, GL_TIMEOUT_IGNORED);
-	} else {
-		glFinish(); //I don't see why not to just use glFinish()
-	}
-	*/
 }
 
 /*! Returns the resolution of the current display area. If in windowed mode, this will return the resolution
@@ -278,12 +272,12 @@ of the window. If in full screen mode, this will return the resolution of the mo
 \return An ofRectangle containing the resolution. The width in pixels is stored in both the `width`
 and `x` members and the height in pixles is stored in both the `height` and `y` members, so you can
 use whichever makes the most sense to you. */
-ofRectangle CX_Display::getResolution (void) {
+ofRectangle CX_Display::getResolution(void) const {
 	return ofRectangle( ofGetWidth(), ofGetHeight(), ofGetWidth(), ofGetHeight() );
 }
 
-/*! Returns an ofPoint representing the center of the display. Works in either windowed or full screen mode. */
-ofPoint CX_Display::getCenter (void) {
+/*! Returns an ofPoint representing the center of the display. Works in both windowed and full screen mode. */
+ofPoint CX_Display::getCenter(void) const {
 	ofPoint rval;
 	rval.x = getResolution().x/2;
 	rval.y = getResolution().y/2;
@@ -295,7 +289,7 @@ Sets the resolution of the window. Has no effect if called while in full screen 
 \param width The desired width of the window, in pixels.
 \param height The desired height of the window, in pixels.
 */
-void CX_Display::setWindowResolution (int width, int height) {
+void CX_Display::setWindowResolution(int width, int height) {
 	if (width <= 0 || height <= 0) {
 		CX::Instances::Log.error("CX_Display") << "setWindowResolution: width and height must be > 0. Given width == " <<
 			width << " and height == " << height << ".";
@@ -303,7 +297,7 @@ void CX_Display::setWindowResolution (int width, int height) {
 	}
 
 	if (ofGetWindowMode() == OF_WINDOW) {
-		ofSetWindowShape( width, height );
+		ofSetWindowShape(width, height);
 	}
 }
 
@@ -358,25 +352,29 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 			_framePeriod = Util::mean(cleanedDurations);
 		} else {
 			CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough valid swaps occurred during the " <<
-				estimationInterval << " ms estimation interval.";
+				estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 100 ms), you "
+				"could try making it longer. If the estimation interval was long, this is a warning that there is something "
+				"wrong with the configuration of graphics on your computer. Try using CX_Display::testBufferSwapping() to "
+				"check for problems.";
 		}
 
 
 	} else {
 		CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough swaps occurred during the " << 
-			estimationInterval << " ms estimation interval.";
+			estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 50 ms), "
+			"you should try making it longer.";
 	}
 
 	setAutomaticSwapping(wasSwapping);
 }
 
 /*! Gets the estimate of the frame period estimated with CX_Display::estimateFramePeriod(). */
-CX_Millis CX_Display::getFramePeriod(void) {
+CX_Millis CX_Display::getFramePeriod(void) const {
 	return _framePeriod;
 }
 
 /*! Gets the estimate of the standard deviation of the frame period estimated with CX_Display::estimateFramePeriod(). */
-CX_Millis CX_Display::getFramePeriodStandardDeviation(void) {
+CX_Millis CX_Display::getFramePeriodStandardDeviation(void) const {
 	return _framePeriodStandardDeviation;
 }
 
@@ -390,6 +388,7 @@ to set the frame period for a 60 Hz refresh cycle. However, note that this will 
 that prevented the frame period from being estimated correctly, which usually has to do with problems with
 the video card doing vertical synchronization incorrectly. Thus, this may not fix anything.
 \param knownPeriod The known refresh period of the monitor.
+\note This function sets the standard deviation of the frame period to 0.
 */
 void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
 	_framePeriod = knownPeriod;
@@ -399,7 +398,7 @@ void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
 /*! Set whether the display is full screen or not. If the display is set to full screen,
 the resolution may not be the same as the resolution of display in windowed mode, and vice
 versa. */
-void CX_Display::setFullscreen (bool fullscreen) {
+void CX_Display::setFullscreen(bool fullscreen) {
 	CX::Private::appWindow->setFullscreen(fullscreen);
 }
 
@@ -418,7 +417,7 @@ Vsync. If your drivers are set to force Vsync to a particular setting, this func
 is unlikely to have an effect. Even when the drivers allow applications to choose
 a Vsync setting, it is still possible that this function will have not have the
 expected effect. OpenGL seems to struggle with VSync.
-\see See \ref framebufferSwapping for information on what VSync is. */
+\see See \ref visualStimuli for information on what VSync is. */
 void CX_Display::useHardwareVSync(bool b) {
 	if (b) {
 		glfwSwapInterval(1);
@@ -433,10 +432,24 @@ is generally preferable to software VSync, so see useHardwareVSync() as well. Ho
 software and hardware VSync are not mutally exclusive, sometimes using both together works
 better than only using one.
 \param b If `true`, the display will attempt to do VSync in software.
-\see See \ref framebufferSwapping for information on what Vsync is. */
+\see See \ref visualStimuli for information on what Vsync is. */
 void CX_Display::useSoftwareVSync(bool b) {
 	_softVSyncWithGLFinish = b;
 	_swapThread->setGLFinishAfterSwap(b);
+}
+
+/*! Makes an ofFbo with dimensions equal to the size of the current display with standard settings
+and allocates memory for it. The FBO is configured to use RGB plus alpha for the color settings. 
+The MSAA setting for the FBO is set to the current value returned by CX::Util::getMsaaSampleCount(). 
+This is to help the FBO have the same settings as the front and back buffers so that rendering into 
+the FBO will produce the same output as rendering into the back buffer.
+\return The configured FBO.
+*/
+ofFbo CX_Display::makeFbo(void) {
+	ofFbo fbo;
+	ofRectangle dims = CX::Instances::Disp.getResolution();
+	fbo.allocate(dims.width, dims.height, GL_RGBA, CX::Util::getMsaaSampleCount());
+	return fbo;
 }
 
 /*! Copies an `ofFbo` to the back buffer using a potentially very slow but pixel-perfect blitting operation.
@@ -540,6 +553,20 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); //GL_BACK
 
 	glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+}
+
+/*! Set whether the y-axis vales should increase upwards.
+\param upwards If `true`, y-values will increase upwards. If `false`, y-values will increase downwards (the default).
+*/
+void CX_Display::setYIncreasesUpwards(bool upwards) {
+	//when vFlip is true, y-values increase downwards.
+	ofSetOrientation(ofGetOrientation(), !upwards);
+}
+
+/*! \brief Do y-axis values increase upwards? */
+bool CX_Display::getYIncreasesUpwards(void) {
+	//when vFlip is true, y-values increase downwards.
+	return !ofIsVFlipped();
 }
 
 /*! This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
@@ -646,7 +673,7 @@ secondary thread. Note that if your computer does not have at least a 2 core CPU
 constantly swap buffers is not a good solution, because the secondary thread will peg 1 CPU at 100% usage.
 
 If none of these remedial measures corrects you problems, you may want to try another psychology experiment
-package. However, many of them use OpenGL and so the problem is your OpenGL configuration (hardware and 
+package. However, many of them use OpenGL and so if the problem is your OpenGL configuration (hardware and 
 software), switching to another package that uses OpenGL is unlikely to fix your problem (if it does,
 let me know because that could point to an issue in CX or openFrameworks). 
 
@@ -684,9 +711,6 @@ std::map<std::string, CX_DataFrame> CX_Display::testBufferSwapping(CX_Millis des
 	CX_Millis testSegmentDuration = desiredTestDuration / 12; //8 continuous swapping tests, but only 4 wait swap tests
 	testSegmentDuration *= testSecondaryThread ? 1 : 1.5; //If not doing the secondary thread, make everything else go longer.
 
-	
-
-	//CX_DataFrame rawData;
 
 	CX_DataFrame summary;
 	CX_DataFrame waitSwap;

@@ -1,5 +1,7 @@
 ﻿#include "CX_Draw.h"
 
+#include "CX_Display.h"
+
 #include "../libs/colorspace/colorspace.h"
 
 namespace CX {
@@ -96,8 +98,8 @@ void squircle(ofPoint center, double radius, double amount, double rotationDeg) 
 
 /*! Draws an arrow to an ofPath. The outline of the arrow is drawn with strokes, so you can
 have the path be filled to have a solid arrow, or you can use non-zero width strokes in order
-to have the outline of an arrow. The arrow points up by default but you can rotate it with
-ofPath::rotate().
+to have the outline of an arrow. The arrow points in the positive y-direction by default but 
+you can rotate it with ofPath::rotate().
 \param length The length of the arrow in pixels.
 \param headOffsets The angle between the main arrow body and the two legs of the tip, in degrees.
 \param headSize The length of the legs of the head in pixels.
@@ -128,6 +130,8 @@ ofPath arrowToPath(float length, float headOffsets, float headSize, float lineWi
 	p.lineTo(-outerPoint.x, outerPoint.y);
 	p.lineTo(0, -length / 2);
 
+	p.rotate(180, ofVec3f(0, 0, 1));
+
 	return p;
 }
 
@@ -144,9 +148,9 @@ std::vector<ofPoint> getStarVertices(unsigned int numberOfPoints, float innerRad
 	std::vector<ofPoint> vertices((2 * numberOfPoints) + 1);
 	bool inside = true;
 
-	float rotationRad = (rotationDeg - 90) * PI / 180;
-	if (ofIsVFlipped()) {
-		rotationRad = (rotationDeg + 90) * PI / 180;
+	float rotationRad = (rotationDeg + 90) * PI / 180;
+	if (CX::Instances::Disp.getYIncreasesUpwards()) {
+		rotationRad = (rotationDeg - 90) * PI / 180;
 	}
 
 	for (unsigned int i = 0; i < vertices.size(); i++) {
@@ -208,7 +212,6 @@ void star(ofPoint center, unsigned int numberOfPoints, float innerRadius, float 
 	ofVbo vbo;
 	vbo.setVertexData(vertices.data(), vertices.size(), GL_STATIC_DRAW);
 
-	//ofSetColor(ofGetStyle().color);
 	vbo.draw(GL_TRIANGLE_FAN, 0, vertices.size());
 }
 
@@ -217,10 +220,10 @@ with the x and y values in the point. */
 void centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
-	if (ofIsVFlipped()) {
-		y = y - bb.y - bb.height / 2;
-	} else {
+	if (CX::Instances::Disp.getYIncreasesUpwards()) {
 		y = y + bb.y + bb.height / 2;
+	} else {
+		y = y - bb.y - bb.height / 2;
 	}
 	font.drawString(s, x, y);
 }
@@ -296,137 +299,6 @@ std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
 	return rval;
 }
 
-/*! This function draws a greyscale pattern, like a gabor, to an ofPixels object.
-The results of this function are not intended to be used directly, but to be applied
-to an image, for example. The pattern lacks color information, but can be used as an alpha mask
-or used to control color intensity, or otherwise.
-\param properties The properties that will be used to create the pattern.
-\return An ofPixels object containing the pattern.
-
-\see CX::Draw::gabor() can be used to draw a gabor patch with color and transparency, based on a greyscale pattern.
-*/
-ofPixels greyscalePatternToPixels(const CX_PatternProperties_t& properties) {
-	float theta = properties.angle * PI / 180;
-	float radius = properties.width / 2; //Use width for radius.
-	float slope = tan(theta);
-
-	ofPixels pix;
-	if (properties.apertureType == CX_PatternProperties_t::AP_CIRCLE) {
-		pix.allocate(ceil(properties.width), ceil(properties.width), ofImageType::OF_IMAGE_GRAYSCALE);
-	} else {
-		pix.allocate(ceil(properties.width), ceil(properties.height), ofImageType::OF_IMAGE_GRAYSCALE);
-	}
-	pix.set(0, properties.minValue); //Set the single channel to 0. Already done in allocate
-
-	float waveformPosition = properties.period * fmod(properties.phase, 360.0) / 360.0;
-
-	//Get point on line tangent to "radius" of rectangle and the interecept of the line passing through that point
-	float tanRadius = sqrt(pow(pix.getWidth(), 2) + pow(pix.getHeight(), 2));
-	//Make the tanRadius be the next greatest multiple of the period
-	tanRadius = (ceil(tanRadius / properties.period) * properties.period) + waveformPosition;
-	ofPoint tangentPoint(tanRadius * sin(PI - theta), tanRadius * cos(PI - theta));
-	float b = tangentPoint.y - (slope * tangentPoint.x);
-
-	float halfWidth = (float)pix.getWidth() / 2;
-	float halfHeight = (float)pix.getHeight() / 2;
-
-	//i indexes y values, j indexes x values
-	for (int i = 0; i < pix.getHeight(); i++) {
-		for (int j = 0; j < pix.getWidth(); j++) {
-
-			ofPoint p(j - halfWidth, i - halfHeight); //Center so that x and y are relative to the origin.
-			float distanceFromOrigin = p.distance(ofPoint(0, 0));
-
-			if (properties.apertureType == CX_PatternProperties_t::AP_CIRCLE) {
-				if (distanceFromOrigin > radius) {
-					continue; //Do not draw anything in this pixel (already transparent)
-				}
-			} 
-			//else if (properties.apertureType == CX_PatternProperties_t::AP_RECTANGLE) {
-				//Do nothing, allow pattern to be drawn in entire texture.
-			//}
-
-			float distFromLine;
-			if (slope == 0) { //Special case for flat lines.
-				distFromLine = p.y + waveformPosition;
-			} else {
-				float xa = (p.y - b) / slope;
-
-				float hyp = (xa - p.x); //abs
-				distFromLine = hyp * sin(theta);
-			}
-
-			float intensity = 0;
-
-			switch (properties.maskType) {
-			case CX_PatternProperties_t::SINE_WAVE:
-				intensity = (1.0 + sin((distFromLine / properties.period) * 2 * PI)) / 2.0; //Scale to be between 0 and 1
-				break;
-			case CX_PatternProperties_t::SQUARE_WAVE:
-				if (cos((distFromLine / properties.period) * 2 * PI) > 0) {
-					intensity = 1;
-				} else {
-					intensity = 0;
-				}
-				break;
-			case CX_PatternProperties_t::TRIANGLE_WAVE:
-				double modulo = abs(fmod(distFromLine, properties.period));
-				if (modulo >= properties.period / 2) {
-					intensity = modulo / properties.period;
-				} else {
-					intensity = 1 - modulo / properties.period;
-				}
-				break;
-			}
-
-			if (properties.fallOffPower != std::numeric_limits<float>::min()) {
-				float distanceRatio = pow(distanceFromOrigin / radius, properties.fallOffPower);
-				intensity *= (cos(distanceRatio * PI) + 1) / 2;
-			}
-
-			intensity = CX::Util::clamp<float>(intensity, 0, 1);
-
-			pix.setColor(j, i, ofColor((properties.maxValue - properties.minValue) * intensity + properties.minValue));
-		}
-	}
-
-	return pix;
-}
-
-/*! Just like Draw::gabor(ofPoint, const CX_GaborProperties_t&), except that instead of drawing the
-pattern, it returns it in an ofPixels object.
-*/
-ofPixels gaborToPixels (const CX_GaborProperties_t& properties) {
-	ofPixels pattern = greyscalePatternToPixels(properties.pattern);
-	
-	ofPixels pix;
-	pix.allocate(pattern.getWidth(), pattern.getHeight(), ofImageType::OF_IMAGE_COLOR_ALPHA);
-	pix.setColor(properties.color);
-	pix.setChannel(3, pattern); //Set alpha channel equal to pattern
-
-	return pix;
-}
-
-/*! Just like Draw::gabor(ofPoint, const CX_GaborProperties_t&), except that instead of drawing the
-pattern, it returns it in an ofTexture object.
-*/
-ofTexture gaborToTexture (const CX_GaborProperties_t& properties) {
-	ofPixels pix = gaborToPixels(properties);
-	ofTexture tex;
-	tex.allocate(pix);
-	tex.loadData(pix);
-	return tex;
-}
-
-/*! Draws a gabor pattern with the specified properties.
-\param center The location of the center of the pattern.
-\param properties The settings to be used to generate the pattern.
-*/
-void gabor(ofPoint center, const CX_GaborProperties_t& properties) {
-	ofTexture tex = gaborToTexture(properties);
-	ofSetColor(255);
-	tex.draw(center.x - tex.getWidth() / 2, center.y - tex.getHeight() / 2); //Draws centered
-}
 
 
 /*! This function draws a series of line segments to connect the given points.
@@ -706,7 +578,7 @@ void fixationCross(ofPoint location, float armLength, float armWidth) {
 	path.draw(location.x, location.y);
 }
 
-/*! Saves the contents of an ofFbo to a file. The file type is hinted by the file extension you provide
+/*! Saves the contents of an ofFbo to an image file. The file type is hinted by the file extension you provide
 as part of the file name.
 \param fbo The framebuffer to save.
 \param filename The path of the file to save. The file extension determines the type of file that is saved.
@@ -719,7 +591,6 @@ void saveFboToFile(ofFbo& fbo, std::string filename) {
 	fbo.readToPixels(pix);
 	ofSaveImage(pix, filename, OF_IMAGE_QUALITY_BEST);
 }
-
 
 
 // \cond INTERNAL_DOCS

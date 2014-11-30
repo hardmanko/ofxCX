@@ -47,36 +47,39 @@ namespace CX {
 
 		void beginDrawingToBackBuffer(void);
 		void endDrawingToBackBuffer(void);
+
 		void swapBuffers(void);
 		void swapBuffersInThread(void);
-
 		void setAutomaticSwapping(bool autoSwap);
-		bool isAutomaticallySwapping(void);
+		bool isAutomaticallySwapping(void) const;
 
 		bool hasSwappedSinceLastCheck(void);
 		void waitForBufferSwap(void);
-
-		CX_Millis getLastSwapTime(void);
-		CX_Millis estimateNextSwapTime(void);
-		uint64_t getFrameNumber(void);
+		CX_Millis getLastSwapTime(void) const;
+		CX_Millis estimateNextSwapTime(void) const;
+		uint64_t getFrameNumber(void) const;
 
 		void estimateFramePeriod(CX_Millis estimationInterval);
-		CX_Millis getFramePeriod(void);
-		CX_Millis getFramePeriodStandardDeviation(void);
+		CX_Millis getFramePeriod(void) const;
+		CX_Millis getFramePeriodStandardDeviation(void) const;
 		void setFramePeriod(CX_Millis knownPeriod);
 
 		void setWindowResolution(int width, int height);
 		void setWindowTitle(std::string title);
-		ofRectangle getResolution(void);
-		ofPoint getCenter(void);
+		ofRectangle getResolution(void) const;
+		ofPoint getCenter(void) const;
 
 		void waitForOpenGL(void);
 
 		std::map<std::string, CX_DataFrame> testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
+		ofFbo makeFbo(void);
 		void copyFboToBackBuffer(ofFbo &fbo);
 		void copyFboToBackBuffer(ofFbo &fbo, ofPoint destination);
 		void copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination);
+
+		void setYIncreasesUpwards(bool upwards);
+		bool getYIncreasesUpwards(void);
 
 	private:
 
