@@ -80,24 +80,24 @@ namespace CX {
 		};
 
 		/*! The method used by the slide presenter to swap stimuli that have been drawn to the back buffer to the front buffer.
-		MULTI_CORE is theoretically the best method, but only really works properly if you have at least a 2 core CPU. It uses 
-		a secondary thread to constantly swap the front and back buffers, which allows each frame to be counted. This results 
+		MULTI_CORE is theoretically the best method, but only really works properly if you have at least a 2 core CPU. It uses
+		a secondary thread to constantly swap the front and back buffers, which allows each frame to be counted. This results
 		in really good synchronization between the copies of data to the back buffer and the swaps of the front and back buffers.
 		In the SINGLE_CORE_BLOCKING_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately
 		drawn to the back buffer. After the correct amount of time minus \ref CX_SlidePresenter::Configuration::preSwapCPUHoggingDuration,
-		the buffers are swapped. The main problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks" 
+		the buffers are swapped. The main problem with this mode is that the buffer swapping in this mode \ref blockingCode "blocks"
 		in the main thread while waiting for the swap. However, it avoids thread synchronization issues, which is a huge plus.
 		*/
 		enum class SwappingMode {
 			SINGLE_CORE_BLOCKING_SWAPS, //!< The slide presenter does bufer swapping in the main thread, blocking briefly during the buffer swap.
 			//SINGLE_CORE_THREADED_SWAPS, //could be TIMED_THREADED In the SINGLE_CORE_THREADED_SWAPS mode, after a stimulus has been copied to the front buffer, the next stimulus is immediately drawn to the back buffer.After the correct amount of time minus preSwapCPUHoggingDuration, a swap of the front and back buffers is queued by launching a thread.
-			
-			/*! \brief The slide presenter does bufer swapping in a secondary thread, which means that 
+
+			/*! \brief The slide presenter does bufer swapping in a secondary thread, which means that
 			there is no blocking in the main thread when buffers are swapping. */
 			MULTI_CORE
 		};
 
-		/*! The final slide user function takes a reference to a struct of this type. 
+		/*! The final slide user function takes a reference to a struct of this type.
 		See CX_SlidePresenter::Configuration::finalSlideCallback for more information. */
 		struct FinalSlideFunctionArgs {
 			FinalSlideFunctionArgs(void) :
@@ -163,11 +163,11 @@ namespace CX {
 			Currently, the only available mode is the default, so this should not be changed. */
 			CX_SlidePresenter::ErrorMode errorMode;
 
-			/*! \brief If `true`, once a slide has been presented, its framebuffer will be deallocated to conserve video memory. 
+			/*! \brief If `true`, once a slide has been presented, its framebuffer will be deallocated to conserve video memory.
 			This only matters if you are using a large number of slides at once and add slides during slide presentation. */
 			bool deallocateCompletedSlides;
 
-			/*! \brief The mode used for swapping slides. See the SwappingMode enum for the possible settings. 
+			/*! \brief The mode used for swapping slides. See the SwappingMode enum for the possible settings.
 			Defaults to `SINGLE_CORE_BLOCKING_SWAPS`. */
 			SwappingMode swappingMode;
 
@@ -177,13 +177,13 @@ namespace CX {
 
 			/*! \brief Hint that fence sync should be used to check that slides are fully rendered to the back buffer
 			before they are swapped in. This will allow the slide presenter to notify you if slides are swapped into
-			the front buffer before it is confirmed that they were fully rendered. Defaults to `true`. See also 
+			the front buffer before it is confirmed that they were fully rendered. Defaults to `true`. See also
 			\ref waitUntilFenceSyncComplete. */
 			bool useFenceSync;
 
-			/*! \brief If \ref useFenceSync is false, this is also forced to false. If this is true, new slides will not 
-			be swapped in until there is confirmation that the slide has been fully rendered into the back buffer. 
-			This prevents vertical tearing, but may cause slides to be swapped in late if the confirmation that 
+			/*! \brief If \ref useFenceSync is false, this is also forced to false. If this is true, new slides will not
+			be swapped in until there is confirmation that the slide has been fully rendered into the back buffer.
+			This prevents vertical tearing, but may cause slides to be swapped in late if the confirmation that
 			rendering has completed is delayed but the rendering has actually occurred on time.
 			Does nothing if `swappingMode` is `MULTI_CORE`. */
 			bool waitUntilFenceSyncComplete;
@@ -200,10 +200,19 @@ namespace CX {
 		/*! This struct contains information related to slide presentation using CX_SlidePresenter. */
 		struct Slide {
 
+            /*! The possible presentation statuses of the slide. */
+			enum class PresStatus : int {
+				NOT_STARTED , //!< The slide is somewhere in the queue awaiting start.
+				RENDERING, //!< The slide is next in line for presentation and its rendering has started
+				SWAP_PENDING, //!< The slide is next in line for presentation and its rendering has completed, but it has not been swapped in.
+				IN_PROGRESS, //!< The slide has been swapped in and is now on screen, assuming that the rending completed before the swap.
+				FINISHED //!< The slide has been replaced with a new slide.
+			};
+
 			Slide() :
 				name(""),
 				drawingFunction(nullptr),
-				presentationStatus(Status::NOT_STARTED)
+				presentationStatus(PresStatus::NOT_STARTED)
 			{}
 
 			std::string name; //!< The name of the slide. Set by the user during slide creation.
@@ -216,16 +225,7 @@ namespace CX {
 										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer.
 										   However, if you want a blank framebuffer, you will have to clear it manually. */
 
-			/*! The possible presentation statuses of the slide. */
-			enum class Status : int {
-				NOT_STARTED = 0, //!< The slide is somewhere in the queue awaiting start.
-				RENDERING = 1, //!< The slide is next in line for presentation and its rendering has started
-				SWAP_PENDING = 2, //!< The slide is next in line for presentation and its rendering has completed, but it has not been swapped in.
-				IN_PROGRESS = 3, //!< The slide has been swapped in and is now on screen, assuming that the rending completed before the swap.
-				FINISHED = 4 //!< The slide has been replaced with a new slide.
-			};
-
-			Status presentationStatus; //!< Presentation status of the slide. This should not be modified by the user.
+			PresStatus presentationStatus; //!< Presentation status of the slide. This should not be modified by the user.
 
 			SlideTimingInfo intended; //!< The intended timing parameters (i.e. what should have happened if there were no presentation errors).
 			SlideTimingInfo actual; //!< The actual timing parameters.
@@ -296,7 +296,6 @@ namespace CX {
 
 		void _renderCurrentSlide(void);
 
-		bool _useFenceSync;
 		void _waitSyncCheck(void);
 
 		void _finishPreviousSlide(void);

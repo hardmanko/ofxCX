@@ -10,8 +10,8 @@ namespace Draw {
 
 /*! This class draws gabor patches using hardware acceleration to speed up the process.
 Compared to the loose functions, like CX::Draw::gabor(), this class is preferable
-from a speed perspective, but it is slightly harder to use and not as flexible. 
-You use it by calling the setup function to specify some basic information about the 
+from a speed perspective, but it is slightly harder to use and not as flexible.
+You use it by calling the setup function to specify some basic information about the
 gabor, setting a number of data members of the class to certain values, and calling
 the draw function. For example:
 
@@ -71,7 +71,7 @@ The envelope function has the following type signature:
 	float envelopeFunction(in float d, in float cp)
 
 where `d` is the distance from the center of the gabor patch and `cp` is
-the control parameter, which the user can set by modifying 
+the control parameter, which the user can set by modifying
 Gabor::envelope::controlParameter. The function returns a value in
 the interval [0,1] that is interpreted as the alpha for the color that is
 set for the current pixel. For example, for a circular envelope, the alpha
@@ -102,14 +102,14 @@ public:
 		static std::string none; //!< Does nothing to affect the wave pattern.
 		static std::string circle; //!< Creates a circle, clipped at a radius set by the control parameter.
 		static std::string linear; //!< Creates linearly decreasing values up to a radius set by the control parameter.
-		/*! \brief Creates values that decrease with a cosine shape as distance increases, 
+		/*! \brief Creates values that decrease with a cosine shape as distance increases,
 		depending on the control parameter for a radius. */
 		static std::string cosine;
-		/*! \brief Creates values that decrease with a gaussian shape as distance increases, 
+		/*! \brief Creates values that decrease with a gaussian shape as distance increases,
 		where the control parameter sets the standard deviation. */
 		static std::string gaussian;
 	};
-	
+
 	Gabor(void);
 	Gabor(std::string waveFunction, std::string envelopeFunction);
 
@@ -128,8 +128,8 @@ public:
 	/*! \brief If drawing into a framebuffer that has a different height than the main window, use this to set the
 	height of that framebuffer. If this is less than 0, the height of the current framebuffer will be
 	inferred to be the height of the main window. */
-	float fboHeight; 
-		
+	float fboHeight;
+
 
 	ofFloatColor color1; //!< The first color used in the waveforms. There is no meaning to order to the colors.
 	ofFloatColor color2; //!< The second color used in the waveforms. There is no meaning to order to the colors.
@@ -200,8 +200,8 @@ struct EnvelopeProperties {
 	EnvelopeProperties(void) :
 		width(-1),
 		height(-1),
-		controlParameter(10),
-		envelopeFunction(EnvelopeProperties::none)
+		envelopeFunction(EnvelopeProperties::none),
+		controlParameter(10)
 	{}
 
 	float width; //!< The width of the envelope, in pixels.
