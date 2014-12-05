@@ -206,11 +206,11 @@ namespace Draw {
 			while (Input.Mouse.availableEvents() > 0) {
 				CX_Mouse::Event mev = Input.Mouse.getNextEvent();
 
-				if (mev.eventType == CX_Mouse::Event::SCROLLED) {
+				if (mev.type == CX_Mouse::SCROLLED) {
 					L += mev.y;
 				}
 
-				if (mev.eventType == CX_Mouse::Event::MOVED) {
+				if (mev.type == CX_Mouse::MOVED) {
 					aOff = mev.x - Disp.getCenter().x;
 					bOff = mev.y - Disp.getCenter().y;
 				}
@@ -230,6 +230,12 @@ namespace Draw {
 			Disp.beginDrawingToBackBuffer();
 			ofBackground(0);
 			Draw::colorWheel(Disp.getCenter(), wheelColors, 200, 70, 0);
+
+			stringstream ss;
+			ss << "L: " << L << "\nA offset: " << aOff << "\nB offset: " << bOff;
+			ofSetColor(255);
+			ofDrawBitmapString(ss.str(), Disp.getCenter().x, Disp.getCenter().y);
+
 			Disp.endDrawingToBackBuffer();
 			Disp.swapBuffers();
 			}

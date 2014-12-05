@@ -30,7 +30,10 @@ ofGetLastFrameTime() is replaced by CX_Display::getLastSwapTime()
 
 The following functions do nothing: ofGetFrameRate(), ofSetFrameRate(), ofGetTargetFrameRate()
 
-A variety of behaviors related to ofBaseApp do not function because CX is not based on a class derived from ofBaseApp nor does it use ofRunApp() to begin the program. For example, a standard oF app class should have steup(), update(), and draw() functions that will be called by oF during program execution. CX has a different model that does not force object-orientation on design of the user's code.
+A variety of behaviors related to ofBaseApp do not function because CX is not based on a class derived from ofBaseApp nor does it use ofRunApp() to begin the program. For example, a standard oF app class should have steup(), update(), and draw() functions that will be called by oF during program execution.
+
+Normally in an oF app, there are update and draw events that fire regularly. These events can be listed to by various pieces of code so that they can know when to update their state and when to draw anything that they need to draw. In CX, this functionality is broken by default. However, if you are using something that needs these events, you can call ofNotifyUpdate() to notify that anything listening should update. Also, after you start drawing, e.g. with CX_Display::beginDrawingToBackBuffer(), you can call ofNotifyDraw() to tell anything listening to draw itself.
+
 
 
 Program Flow
