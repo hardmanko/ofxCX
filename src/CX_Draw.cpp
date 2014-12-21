@@ -323,8 +323,9 @@ void lines(std::vector<ofPoint> points, float lineWidth) {
 	}
 }
 
-/*! This function draws a line from p1 to p2 with the given width.
-\note This function supersedes ofLine because the line width of the line drawn
+/*! This function draws a line from p1 to p2 with the given width. Note that this function is purely 2D:
+The Z coordinate is ignored.
+\note This function typically supersedes ofLine because the line width of the line drawn
 with ofLine cannot currently be set to a value greater than 1.
 */
 void line(ofPoint p1, ofPoint p2, float width) {

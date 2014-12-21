@@ -38,7 +38,6 @@ void CX_Display::setup(void) {
 
 	estimateFramePeriod(CX_Millis(500));
 
-	CX_Millis measuredPeriod = this->getFramePeriod();
 }
 
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
@@ -127,7 +126,8 @@ void CX_Display::setAutomaticSwapping(bool autoSwap) {
 		}
 	} else {
 		if (_swapThread->isThreadRunning()) {
-			_swapThread->waitForThread(true);
+			_swapThread->startThread();
+			_swapThread->waitForThread();
 		}
 	}
 }
@@ -309,19 +309,24 @@ void CX_Display::setWindowTitle(std::string title) {
 
 /*! This function estimates the typical period of the display refresh.
 This function blocks for estimationInterval while the swapping thread swaps in the background (see \ref blockingCode).
-This function is called with an argument of 300 ms during construction of this class, so
+This function is called during setup of this class, so
 there will always be some information about the frame period. If more precision of the estimate
 is desired, this function can be called again with a longer wait duration.
+
 \param estimationInterval The length of time to spend estimating the frame period.
+\param minRefreshRate The minimum allowed refresh rate, in Hz. If an observed duration is less than 1/minRefreshRate seconds,
+it will be ignored for purposes of estimating the frame period.
+\param maxRefreshRate The maximum allowed refresh rate, in Hz. If an observed duration is greater than 1/minRefreshRate seconds,
+it will be ignored for purposes of estimating the frame period.
 */
-void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
+void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate, float maxRefreshRate) {
 	bool wasSwapping = isAutomaticallySwapping();
 	setAutomaticSwapping(false);
 
 	std::vector<CX_Millis> swapTimes;
 
-	CX_Millis minFramePeriod = CX_Seconds((1.0 / 60) * 0.8);
-	CX_Millis maxFramePeriod = CX_Seconds((1.0 / 120) * 1.2);
+	CX_Millis minFramePeriod = CX_Seconds((1.0 / maxRefreshRate));
+	CX_Millis maxFramePeriod = CX_Seconds((1.0 / minRefreshRate));
 
 	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
 	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
@@ -339,11 +344,15 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 
 		std::vector<CX_Millis> cleanedDurations;
 
+		std::vector<CX_Millis> excludedDurations;
+
 		for (unsigned int i = 1; i < swapTimes.size(); i++) {
 			CX_Millis dur = swapTimes[i] - swapTimes[i - 1];
 
 			if (dur >= minFramePeriod && dur <= maxFramePeriod) {
 				cleanedDurations.push_back(dur);
+			} else {
+				excludedDurations.push_back(dur);
 			}
 		}
 
@@ -356,6 +365,12 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval) {
 				"could try making it longer. If the estimation interval was long, this is a warning that there is something "
 				"wrong with the configuration of graphics on your computer. Try using CX_Display::testBufferSwapping() to "
 				"check for problems.";
+		}
+
+		if (excludedDurations.size() > 0) {
+			CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod(): " << excludedDurations.size() << " buffer swap durations were " <<
+				"outside of the allowed range of " << minFramePeriod << " ms to " << maxFramePeriod << " ms. The excluded durations were: " <<
+				CX::Util::vectorToString(excludedDurations, ", ", 5);
 		}
 
 

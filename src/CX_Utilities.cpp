@@ -156,23 +156,25 @@ namespace Util {
 
 
 	/*! Returns the angle in degrees "between" p1 and p2. If you take the difference between p2 and p1,
-	you get a resulting vector, V, that gives the displacement from p1 to p2. Imagine that you begin at
-	(0, 0) and move to (abs(V.x), 0), creating a line segment. Now if you "rotate" this line segment clockwise,
-	like the hand of a clock, until you reach V, the angle rotated through is the value returned by this function.
+	you get a resulting vector, V, that gives the displacement from p1 to p2. Imagine that you create a 
+	vector T = [1, 0]. Now if you "rotate" T in the positive direction, like the hand of a clock, until 
+	you reach V, the angle rotated through is the value returned by this function.
 
 	This is useful if you want to know, e.g., the angle between the mouse cursor and the center of the screen.
 
 	\param p1 The start point of the vector V.
 	\param p2 The end point of V. If p1 and p2 are reversed, the angle will be off by 180 degrees.
-	\return The angle in degrees between p1 and p2. */
+	\return The angle in degrees between p1 and p2. The values are in the range [0, 360). */
 	float getAngleBetweenPoints(ofPoint p1, ofPoint p2) {
 		if (p1 == p2) {
-			CX::Instances::Log.error("Util") << "getAngleBetweenPoints: Points are equal.";
+			CX::Instances::Log.error("Util") << "getAngleBetweenPoints(): Points are equal.";
 			return std::numeric_limits<float>::infinity();
 		}
 
 		ofPoint p = p2 - p1;
+		float angle = atan2(p.y, p.x);
 
+		/*
 		float angle = 0;
 		if (p.x == 0) {
 			if (p.y >= 0) {
@@ -183,12 +185,13 @@ namespace Util {
 		} else {
 			angle = atan(p.y / p.x);
 		}
-
+		
 		if (p.x < 0) {
 			angle += PI;
 		}
+		*/
 
-		return fmod(360 + angle * 180 / PI, 360);
+		return fmod(360 + ofRadToDeg(angle), 360);
 	}
 
 	/*! This function begins at point `start` and travels `distance` from that point along `angle`, returning the resulting point.

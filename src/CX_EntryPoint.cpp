@@ -15,6 +15,7 @@ void setupCX(void) {
 
 	CX::Instances::Log.captureOFLogMessages();
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
+	CX::Instances::Log.level(CX_LogLevel::LOG_NOTICE, "ofShader");
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
 
@@ -52,21 +53,21 @@ void reopenWindow080(CX_WindowConfiguration_t config) {
 
 void reopenWindow084(CX_WindowConfiguration_t config) {
 
-	//////////////////////
-	//Note that this section of code is a nasty hack that is only done because of a bug in openFrameworks.
-	//They are working on the bug, but in the mean time, I want to work around the bug to use new features of
-	//openFrameworks. The bug is that the pointer passed to ofSetupOpenGL is treated as an ofAppGLFWWindow
-	//regardless of whether it is one or not. Because CX_AppWindow is not ofAppGLFWWindow (although it's very close)
-	//passing a pointer to a CX_AppWindow results in, AFAIK, undefined behavior (and we don't want that, do we?).
-	//
-	//The hack: Allocate on a pointer enough memory to store either of ofAppGLFWWindow or CX_AppWindow.
-	//Use placement new to put an ofAppGLFWWindow at that location.
-	//Pass that pointer to ofSetupOpenGL. It's an ofAppGLFWWindow, so no problem.
-	//The location pointed to by the pointer is now stored in the variable "window" in ofAppRunner.cpp and can do nice things.
-	//Now that the location is stored there, destroy the just-opened window.
-	//Finally, use placement new to create a CX_AppWindow where the pointer points to.
-	//Success!!!
-	//////////////////////
+	/*
+	Note that this section of code is a nasty hack that is only done because of a bug in openFrameworks.
+	They are working on the bug, but in the mean time, I want to work around the bug to use new features of
+	openFrameworks. The bug is that the pointer passed to ofSetupOpenGL is treated as an ofAppGLFWWindow
+	regardless of whether it is one or not. Because CX_AppWindow is not ofAppGLFWWindow (although it's very close)
+	passing a pointer to a CX_AppWindow results in, AFAIK, undefined behavior (and we don't want that, do we?).
+	
+	The hack: Allocate on a pointer enough memory to store either an ofAppGLFWWindow or a CX_AppWindow.
+	Use placement new to put an ofAppGLFWWindow at that location.
+	Pass that pointer to ofSetupOpenGL. It's an ofAppGLFWWindow, so no problem.
+	The location pointed to by the pointer is now stored in the variable "window" in ofAppRunner.cpp and can do nice things.
+	Now that the location is stored there, destroy the just-opened window.
+	Finally, use placement new to create a CX_AppWindow where the pointer points to.
+	Success!!!
+	*/
 	unsigned int appWindowAllocationSize = std::max(sizeof(CX::Private::CX_AppWindow), sizeof(ofAppGLFWWindow));
 
 	void* windowP = new char[appWindowAllocationSize];
@@ -78,8 +79,6 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 		glfwDestroyWindow(glfwGetCurrentContext()); //Close temporary window
 	}
 	glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
-
-	CX::Instances::Log.flush();
 
 	windowP = new(windowP) CX::Private::CX_AppWindow;
 	////////////////////
@@ -144,7 +143,6 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 			CX::Private::reopenWindow084(config);
 		} else {
 			CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX.";
-			CX::Instances::Log.flush();
 			return false;
 		}
 		CX::Private::glfwContext = glfwGetCurrentContext();
@@ -157,7 +155,6 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 
 	if (CX::Private::glfwContext == NULL) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): There was an error setting up the window.";
-		CX::Instances::Log.flush();
 		return false;
 	}
 
@@ -166,7 +163,6 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 	CX::Private::appWindow->initializeWindow();
 	CX::Private::appWindow->setWindowTitle(config.windowTitle);
 
-	CX::Instances::Log.flush();
 	return true;
 }
 

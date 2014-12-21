@@ -428,23 +428,6 @@ std::string CX_SlidePresenter::getLastPresentedSlideName(void) const {
 	return rval;
 }
 
-/* Get a reference to the slide at a given index.
-\param slideIndex The index of the slide to get. This function throws a std::exception of slideIndex is out of range.
-\return A reference to the slide. */
-/*
-CX_SlidePresenter::Slide& CX_SlidePresenter::getSlide(unsigned int slideIndex) {
-	if (slideIndex < _slides.size()) {
-		return _slides.at(slideIndex);
-	} else {
-		stringstream m;
-		m << "getSlide: slideIndex of " << slideIndex << " out of range. Stored slides " << this->getSlideCount();
-		Log.error("CX_SlidePresenter") << m.str();
-	std:exception e(m.str().c_str());
-		throw(e);
-	}
-}
-*/
-
 /*! Gets a vector containing the durations of the slides from the last presentation of slides.
 Note that these durations may be wrong. If checkForPresentationErrors() does not detect any errors,
 the durations are likely to be right, but there is no guarantee.
@@ -598,8 +581,8 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 
 
 void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
-	_waitSyncCheck();
-
+	//This is currently not a supported mode. with more work, it might be worthwhile.
+	
 	if (_presentingSlides) {
 
 		Slide::PresStatus status = _slides.at(_currentSlide).presentationStatus;
@@ -666,8 +649,6 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 }
 
 void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
-
-	_waitSyncCheck();
 
 	if (_presentingSlides) {
 
@@ -747,7 +728,6 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 }
 
 void CX_SlidePresenter::_multiCoreUpdate(void) {
-	_waitSyncCheck();
 
 	if (_presentingSlides) {
 
@@ -814,6 +794,8 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 update() must be called very regularly (at least once per millisecond) in order for the slide
 presenter to function. If slide presentation is stopped, you do not need to call update() */
 void CX_SlidePresenter::update(void) {
+	_waitSyncCheck();
+
 	switch (_config.swappingMode) {
 	case SwappingMode::MULTI_CORE: return _multiCoreUpdate();
 	case SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();

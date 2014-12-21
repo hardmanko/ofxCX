@@ -59,7 +59,7 @@ namespace CX {
 		CX_Millis estimateNextSwapTime(void) const;
 		uint64_t getFrameNumber(void) const;
 
-		void estimateFramePeriod(CX_Millis estimationInterval);
+		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 40, float maxRefreshRate = 160);
 		CX_Millis getFramePeriod(void) const;
 		CX_Millis getFramePeriodStandardDeviation(void) const;
 		void setFramePeriod(CX_Millis knownPeriod);

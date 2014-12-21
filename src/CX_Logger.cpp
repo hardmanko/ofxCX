@@ -240,11 +240,21 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 	filename = ofToDataPath(filename);
 
 	bool fileFound = false;
+	unsigned int fileIndex = -1;
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if ((_targetInfo[i].targetType == Private::LogTarget::FILE) && (_targetInfo[i].filename == filename)) {
 			fileFound = true;
+			fileIndex = i;
 			_targetInfo[i].level = level;
 		}
+	}
+
+	//If nothing is to be logged, either delete or never create the target
+	if (level == CX_LogLevel::LOG_NONE) {
+		if (fileFound) {
+			_targetInfo.erase(_targetInfo.begin() + fileIndex);
+		}
+		return;
 	}
 
 	if (!fileFound) {

@@ -194,8 +194,12 @@ void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::PRESSED;
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
+	ev.codes = Keycodes(a.key, -1, -1, -1);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
 	ev.codes = Keycodes(a.key, a.keycode, a.scancode, a.codepoint);
-
+#endif
+	
 	_keyEventHandler(ev);
 }
 
@@ -203,7 +207,11 @@ void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::RELEASED;
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
+	ev.codes = Keycodes(a.key, -1, -1, -1);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
 	ev.codes = Keycodes(a.key, a.keycode, a.scancode, a.codepoint);
+#endif
 
 	_keyEventHandler(ev);
 }
