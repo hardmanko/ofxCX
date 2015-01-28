@@ -1068,7 +1068,8 @@ is called, the data is appended to `sb`. */
 void SoundBufferOutput::sampleData(CX::CX_Millis t) {
 
 	if (_inputs.size() == 0) {
-		return; //Warn? Is it better to sample zeros than it is to sample nothing?
+		CX::Instances::Log.warning("SoundBufferOutput") << "sampleData(): Attempted to sample data when no inputs were connected.";
+		return;
 	}
 
 	unsigned int samplesToTake = ceil(_data->sampleRate * t.seconds());
@@ -1108,6 +1109,7 @@ void StereoSoundBufferOutput::setup(float sampleRate) {
 The result is stored in the `sb` member of this class. If `sb` is not empty when this function
 is called, the data is appended to `sb`. */
 void StereoSoundBufferOutput::sampleData(CX::CX_Millis t) {
+	
 	unsigned int samplesToTake = ceil(left.getData().sampleRate * t.seconds());
 
 	unsigned int channels = 2; //Stereo
@@ -1150,8 +1152,8 @@ void StereoStreamOutput::setup(CX::CX_SoundStream* stream) {
 void StereoStreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
 		unsigned int index = sample * d.outputChannels;
-		d.outputBuffer[index + 0] = CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
-		d.outputBuffer[index + 1] = CX::Util::clamp<float>(left.getNextSample(), -1, 1);
+		d.outputBuffer[index + 0] += CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
+		d.outputBuffer[index + 1] += CX::Util::clamp<float>(left.getNextSample(), -1, 1);
 	}
 }
 
@@ -1272,7 +1274,7 @@ void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
 		float value = CX::Util::clamp<float>(input->getNextSample(), -1, 1);
 		for (int ch = 0; ch < d.outputChannels; ch++) {
-			d.outputBuffer[(sample * d.outputChannels) + ch] = value;
+			d.outputBuffer[(sample * d.outputChannels) + ch] += value;
 		}
 	}
 }

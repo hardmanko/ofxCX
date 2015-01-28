@@ -201,7 +201,8 @@ namespace CX {
 			Like \ref oF, the value of this can be compared	with character literals for	a lot of the standard 
 			keys (letters are uppercase). */
 			int glfw;
-			int scancode; //!< System-specific scancode. These are not very easy to use, but it does depend on modifier keys.
+
+			int scancode; //!< System-specific scancode. These are not very easy to use, but do not depend on modifier keys.
 
 			/*! The locale-specific unicode codepoint for the key. This is the most like the natural 
 			language value of the key, so it naturally depends on modifier keys. */
@@ -212,7 +213,6 @@ namespace CX {
 
 		The primary representation of the key that was pressed is given by \ref key. Four alternative representations
 		are given in the \ref codes struct.
-
 		*/
 		struct Event {
 

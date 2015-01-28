@@ -119,7 +119,7 @@ void CX_Clock::sleep(CX_Millis t) {
 /*! This functions blocks for the requested period of time. This is likely more
 precise than CX_Clock::sleep() because it does not give up control to the operating
 system, but it wastes resources because it just sits in a spinloop for the requested
-duration. This is functionally a static function. */
+duration. This is effectively a static function of the CX_Clock class. */
 void CX_Clock::delay(CX_Millis t) {
 	CX_Millis startTime = this->now();
 	while ((this->now() - startTime) < t)

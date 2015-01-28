@@ -93,7 +93,7 @@ will return immediately.
 \param eraseEvent If `true`, the event will be erased from the queue of captured events. The implication of this removal
 is that the return value of this function is the only opportunity to gain access to the event that caused this function to return.
 The advantage of this approach is that if, after some given key is pressed, all events in the queue are processed, you are
-guaranteed to not hit the same event twice (once form the return value of this function, once from processing the queue).
+guaranteed to not hit the same event twice (once from the return value of this function, once from processing the queue).
 \return A CX_Keyboard::Event with information about the keypress that caused this function to return.
 \note If the keyboard is not enabled at the time this function is called, it will be enabled for the
 duration of the function and then disabled at the end of the function.

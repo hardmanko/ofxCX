@@ -280,7 +280,7 @@ std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
 				lineStart = i - poppedChars;
 			}
 
-
+			i = lastWS;
 			lines.push_back(sub);
 		} else if (i == s.size() - 1) {
 			sub = s.substr(lineStart);
