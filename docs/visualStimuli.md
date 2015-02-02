@@ -100,7 +100,7 @@ void runExperiment(void) {
 		ofCircle(200, 300, 100);
 	slidePresenter.endDrawingCurrentSlide();
 
-	slidePresenter.beginDrawingNextSlide(1000);
+	slidePresenter.beginDrawingNextSlide(1500);
 		ofBackground(ofColor::black);
 		ofSetColor(0, 255, 0);
 		ofRect(400, 200, 200, 200);
@@ -127,7 +127,7 @@ On the third line, we instantiate a CX_SlidePresenter and call it `slidePresente
 ~~~{.cpp}
 slidePresenter.setup(&Disp);
 ~~~
-Using `&Disp` means to get a pointer to `Disp`. There is another setup function for CX_SlidePresenter that takes a CX_SlidePresenter::Configuration `struct`, which allows you to configure the CX_SlidePresenter more thoroughly. For now, we will just use the basic setup function.
+Using `&Disp` means to get a pointer to `Disp`. There is another setup function for CX_SlidePresenter that takes a CX_SlidePresenter::Configuration `struct`, which allows you to configure the CX_SlidePresenter more thoroughly. For now, we will just use the basic setup function. The slide presenter needs to know what CX_Display to use because it uses a variety of functions of the display to present your stimuli.
 
 With the following code, we will create a new slide in `slidePresenter` and draw stimuli into the slide.
 ~~~{.cpp}
@@ -137,17 +137,17 @@ slidePresenter.beginDrawingNextSlide(3000, "circle"); //slide duration, name
 	ofCircle(200, 300, 100);
 slidePresenter.endDrawingCurrentSlide();
 ~~~
-You should recogize the stimulus drawing functions from before. By calling `slidePresenter.beginDrawingNextSlide(1000, "circle")`, we are saying to create a new slide with a duration of 1000 ms and name "circle". The name of a slide is optional and purely to make it easy for you to identify the slide later. Everything that is drawn before `slidePresenter.endDrawingCurrentSlide()` is called will be drawn into the slide. It works this way because for each new slide, the slide presenter makes an offscreen framebuffer (an ofFbo) and sets it up so that everything will be drawn into that framebuffer until `endDrawingCurrentSlide()` is called. Calling `endDrawingCurrentSlide()` is optional in that if you forget to do it, it will be done for you.
+You should recogize the stimulus drawing functions from before. By calling `slidePresenter.beginDrawingNextSlide(3000, "circle")`, we are saying to create a new slide with a duration of 3000 ms and name "circle". The name of a slide is optional and purely to make it easy for you to identify the slide later. Everything that is drawn before `slidePresenter.endDrawingCurrentSlide()` is called will be drawn into the slide. It works this way because for each new slide, the slide presenter makes an offscreen framebuffer (an ofFbo) and sets it up so that everything will be drawn into that framebuffer until `endDrawingCurrentSlide()` is called. Calling `endDrawingCurrentSlide()` is optional in that if you forget to do it, it will be done for you.
 
 We do the same thing to draw the rectangle.
 ~~~{.cpp}
-slidePresenter.beginDrawingNextSlide(1000, "rectangle");
+slidePresenter.beginDrawingNextSlide(1500, "rectangle");
 	ofBackground(ofColor::black);
 	ofSetColor(0, 255, 0);
 	ofRect(400, 200, 200, 200);
 slidePresenter.endDrawingCurrentSlide();
 ~~~
-Notice that we need to call `ofBackground()` for every slide, because there is no default background color for newly created slides. Also, we made the duration of this slide to be 2000 ms.
+Notice that we need to call `ofBackground()` for every slide, because there is no default background color for newly created slides. Also, we made the duration of this slide to be 1500 ms.
 
 Finally, we make the final slide, which has both objects in it.
 ~~~{.cpp}
@@ -159,7 +159,7 @@ slidePresenter.beginDrawingNextSlide(1);
 	ofRect(400, 200, 200, 200);
 slidePresenter.endDrawingCurrentSlide();
 ~~~
-Notice that the duration of the final slide is set to 1 ms, yet when the example is run, the final slide stays on sreen indefinitely. This is correct behavior: The final slide that is created is the finishing point for the slide presenter. As soon as the last slide is presented, the slide presentation is done. The logic of it is that it is not possible for the slide presenter to know what should be presented after the last slide. Should the screen turn black? Should a test pattern be presented? There is no obvious default. For this reason, after the last slide is presented, the slide presenter can't sensibly replace that slide with anything else, so it remains on screen until other code draws something else. Thus, the duration of the last slide is ignored and as soon as the last slide is presented, the slide presenter is done.
+Notice that the duration of the final slide is set to 1 ms, yet when the example is run, the final slide stays on sreen indefinitely. This is correct behavior: The final slide that is created is the finishing point for the slide presenter. As soon as the last slide is presented, the slide presentation is done. The logic of it is that it is not possible for the slide presenter to know what should be presented after the last slide. Should the screen turn black? Should a test pattern be presented? There is no obvious default. For this reason, after the last slide is presented, the slide presenter can't sensibly replace that slide with anything else, so it remains on screen until other code draws something else. Thus, the duration of the last slide is ignored and as soon as the last slide is presented, the slide presenter is done (although note that the duration must be > 0, because all slides with duration 0 are never presented by the slide presenter).
 
 Once all of the slides have been drawn, to present the slides, the following code is used
 ~~~{.cpp}
@@ -174,7 +174,7 @@ While the slide presentation is in progress, we may want to do other things as w
 ~~~{.cpp}
 Input.pollEvents();
 ~~~
-into the loop to check for new input regularly. If you call CX_SlidePresenter::presentSlides(), it does a standard slide presentation, including polling for input regularly. 
+into the loop to check for new input regularly. If you call CX::CX_SlidePresenter::presentSlides(), it does a standard slide presentation, including polling for input continuously. 
 
 At the end of the example, we wait for any key press before exiting.
 ~~~{.cpp}

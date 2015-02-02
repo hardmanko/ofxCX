@@ -56,6 +56,8 @@ namespace CX {
 		std::vector<float> getAxisPositions (void);
 		std::vector<unsigned char> getButtonStates (void);
 
+		void appendEvent(CX_Joystick::Event ev);
+
 	private:
 		int _joystickIndex;
 		std::string _joystickName;

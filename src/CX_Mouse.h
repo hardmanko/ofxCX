@@ -75,6 +75,9 @@ namespace CX {
 		void showCursor(bool show);
 		void setCursorPosition(ofPoint pos);
 		ofPoint getCursorPosition(void);
+		bool isButtonHeld(int button) const;
+
+		void appendEvent(CX_Mouse::Event ev);
 
 	private:
 		friend class CX_InputManager; //So that CX_InputManager can set _lastEventPollTime

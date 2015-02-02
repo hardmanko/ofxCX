@@ -361,15 +361,21 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 			_framePeriod = Util::mean(cleanedDurations);
 		} else {
 			CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough valid swaps occurred during the " <<
-				estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 100 ms), you "
-				"could try making it longer. If the estimation interval was long, this is a warning that there is something "
-				"wrong with the configuration of graphics on your computer. Try using CX_Display::testBufferSwapping() to "
-				"check for problems.";
+				estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 50 ms), you "
+				"could try making it longer. If the estimation interval was longer, this is an indication that there is something "
+				"wrong with the video card configuration. Try using CX_Display::testBufferSwapping() to narrow down the source"
+				"of the problems.";
 		}
 
 		if (excludedDurations.size() > 0) {
-			CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod(): " << excludedDurations.size() << " buffer swap durations were " <<
-				"outside of the allowed range of " << minFramePeriod << " ms to " << maxFramePeriod << " ms. The excluded durations were: " <<
+			unsigned int totalExcludedDurations = excludedDurations.size();
+			if (excludedDurations.size() > 20) {
+				std::vector<CX_Millis> copy = excludedDurations;
+				excludedDurations.assign(copy.begin(), copy.begin() + 20);
+			}
+			CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod(): " << totalExcludedDurations << " buffer swap durations were " <<
+				"outside of the allowed range of " << minFramePeriod << " ms to " << maxFramePeriod << " ms. The" << 
+				((totalExcludedDurations == excludedDurations.size()) ? "" : " first 20") << " excluded durations were: " <<
 				CX::Util::vectorToString(excludedDurations, ", ", 5);
 		}
 

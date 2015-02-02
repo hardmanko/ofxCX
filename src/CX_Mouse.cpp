@@ -37,7 +37,8 @@ bool CX_Mouse::enabled(void) {
 	return _enabled;
 }
 
-/*! \brief Get the number of new events available for this input device. */
+/*! Get the number of available events for this input device. 
+Events can be accessed with CX_Mouse::getNextEvent() or CX_Mouse::copyEvents(). */
 int CX_Mouse::availableEvents(void) {
 	return _mouseEvents.size();
 }
@@ -82,7 +83,6 @@ this will return the last known position of the cursor within the window.
 \return An ofPoint with the last cursor position. */
 ofPoint CX_Mouse::getCursorPosition(void) {
 	return _cursorPos;
-	//return ofPoint(ofGetMouseX(), ofGetMouseY());
 }
 
 /*! Show or hide the mouse cursor within the program window. If in windowed mode, the cursor will be visible outside of the window.
@@ -93,6 +93,32 @@ void CX_Mouse::showCursor(bool show) {
 	} else {
 		CX::Private::appWindow->hideCursor();
 	}
+}
+
+/*! This function checks to see if the button key is held, which means a button press has been received, but not a button release.
+\param button The index of a button to check for. For the most common named buttons, see the CX_Mouse::Buttons enum.
+\return `true` if the given key is held, `false` otherwise. */
+bool CX_Mouse::isButtonHeld(int button) const {
+	return _heldMouseButtons.find(button) != _heldMouseButtons.end();
+}
+
+/*! Appends a mouse event to the event queue without any modification
+(e.g. the timestamp is not set to the current time, it is left as-is).
+This can be useful if you want to have a simulated participant perform the
+task for debugging purposes.
+If the event type is CX_Mouse::PRESSED or CX_Mouse::RELEASED, the button of the
+event will be added to or removed from the list of held buttons, depending on event
+type.
+\param ev The event to append.
+*/
+void CX_Mouse::appendEvent(CX_Mouse::Event ev) {
+	if (ev.type == CX_Mouse::PRESSED) {
+		_heldMouseButtons.insert(ev.button);
+	} else if (ev.type == CX_Mouse::PRESSED) {
+		_heldMouseButtons.erase(ev.button);
+	}
+
+	_mouseEvents.push_back(ev);
 }
 
 
@@ -164,7 +190,7 @@ void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &ofEvent) {
 		//It isn't clear what the button data should be set to in this case. The last mouse button pressed?
 		//The last mouse button pressed before the drag started? User code just needs to check which mouse buttons are held, I guess.
 		//GLFW sets it to something called "buttonInUse", which is the last mouse button pressed. This means that drags can start with one
-		//mouse button and then continue with another. Let's just say that the button is gargage and user code has to deal with it.
+		//mouse button and then continue with another. Let's just say that the button is garbage and user code has to deal with it.
 		ev.button = -1; //To be obvious that the button data is garbage.
 		break;
 	default:

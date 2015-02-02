@@ -76,7 +76,7 @@ if (ev.key == Keycode::PAGE_UP && ev.type == CX_Keyboard::REPEAT) {
 ~~~
 Here we check for a key repeat for the page up key. For special keys for which it is not possible to represent the key with a character literal, you can compare the value of `ev.key` to special values from the CX::Keycode namespace/enum.
 
-To end the example, we print out information about all each key that is used, regardless of how it was used, with
+To end the example, we print out information about each key that was used, regardless of how it was used, with
 ~~~{.cpp}
 cout << "Key:         " << ev.key << endl <<
 	"Key char:  \"" << (char)ev.key << "\"" << endl <<

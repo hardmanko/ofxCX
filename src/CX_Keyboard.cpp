@@ -32,7 +32,8 @@ bool CX_Keyboard::enabled(void) {
 	return _enabled;
 }
 
-/*! \brief Get the number of new events available for this input device. */
+/*! Get the number of available events for this input device. 
+Events can be accessed with CX_Keyboard::getNextEvent() or CX_Keyboard::copyEvents(). */
 int CX_Keyboard::availableEvents(void) const {
 	return _keyEvents.size();
 }
@@ -64,7 +65,6 @@ std::vector<CX_Keyboard::Event> CX_Keyboard::copyEvents(void) {
 }
 
 /*! This function checks to see if the given key is held, which means a keypress has been received, but not a key release.
-This function is specific to openFrameworks keycodes. See CX_Keyboard::Event for discussion of the different keycode types.
 \param key The character literal for the key you are interested in or special key code from CX::Keycode. 
 \return `true` if the given key is held, `false` otherwise. */
 bool CX_Keyboard::isKeyHeld(int key) const {
@@ -171,6 +171,25 @@ bool CX_Keyboard::isChordHeld(const std::vector<int>& chord) const {
 		allHeld = allHeld && isKeyHeld(key);
 	}
 	return allHeld;
+}
+
+/*! Appends a keyboard event to the event queue without any modification
+(e.g. the timestamp is not set to the current time, it is left as-is).
+This can be useful if you want to have a simulated participant perform the
+task for debugging purposes.
+If the event type is CX_Keyboard::PRESSED or CX_Keyboard::RELEASED, the key of the
+event will be added to or removed from the list of held keys, depending on event
+type.
+\param ev The event to append.
+*/
+void CX_Keyboard::appendEvent(CX_Keyboard::Event ev) {
+	if (ev.type == CX_Keyboard::PRESSED) {
+		_heldKeys.insert(ev.key);
+	} else if (ev.type == CX_Keyboard::PRESSED) {
+		_heldKeys.erase(ev.key);
+	}
+
+	_keyEvents.push_back(ev);
 }
 
 void CX_Keyboard::_listenForEvents(bool listen) {

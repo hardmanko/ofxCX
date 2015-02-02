@@ -123,7 +123,8 @@ bool CX_Joystick::pollEvents (void) {
 	return false;
 }
 
-/*! Get the number of new events available for this input device. */
+/*! Get the number of available events for this input device. 
+Events can be accessed with CX_Joystick::getNextEvent() or CX_Joystick::copyEvents(). */
 int CX_Joystick::availableEvents (void) {
 	return _joystickEvents.size();
 }
@@ -154,10 +155,15 @@ std::vector<CX_Joystick::Event> CX_Joystick::copyEvents(void) {
 	return copy;
 }
 
-/*! This function is to be used for direct access to the axis positions of the joystick. It does not
-generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and
-uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
+/*! This function returns in the current positions of the joystick axes.
+\return A vector of the current axis positions. */
 vector<float> CX_Joystick::getAxisPositions (void) {
+	return _axisPositions;
+
+	/* This function is to be used for direct access to the axis positions of the joystick. It does not
+	generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and
+	uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
+	/*
 	vector<float> pos;
 	if (_joystickIndex == -1) {
 		return pos;
@@ -170,12 +176,18 @@ vector<float> CX_Joystick::getAxisPositions (void) {
 		pos[i] = axes[i];
 	}
 	return pos;
+	*/
 }
 
-/*! This function is to be used for direct access to the button states of the joystick. It does not
-generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and
-uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
+/*! This function returns in the current states of the joystick buttons.
+\return A vector of the current button states. */
 vector<unsigned char> CX_Joystick::getButtonStates (void) {
+	return _buttonStates;
+
+	/* This function is to be used for direct access to the button states of the joystick. It does not
+	generate events (i.e. CX_Joystick::Event), nor does it do any timestamping. If timestamps and
+	uncertainies are desired, you MUST use pollEvents() and the associated event functions (e.g. getNextEvent()). */
+	/*
 	vector<unsigned char> but;
 	if (_joystickIndex == -1) {
 		return but;
@@ -188,6 +200,25 @@ vector<unsigned char> CX_Joystick::getButtonStates (void) {
 		but[i] = buttons[i];
 	}
 	return but;
+	*/
+}
+
+/*! Appends a joystick event to the event queue without any modification
+(e.g. the timestamp is not set to the current time, it is left as-is).
+This can be useful if you want to have a simulated participant perform the
+task for debugging purposes.
+\param ev The event to append.
+*/
+void CX_Joystick::appendEvent(CX_Joystick::Event ev) {
+	if (ev.type == CX_Joystick::AXIS_POSITION_CHANGE) {
+		_axisPositions[ev.axisIndex] = ev.axisPosition;
+	} else if (ev.type == CX_Joystick::BUTTON_PRESS) {
+		_buttonStates[ev.buttonIndex] = 1;
+	} else if (ev.type == CX_Joystick::BUTTON_RELEASE) {
+		_buttonStates[ev.buttonIndex] = 0;
+	}
+
+	_joystickEvents.push_back(ev);
 }
 
 static const std::string dlm = ", ";

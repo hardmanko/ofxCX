@@ -24,7 +24,7 @@ namespace Draw {
 	std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 	ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
 
-	/*! Settings for how the corners are drawn for lines(std::vector<ofPoint>, float, LineCornerMode). */
+	/*! Settings for how the corners are drawn for the lines() function. */
 	enum class LineCornerMode {
 		OUTER_POINT,
 		BEZIER_ARC,
@@ -195,49 +195,50 @@ namespace Draw {
 
 	void runExperiment(void) {
 
-	Input.setup(false, true);
+		Input.setup(false, true);
 
-	float L = 50;
-	float aOff = 40;
-	float bOff = 40;
+		float L = 50;
+		float aOff = 40;
+		float bOff = 40;
 
-	while (true) {
-		if (Input.pollEvents()) {
-			while (Input.Mouse.availableEvents() > 0) {
-				CX_Mouse::Event mev = Input.Mouse.getNextEvent();
+		while (true) {
+			if (Input.pollEvents()) {
+				while (Input.Mouse.availableEvents() > 0) {
+					CX_Mouse::Event mev = Input.Mouse.getNextEvent();
 
-				if (mev.type == CX_Mouse::SCROLLED) {
-					L += mev.y;
+					if (mev.type == CX_Mouse::SCROLLED) {
+						L += mev.y;
+					}
+
+					if (mev.type == CX_Mouse::MOVED) {
+						aOff = mev.x - Disp.getCenter().x;
+						bOff = mev.y - Disp.getCenter().y;
+					}
 				}
 
-				if (mev.type == CX_Mouse::MOVED) {
-					aOff = mev.x - Disp.getCenter().x;
-					bOff = mev.y - Disp.getCenter().y;
+				//Now that input has been received, redraw the color wheel
+				vector<ofFloatColor> wheelColors(100);
+
+				for (int i = 0; i < wheelColors.size(); i++) {
+					float angle = (float)i / wheelColors.size() * 2 * PI;
+					float A = sin(angle) * aOff;
+					float B = cos(angle) * bOff;
+
+					//Convert the L, A, and B components to the RGB color space.
+					wheelColors[i] = Draw::convertToRGB("LAB", L, A, B);
 				}
-			}
 
-			//Only if input has been received, redraw the color wheel
-			vector<ofFloatColor> wheelColors(100);
+				Disp.beginDrawingToBackBuffer();
+				ofClear(0);
+				Draw::colorWheel(Disp.getCenter(), wheelColors, 200, 70, 0);
 
-			for (int i = 0; i < wheelColors.size(); i++) {
-				float angle = (float)i / wheelColors.size() * 2 * PI;
-				float A = sin(angle) * aOff;
-				float B = cos(angle) * bOff;
+				stringstream ss;
+				ss << "L: " << L << "\nA offset: " << aOff << "\nB offset: " << bOff;
+				ofSetColor(255);
+				ofDrawBitmapString(ss.str(), Disp.getCenter().x, Disp.getCenter().y);
 
-				wheelColors[i] = Draw::convertToRGB("LAB", L, A, B); //Convert the L, A, and B components to the RGB color space.
-			}
-
-			Disp.beginDrawingToBackBuffer();
-			ofBackground(0);
-			Draw::colorWheel(Disp.getCenter(), wheelColors, 200, 70, 0);
-
-			stringstream ss;
-			ss << "L: " << L << "\nA offset: " << aOff << "\nB offset: " << bOff;
-			ofSetColor(255);
-			ofDrawBitmapString(ss.str(), Disp.getCenter().x, Disp.getCenter().y);
-
-			Disp.endDrawingToBackBuffer();
-			Disp.swapBuffers();
+				Disp.endDrawingToBackBuffer();
+				Disp.swapBuffers();
 			}
 		}
 	}

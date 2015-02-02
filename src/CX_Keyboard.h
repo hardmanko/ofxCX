@@ -255,6 +255,8 @@ namespace CX {
 		void setExitChord(std::vector<int> chord);
 		bool isChordHeld(const std::vector<int>& chord) const;
 
+		void appendEvent(CX_Keyboard::Event ev);
+
 	private:
 		friend class CX_InputManager;
 
