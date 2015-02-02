@@ -2,7 +2,7 @@
 
 namespace CX {
 
-unsigned int CX_DataFrameCell::_floatingPointPrecision = 20;
+unsigned int CX_DataFrameCell::_floatingPointPrecision = std::numeric_limits<double>::max_digits10;
 
 /*! Set the precision with which floating point numbers (`float`s and `double`s) are stored, in number of significant digits.
 This value will be used for all `CX_DataFrameCell`s. Changing this value after storing data will

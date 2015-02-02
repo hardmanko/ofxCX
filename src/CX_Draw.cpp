@@ -303,12 +303,16 @@ std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
 
 /*! This function draws a series of line segments to connect the given points.
 At each point, the line segments are joined with a circle, which results in overdraw.
-As a result, this function does not work well with transparency. A workaround is to
+Overdraw means that some areas are drawn twice, which means that if transparency is
+used, it result in differing colors at the overdrawn areas. A workaround is to
 draw with max alpha into an fbo and then draw the fbo with transparency.
 \param points The points to connect with lines.
 \param lineWidth The width of the line.
 \note If the last point is the same as the first point, the final line segment 
 junction will be joined with a circle.
+\see A more advanced version of this function that attempts to prevent overdraw is
+\ref Draw::lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode),
+but that function can break in various ways.
 */
 void lines(std::vector<ofPoint> points, float lineWidth) {
 	float d = lineWidth / 2;

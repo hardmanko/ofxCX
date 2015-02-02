@@ -24,7 +24,7 @@ namespace Draw {
 	std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 	ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
 
-	/*! Settings for how the corners are drawn for the lines() function. */
+	/*! Settings for how the corners are drawn for lines(std::vector<ofPoint>, float, LineCornerMode). */
 	enum class LineCornerMode {
 		OUTER_POINT,
 		BEZIER_ARC,

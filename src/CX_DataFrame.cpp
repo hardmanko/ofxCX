@@ -48,7 +48,7 @@ CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
 		return _data.at(column).at(row);
 	} catch (std::exception& e) {
 		std::stringstream s;
-		s << "CX_SafeDataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
+		s << "CX_DataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
 		Instances::Log.error("CX_DataFrame") << s.str();
 		throw std::out_of_range(s.str().c_str());
 	}

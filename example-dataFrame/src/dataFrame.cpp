@@ -8,12 +8,9 @@ The idea behind the CX_DataFrame is that it is a way to
 This example covers the standard CX_DataFrame and what you can do with it. 
 It includes a snippet of R code for reading the output of this program into an R data frame.
 
-CX_DataFrame is NOT for Doing arithmetic. Data is stored as a string internally so you have the 
-potential for precision issues, plus it would be really, really slow.
-
-It also introduces CX_SafeDataFrame, which is potentially a better option than CX_DataFrame because it prevents 
-some potential mistakes by removing some of the parts of the interface for which it is difficult to develop a good
-mental model.
+You should not use a CX_DataFrame as part of a series of calculations. Data is stored as a 
+string internally so it would be really, really slow because every time data is stored or retrieved, 
+it has to be converted to/from a string.
 */
 
 
@@ -29,8 +26,8 @@ void runExperiment (void) {
 	//Use the () notation to access an element at the given (column, row). Columns are named with strings and rows
 	//are numbered. Due to some operator overloading, you
 	//can just use operator= to set the values. Most of the common types are supported: int, double, string, etc. 
-	//Even vectors are supported as long as the vector contains only basic types (std::string is NOT a basic type,
-	//as it is part of the stl, but should work as long as there are no semicolons in the strings).
+	//Even vectors are supported as long as the vector contains only built in types (std::string is NOT a build in 
+	//type, as it is part of the standard library, but should work as long as there are no semicolons in the strings).
 	df("ints", 0) = 3; //The integer 3 is put into the first row of the column named "ints"
 	df("ints", 1) = 42; //Second row, same column...
 	df("dwellings", 1) = "house"; //You don't have to start with the first row, everything is dynamically resized.

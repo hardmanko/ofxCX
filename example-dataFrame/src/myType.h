@@ -36,7 +36,8 @@ private:
 	friend std::istream& operator>> (std::istream& is, myType& myt);
 };
 
-
+//These function bodies should really be put into a .cpp file, with only the
+//declarations in the header.
 inline std::ostream& operator<< (std::ostream& os, const myType& myt) {
 	os << myt.i << ", " << myt._f; //Insert the values of myt into the ostream with a comma-space delimiter. Comma-space is standard for oF stuff.
 	return os;

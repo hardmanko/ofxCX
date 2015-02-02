@@ -134,6 +134,9 @@ namespace CX {
 		if (_data->size() == 0) {
 			CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
 			return T();
+			//TODO: It may be better to throw an exception here. 
+			//Alternately, The fact that a default value is returned could
+			//suggest that the returned value is stored in the cell, when in fact the cell is empty.
 		}
 
 		if (_data->size() > 1) {
@@ -183,7 +186,7 @@ namespace CX {
 	void CX_DataFrameCell::storeVector(std::vector<T> values) {
 		_data->clear();
 		for (unsigned int i = 0; i < values.size(); i++) {
-			_data->push_back(ofToString<T>(values[i]));
+			_data->push_back(_toString<T>(values[i]));
 		}
 
 		*_type = typeid(T).name();
@@ -197,7 +200,7 @@ namespace CX {
 	*/
 	template <typename T> void CX_DataFrameCell::store(const T& value) {
 		_data->clear();
-		_data->push_back(ofToString<T>(value));
+		_data->push_back(_toString<T>(value));
 
 		*_type = typeid(T).name();
 		*_ignoreStoredType = false;
@@ -205,7 +208,7 @@ namespace CX {
 
 	template<> std::string CX_DataFrameCell::to(void) const;
 
-	template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const;
+	template<> std::vector<std::string> CX_DataFrameCell::toVector(void) const;
 
 	std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);
 
