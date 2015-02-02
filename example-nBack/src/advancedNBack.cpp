@@ -1,26 +1,29 @@
 #include "CX.h"
 
-/*
+/* This example is a more advanced version of basicNBack.cpp, so reading that example first
+is recommended.
+
 In this example, we are going to consider two different ways of using the slide presenter
-to present stimuli. One method is the one used in the change detection example: Draw the
-stimuli to framebuffers that are managed by the SlidePresenter. This approach is fairly
+to present stimuli. One method is the one used in the basic N-Back example: Draw the
+stimuli to framebuffers that are managed by the slide presenter. This approach is fairly
 easy to do, but it had a time cost, because allocating and copying all of the framebuffers
-takes time. This example builds on the nBack example.
+takes time.
 
-In this example, we are going to contrast using the framebuffer approach with the slide
-presenter with the use of drawing functions. The standard framebuffer approach has the 
-following major steps:
+In this example, we are going to contrast using the standard framebuffer-based approach 
+to using the slide presenter with an approach that uses drawing functions with the slide
+presenter. The standard framebuffer approach has the following major steps:
 
-1) Allocate the framebuffer
-2) Draw your stimuli to the famebuffer
-3) Copy the framebuffer to the back buffer
-4) Swap front and back buffers
+1) Allocate the framebuffer (happens in CX_SlidePresenter::beginDrawingNextSlide())
+2) Draw your stimuli to the famebuffer (done after the call to CX_SlidePresenter::beginDrawingNextSlide())
+3) Draw the framebuffer to the back buffer (happens during slide presentation)
+4) Swap front and back buffers (also during slide presentation)
 
-Using drawing functions, we avoid steps 1 and 3, which are generally both
-very costly in terms of time. Step 2 becomes "Draw your stimuli to the back buffer directly".
-For an N-back task, there are no indefinitely-long pauses where you can prepare stimuli: you
-have to get the next sitmulus ready within a fixed interval, so using drawing functions may
-be the best approach. We are going to examine that issue with this example.
+Using drawing functions, we avoid steps 1 and 3. Step 1 can be very costly in terms of time. Step 3
+may take longer than just drawing stimuli directly to the back buffer. With drawing functions, 
+step 2 becomes "Draw your stimuli to the back buffer directly". For an N-back task, there are no 
+indefinitely-long inter-trial pauses where you can prepare stimuli: you have to get the next stimulus 
+ready within a fixed interval, so using drawing functions may be the best approach to acheive good timing
+precision. We are going to examine that issue with this example.
 
 The way in which you use a drawing function with a CX_SlidePresenter is with the appendSlideFunction()
 function. This function takes three arguments: the drawing function, the duration for which the stimuli
@@ -29,42 +32,46 @@ stimuli specified by the drawing function are ready to be presented, the drawing
 In the drawing function, you do not need to call Disp.beginDrawingToBackBuffer(); the slide presenter
 does that for you. See drawStimulus() below for an example of what a drawing function might look like.
 
-We can compare the performance of the framebuffer and functor approaches by examining how much time is
-used for various processes. One thing to consider is the amount of time it takes to allocate the framebuffers
-and render your stimuli to the framebuffers.
+We can compare the performance of the framebuffer and drawing function approaches by examining how much time is
+used for the two approaches. The drawing function approach should take less time because it does not require
+allocating framebuffers. Another consideration is the amount of time it takes to copy a framebuffer to the back 
+buffer (step 3 above). This may take longer than drawing a small amount of stimuli directly to the back buffer. 
+The framebuffer approach provides a nice security blanket: "I know that regardless of whatever is the the 
+framebuffer, it will be copied in the same amount of time as any other framebuffer." However, if that copying 
+time is longer than the stimulus drawing times, then using framebuffers is less efficient than drawing directly 
+to the back buffer.
 
-Another consideration is the amount of time it takes to copy a framebuffer to the back buffer (step 3 above).
-This may take longer than drawing a small amount of stimuli directly to the back buffer. The framebuffer approach
-provides a nice security blanket: "I know that regardless of whatever is the the framebuffer, it will be copied
-in the same amount of time as any other framebuffer." However, if that copying time is longer than any of the
-stimulus drawing times, then using framebuffers is less efficient than drawing directly to the back buffer.
-
-We will be using a special kind of function object, known as a functor (http://www.cprogramming.com/tutorial/functors-function-objects-in-c++.html)
+We will be using a special kind of function object, known as a functor in C++ 
+(http://www.cprogramming.com/tutorial/functors-function-objects-in-c++.html)
 to do our drawing. A functor is basically a structure that can be called like a function using operator().
 But unlike a normal function, a functor carries data along with it that can be used in the function call.
-Thus, a fuctor is a way to have a function without certain arguments for which you can still specify those
-arguments (in a sense) by setting data members of the functor. See struct stimulusFunctor below for an
-implementation.
+Thus, a fuctor is a way to have a function without any arguments for which you can still specify those
+arguments (in a sense) by setting data members of the functor struct. See struct stimulusFunctor below for an
+implementation. This idea is discussed further in the documentation for CX::CX_SlidePresenter::appendSlideFunction(),
+with a code example.
 */
+
+//If true, the standard framebuffer approach will be used. If false, drawing functions will be used.
+//Try with both settings and look at the output in the console (or the log file in data/logfiles).
+bool useFramebuffersForStimuli = false; 
 
 CX_DataFrame df;
 CX_DataFrame::rowIndex_t trialNumber = 0;
-int trialCount = 40;
-int lastSlideIndex = 0;
+int trialCount = 10;
 int nBack = 2;
 
 ofColor backgroundColor(50);
 ofColor textColor(255);
 
-ofTrueTypeFont letterFont;
-ofTrueTypeFont instructionFont;
+ofTrueTypeFont bigFont;
+ofTrueTypeFont smallFont;
 
 char targetKey = 'F';
 char nonTargetKey = 'J';
 string keyReminderInstructions;
 
 CX_Millis stimulusPresentationDuration = 1000;
-CX_Millis interStimulusInterval = 800;
+CX_Millis interStimulusInterval = 1000;
 
 CX_SlidePresenter SlidePresenter;
 void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info);
@@ -77,11 +84,10 @@ void drawStimulus(string letter, bool showInstructions);
 void drawBlank(void);
 void drawFixationSlide(int remainingTime);
 
-void generateTrials(int numberOfTrials);
+void generateTrials(void);
 
 
-bool useFramebuffersForStimuli = false; //If true, the standard framebuffer approach will be used. If 
-//false, drawing functions will be used.
+
 
 //This is a "functor": an object that has data members (letter and showInstructions), but can be called
 //as a function using operator().
@@ -111,14 +117,14 @@ void runExperiment(void) {
 	
 	Input.setup(true, false); //Use keyboard, not mouse.
 
-	letterFont.loadFont(OF_TTF_SANS, 26);
-	instructionFont.loadFont(OF_TTF_SANS, 12);
+	bigFont.loadFont(OF_TTF_SANS, 26);
+	smallFont.loadFont(OF_TTF_SANS, 12);
 
 	stringstream s;
 	s << "Press '" << targetKey << "' for targets and '" << nonTargetKey << "' for non-targets";
 	keyReminderInstructions = s.str();
 
-	generateTrials(10);
+	generateTrials();
 
 	CX_SlidePresenter::Configuration config;
 	config.display = &Disp;
@@ -163,7 +169,6 @@ void runExperiment(void) {
 
 	df.printToFile("N-Back output.txt");
 
-	//Calling this function can give us a lot of information about the last presentation of slides.
 	Log.notice() << "Slide presentation information: " << endl << SlidePresenter.printLastPresentationInformation();
 
 
@@ -184,7 +189,7 @@ void runExperiment(void) {
 
 	Disp.beginDrawingToBackBuffer();
 	ofBackground(backgroundColor);
-	Draw::centeredString(Disp.getCenter(), "Experiment complete!\nPress any key to exit.", letterFont);
+	Draw::centeredString(Disp.getCenter(), "Experiment complete!\nPress any key to exit.", bigFont);
 	Disp.endDrawingToBackBuffer();
 	Disp.swapBuffers();
 
@@ -232,9 +237,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 	}
 }
 
-void generateTrials(int numberOfTrials) {
-
-	trialCount = numberOfTrials;
+void generateTrials(void) {
 
 	string letterArray[8] = { "A", "F", "H", "L", "M", "P", "R", "Q" };
 	vector<string> letters = Util::arrayToVector(letterArray, 8);
@@ -307,10 +310,10 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 void drawStimulus(string letter, bool showInstructions) {
 	ofBackground(backgroundColor);
 	ofSetColor(textColor);
-	Draw::centeredString(Disp.getCenter(), letter, letterFont);
+	Draw::centeredString(Disp.getCenter(), letter, bigFont);
 
 	if (showInstructions) {
-		instructionFont.drawString(keyReminderInstructions, 30, Disp.getResolution().y - 30);
+		smallFont.drawString(keyReminderInstructions, 30, Disp.getResolution().y - 30);
 	}
 }
 
@@ -326,5 +329,5 @@ void drawFixationSlide (int remainingTime) {
 	s << keyReminderInstructions << endl;
 	s << "Starting in " << remainingTime << " seconds";
 
-	Draw::centeredString(Disp.getCenter(), s.str(), letterFont);
+	Draw::centeredString(Disp.getCenter(), s.str(), bigFont);
 }

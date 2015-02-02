@@ -579,6 +579,45 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 	return s.str();
 }
 
+/*! This function produces a CX_DataFrame with the following information related to slide
+presentation for each slide (drawn directly from the CX_SlidePresenter struct used by each 
+slide): name, intended and actual timing information, and copyToBackBufferCompleteTime. In 
+addition, the slide index is given.
+
+The column names are "index", "name", "copyToBackBufferCompleteTime", 
+"actual.startTime", "actual.duration", "actual.startFrame", and "actual.frameCount". 
+Plus, for the intended timings, replace "actual" with "intended" for the 4 intended timings
+columns.
+
+\return The data frame.
+*/
+CX_DataFrame CX_SlidePresenter::getLastPresentationInformation(void) const {
+	CX_DataFrame df;
+
+	for (unsigned int i = 0; i < _slides.size(); i++) {
+
+		const Slide& slide = _slides[i];
+
+		df(i, "index") = i;
+
+		df(i, "name") = slide.name;
+
+		df(i, "actual.startTime") = slide.actual.startTime;
+		df(i, "actual.duration") = slide.actual.duration;
+		df(i, "actual.startFrame") = slide.actual.startFrame;
+		df(i, "actual.frameCount") = slide.actual.frameCount;
+
+		df(i, "intended.startTime") = slide.intended.startTime;
+		df(i, "intended.duration") = slide.intended.duration;
+		df(i, "intended.startFrame") = slide.intended.startFrame;
+		df(i, "intended.frameCount") = slide.intended.frameCount;
+
+		df(i, "copyToBackBufferCompleteTime") = slide.copyToBackBufferCompleteTime;
+	}
+
+	return df;
+}
+
 
 void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 	//This is currently not a supported mode. with more work, it might be worthwhile.

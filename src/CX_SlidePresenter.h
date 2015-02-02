@@ -264,6 +264,7 @@ namespace CX {
 
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
 		std::string printLastPresentationInformation(void) const;
+		CX_DataFrame getLastPresentationInformation(void) const;
 
 	private:
 
