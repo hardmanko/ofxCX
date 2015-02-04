@@ -79,13 +79,15 @@ void CX_DataFrameCell::copyCellTo(CX_DataFrameCell* targetCell) const {
 
 /*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
 \return A copy of the stored data encoded as a string. */
-template<> std::string CX_DataFrameCell::to(void) const {
+template<> std::string CX_DataFrameCell::to(bool log) const {
 	if (_data->size() == 0) {
-		CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
+		if (log) {
+			CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
+		}
 		return std::string();
 	}
 
-	if (_data->size() > 1) {
+	if (log && (_data->size() > 1)) {
 		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
 	}
 
@@ -109,10 +111,10 @@ void CX_DataFrameCell::clear(void) {
 }
 
 /*! Converts the contents of the CX_DataFrame cell to a vector of strings. */
-template<> std::vector< std::string > CX_DataFrameCell::toVector(void) const {
+template<> std::vector< std::string > CX_DataFrameCell::toVector(bool log) const {
 
 	//But why is an empty vector an error? An empty scalar can be thought of as an error, but an empty vector should be fine.
-	if (_data->size() == 0) {
+	if (log && (_data->size() == 0)) {
 		CX::Instances::Log.error("CX_DataFrameCell") << "toVector(): No data to extract from cell.";
 	}
 

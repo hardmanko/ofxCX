@@ -204,10 +204,10 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 				//TODO: Update this to be more sensible/allow configuration.
 				string s;
 				if (it->second[oOpt.rowsToPrint[i]].isVector()) {
-					std::vector<std::string> v = it->second[oOpt.rowsToPrint[i]].toVector<std::string>();
+					std::vector<std::string> v = it->second[oOpt.rowsToPrint[i]].toVector<std::string>(false);
 					s = oOpt.vectorEncloser + CX::Util::vectorToString(v, oOpt.vectorElementDelimiter) + oOpt.vectorEncloser;
 				} else {
-					s = it->second[oOpt.rowsToPrint[i]].to<std::string>();
+					s = it->second[oOpt.rowsToPrint[i]].to<std::string>(false); //Don't log errors/warnings
 				}
 				output << s;
 			}

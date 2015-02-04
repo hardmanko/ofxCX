@@ -229,7 +229,7 @@ namespace Draw {
 				}
 
 				Disp.beginDrawingToBackBuffer();
-				ofClear(0);
+				ofBackground(0);
 				Draw::colorWheel(Disp.getCenter(), wheelColors, 200, 70, 0);
 
 				stringstream ss;

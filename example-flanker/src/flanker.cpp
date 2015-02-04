@@ -57,9 +57,6 @@ void runExperiment(void) {
 
 		//Now we set up the trial.
 
-		//This can be thought of as boolean, 1 if there should be interference, 0 otherwise.
-		int interferenceTrial = RNG.randomInt(0, 1); 
-
 		//For each trial, we want to randomize whether X or Y is the central letter.
 		//RNG.shuffleVector() makes a copy of the letters, shuffles that copy, and returns it.
 		vector<string> shuffledLetters = RNG.shuffleVector(letters);
@@ -67,7 +64,11 @@ void runExperiment(void) {
 		//Take letter 0 in the shuffled vector as the central letter.
 		string centralLetter = shuffledLetters[0]; 
 
-		//Then take the flanking letter based on the value of interferenceTrial. If it's 0, 
+		//Choose whether it should be a trial on which the flanking letters interfere with the central letter.
+		//interferenceTrial can be thought of as boolean, 1 if there should be interference, 0 otherwise.
+		int interferenceTrial = RNG.randomInt(0, 1);
+
+		//Pick the flanking letter based on the value of interferenceTrial. If it's 0, 
 		//central and flanking letters are the same, if it's 1, they are different.
 		string flankingLetter = shuffledLetters[interferenceTrial];
 

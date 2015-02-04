@@ -21,18 +21,6 @@ namespace CX {
 class CX_DataFrameRow;
 class CX_DataFrameColumn;
 
-struct CX_DataFrameConfiguration {
-	std::string cellDelimiter;
-
-	std::string vectorElementDelimiter;
-	std::string vectorStart;
-	std::string vectorEnd;
-
-	unsigned int floatingPointPrecision;
-
-	bool suppressTypeMismatchWarnings;
-};
-
 /*! \defgroup dataManagement Data
 This module is related to storing experimental data. CX_DataFrame is the most important class in this module.
 */
@@ -74,7 +62,7 @@ public:
 	/*! Options for the format of data that are output from a CX_DataFrame. */
 	struct OutputOptions : public IoOptions {
 		OutputOptions(void) :
-			printRowNumbers(true)
+			printRowNumbers(false)
 		{}
 
 		bool printRowNumbers; //!< If `true`, a column of row numbers will be printed. The column will be named "rowNumber". Defaults to `true`.
@@ -87,9 +75,9 @@ public:
 
 
 
-	CX_DataFrame (void);
+	CX_DataFrame(void);
 
-	CX_DataFrame& operator= (const CX_DataFrame& df);
+	CX_DataFrame& operator=(const CX_DataFrame& df);
 
 	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
 	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
@@ -107,20 +95,20 @@ public:
 
 	void append(CX_DataFrame df);
 
-	std::string print(std::string delimiter = "\t", bool printRowNumbers = true) const;
-	std::string print(const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true) const;
-	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
-	std::string print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	std::string print(std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(OutputOptions oOpt) const;
 
-	bool printToFile(std::string filename, std::string delimiter = "\t", bool printRowNumbers = true) const;
-	bool printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = true) const;
-	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
-	bool printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = true) const;
+	bool printToFile(std::string filename, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	bool printToFile(std::string filename, OutputOptions oOpt) const;
 
 	bool readFromFile(std::string filename, InputOptions iOpt);
-	bool readFromFile (std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
+	bool readFromFile(std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
 
 	void clear(void);
 	bool deleteColumn(std::string columnName);

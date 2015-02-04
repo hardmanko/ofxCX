@@ -40,7 +40,7 @@ namespace CX {
 
 		template <typename T> void store(const T& value);
 
-		template <typename T> T to(void) const;
+		template <typename T> T to(bool log = true) const;
 
 		std::string toString(void) const;
 
@@ -53,7 +53,7 @@ namespace CX {
 		//! Returns a copy of the stored data converted to double. Equivalent to to<double>().
 		double toDouble(void) const { return this->to<double>(); };
 
-		template <typename T> std::vector<T> toVector(void) const;
+		template <typename T> std::vector<T> toVector(bool log = true) const;
 		template <typename T> void storeVector(std::vector<T> values);
 		bool isVector(void) const;
 
@@ -129,24 +129,27 @@ namespace CX {
 	\return The data in the cell converted to T.
 	*/
 	template <typename T>
-	T CX_DataFrameCell::to(void) const {
+	T CX_DataFrameCell::to(bool log) const {
 
 		if (_data->size() == 0) {
-			CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
+			if (log) {
+				CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
+			}
 			return T();
 			//TODO: It may be better to throw an exception here. 
 			//Alternately, The fact that a default value is returned could
 			//suggest that the returned value is stored in the cell, when in fact the cell is empty.
+			//Maybe the default-constructed value should be stored.
 		}
 
-		if (_data->size() > 1) {
+		if (log && (_data->size() > 1)) {
 			CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
 		}
 
 		std::string typeName = typeid(T).name();
-		if (!(*_ignoreStoredType) && (*_type != typeName)) {
-			CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract data of different type than was inserted:" <<
-				" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << typeName << "\".";
+		if (log && !(*_ignoreStoredType) && (*_type != typeName)) {
+			CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Extracting data of different type than was inserted:" <<
+				" Inserted type was \"" << *_type << "\" and extracted type was \"" << typeName << "\".";
 		}
 
 		return ofFromString<T>(_data->at(0));
@@ -159,14 +162,10 @@ namespace CX {
 	\return A vector containing the converted data.
 	*/
 	template <typename T>
-	std::vector<T> CX_DataFrameCell::toVector(void) const {
+	std::vector<T> CX_DataFrameCell::toVector(bool log) const {
+
 		std::string extractedTypeName = typeid(T).name();
-
-		if (_data->size() == 1) {
-			CX::Instances::Log.notice("CX_DataFrameCell") << "toVector(): Attempt to extract a vector when the stored data was a scalar. The returned vector will be of length one.";
-		}
-
-		if (!(*_ignoreStoredType) && (*_type != extractedTypeName)) {
+		if (log && !(*_ignoreStoredType) && (*_type != extractedTypeName)) {
 			CX::Instances::Log.warning("CX_DataFrameCell") << "toVector(): Attempt to extract data of different type than was inserted:" <<
 				" Inserted type was \"" << *_type << "\" and attempted extracted type was \"" << extractedTypeName << "\".";
 		}
@@ -206,9 +205,9 @@ namespace CX {
 		*_ignoreStoredType = false;
 	}
 
-	template<> std::string CX_DataFrameCell::to(void) const;
+	template<> std::string CX_DataFrameCell::to(bool log) const;
 
-	template<> std::vector<std::string> CX_DataFrameCell::toVector(void) const;
+	template<> std::vector<std::string> CX_DataFrameCell::toVector(bool log) const;
 
 	std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell);
 
