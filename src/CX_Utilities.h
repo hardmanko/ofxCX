@@ -58,7 +58,7 @@ namespace CX {
 		bool writeToFile(std::string filename, std::string data, bool append = true);
 		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 
-		/*! The way in which numbers should be rounded with round(). */
+		/*! The way in which numbers should be rounded with CX::Util::round(). */
 		enum class CX_RoundingConfiguration {
 			ROUND_TO_NEAREST, //!< Round to the nearest number.
 			ROUND_UP, //!< Round to the number above the current number.

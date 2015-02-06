@@ -4,7 +4,11 @@
 This example is a more advanced version of the change detection task presented in
 the basicChangeDetection example. It is not "advanced" because it is more complex,
 but because it uses more features of CX. It actually ends up being simpler because 
-of how it uses features of CX.
+of how it uses the features of CX. The advances features are
+
+1) Using CX_DataFrame (more information can be found in the dataFrame example).
+2) Using CX_CoordinateConverter and CX_DegreeToPixel converter, which makes it
+possible to work in units of degrees of visual angle rather than pixels.
 
 Items that are commented are new, although not all new stuff will neccessarily be 
 commented. The main feature that as demonstrated as the CX_DataFrame, which is a
@@ -29,7 +33,7 @@ void drawTestArray (void);
 CX_DataFrame trialDf; //The data frame into which data from each trial is stored.
 int trialIndex = 0; //The index of the current trial.
 
-int circleRadius = 0; //We will set this later.
+int circleRadius = 0; //We will set this later in terms of visual angle units.
 ofColor backgroundColor(50);
 
 void runExperiment (void) {
@@ -55,7 +59,7 @@ void runExperiment (void) {
 		//Compare to the data output function from the basicChangeDetectionTask example.
 	Log.notice() << "Experiment complete: exiting...";
 	Log.flush();
-	ofSleepMillis(3000);
+	Clock.sleep(3000);
 }
 
 void drawStimuli (void) {
@@ -73,7 +77,7 @@ void drawStimuli (void) {
 	SlidePresenter.beginDrawingNextSlide(1000, "maintenance");
 	drawBlank();
 
-	SlidePresenter.beginDrawingNextSlide(.001, "test");
+	SlidePresenter.beginDrawingNextSlide(1, "test");
 	drawTestArray();
 	SlidePresenter.endDrawingCurrentSlide();
 
@@ -99,7 +103,7 @@ void getResponse (void) {
 
 				if (keyEvent.key == 'S' || keyEvent.key == 'D') {
 
-					CX_Millis testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
+					CX_Millis testArrayOnset = SlidePresenter.getSlideByName("test").actual.startTime;
 					trialDf(trialIndex, "responseLatency") = keyEvent.time - testArrayOnset;
 
 					bool changeTrial = trialDf(trialIndex, "changeTrial").to<bool>();
@@ -139,7 +143,8 @@ void generateTrials (int trialCount) {
 	Util::CX_CoordinateConverter cc(Disp.getCenter(), false, true); //Set the origin to be at the center of the display
 		//and invert the y-axis.
 	Util::CX_DegreeToPixelConverter d2p(35, 60); //Assume 35 pixels per cm on the monitor (this is fairly close to correct 
-		//for many monitors) and viewer sitting 60 cm from screen.
+		//for many monitors) and viewer sitting 60 cm from screen. Set this is to the correct value for whatever monitor you
+		//are actually using for real experiments!
 	cc.setUnitConverter(&d2p); //Set the units of the coordinate converter to be in degrees of visual angle, as calculated by
 		//the CX_DegreeToPixelConverter.
 
@@ -168,28 +173,31 @@ void generateTrials (int trialCount) {
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
+		//Using a CX_DataFrameRow, we can fill in different columns, then once the row is filled,
+		//append it to a data frame. This makes the code a little more compact because you don't
+		//need to mess with the row index, becuase you only have the one row at a time.
 		CX_DataFrameRow tr;
-		tr["arraySize"] = 4;
-
-		vector<unsigned int> colorIndices = RNG.shuffleVector( Util::intVector<unsigned int>(0, objectColors.size() - 1) );
-		vector<ofColor> colors;
+		int arraySize = 4;
+		tr["arraySize"] = arraySize; //Use square brackets with a string to select the column.
 
 		//Note that you'll have to use functions like toInt() in cases like this, where it isn't obvious what type the data should be converted to.
-		for (int i = 0; i < tr["arraySize"].toInt(); i++) {
-			colors.push_back( objectColors[colorIndices[i]] );
-		}
+		//In this case, it would be converted to unsigned int (because that's what the function takes), which gives a warning because the inserted
+		tr["colors"] = RNG.sample(arraySize, objectColors, false);
 
-		tr["colors"] = colors;
-		unsigned int newColorIndex = colorIndices[ tr["arraySize"].toInt() ];
-
-		tr["locations"] = RNG.sample( tr["arraySize"].toInt(), objectLocations, false );
+		tr["locations"] = RNG.sample(arraySize, objectLocations, false);
 
 		tr["changeTrial"] = (bool)changeTrial[trial]; //Cast changeTrial to bool so that it will be stored
 			//by the data frame as a boolean value, which means you won't get warnings when extracting the
 			//value from the cell as bool.
+
 		if (changeTrial[trial]) {
-			tr["changedObjectIndex"] = (int)RNG.randomInt( 0, tr["arraySize"].toInt() - 1 ); //Store explicitly as int
-			tr["newObjectColor"] = objectColors[ newColorIndex ];
+			tr["changedObjectIndex"] = RNG.randomInt(0, arraySize - 1);
+
+			//Here, we need to get a vector of ofColors out, so we use tr["colors"].toVector<ofColor>()
+			tr["newObjectColor"] = RNG.sampleExclusive(objectColors, tr["colors"].toVector<ofColor>());
+		} else {
+			tr["changedObjectIndex"] = -1;
+			tr["newObjectColor"] = backgroundColor;
 		}
 		
 		trialDf.appendRow( tr );
@@ -209,14 +217,11 @@ void generateTrials (int trialCount) {
 
 }
 
-void drawFixation (void) {
-	ofBackground( backgroundColor );
-
-	ofPoint centerpoint = Disp.getCenter();
+void drawFixation(void) {
+	ofBackground(backgroundColor);
 
 	ofSetColor(ofColor(255));
-	Draw::line(ofPoint(centerpoint.x - 10, centerpoint.y), ofPoint(centerpoint.x + 10, centerpoint.y), 3);
-	Draw::line(ofPoint(centerpoint.x, centerpoint.y - 10), ofPoint(centerpoint.x, centerpoint.y + 10), 3);
+	Draw::fixationCross(Disp.getCenter(), 30, 5);
 }
 
 void drawBlank (void) {

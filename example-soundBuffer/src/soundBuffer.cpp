@@ -31,8 +31,8 @@ void runExperiment (void) {
 	//for more information.
 	CX_SoundStream::Configuration config;
 
-	config.api = RtAudio::Api::WINDOWS_DS; //Use Windows Direct Sound (more likely to do work at all than ASIO).
-		//However, ASIO is preferred. If your sound card supports ASIO, use it.
+	config.api = RtAudio::Api::WINDOWS_DS; //Use Windows Direct Sound (more likely to work at all than ASIO).
+		//However, ASIO is preferred due to lower latency. If your sound card supports ASIO, use it.
 		//Of course, if you are not on Windows, use one of the APIs for your OS. You can see
 		//which APIs are available for your OS by using:
 		//cout << CX_SoundStream::convertApisToString( CX_SoundStream::getCompiledApis() ) << endl;
@@ -50,6 +50,7 @@ void runExperiment (void) {
 		//if available. If not, the closest rate below will be chosen.
 
 	config.bufferSize = 4096; //Bigger buffers mean fewer audio glitches and more latency.
+
 	config.streamOptions.numberOfBuffers = 4; //More buffers means fewer audio glitches and more latency.
 		//Not all APIs allow you to change the number of buffers, in which case this setting will have no effect.
 
@@ -90,8 +91,8 @@ void runExperiment (void) {
 	//We can do some things to the sounds in CX_SoundBuffers, like change their speed:
 	duck.multiplySpeed(2);
 
-	//player.setSoundBuffer( &duck ); //This does not need to be called again because the 
-		//player already has a pointer to the duck sound.
+	//This does not need to be called again here because the player already has a pointer to the duck sound.
+	//player.setSoundBuffer( &duck ); 
 
 	cout << "Playing a fast duck (2x speed; not pitch corrected)" << endl;
 	player.play();
@@ -102,7 +103,7 @@ void runExperiment (void) {
 	//Slow the duck down again
 	duck.multiplySpeed(.5);
 	
-	//Here a compound sound composed of a cow followed by a duck (after 6 seconds).
+	//Here we make a compound sound composed of a cow followed by a duck (after 6 seconds).
 	//If you want to present several auditory stimuli one after the other
 	//with known offsets, this is the way to do so. By combining the sounds
 	//into a single audio stream, sounds are essentially guaranteed to come
@@ -121,11 +122,11 @@ void runExperiment (void) {
 	//A more complex example:
 	//The cow and duck files are monophonic. Here, setChannelCount is used to
 	//extend the sounds to 2 channels (i.e. stereo), then multiplyAmplitudeBy() is
-	//used to mute one of the channels. Finally, the compound sound has the
-	//panned duck sound added in twice.
+	//used to mute one of the channels, which has the effect of panning the sounds. 
+	//Finally, the compound sound has the panned duck sound added in twice.
 
 	CX_SoundBuffer rightCow = cow; //Copy the cow, because it will be modified.
-	rightCow.setChannelCount(2); //Make the cow stereo. This copies the data from oen channel to both new channels.
+	rightCow.setChannelCount(2); //Make the cow stereo from mono. This copies the data from one channel to both new channels.
 	rightCow.multiplyAmplitudeBy(0, 0); //Mute channel 0
 
 	CX_SoundBuffer leftDuck = duck;

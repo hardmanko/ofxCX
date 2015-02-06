@@ -56,7 +56,7 @@ void runExperiment (void) {
 	Log.notice() << "Instructions: Press \'s\' for same, \'d\' for different. Press escape to quit.";
 	Log.flush();
 
-	//trialIndex is a global variable
+	//trialIndex is a global variable, so its value is just being set here.
 	for (trialIndex = 0; trialIndex < trials.size(); trialIndex++) {
 		drawStimuli();
 		presentStimuli();
@@ -71,8 +71,7 @@ void runExperiment (void) {
 
 	Log.notice() << "Experiment complete: exiting...";
 	Log.flush();
-	ofSleepMillis(3000);
-
+	Clock.sleep(3000);
 }
 
 void drawStimuli(void) {
@@ -100,10 +99,8 @@ void drawStimuli(void) {
 	//The duration given for the last slide must be > 0, but is otherwise ignored.
 	//The last slide has an infinite duration: Once it is presented, it will stay
 	//on screen until something else is drawn (i.e. the slide presenter does not
-	//remove it from the screen after its duration is complete). If this is confusing
-	//to you, consider the question of what the slide presenter should replace the
-	//last slide with that will always be correct.
-	SlidePresenter.beginDrawingNextSlide(.001, "test");
+	//remove it from the screen after its duration is complete).
+	SlidePresenter.beginDrawingNextSlide(1, "test");
 	drawTestArray(trials.at(trialIndex));
 	SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
 
@@ -146,7 +143,7 @@ void getResponse(void) {
 					//this case, that is easy to do because the SlidePresenter tracks that information for us.
 					//The last slide (given by getSlides().back()) has the slide presentation time stored in
 					//the actualSlideOnset member.
-					CX_Micros testArrayOnset = SlidePresenter.getSlides().back().actual.startTime;
+					CX_Micros testArrayOnset = SlidePresenter.getSlideByName("test").actual.startTime;
 					//One you have the onset time of the test array, you can subtract that from the time
 					//of the response, giving the "response time" (better known as response latency).
 					trials.at(trialIndex).responseLatency = keyEvent.time - testArrayOnset;
@@ -210,23 +207,23 @@ vector<TrialData_t> generateTrials (int trialCount) {
 		TrialData_t tr;
 		tr.arraySize = 4;
 
-		//RNG is an instance of CX_RandomNumberGenerator that is instantiated for you. It is useful for a variety of randomization stuff.
-		//This version of shuffleVector() returns a shuffled copy of the argument without changing the argument.
-		vector<int> colorIndices = RNG.shuffleVector(Util::intVector<int>(0, objectColors.size() - 1));
+		//This randomly picks tr.arraySize colors from objectColors without replacement.
+		//RNG is the global Random Number Generator object that is useful for a wide variety of randomization stuff.
+		tr.colors = RNG.sample(tr.arraySize, objectColors, false);
 		
-		for (int i = 0; i < tr.arraySize; i++) {
-			tr.colors.push_back( objectColors[colorIndices[i]] );
-		}
-
-		//This randomly picks tr.arraySize locations from objectLocations without replacement.
 		tr.locations = RNG.sample(tr.arraySize, objectLocations, false);
 
 		tr.changeTrial = changeTrial[trial];
+
 		if (tr.changeTrial) {
-			//randomInt() returns an unsigned int from the given range (including both endpoints).
-			tr.changedObjectIndex = RNG.randomInt(0, tr.arraySize - 1); 
-			tr.newColor = objectColors[colorIndices.at(tr.arraySize)]; //The color at colorIndices.at(tr.arraySize) is past the end
-				//of the colors sampled for the stimuli, so it can be used for the changed stimulus
+
+			//If something is going to change, we have to pick which object will change.
+			//RNG.randomInt() returns an unsigned int from the given range (including both endpoints).
+			tr.changedObjectIndex = RNG.randomInt(0, tr.arraySize - 1);
+
+			//For the new color, sample 1 color from objectColors, excluding any of 
+			//the colors already selected for the trial (the 1 is implicit).
+			tr.newColor = RNG.sampleExclusive(objectColors, tr.colors); 
 		} else {
 			//You don't have to set the newColor or the changedObjectIndex for a no-change trial because there is no change and they won't be used.
 			tr.changedObjectIndex = -1; //But we'll set them anyway to unreasonable values just to make sure they aren't mistaken for real values.
@@ -251,11 +248,8 @@ example for more examples.
 void drawFixation (void) {
 	ofBackground( backgroundColor );
 
-	ofPoint centerpoint = Disp.getCenter();
-
 	ofSetColor(ofColor(255));
-	Draw::line(ofPoint(centerpoint.x - 10, centerpoint.y), ofPoint(centerpoint.x + 10, centerpoint.y), 3);
-	Draw::line(ofPoint(centerpoint.x, centerpoint.y - 10), ofPoint(centerpoint.x, centerpoint.y + 10), 3);
+	Draw::fixationCross(Disp.getCenter(), 30, 5);
 }
 
 void drawBlank (void) {
