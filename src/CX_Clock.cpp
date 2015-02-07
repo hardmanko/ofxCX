@@ -26,18 +26,19 @@ Depending on the number of iterations, this function may be considered blocking.
 estimate. 
 \return A string containing some information about the precision of the clock.
 */
-std::string CX_Clock::precisionTest (unsigned int iterations) {
+CX_Clock::PrecisionTestResults CX_Clock::precisionTest(unsigned int iterations) {
 	std::vector<long long> durations(iterations);
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
+		//Get two timestamps with as little code in between as possible.
 		long long t1 = _impl->nanos();
 		long long t2 = _impl->nanos();
 
 		durations[i] = t2 - t1;
 	}
 
-	long long maxDifference = 0;
-	long long minDifference = std::numeric_limits<long long>::max();
+	long long maxDuration = 0;
+	long long minDuration = std::numeric_limits<long long>::max();
 	long long minNonzeroDuration = std::numeric_limits<long long>::max();
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
@@ -45,12 +46,12 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 		long long duration = durations[i];
 		durations[i] = duration;
 
-		if (duration > maxDifference) {
-			maxDifference = duration;
+		if (duration > maxDuration) {
+			maxDuration = duration;
 		}
 
-		if (duration < minDifference) {
-			minDifference = duration;
+		if (duration < minDuration) {
+			minDuration = duration;
 		}
 
 		if (duration != 0 && duration < minNonzeroDuration) {
@@ -61,16 +62,26 @@ std::string CX_Clock::precisionTest (unsigned int iterations) {
 	if (minNonzeroDuration > 1000000) {
 		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
 			"millisecond precision. Observed tick period of the system clock is " << (double)minNonzeroDuration / 1000000.0 << " milliseconds. "
-			"See CX_Clock::setImplementation() for information about using a different underlying clock implementation.";
+			"See CX_Clock::setImplementation() for information about using a different clock source than the default one.";
+	} else {
+		CX::Instances::Log.notice("CX_Clock") << "Clock precision test passed: Precision is better than 1 ms.";
 	}
+
+	PrecisionTestResults res;
 
 	std::stringstream ss;
 	ss << iterations << " iterations of a clock precision test gave the following results: \n" <<
 		"Minimum nonzero duration: " << minNonzeroDuration << " ns" << endl <<
-		"Smallest time step: " << minDifference << " ns" << endl <<
-		"Largest time step: " << maxDifference << " ns" << endl;
+		"Smallest time step: " << minDuration << " ns" << endl <<
+		"Largest time step: " << maxDuration << " ns" << endl;
 
-	return ss.str();
+	res.summaryString = ss.str();
+
+	res.minNonzeroDuration = CX_Nanos(minNonzeroDuration);
+	res.minDuration = CX_Nanos(minDuration);
+	res.maxDuration = CX_Nanos(maxDuration);
+
+	return res;
 }
 
 /*! Set the underlying clock implementation used by this instance of CX_Clock. You would

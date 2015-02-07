@@ -104,11 +104,14 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
+	//When checking the timing of things, also make sure to try it in full screen mode, because
+	//timing errors happen a lot more when experiments is windowed rather than full screen.
 	Disp.setFullscreen(false);
+
 	if (Disp.isFullscreen()) {
+		//If going to full screen, sometimes its good to wait a little while for things to settle before drawing stuff.
 		Clock.sleep(CX_Seconds(1));
 	}
-	Disp.useHardwareVSync(true);
 
 	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
 	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
@@ -126,6 +129,8 @@ void runExperiment(void) {
 
 	generateTrials();
 
+	//In this example, more of the configuration settings for the slide presenter are used.
+	//See the documentation for CX_SlidePresenter::Configuration for more information.
 	CX_SlidePresenter::Configuration config;
 	config.display = &Disp;
 	config.swappingMode = CX_SlidePresenter::SwappingMode::SINGLE_CORE_BLOCKING_SWAPS;

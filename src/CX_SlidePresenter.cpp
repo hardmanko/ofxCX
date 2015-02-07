@@ -24,11 +24,11 @@ bool CX_SlidePresenter::setup(CX_Display *display) {
 
 /*! Set up the slide presenter using the given configuration.
 \param config The configuration to use.
-\return False if there was an error during setup, in which case a message will be logged.
+\return `false` if there was an error during setup, in which case a message will be logged, `true` otherwise.
 */
 bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	if (config.display == nullptr) {
-		CX::Instances::Log.error("CX_SlidePresenter") << "setup(): display is a null pointer. Did you forget to set it to point to a CX_Display?";
+		CX::Instances::Log.error("CX_SlidePresenter") << "setup(): config.display is a null pointer. Did you forget to set it to point to a CX_Display?";
 		return false;
 	}
 
@@ -41,13 +41,13 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 			" to verify that all drawing operations have completed by a certain point of time. Typically, that they have completed by the"
 			" time at which the front and back buffers are swapped, bringing the new stimulus onscreen. Without fence sync, there is no"
 			" way for the slide presenter to know if the drawing has completed by swap time, potentially allowing vertical tearing to go"
-			" unnoticed";
+			" unnoticed by software.";
 	}
 
 	if (_config.preSwapCPUHoggingDuration > _config.display->getFramePeriod()) {
 		CX::Instances::Log.warning("CX_SlidePresenter") << "setup(): preSwapCPUHoggingDuration was set to a value greater than the frame period. "
-			"This can result in slides being swapped in one frame early. The frame period is " << _config.display->getFramePeriod() << " and the requestd preSwapCPUHoggingDuration was " <<
-			_config.preSwapCPUHoggingDuration << ".";
+			"This can result in slides being swapped in one frame early. The frame period is " << _config.display->getFramePeriod() << 
+			" and the requestd preSwapCPUHoggingDuration was " << _config.preSwapCPUHoggingDuration << ".";
 	}
 
 	return true;
@@ -618,6 +618,18 @@ CX_DataFrame CX_SlidePresenter::getLastPresentationInformation(void) const {
 	return df;
 }
 
+/*! Updates the state of the slide presenter. If the slide presenter is presenting stimuli,
+update() must be called very regularly (at least once per millisecond) in order for the slide
+presenter to function. If slide presentation is stopped, you do not need to call update() */
+void CX_SlidePresenter::update(void) {
+	_waitSyncCheck();
+
+	switch (_config.swappingMode) {
+	case SwappingMode::MULTI_CORE: return _multiCoreUpdate();
+	case SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();
+		//case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS: return _singleCoreThreadedUpdate();
+	}
+}
 
 void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 	//This is currently not a supported mode. with more work, it might be worthwhile.
@@ -639,41 +651,18 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 
 		if (this->_hasSwappedSinceLastCheck()) {
 
-			CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
+			CX_Millis slideStartTime = _config.display->getLastSwapTime();
 
-			CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(_currentSlide).name <<
-				"\" in progress. Started at " << currentSlideOnset;
+			_postSwapSlideProcessing(_currentSlide, slideStartTime, -1);
 
-			_slides.at(_currentSlide).presentationStatus = Slide::PresStatus::IN_PROGRESS;
-			//_slides.at(_currentSlide).actual.startFrame = currentFrameNumber; //Don't have frame number information.
-			_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
-
-			if (_currentSlide == 0) {
-				//_slides.at(0).intended.startFrame = currentFrameNumber;
-				_slides.at(0).intended.startTime = currentSlideOnset; //This is sort of weird, but true.
-			}
-
-			if (_currentSlide > 0) {
-				_finishPreviousSlide();
-			}
-
-			if (_currentSlide == (_slides.size() - 1)) {
-				_handleFinalSlide();
-				if (!_presentingSlides) {
-					return;
-				}
-			}
-
-			//If there is a slide after the current one, prepare it. This MUST come after _handleFinalSlide(),
-			//because if new slides are added, this has to happen for them.
+			//If there is a slide after the current one, 
 			if ((_currentSlide + 1) < _slides.size()) {
-				_prepareNextSlide();
 
 				_currentSlide++;
 				_hoggingStartTime = _slides.at(_currentSlide).intended.startTime - _config.preSwapCPUHoggingDuration;
 				CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " hogging start time: " << _hoggingStartTime;
 
-				_renderCurrentSlide(); //render the next slide. You can do this because you know the buffers will not swap automatically
+				_renderCurrentSlide(); //render the next slide. You can do this because you know the buffers will not swap until told to
 			}
 		}
 	} else if (_synchronizing) {
@@ -703,36 +692,12 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 
 				_config.display->swapBuffers();
 
-				CX_Millis currentSlideOnset = CX::Instances::Clock.now();
+				CX_Millis slideStartTime = CX::Instances::Clock.now();
 
-				CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(_currentSlide).name <<
-					"\" in progress. Started at " << currentSlideOnset;
+				_postSwapSlideProcessing(_currentSlide, slideStartTime, -1);
 
-				_slides.at(_currentSlide).presentationStatus = Slide::PresStatus::IN_PROGRESS;
-				_slides.at(_currentSlide).actual.startFrame = 0; //Don't have frame number information.
-				_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
-
-				if (_currentSlide == 0) {
-					_slides.at(0).intended.startFrame = 0;
-					_slides.at(0).intended.startTime = currentSlideOnset; //This is sort of weird, but true.
-				}
-
-				if (_currentSlide > 0) {
-					_finishPreviousSlide();
-				}
-
-				if (_currentSlide == (_slides.size() - 1)) {
-					_handleFinalSlide();
-					if (!_presentingSlides) {
-						return;
-					}
-				}
-
-				//If there is a slide after the current one, prepare it. This MUST come after _handleFinalSlide(),
-				//because if new slides are added, this has to happen for them.
+				//If there is a following slide, move on to it and render it.
 				if ((_currentSlide + 1) < _slides.size()) {
-					_prepareNextSlide();
-
 					_currentSlide++;
 					_hoggingStartTime = _slides.at(_currentSlide).intended.startTime - _config.preSwapCPUHoggingDuration;
 					CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << _currentSlide << " hogging start time: " << _hoggingStartTime;
@@ -743,19 +708,22 @@ void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
 		}
 	} else if (_synchronizing) {
 
-		//This is kind of a shitty hack to force v-sync by swapping the buffers a few times
+		//This is kind of a shitty hack to force v-sync by swapping the buffers a few times.
+		//This should probably be configurable by the user in some way.
 		CX_Millis syncSwapStart = CX::Instances::Clock.now();
 		CX_Millis swapStart;
+		CX_Millis estimatedFramePeriod = _config.display->getFramePeriod();
 		do {
 			swapStart = CX::Instances::Clock.now();
 			_config.display->swapBuffers();
 			//CX::Instances::Log.notice("CX_SlidePresenter") << "swapped during sync";
 
-			//Don't wait more than 100 ms
-			if (CX::Instances::Clock.now() - syncSwapStart > CX_Millis(100)) {
+			//Don't wait more than 60 ms
+			if (CX::Instances::Clock.now() - syncSwapStart > CX_Millis(60)) {
 				break;
 			}
-		} while (CX::Instances::Clock.now() - swapStart < _config.display->getFramePeriod() - CX_Millis(1));
+		} while ((CX::Instances::Clock.now() - swapStart) < (estimatedFramePeriod - CX_Millis(2)));
+		//End shitty hack
 
 		_currentSlide = 0;
 		_renderCurrentSlide();
@@ -779,36 +747,9 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 		Slide::PresStatus status = _slides.at(_currentSlide).presentationStatus;
 
 		if ((status == Slide::PresStatus::SWAP_PENDING) || (status == Slide::PresStatus::RENDERING)) {
-			CX_Millis currentSlideOnset = _config.display->getLastSwapTime();
+			CX_Millis slideStartTime = _config.display->getLastSwapTime();
 
-			CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(_currentSlide).name <<
-				"\" in progress. Started at " << currentSlideOnset;
-
-			_slides.at(_currentSlide).presentationStatus = Slide::PresStatus::IN_PROGRESS;
-			_slides.at(_currentSlide).actual.startFrame = currentFrameNumber;
-			_slides.at(_currentSlide).actual.startTime = currentSlideOnset;
-
-			if (_currentSlide == 0) {
-				_slides.at(0).intended.startFrame = currentFrameNumber;
-				_slides.at(0).intended.startTime = currentSlideOnset; //This is sort of weird, but true.
-			}
-
-			if (_currentSlide > 0) {
-				_finishPreviousSlide();
-			}
-
-			if (_currentSlide == (_slides.size() - 1)) {
-				_handleFinalSlide();
-				if (!_presentingSlides) {
-					return;
-				}
-			}
-
-			//If there is a slide after the current one, prepare it. This MUST come after _handleFinalSlide(),
-			//because if new slides are added, this has to happen for them.
-			if ((_currentSlide + 1) < _slides.size()) {
-				_prepareNextSlide();
-			}
+			this->_postSwapSlideProcessing(_currentSlide, slideStartTime, currentFrameNumber);
 		}
 
 		//Is there is a slide after the current one?
@@ -829,16 +770,38 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 	}
 }
 
-/*! Updates the state of the slide presenter. If the slide presenter is presenting stimuli,
-update() must be called very regularly (at least once per millisecond) in order for the slide
-presenter to function. If slide presentation is stopped, you do not need to call update() */
-void CX_SlidePresenter::update(void) {
-	_waitSyncCheck();
+//This function does no slide rendering; each type of updating has to do that at the right time.
+//This just sets up correct state of the slide presentation and tracks timing issues.
+void CX_SlidePresenter::_postSwapSlideProcessing(unsigned int currentSlide, CX_Millis slideStartTime, unsigned int slideStartFrame) {
+	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide \"" << _slides.at(currentSlide).name <<
+		"\" in progress. Started at " << slideStartTime;
 
-	switch (_config.swappingMode) {
-	case SwappingMode::MULTI_CORE: return _multiCoreUpdate();
-	case SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();
-	//case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS: return _singleCoreThreadedUpdate();
+	_slides.at(currentSlide).presentationStatus = Slide::PresStatus::IN_PROGRESS;
+	_slides.at(currentSlide).actual.startFrame = slideStartFrame;
+	_slides.at(currentSlide).actual.startTime = slideStartTime;
+
+	if (currentSlide == 0) {
+		_slides.at(0).intended.startFrame = slideStartFrame;
+		_slides.at(0).intended.startTime = slideStartTime; //This is sort of weird, but true.
+	}
+
+	if (currentSlide > 0) {
+		_finishPreviousSlide();
+	}
+
+	_processSlidePresentedCallback(currentSlide);
+
+	if (currentSlide == (_slides.size() - 1)) {
+		_handleFinalSlide();
+		if (!_presentingSlides) {
+			return;
+		}
+	}
+
+	//If there is a slide after the current one, prepare it. This MUST come after _handleFinalSlide() and _processSlidePresentedCallback(),
+	//because if new slides are added in either of those functions, this has to happen for them.
+	if ((_currentSlide + 1) < _slides.size()) {
+		_prepareNextSlide();
 	}
 }
 
@@ -859,6 +822,22 @@ void CX_SlidePresenter::_finishPreviousSlide(void) {
 	previousSlide.actual.frameCount = _slides.at(_currentSlide).actual.startFrame - previousSlide.actual.startFrame;
 }
 
+
+void CX_SlidePresenter::_processSlidePresentedCallback(unsigned int slideIndex) {
+	if (_slides.at(slideIndex).slidePresentedCallback == nullptr) {
+		return;
+	}
+
+	unsigned int previousSlideCount = _slides.size();
+
+	_slides.at(slideIndex).slidePresentedCallback();
+
+	//Start from the first new slide and go to the last new slide. This is not strictly neccessary.
+	for (unsigned int i = previousSlideCount; i < _slides.size(); i++) {
+		_slides.at(i).presentationStatus = Slide::PresStatus::NOT_STARTED;
+	}
+}
+
 void CX_SlidePresenter::_handleFinalSlide(void) {
 
 	unsigned int previousSlideCount = _slides.size();
@@ -867,6 +846,7 @@ void CX_SlidePresenter::_handleFinalSlide(void) {
 		CX_SlidePresenter::FinalSlideFunctionArgs info;
 		info.instance = this;
 		info.currentSlideIndex = _currentSlide;
+		info.currentSlideName = _slides.at(_currentSlide).name;
 
 		_config.finalSlideCallback(info);
 	}

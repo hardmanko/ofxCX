@@ -277,8 +277,6 @@ namespace CX {
 		void _listenForEvents (bool listen);
 		bool _listeningForEvents;
 
-		std::vector<int> _exitChord;
-
 	};
 
 	std::ostream& operator<< (std::ostream& os, const CX_Keyboard::Event& ev);

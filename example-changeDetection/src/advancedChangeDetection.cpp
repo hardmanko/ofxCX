@@ -80,14 +80,12 @@ void drawStimuli (void) {
 	SlidePresenter.beginDrawingNextSlide(1, "test");
 	drawTestArray();
 	SlidePresenter.endDrawingCurrentSlide();
-
-	SlidePresenter.startSlidePresentation();
 }
 
 void presentStimuli(void) {
-	while (SlidePresenter.isPresentingSlides()) {
-		SlidePresenter.update();
-	}
+
+	//In the basic example, there were a few steps here, but presentSlides() does all of them for you.
+	SlidePresenter.presentSlides();
 
 	Input.pollEvents();
 	Input.Keyboard.clearEvents();

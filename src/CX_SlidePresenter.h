@@ -46,7 +46,7 @@ namespace CX {
 		Input.pollEvents(); //It's also a good idea to poll for input events constantly.
 	}
 
-	//Or you could just call this function, which does the updating and polling operations for you.
+	//Or you could just call this function, which does the updating and input polling operations for you.
 	//slidePresenter.presentSlides();
 	\endcode
 
@@ -102,11 +102,13 @@ namespace CX {
 		struct FinalSlideFunctionArgs {
 			FinalSlideFunctionArgs(void) :
 				instance(nullptr),
-				currentSlideIndex(0)
+				currentSlideIndex(0),
+				currentSlideName("")
 			{}
 
 			CX_SlidePresenter *instance; //!< A pointer to the CX_SlidePresenter that called the user function.
 			unsigned int currentSlideIndex; //!< The index of the slide that is currently being presented.
+			std::string currentSlideName; //<! The name of the slide that is currently being presented.
 		};
 
 		/*! This struct contains information about errors that were detected during slide presentation.
@@ -143,7 +145,7 @@ namespace CX {
 		/*! This struct is used for configuring a CX_SlidePresenter. See CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration&). */
 		struct Configuration {
 			Configuration(void) :
-				display(nullptr),
+				display(&CX::Instances::Disp),
 				finalSlideCallback(nullptr),
 				errorMode(CX_SlidePresenter::ErrorMode::PROPAGATE_DELAYS),
 				deallocateCompletedSlides(false),
@@ -212,18 +214,22 @@ namespace CX {
 			Slide() :
 				name(""),
 				drawingFunction(nullptr),
+				slidePresentedCallback(nullptr),
 				presentationStatus(PresStatus::NOT_STARTED)
 			{}
 
 			std::string name; //!< The name of the slide. Set by the user during slide creation.
 
 			ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
-							   If drawingFunction points to a user function, `framebuffer` will not be drawn. */
-			std::function<void(void)> drawingFunction; /*!< \brief Pointer to a user function that will be called to draw the slide.
-										   If this points to a user function, it overrides `framebuffer`. The drawing function is
-										   not required to call ofBackground() or otherwise clear the display before drawing, which
-										   allows you to do what is essentially single-buffering using the back buffer as the framebuffer.
-										   However, if you want a blank framebuffer, you will have to clear it manually. */
+							   If drawingFunction points to a function, `framebuffer` will not be drawn and drawingFunction will be called instead. */
+
+			/*! \brief Pointer to a user function that will be called to draw the slide.
+			If this points to a function, any data in `framebuffer` will be ignored. */
+			std::function<void(void)> drawingFunction;
+
+			/*! \brief Pointer to a user function that will be called right after slide is presented,
+			i.e. right after the back buffer containing the slide contents is swapped into the front buffer. */
+			std::function<void(void)> slidePresentedCallback;
 
 			PresStatus presentationStatus; //!< Presentation status of the slide. This should not be modified by the user.
 
@@ -237,9 +243,9 @@ namespace CX {
 		};
 
 
-		CX_SlidePresenter (void);
+		CX_SlidePresenter(void);
 
-		bool setup(CX_Display *display);
+		bool setup(CX_Display *display = &CX::Instances::Disp);
 		bool setup(const CX_SlidePresenter::Configuration &config);
 		void update(void);
 
@@ -305,6 +311,9 @@ namespace CX {
 
 		bool _hasSwappedSinceLastCheck(void);
 		uint64_t _frameNumberOnLastSwapCheck;
+
+		void _processSlidePresentedCallback(unsigned int slideIndex);
+		void _postSwapSlideProcessing(unsigned int currentSlide, CX_Millis startTime, unsigned int startFrame);
 
 	};
 }

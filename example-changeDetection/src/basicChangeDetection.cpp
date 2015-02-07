@@ -103,13 +103,13 @@ void drawStimuli(void) {
 	SlidePresenter.beginDrawingNextSlide(1, "test");
 	drawTestArray(trials.at(trialIndex));
 	SlidePresenter.endDrawingCurrentSlide(); //After drawing the last slide, it is good form to call endDrawingCurrentSlide().
+}
+
+void presentStimuli(void) {
 
 	SlidePresenter.startSlidePresentation(); //Once all of the slides are ready to go for the next trial,
 	//call startSlidePresentation() to do just that. The drawn slides will be drawn on the screen for
 	//the specified duration.
-}
-
-void presentStimuli(void) {
 
 	//Check that the slide presenter is still at work (i.e. not yet on the last slide).
 	//As soon as the last slide is presented, isPresentingSlides() will return false.
@@ -120,7 +120,7 @@ void presentStimuli(void) {
 
 	Input.pollEvents(); //Check for any events that were made during encoding and maintenance.
 	Input.Keyboard.clearEvents(); //Then clear all keyboard responses, if any, that were made,
-	//because we are not interested in responses made before the test array is presented.
+		//because we are not interested in responses made before the test array was presented.
 }
 
 void getResponse(void) {

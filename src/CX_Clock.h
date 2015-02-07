@@ -34,11 +34,19 @@ namespace CX {
 	*/
 	class CX_Clock {
 	public:
+
+		struct PrecisionTestResults {
+			std::string summaryString;
+			CX_Millis minNonzeroDuration;
+			CX_Millis minDuration;
+			CX_Millis maxDuration;
+		};
+
 		CX_Clock (void);
 
 		void setImplementation(CX_BaseClockInterface* impl);
 
-		std::string precisionTest(unsigned int iterations);
+		PrecisionTestResults precisionTest(unsigned int iterations);
 
 		CX_Millis now(void);
 

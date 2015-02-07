@@ -12,27 +12,30 @@ namespace Private {
 void setupCX(void) {
 
 	ofSetWorkingDirectoryToDefault();
+	ofSetEscapeQuitsApp(false);
 
 	CX::Instances::Log.captureOFLogMessages();
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
 	CX::Instances::Log.level(CX_LogLevel::LOG_NOTICE, "ofShader");
+	CX::Instances::Log.level(CX_LogLevel::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
+		//are really verbose when allocated and it is a lot of gibberish.
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
 
 	bool openedSucessfully = reopenWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
 
 	if (openedSucessfully) {
-		CX::Instances::Input.pollEvents(); //So that the window is at least minimally responding.
-		//This must happen after the window is configured because it relies on GLFW.
+		CX::Instances::Input.pollEvents(); //Do this so that the window is at least minimally responding and doesn't get killed by the OS.
+			//This must happen after the window is configured because it relies on GLFW.
 
 		CX::Instances::Disp.setup();
+		CX::Instances::Disp.useHardwareVSync(true);
+		CX::Instances::Disp.estimateFramePeriod(500);
+
+		CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period: " << CX::Instances::Disp.getFramePeriod() << " ms.";
 
 		Clock.precisionTest(100000);
-
-		std::vector<int> defaultExitChord;
-		defaultExitChord.push_back(OF_KEY_RIGHT_ALT);
-		defaultExitChord.push_back(OF_KEY_F4);
-		CX::Instances::Input.Keyboard.setExitChord(defaultExitChord);
+		
 	}
 
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;

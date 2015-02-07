@@ -4,7 +4,7 @@
 the current stimulus is the same as the stimulus that was presented N stimuli back. Assume that in
 a 2-back task, the stimulus sequence is the letters (presented one at a time):
 
-ABCACBBAB
+A B C A C B B A B
 
 The second C and the last B would both be targets that are the same as the letter 2 letters back.
 None of the other letters are targets. In an N-Back task, the number of stimuli can be very high

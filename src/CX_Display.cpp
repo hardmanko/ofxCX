@@ -22,21 +22,17 @@ CX_Display::CX_Display(void) :
 CX_Display::~CX_Display(void) {
 	_swapThread->stopThread();
 	_swapThread->waitForThread(false);
-	delete _swapThread;
 }
 
 /*! Set up the display. Must be called for the display to function correctly. */
 void CX_Display::setup(void) {
-	ofSetLogLevel("ofFbo", OF_LOG_WARNING); //It isn't clear that this should be here, but the fbos
-		//are really verbose when allocated and it is a lot of gibberish.
 
 	_renderer = ofGetGLProgrammableRenderer();
 
-	_swapThread = new Private::CX_VideoBufferSwappingThread(); //This is a work-around for some stupidity in oF or Poco (can't tell which) where
-		//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes mean I have no idea
-		//what too early means) or else there will be a crash.
-
-	estimateFramePeriod(CX_Millis(500));
+	//Making the swap thread here is a work-around for some stupidity in oF or Poco (can't tell which) where
+	//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes 
+	//mean I have no idea what too early means) or else there will be a crash.
+	_swapThread = std::unique_ptr<Private::CX_VideoBufferSwappingThread>(new Private::CX_VideoBufferSwappingThread()); 
 
 }
 
@@ -126,7 +122,7 @@ void CX_Display::setAutomaticSwapping(bool autoSwap) {
 		}
 	} else {
 		if (_swapThread->isThreadRunning()) {
-			_swapThread->startThread();
+			_swapThread->stopThread();
 			_swapThread->waitForThread();
 		}
 	}
@@ -135,7 +131,7 @@ void CX_Display::setAutomaticSwapping(bool autoSwap) {
 /*! Determine whether the display is configured to automatically swap the front and back buffers
 every frame.
 See \ref setAutomaticSwapping for more information. */
-bool CX_Display::isAutomaticallySwapping(void) const{
+bool CX_Display::isAutomaticallySwapping(void) const {
 	return _swapThread->isThreadRunning();
 }
 
@@ -381,7 +377,7 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 
 
 	} else {
-		CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough swaps occurred during the " << 
+		CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough buffer swaps occurred during the " << 
 			estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 50 ms), "
 			"you should try making it longer.";
 	}

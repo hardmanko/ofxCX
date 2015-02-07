@@ -144,18 +144,6 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 }
 
 
-
-/*! Change the set of keys that must be pressed at once for the program to close.
-By default, pressing `right-alt + F4` will exit the program.
-\param chord A vector of keys that, when held simulatenously, will cause the program to exit.
-\note You must be exact about modifier keys: Using, for example, OF_KEY_SHIFT does nothing.
-You must use OF_KEY_LEFT_SHIFT or OF_KEY_RIGHT_SHIFT.
-*/
-void CX_Keyboard::setExitChord(std::vector<int> chord) {
-	ofSetEscapeQuitsApp(false);
-	_exitChord = chord;
-}
-
 /*! Checks whether the given key chord is held, i.e. are all of the keys in `chord` held
 right now.
 \return `false` if `chord` is empty or if not all of the keys in `chord` are held. `true` if all of
@@ -268,10 +256,6 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		break;
 	case CX_Keyboard::REPEAT:
 		break;
-	}
-
-	if (isChordHeld(_exitChord)) {
-		std::exit(0);
 	}
 
 	_keyEvents.push_back(ev);
