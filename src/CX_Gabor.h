@@ -98,6 +98,8 @@ public:
 		static std::string triangle; //!< Produces a triangle wave.
 	};
 
+	/*! This struct contains several functions that used for calculating
+	the envelope containing the gabor patch (e.g. a fall-off away from the center). */
 	struct Envelope {
 		static std::string none; //!< Does nothing to affect the wave pattern.
 		static std::string circle; //!< Creates a circle, clipped at a radius set by the control parameter.
@@ -123,13 +125,16 @@ public:
 	ofShader& getShader(void);
 
 	ofPoint center; //!< The center of the gabor.
-	float radius; //!< The maximum radius of the gabor. This behaves slightly differently from using a circle envelope.
 
-	/*! \brief If drawing into a framebuffer that has a different height than the main window, use this to set the
-	height of that framebuffer. If this is less than 0, the height of the current framebuffer will be
-	inferred to be the height of the main window. */
+	/*! The maximum radius of the gabor. The should generally be larger than the (visible) edge of the 
+	envelope that is used. If you have an envelope that should have a smooth (or blended) edge but are 
+	seeing a hard-clipped edge, you should try increasing the radius. */
+	float radius;
+
+	/*! \brief If drawing the gabor into a framebuffer that has a different height than the main window, 
+	use this to set the	height of that framebuffer. If this is less than 0, the height of the current 
+	framebuffer will be	inferred to be the height of the main window. */
 	float fboHeight;
-
 
 	ofFloatColor color1; //!< The first color used in the waveforms. There is no meaning to order to the colors.
 	ofFloatColor color2; //!< The second color used in the waveforms. There is no meaning to order to the colors.

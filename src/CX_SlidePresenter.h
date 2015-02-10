@@ -108,7 +108,7 @@ namespace CX {
 
 			CX_SlidePresenter *instance; //!< A pointer to the CX_SlidePresenter that called the user function.
 			unsigned int currentSlideIndex; //!< The index of the slide that is currently being presented.
-			std::string currentSlideName; //<! The name of the slide that is currently being presented.
+			std::string currentSlideName; //!< The name of the slide that is currently being presented.
 		};
 
 		/*! This struct contains information about errors that were detected during slide presentation.

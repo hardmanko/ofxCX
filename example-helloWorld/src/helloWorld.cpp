@@ -12,8 +12,8 @@ void runExperiment (void) {
 	//Disp is an instance of class CX_Display that is created for you. It is used for drawing on the screen.
 	//Between calls to CX_Display::beginDrawingToBackBuffer() and CX_Display::endDrawingToBackBuffer(),
 	//any functions that draw something will have the result of the drawing put into the back buffer of the video card.
-	//This means that what has been drawn is not on screen now, but will be as soon as the buffers are swapped.
-	//See the Visual Stimuli section in the manual for more information about offscreen buffers.
+	//This means that what has been drawn is not on screen now, but will be as soon as the front and back buffers 
+	//are swapped. See the Visual Stimuli section in the manual for more information about offscreen buffers.
 	Disp.beginDrawingToBackBuffer();
 
 	//The "of" prefix on these functions means that they are from openFrameworks.

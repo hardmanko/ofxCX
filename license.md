@@ -1,4 +1,4 @@
-The code in this repository, with exception of anything within the libs subfolder, is available under the MIT License (https://secure.wikimedia.org/wikipedia/en/wiki/Mit_license). 
+The code in this repository (hardmanko/ofxCX), with exception of anything within the libs subfolder, is available under the MIT License (https://secure.wikimedia.org/wikipedia/en/wiki/Mit_license). 
 Anything within the /libs subfolder is copyright the respective copyright holder under whatever license they chose.
 
 Copyright (c) 2014 Kyle Hardman

@@ -110,7 +110,7 @@ namespace Draw {
 	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html
 	The ofVbo is ready to be drawn without any further processing as in the following code snippet.
 	\code{.cpp}
-	ofVbo colorArc = colorArcToVbo( ***arguments go here*** );
+	ofVbo colorArc = Draw::colorArcToVbo( ***arguments go here*** );
 	colorArc.draw(GL_TRIANGLE_STRIP, 0, colorArc.getNumVertices());
 	\endcode
 	The arguments given to the draw function should be given exactly as in the example, except for
@@ -169,9 +169,8 @@ namespace Draw {
 	}
 
     /*! See CX::Draw::colorWheel(ofPoint, std::vector<ofColor_<T>>, float, float, float) for documentation. 
-	The only difference is that this function returns an ofVbo,
-	which a complicated thing you can learn about here: http://www.openframeworks.cc/documentation/gl/ofVbo.html 
-	The ofFbo is ready to be drawn without any further processing. */
+	The only difference is that this function returns an ofVbo.
+	See CX::Draw::colorArcToVbo() for an example for how to draw the ofVbo. */
 	template <typename T>
 	ofVbo colorWheelToVbo(ofPoint center, std::vector<ofColor_<T>> colors, float radius, float width, float angle) {
 		colors.push_back(colors.front());

@@ -9,10 +9,14 @@
 
 namespace CX {
 	/*! This namespace contains a few complex algorithms that can be difficult to properly implement
-	or are very experiment-specific. */
+	or are very psychology-experiment-specific. */
 	namespace Algo {
-		template <typename T> std::vector<T> generateSeparatedValues(int count, double minDistance, std::function<double(T, T)> distanceFunction, std::function<T(void)> randomDeviate, int maxSequentialFailures = 200);
-		template <typename T> std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors);
+		template <typename dataT, typename distT>
+		std::vector<dataT> generateSeparatedValues(int count, distT minDistance, std::function<distT(dataT, dataT)> distanceFunction,
+												std::function<dataT(void)> randomDeviate, unsigned int maxSequentialFailures, int maxRestarts);
+
+		template <typename T> 
+		std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors);
 
 		/*! This class provides a way to work with Latin squares in a relatively easy way. 
 		\code{.cpp}
@@ -184,74 +188,93 @@ namespace CX {
 /*! This algorithm is designed to deal with the situation in which a number
 of random values must be generated that are each at least some distance from every other
 random value. This is a very generic implementation of this algorithm. It works by taking
-pointers to two functions that work on whatever type of data you are using. The first
-function is a distance function: it returns the distance between two values of the type.
-You can define distance in whatever way you would like. The second function generates 
-random values of the type.
-\tparam <T> The type of data you are working with.
+pointers to two functions that work on whatever type of data you are using. 
+
+The first function is a distance function: it returns the distance between two values of the type.
+You can define distance in whatever way you would like. Distance does not even need to be 
+unidimensional: note that the type of data used for distance is a template parameter. The 
+distance type must have operator<(distT,distT) defined.
+
+The second function generates random values of the type.
+
+
+\tparam <dataT> The type of data you are working with.
+\tparam <distT> The type of distance units used.
+
 \param count The number of values you want to be generated.
 \param minDistance The minimum distance between any two values. This will be compared to the result of distanceFunction.
 \param distanceFunction A function that computes the distance, in whatever units you want, between two values of type T.
 \param randomDeviate A function that generates random values of type T.
-\param maxSequentialFailures The maximum number of times in a row that a newly-generated value is less than minDistance
-from at least one other value. This essentially makes sure that if it is not possible to generate a random value that
-is at least some distance from the others, the algorithm will terminate.
+\param maxSequentialFailures The maximum number of times in a row that a newly-generated value can be less than minDistance
+from at least one other value. If this number of failures is reached, the process will be restarted depending on the setting
+of maxRestarts. This is to help make sure that if the algorithm is having a hard time finding a value that works given the
+other values that have been selected, it doesn't just run forever, but tries over with new values.
+\param maxRestarts If non-negative, the number of times that the algorithm will restart before giving up. If negative,
+the algorithm will never give up. Note that this may result in an infinite loop if it is impossible to get enough samples.
 \return A vector of values. If the function terminated prematurely due to maxSequentialFailures being reached, the
 returned vector will have 0 elements.
 
 \code{.cpp}
-//This example function generates locCount points with both x and y values bounded by minimumValues and maximumValues that 
+//This example function generates locCount points with both x and y values bounded by minimumValues and maximumValues that
 //are at least minDistance pixels from each other.
-std::vector<ofPoint> getObjectLocations(int locCount, double minDistance, ofPoint minimumValues, ofPoint maximumValues) {
-	auto pointDistance = [](ofPoint a, ofPoint b) {
-		return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+std::vector<ofPoint> getObjectLocations(int locCount, float minDistance, ofPoint minimumValues, ofPoint maximumValues) {
+	//pointDistance is an anonymous function that takes two ofPoints as arguments and returns a float.
+	auto pointDistance = [](ofPoint a, ofPoint b) -> float {
+		return a.distance(b);
 	};
 
-	auto randomPoint = [&]() {
+	//randomPoint is an anaonymous function that takes no arguments explicitly, but it captures by reference everything from
+	//the enclosing environment (specifically minimumValues and maximumValues).
+	auto randomPoint = [&]() -> ofPoint {
 		ofPoint rval;
 		rval.x = RNG.randomInt(minimumValues.x, maximumValues.x);
 		rval.y = RNG.randomInt(minimumValues.y, maximumValues.y);
 		return rval;
 	};
 
-	return CX::Algo::generateSeparatedValues<ofPoint>(locCount, minDistance, pointDistance, randomPoint, 1000);
+	return CX::Algo::generateSeparatedValues<ofPoint, float>(locCount, minDistance, pointDistance, randomPoint, 1000, 100);
 }
 
 //Call of example function
 vector<ofPoint> v = getObjectLocations(5, 50, ofPoint(0, 0), ofPoint(400, 400));
 \endcode
 */
-template <typename T>
-std::vector<T> CX::Algo::generateSeparatedValues (int count, double minDistance, std::function<double(T, T)> distanceFunction, 
-						  std::function<T(void)> randomDeviate, int maxSequentialFailures) 
+template <typename dataT, typename distT>
+std::vector<dataT> CX::Algo::generateSeparatedValues(int count, distT minDistance, std::function<distT(dataT, dataT)> distanceFunction,
+													 std::function<dataT(void)> randomDeviate, unsigned int maxSequentialFailures, int maxRestarts)
 {
-	std::vector<T> samples;
-	int sequentialFailures = 0;
+	std::vector<dataT> samples;
+	unsigned int sequentialFailures = 0;
 
-	for (int i = 0; i < count; i++) {
+	while (samples.size() < count) {
+		bool sampleRejected = false;
+		dataT sample = randomDeviate();
 
-		bool failed = false;
-		T sample = randomDeviate();
-
-		for (auto s : samples) {
+		for (dataT& s : samples) {
 			if (distanceFunction(s, sample) < minDistance) {
-				failed = true;
+				sampleRejected = true;
 				break;
 			}
 		}
 
-		if (failed) {
+		if (sampleRejected) {
 			if (++sequentialFailures >= maxSequentialFailures) {
-				CX::Instances::Log.error("CX::Algo::generateSeparatedValues") << "Maximum number of sequential failures reached. Returning an empty vector.";
-				return std::vector<T>();
+				//If maxRestarts is greater than 0, restart. If it's less than 0, restart continuously.
+				if (maxRestarts != 0) {
+					if (maxRestarts < 0) {
+						maxRestarts++;
+					}
+					return generateSeparatedValues(count, minDistance, distanceFunction, randomDeviate, maxSequentialFailures, maxRestarts - 1);
+				} else {
+					CX::Instances::Log.error("CX::Algo::generateSeparatedValues") << "Maximum number of restarts reached. Returning an empty vector.";
+					return std::vector<dataT>();
+				}
 			}
-			i--;
-			continue;
-		}
-		else {
+		} else {
 			sequentialFailures = 0;
 			samples.push_back(sample);
 		}
+
 	}
 
 	return samples;

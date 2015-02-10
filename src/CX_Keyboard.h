@@ -252,7 +252,6 @@ namespace CX {
 		CX_Keyboard::Event waitForKeypress(int key, bool clear = true, bool eraseEvent = false);
 		CX_Keyboard::Event waitForKeypress(std::vector<int> keys, bool clear = true, bool eraseEvent = false);
 
-		void setExitChord(std::vector<int> chord);
 		bool isChordHeld(const std::vector<int>& chord) const;
 
 		void appendEvent(CX_Keyboard::Event ev);

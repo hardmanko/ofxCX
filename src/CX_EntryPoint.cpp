@@ -16,9 +16,8 @@ void setupCX(void) {
 
 	CX::Instances::Log.captureOFLogMessages();
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
-	CX::Instances::Log.level(CX_LogLevel::LOG_NOTICE, "ofShader");
-	CX::Instances::Log.level(CX_LogLevel::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
-		//are really verbose when allocated and it is a lot of gibberish.
+	CX::Instances::Log.level(CX_LogLevel::LOG_NOTICE, "ofShader"); //Try to eliminate some of the shader gobbeldygook.
+
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
 
@@ -36,11 +35,16 @@ void setupCX(void) {
 
 		Clock.precisionTest(100000);
 		
+	} else {
+		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
 	}
 
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
+
 	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
+	CX::Instances::Log.level(CX_LogLevel::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
+		//are really verbose when allocated and it is a lot of gibberish.
 }
 
 void reopenWindow080(CX_WindowConfiguration_t config) {
@@ -66,8 +70,8 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 	The hack: Allocate on a pointer enough memory to store either an ofAppGLFWWindow or a CX_AppWindow.
 	Use placement new to put an ofAppGLFWWindow at that location.
 	Pass that pointer to ofSetupOpenGL. It's an ofAppGLFWWindow, so no problem.
-	The location pointed to by the pointer is now stored in the variable "window" in ofAppRunner.cpp and can do nice things.
-	Now that the location is stored there, destroy the just-opened window.
+	The location pointed to by the pointer is now stored in the variable "window" in ofAppRunner.cpp.
+	Now that the pointer is stored by the "window" variable, destroy the just-opened window.
 	Finally, use placement new to create a CX_AppWindow where the pointer points to.
 	Success!!!
 	*/
@@ -145,13 +149,13 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 		} else if (CX::Util::checkOFVersion(0, 8, 4, false)) {
 			CX::Private::reopenWindow084(config);
 		} else {
-			CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX.";
+			CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX. "
+				"Version 0.8.4 of openFrameworks is recommended.";
 			return false;
 		}
 		CX::Private::glfwContext = glfwGetCurrentContext();
 	} catch (std::exception& e) {
-		CX::Instances::Log.error("CX_EntryPoint") <<
-			"reopenWindow(): Exception caught while setting up window: " << e.what();
+		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window: " << e.what();
 	} catch (...) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window.";
 	}

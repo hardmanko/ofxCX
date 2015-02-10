@@ -25,12 +25,45 @@ in particular the preinstantiated CX::Instances::Log.
 
 namespace CX {
 
-	//Forward declarations of internally used structs
+	//Forward declaration of CX_Logger for CX_LogMessage
+	class CX_Logger;
+	enum class CX_LogLevel;
+
 	namespace Private {
+		//Forward declarations of internally used structs
 		struct CX_LogMessage;
 		struct CX_LoggerTargetInfo;
 		class CX_LoggerChannel;
 		struct CX_ofLogMessageEventData_t;
+
+		
+		//This class is based very directly on ofLog, except that it has a private constructor
+		//so that it can only be made by a CX_Logger.
+		class CX_LogMessageSink {
+		public:
+
+			~CX_LogMessageSink(void);
+
+			CX_LogMessageSink& operator<<(std::ostream& (*func)(std::ostream&));
+
+			template <class T>
+			CX_LogMessageSink& operator<<(const T& value) {
+				*_message << value;
+				return *this;
+			}
+		private:
+			friend class CX_Logger;
+
+			CX_LogMessageSink(void);
+			CX_LogMessageSink(CX_LogMessageSink&& ms);
+			CX_LogMessageSink(CX::CX_Logger* logger, CX_LogLevel level, std::string module);
+
+			CX_Logger* _logger;
+
+			std::shared_ptr<std::ostringstream> _message;
+			CX_LogLevel _level;
+			std::string _module;
+		};
 	}
 
 	/*! \enum CX_LogLevel
@@ -43,9 +76,8 @@ namespace CX {
 	\ingroup errorLogging
 	*/
 	enum class CX_LogLevel {
-		//These rely on numeric values being ordered: Do not change the the order. 
-		//The values can change as long as they remain in the same order.
-		LOG_ALL = 0, //This is functionally identical to LOG_VERBOSE, but it is more explicit about what it does.
+		//These rely on numeric values being ordered: Do not change the values.
+		LOG_ALL = 0, //This is functionally identical to LOG_VERBOSE, but it is more clear about what it does.
 		LOG_VERBOSE = 1,
 		LOG_NOTICE = 2,
 		LOG_WARNING = 3,
@@ -76,15 +108,33 @@ namespace CX {
 	};
 
 	/*! This class is used for logging messages throughout the CX backend code. It can also be used
-	in user code to log messages. Rather than instantiating your own copy of CX_Logger, it is probably
-	better to use the preinstantiated \ref CX::Instances::Log. 
+	in user code to log messages. Rather than instantiating your own copy of CX_Logger, it is much
+	better to use the preinstantiated \ref CX::Instances::Log.
+
+	example-logging shows a number of the features of CX_Logger.
+
+	CX_Logger is designed to help prevent timing errors. Messages can be logged at any time during
+	program execution. If these messages were immediately outputted to the console or to files,
+	it could disrupt a timing-critical section of code. For this reason, logged messages are stored
+	by the CX_Logger until the user requests that all stored messages be outputted to the logging
+	targets with CX_Logger::flush(). The user can choose an appropriate, non-timing-critical time
+	at which to call flush().
+
+	By default, messages are logged to the console window that opens with CX programs. Optionally,
+	messages can also be logged to any number of files using CX_Logger::levelForFile(). For each
+	logging target (i.e. the console and the logfiles), you can filter out less severe messages.
+	For example, you could have two log files, one of which contains all messages and the other
+	of which only contains errors and fatal errors. By default, no logfiles are created and 
+	all messages (with only a few exceptions) are logged to the console. There are a few openFrameworks
+	classes that are extremely verbose, like ofFbo, and less severe messages from those classes
+	are suppressed by default. You can undo this behavior by simply calling CX_Logger::levelForAllModules()
+	with CX_LogLevel::LOG_ALL as the argument.
 	
 	This class is designed to be partially thread safe. It is safe to use any of the message logging 
 	functions (log(), verbose(), notice(), 	warning(), error(), and fatalError()) in multiple threads
 	at once. Other than those functions, the other functions should be called only from one thread 
 	(presumably the main thread).
 
-	There is an example showing a number of the features of CX_Logger named example-logging.
 	\ingroup errorLogging */
 	class CX_Logger {
 	public:
@@ -92,17 +142,18 @@ namespace CX {
 		CX_Logger (void);
 		~CX_Logger (void);
 
-		std::stringstream& log(CX_LogLevel level, std::string module = "");
-		std::stringstream& verbose(std::string module = "");
-		std::stringstream& notice(std::string module = "");
-		std::stringstream& warning(std::string module = "");
-		std::stringstream& error(std::string module = "");
-		std::stringstream& fatalError(std::string module = "");
+		CX::Private::CX_LogMessageSink log(CX_LogLevel level, std::string module = "");
+		CX::Private::CX_LogMessageSink verbose(std::string module = "");
+		CX::Private::CX_LogMessageSink notice(std::string module = "");
+		CX::Private::CX_LogMessageSink warning(std::string module = "");
+		CX::Private::CX_LogMessageSink error(std::string module = "");
+		CX::Private::CX_LogMessageSink fatalError(std::string module = "");
 
 		void level(CX_LogLevel level, std::string module = "");
 		void levelForConsole (CX_LogLevel level);
 		void levelForFile(CX_LogLevel level, std::string filename = "CX_LOGGER_DEFAULT");
 		void levelForAllModules(CX_LogLevel level);
+		void levelForExceptions(CX_LogLevel level);
 
 		CX_LogLevel getModuleLevel(std::string module);
 
@@ -116,14 +167,17 @@ namespace CX {
 		void captureOFLogMessages(void);
 
 	private:
-		std::vector<Private::CX_LoggerTargetInfo> _targetInfo;
+
+		std::vector<CX::Private::CX_LoggerTargetInfo> _targetInfo;
 		std::map<std::string, CX_LogLevel> _moduleLogLevels;
-		std::vector<Private::CX_LogMessage> _messageQueue;
+		std::vector<CX::Private::CX_LogMessage> _messageQueue;
 		Poco::Mutex _messageQueueMutex;
 		Poco::Mutex _moduleLogLevelsMutex;
 
-		std::stringstream& _log(CX_LogLevel level, std::string module);
-		std::string _getLogLevelName(CX_LogLevel level);
+		CX::Private::CX_LogMessageSink _log(CX_LogLevel level, std::string module);
+
+		friend class CX::Private::CX_LogMessageSink;
+		void _storeLogMessage(const CX::Private::CX_LogMessageSink& msg);
 
 		std::function<void(CX_MessageFlushData&)> _flushCallback;
 
@@ -131,9 +185,13 @@ namespace CX {
 		std::string _timestampFormat;
 
 		CX_LogLevel _defaultLogLevel;
+		CX_LogLevel _exceptionLevel;
 
-		ofPtr<Private::CX_LoggerChannel> _ofLoggerChannel;
-		void _loggerChannelEventHandler(Private::CX_ofLogMessageEventData_t& md);
+		ofPtr<CX::Private::CX_LoggerChannel> _ofLoggerChannel;
+		void _loggerChannelEventHandler(CX::Private::CX_ofLogMessageEventData_t& md);
+
+		static std::string _getLogLevelString(CX_LogLevel level);
+		std::string _formatMessage(const CX::Private::CX_LogMessage& message);
 	};
 
 	namespace Instances {
