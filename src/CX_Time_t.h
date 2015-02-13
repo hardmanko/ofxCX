@@ -336,18 +336,20 @@ namespace CX {
 
 	/*! Stream instertion operator for CX_Time_t.
 	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same
-	time units on both ends of the conversion. In addition, converting to/from string is not guaranteed to be a 
-	lossless operation, but it usually works out. 
+	time units on both ends of the conversion.
 	
 	\code{.cpp}
 	st::stringstream ss;
 	CX_Seconds sec(60);
 
 	ss << sec;
-	cout << ss.str() << endl;
+	cout << ss.str() << endl; //Ouputs the number 60.
 
 	CX_Minutes min;
-	ss >> min; //Oops! This is now holding 60 minutes!
+	ss >> min; //Reads in the 60 as 60 minutes.
+	if (sec != min)) {
+		cout << "The time values are now unequal." << endl;
+	}
 
 	//Better: Use the same type at both ends.
 	CX_Seconds sec2;

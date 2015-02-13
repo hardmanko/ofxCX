@@ -223,8 +223,15 @@ namespace CX {
 			ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
 							   If drawingFunction points to a function, `framebuffer` will not be drawn and drawingFunction will be called instead. */
 
-			/*! \brief Pointer to a user function that will be called to draw the slide.
-			If this points to a function, any data in `framebuffer` will be ignored. */
+			/*! \brief Pointer to a user function that will be called to draw the slide, rather than using the `framebuffer`.
+			
+			Pointer to a user function that will be called to draw the slide.
+			If this points to a function, any data in `framebuffer` will be ignored.
+			\note It is important to note that if you want to do something other than drawing in this function 
+			(e.g. examining responses to other stimuli), that the time at which this function is called is not 
+			the same time at which the slide's contents appear on screen. If you want a function to be called
+			right after the contents of this slide appear on screen, use 
+			\ref CX::CX_SlidePresenter::Slide::slidePresentedCallback instead. */
 			std::function<void(void)> drawingFunction;
 
 			/*! \brief Pointer to a user function that will be called right after slide is presented,

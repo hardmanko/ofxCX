@@ -102,6 +102,82 @@ bool CX_Mouse::isButtonHeld(int button) const {
 	return _heldMouseButtons.find(button) != _heldMouseButtons.end();
 }
 
+
+/*! \brief Identical to CX_Mouse::waitForButtonPress(std::vector<int>, bool, bool), except
+that this only takes a length 1 vector. */
+CX_Mouse::Event CX_Mouse::waitForButtonPress(int button, bool clear, bool eraseEvent) {
+	std::vector<int> buttons;
+	buttons.push_back(button);
+	return waitForButtonPress(buttons, clear, eraseEvent);
+}
+
+
+/*! Wait until the first of the given `buttons` is pressed. This specifically checks that a button has been pressed: If it was
+already held at the time this function was called and then released, it will have to be pressed again before this
+function will return. Returns a CX_Mouse::Event for the buttons that were waited on, optionally removing that event 
+that caused this function to return from the queue of stored events if `eraseEvent` is `true`.
+\param buttons A vector of button indices for the buttons that will be waited on. If any of the values are -1, any button 
+press will cause this function to return. The button indices may be from CX_Mouse::Buttons or just raw integers.
+\param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all mouse events
+will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
+is possible that one of the available events will include a press for one of the buttons to be waited on, in which 
+case this function will return immediately.
+\param eraseEvent If `true`, the event that caused this function to return will be erased from the queue of stored events.
+The implication of this removal is that the return value of this function is the only opportunity to gain access to the 
+event that caused this function to return. The advantage of this approach is that if, after some given key is pressed, 
+all events in the queue are processed, you are guaranteed to not hit the same event twice (once from the return value 
+of this function, once from processing the queue).
+\return A CX_Mouse::Event with information about the button press that caused this function to return.
+\note If the mouse is not enabled at the time this function is called, it will be enabled for the
+duration of the function and then disabled at the end of the function.
+*/
+CX_Mouse::Event CX_Mouse::waitForButtonPress(std::vector<int> buttons, bool clear, bool eraseEvent) {
+	if (clear) {
+		_owner->pollEvents();
+		this->clearEvents();
+	}
+
+	bool enabled = this->enabled();
+	this->enable(true);
+
+	bool minus1Found = std::find(buttons.begin(), buttons.end(), -1) != buttons.end();
+
+	CX_Mouse::Event rval;
+	bool waiting = true;
+	while (waiting) {
+		if (!_owner->pollEvents()) {
+			continue;
+		}
+
+		for (auto it = _mouseEvents.begin(); it != _mouseEvents.end(); it++) {
+			if (it->type == CX_Mouse::PRESSED) {
+
+				bool buttonFound = std::find(buttons.begin(), buttons.end(), it->button) != buttons.end();
+
+				if (minus1Found || buttonFound) {
+					rval = *it;
+
+					if (eraseEvent) {
+						_mouseEvents.erase(it);
+					}
+
+					waiting = false;
+					break;
+				}
+			}
+		}
+
+	}
+
+	if (clear) {
+		this->clearEvents();
+	}
+
+	this->enable(enabled);
+
+	return rval;
+}
+
 /*! Appends a mouse event to the event queue without any modification
 (e.g. the timestamp is not set to the current time, it is left as-is).
 This can be useful if you want to have a simulated participant perform the
@@ -120,7 +196,6 @@ void CX_Mouse::appendEvent(CX_Mouse::Event ev) {
 
 	_mouseEvents.push_back(ev);
 }
-
 
 //As of oF 084 (at least), the type of the event is properly marked by oF, so these functions are depreciated once oF 080 support is dropped.
 void CX_Mouse::_mouseButtonPressedEventHandler(ofMouseEventArgs &a) {

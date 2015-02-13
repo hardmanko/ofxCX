@@ -72,8 +72,10 @@ namespace CX {
 		template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
 
 		template <typename T> std::vector<T> unique(std::vector<T> vals);
-		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
 		template <typename T> std::vector<T> exclude(const std::vector<T>& vals, const std::vector<T>& exclude);
+
+		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
+		template <typename T> std::vector<T> concatenate(T A, const std::vector<T>& B);
 
 		template <typename T> T max(std::vector<T> vals);
 		template <typename T> T min(std::vector<T> vals);
@@ -431,6 +433,18 @@ template <typename T> std::vector<T> CX::Util::unique(std::vector<T> vals) {
 template <typename T>
 std::vector<T> CX::Util::concatenate(const std::vector<T>& A, const std::vector<T>& B) {
 	std::vector<T> C(A.begin(), A.end());
+	C.insert(C.end(), B.begin(), B.end());
+	return C;
+}
+
+/*! Concatenates together the value A and the vector B. This is essentially push_front for vectors.
+\param A The first value.
+\param B The vector of values.
+\return The concatenation of A and B, being a vector containing {A, B1, B2, ... Bn}. */
+template <typename T>
+std::vector<T> CX::Util::concatenate(T A, const std::vector<T>& B) {
+	std::vector<T> C;
+	C.push_back(A);
 	C.insert(C.end(), B.begin(), B.end());
 	return C;
 }

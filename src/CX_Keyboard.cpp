@@ -72,7 +72,8 @@ bool CX_Keyboard::isKeyHeld(int key) const {
 }
 
 
-/*! Identical to CX_Keyboard::waitForKeypress() that takes a vector of keys except with a length 1 vector. */
+/*! \brief Identical to CX_Keyboard::waitForKeypress(std::vector<int>, bool, bool), except 
+that this only takes a length 1 vector. */
 CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear, bool eraseEvent) {
 	std::vector<int> keys;
 	keys.push_back(key);
@@ -81,19 +82,20 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear, bool eraseE
 
 
 /*! Wait until the first of the given `keys` is pressed. This specifically checks that a key has been pressed: If it was
-held at the time this function was called and then released, it will have to be pressed again before this
-function will return. Returns a CX_Keyboard::Event for the key that was waited on, optionally removing that event from the
-stored events if `eraseEvent` is `true`.
+already held at the time this function was called and then released, it will have to be pressed again before this
+function will return. Returns a CX_Keyboard::Event for the key that was waited on, optionally removing that event 
+that caused this function to return from the queue of stored events if `eraseEvent` is `true`.
 \param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will
 cause this function to return. Should be character literals or from CX::Keycode.
 \param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all keyboard events
 will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
-is possible that one of the available events will include a keypress for a given key, in which case this function
-will return immediately.
-\param eraseEvent If `true`, the event will be erased from the queue of captured events. The implication of this removal
-is that the return value of this function is the only opportunity to gain access to the event that caused this function to return.
-The advantage of this approach is that if, after some given key is pressed, all events in the queue are processed, you are
-guaranteed to not hit the same event twice (once from the return value of this function, once from processing the queue).
+is possible that one of the available events will include a keypress for one of the keys to be waited on, in which 
+case this function will return immediately.
+\param eraseEvent If `true`, the event that caused this function to return will be erased from the queue of stored events. 
+The implication of this removal is that the return value of this function is the only opportunity to gain access to the event 
+that caused this function to return. The advantage of this approach is that if, after some given key is pressed, all events 
+in the queue are processed, you are guaranteed to not hit the same event twice (once from the return value of this function, 
+once from processing the queue).
 \return A CX_Keyboard::Event with information about the keypress that caused this function to return.
 \note If the keyboard is not enabled at the time this function is called, it will be enabled for the
 duration of the function and then disabled at the end of the function.
@@ -107,6 +109,8 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 	bool enabled = this->enabled();
 	this->enable(true);
 
+	bool minus1Found = std::find(keys.begin(), keys.end(), -1) != keys.end();
+
 	CX_Keyboard::Event rval;
 	bool waiting = true;
 	while (waiting) {
@@ -116,7 +120,7 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 
 		for (auto it = _keyEvents.begin(); it != _keyEvents.end(); it++) {
 			if (it->type == CX_Keyboard::PRESSED) {
-				bool minus1Found = std::find(keys.begin(), keys.end(), -1) != keys.end();
+				
 				bool keyFound = std::find(keys.begin(), keys.end(), it->key) != keys.end();
 
 				if (minus1Found || keyFound) {
@@ -144,8 +148,7 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 }
 
 
-/*! Checks whether the given key chord is held, i.e. are all of the keys in `chord` held
-right now.
+/*! Checks whether the given key chord is held, i.e. all of the keys in `chord` are held simultaneously.
 \return `false` if `chord` is empty or if not all of the keys in `chord` are held. `true` if all of
 the keys in `chord` are held.
 */

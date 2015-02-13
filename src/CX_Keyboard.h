@@ -13,6 +13,8 @@
 
 namespace CX {
 
+	/*! This namespace is a wrapper around an anonymous enum containing a number of keycodes.
+	The values in the enum can be compared with \ref CX::CX_Keyboard::Event::key. */
 	namespace Keycode {
 		enum {
 			UNKNOWN = GLFW_KEY_UNKNOWN,
