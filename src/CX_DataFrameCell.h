@@ -56,6 +56,7 @@ namespace CX {
 		template <typename T> std::vector<T> toVector(bool log = true) const;
 		template <typename T> void storeVector(std::vector<T> values);
 		bool isVector(void) const;
+		unsigned int size(void) const;
 
 		void copyCellTo(CX_DataFrameCell* targetCell) const;
 

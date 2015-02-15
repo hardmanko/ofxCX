@@ -113,8 +113,8 @@ void runExperiment(void) {
 		Clock.sleep(CX_Seconds(1));
 	}
 
-	Log.levelForFile(CX_LogLevel::LOG_ALL, "Last run.txt");
-	Log.level(CX_LogLevel::LOG_ALL, "CX_SlidePresenter");
+	Log.levelForFile(CX_Logger::Level::LOG_ALL, "Last run.txt");
+	Log.level(CX_Logger::Level::LOG_ALL, "CX_SlidePresenter");
 
 	Log.notice() << "Frame period: " << Disp.getFramePeriod() << " (" << Disp.getFramePeriodStandardDeviation() << ")";
 	

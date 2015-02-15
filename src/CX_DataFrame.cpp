@@ -424,7 +424,7 @@ bool CX_DataFrame::deleteRow (rowIndex_t row) {
 void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	//This implementation looks weird, but don't change it without care: it deals with a number of edge cases.
 	_rowCount++;
-	vector<string> names = row.names();
+	std::vector<std::string> names = row.names();
 	for (unsigned int i = 0; i < names.size(); i++) {
 		_data[names[i]].resize(_rowCount);
 		row[names[i]].copyCellTo( &_data[names[i]].back() ); //Copy the cell in the row into the data frame.
@@ -437,6 +437,7 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 \param beforeIndex The index of the row before which `row` should be inserted. If >= the number of rows currently stored, `row`
 will be appended to the end of the data frame.
 \note If `row` has columns that do not exist in the data frame, those columns will be added to the data frame.
+\note This may be a blocking operation, depending on the size of the data frame.
 */
 void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
 
@@ -456,20 +457,26 @@ void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
 	//Set up the location at which the new data will be added.
 	rowIndex_t insertedElementIndex = std::min(beforeIndex, this->getRowCount());
 
-	//For each existing column, insert one cell then assign new data to that cell
+	//Cache row names
 	std::vector<std::string> rowNames = row.names();
+
+	//For each existing column, insert one cell then assign new data to that cell
 	for (auto existingColumn = this->_data.begin(); existingColumn != this->_data.end(); existingColumn++) {
 
+		//By default, put new items at the end
 		std::vector<CX_DataFrameCell>::iterator insertionIterator = existingColumn->second.end();
 
+		//But if the insertion is supposed to come before the end, update the iterator.
 		if (beforeIndex < this->getRowCount()) {
 			insertionIterator = existingColumn->second.begin() + beforeIndex;
 		}
 
+		//For each column, make a new cell, regardless of if it is going to be filled right now.
 		existingColumn->second.insert(insertionIterator, CX_DataFrameCell());
 
+		//If this the row had data for this column, copy it over.
 		if (std::find(rowNames.begin(), rowNames.end(), existingColumn->first) != rowNames.end()) {
-			row[existingColumn->first].copyCellTo(&existingColumn->second[insertedElementIndex]);
+			row[existingColumn->first].copyCellTo(&(existingColumn->second[insertedElementIndex]));
 		}
 	}
 
@@ -487,7 +494,7 @@ std::vector<std::string> CX_DataFrame::getColumnNames(void) const {
 	return names;
 }
 
-/*! Returns the number of rows in the data frame. */
+/*! \brief Returns the number of rows in the data frame. */
 CX_DataFrame::rowIndex_t CX_DataFrame::getRowCount(void) const {
 	return _rowCount;
 }
@@ -624,12 +631,9 @@ void CX_DataFrame::shuffleRows(void) {
 
 /*! Sets the number of rows in the data frame.
 \param rowCount The new number of rows in the data frame.
-\note If the row count is less than the number of rows already in the data frame, it will delete those rows with a warning.
+\note If the row count is less than the number of rows already in the data frame, it will delete the extra rows.
 */
 void CX_DataFrame::setRowCount(rowIndex_t rowCount) {
-	if (rowCount < _rowCount) {
-		Instances::Log.warning("CX_DataFrame") << "setRowCount: New row count less than current number of rows in the data frame. Extra rows deleted.";
-	}
 	_resizeToFit(rowCount - 1);
 }
 
@@ -637,59 +641,19 @@ void CX_DataFrame::setRowCount(rowIndex_t rowCount) {
 \param columnName The name of the column to add. If a column with that name already exists in the data frame, a warning will be logged. */
 void CX_DataFrame::addColumn(std::string columnName) {
 	if (_data.find(columnName) != _data.end()) {
-		Instances::Log.warning("CX_DataFrame") << "addColumn: Column already exists in data frame.";
+		Instances::Log.warning("CX_DataFrame") << "addColumn(): Column \"" << columnName << "\" already exists in data frame.";
 		return;
 	}
 	_data[columnName].resize(_rowCount);
 }
 
-/*! Appends a data frame to this data frame. appendRow() is used to copy over the rows of `df`.
+/*! Appends a data frame to this data frame. 
+Internally, CX_DataFrame::appendRow() is used to copy over the rows of `df` one at a time.
 \param df The CX_DataFrame to append. */
 void CX_DataFrame::append(CX_DataFrame df) {
 	for (rowIndex_t i = 0; i < df.getRowCount(); i++) {
 		this->appendRow(df[i]);
 	}
-}
-
-void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
-	//Check the size of the column. If it is a new column, it will have size 0.
-	//If it is an old column but too short, then it needs to be lengthened.
-	if (_data[column].size() <= row) {
-		_rowCount = std::max(_rowCount, row + 1);
-		for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
-			_data[it->first].resize(_rowCount);
-		}
-		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit (\"" << column << "\", " << row << ")";
-	}
-}
-
-//This function fails if there are no columns in the data frame
-//Resizes the data frame to fit a row with this index, NOT to fit this many rows.
-void CX_DataFrame::_resizeToFit(rowIndex_t row) {
-	if ((row >= _rowCount) && (_data.size() != 0)) {
-		_data.begin()->second.resize(row + 1);
-		_equalizeRowLengths();
-		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit row " << row;
-	}
-}
-
-void CX_DataFrame::_resizeToFit(std::string column) {
-	if (_data[column].size() != _rowCount) {
-		_equalizeRowLengths();
-		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit column " << column;
-	}
-}
-
-void CX_DataFrame::_equalizeRowLengths(void) {
-	rowIndex_t maxSize = 0;
-	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
-		maxSize = std::max(_data[it->first].size(), maxSize);
-	}
-
-	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
-		_data[it->first].resize(maxSize);
-	}
-	_rowCount = maxSize;
 }
 
 /*! \brief Returns `true` if the named column exists in the `CX_DataFrame`. */
@@ -805,6 +769,47 @@ void CX_DataFrame::convertAllVectorColumnsToMultipleColumns(int startIndex, bool
 			convertVectorColumnToColumns(originalColumn, startIndex, deleteOriginals, originalColumn);
 		}
 	}
+}
+
+void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
+	//Check the size of the column. If it is a new column, it will have size 0.
+	//If it is an old column but too short, then it needs to be lengthened.
+	if (_data[column].size() <= row) {
+		_rowCount = std::max(_rowCount, row + 1);
+		for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+			_data[it->first].resize(_rowCount);
+		}
+		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit (\"" << column << "\", " << row << ").";
+	}
+}
+
+//This function fails if there are no columns in the data frame
+//Resizes the data frame to fit a row with the index `row`, NOT to fit `row` rows.
+void CX_DataFrame::_resizeToFit(rowIndex_t row) {
+	if ((row >= _rowCount) && (_data.size() != 0)) {
+		_data.begin()->second.resize(row + 1);
+		_equalizeRowLengths();
+		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit row " << row << ".";
+	}
+}
+
+void CX_DataFrame::_resizeToFit(std::string column) {
+	if (_data[column].size() != _rowCount) {
+		_equalizeRowLengths();
+		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit column " << column << ".";
+	}
+}
+
+void CX_DataFrame::_equalizeRowLengths(void) {
+	rowIndex_t maxSize = 0;
+	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+		maxSize = std::max(_data[it->first].size(), maxSize);
+	}
+
+	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+		_data[it->first].resize(maxSize);
+	}
+	_rowCount = maxSize;
 }
 
 ////////////////////////

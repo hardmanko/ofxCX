@@ -104,6 +104,11 @@ bool CX_DataFrameCell::isVector(void) const {
 	return _data->size() > 1;
 }
 
+/*! \brief Returns the number of elements stored in the cell. */
+unsigned int CX_DataFrameCell::size(void) const {
+	return _data->size();
+}
+
 /*! \brief Delete the contents of the cell. */
 void CX_DataFrameCell::clear(void) {
 	_data->clear();

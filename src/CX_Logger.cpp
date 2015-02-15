@@ -22,20 +22,20 @@ namespace Private {
 		{}
 
 		LogTarget targetType;
-		CX_LogLevel level;
+		CX_Logger::Level level;
 
 		std::string filename;
 		ofFile *file;
 	};
 
 	struct CX_LogMessage {
-		CX_LogMessage(CX_LogLevel level_, string module_) :
+		CX_LogMessage(CX_Logger::Level level_, string module_) :
 			level(level_),
 			module(module_)
 		{}
 
 		std::string message;
-		CX_LogLevel level;
+		CX_Logger::Level level;
 		std::string module;
 		std::string timestamp;
 	};
@@ -115,7 +115,7 @@ namespace Private {
 		ms._logger = nullptr;
 	}
 
-	CX_LogMessageSink::CX_LogMessageSink(CX::CX_Logger* logger, CX_LogLevel level, std::string module) :
+	CX_LogMessageSink::CX_LogMessageSink(CX::CX_Logger* logger, CX::CX_Logger::Level level, std::string module) :
 		_logger(logger),
 		_level(level),
 		_module(std::move(module))
@@ -142,16 +142,16 @@ CX_Logger::CX_Logger(void) :
 	_flushCallback(nullptr),
 	_logTimestamps(false),
 	_timestampFormat("%H:%M:%S"),
-	_defaultLogLevel(CX_LogLevel::LOG_NOTICE)
+	_defaultLogLevel(Level::LOG_NOTICE)
 {
-	levelForExceptions(CX_LogLevel::LOG_NONE);
-	levelForConsole(CX_LogLevel::LOG_ALL);
+	levelForAllExceptions(Level::LOG_NONE);
+	levelForConsole(Level::LOG_ALL);
 
 	_ofLoggerChannel = ofPtr<CX::Private::CX_LoggerChannel>(new CX::Private::CX_LoggerChannel);
 
 	ofAddListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
 
-	levelForAllModules(CX_LogLevel::LOG_ERROR);
+	levelForAllModules(Level::LOG_ERROR);
 }
 
 CX_Logger::~CX_Logger(void) {
@@ -200,7 +200,7 @@ void CX_Logger::flush(void) {
 		_messageQueueMutex.unlock();
 
 		if (_flushCallback) {
-			CX_MessageFlushData dat(m.message, m.level, m.module);
+			MessageFlushData dat(m.message, m.level, m.module);
 			_flushCallback(dat);
 		}
 
@@ -240,7 +240,7 @@ void CX_Logger::clear(void) {
 }
 
 /*! \brief Set the log level for messages to be printed to the console. */
-void CX_Logger::levelForConsole(CX_LogLevel level) {
+void CX_Logger::levelForConsole(Level level) {
 	bool consoleFound = false;
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
@@ -260,11 +260,11 @@ void CX_Logger::levelForConsole(CX_LogLevel level) {
 /*! Sets the log level for the file with the given file name. If the file does not exist, it will be created.
 If the file does exist, it will be overwritten with a warning logged to cerr (typically the console).
 \param level Log messages with level greater than or equal to this level will be outputted to the file. 
-See the CX_LogLevel enum for valid values.
+See the \ref CX::CX_Logger::Level enum for valid values.
 \param filename The name of the file to output to. If no file name is given, a file with name 
 generated from a date/time from the start time of the experiment will be used.
 */
-void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
+void CX_Logger::levelForFile(Level level, std::string filename) {
 	if (filename == "CX_LOGGER_DEFAULT") {
 		filename = "Log file " + CX::Instances::Clock.getExperimentStartDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
 	}
@@ -282,7 +282,7 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 	}
 
 	//If nothing is to be logged, either delete or never create the target
-	if (level == CX_LogLevel::LOG_NONE) {
+	if (level == Level::LOG_NONE) {
 		if (fileFound) {
 			_targetInfo.erase(_targetInfo.begin() + fileIndex);
 		}
@@ -314,10 +314,10 @@ void CX_Logger::levelForFile(CX_LogLevel level, std::string filename) {
 
 /*! Sets the log level for the given module. Messages from that module that are at a lower level than
 \ref level will be ignored.
-\param level See the CX::CX_LogLevel enum for valid values.
+\param level See the \ref CX::CX_Logger::Level enum for valid values.
 \param module A string representing one of the modules from which log messages are generated.
 */
-void CX_Logger::level(CX_LogLevel level, std::string module) {
+void CX_Logger::level(Level level, std::string module) {
 	_moduleLogLevelsMutex.lock();
 	_moduleLogLevels[module] = level;
 	_moduleLogLevelsMutex.unlock();
@@ -325,9 +325,9 @@ void CX_Logger::level(CX_LogLevel level, std::string module) {
 
 /*! Gets the log level in use by the given module.
 \param module The name of the module.
-\return The CX_LogLevel for `module`. */
-CX_LogLevel CX_Logger::getModuleLevel(std::string module) {
-	CX_LogLevel level = _defaultLogLevel;
+\return The level for `module`. */
+CX_Logger::Level CX_Logger::getModuleLevel(std::string module) {
+	Level level = _defaultLogLevel;
 	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(module) != _moduleLogLevels.end()) {
 		level = _moduleLogLevels[module];
@@ -340,10 +340,10 @@ CX_LogLevel CX_Logger::getModuleLevel(std::string module) {
 Set the log level for all modules. This works both retroactively and proactively: All currently known modules
 are given the log level and the default log level for new modules as set to the level.
 */
-void CX_Logger::levelForAllModules(CX_LogLevel level) {
+void CX_Logger::levelForAllModules(Level level) {
 	_moduleLogLevelsMutex.lock();
 	_defaultLogLevel = level;
-	for (map<string, CX_LogLevel>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
+	for (std::map<std::string, Level>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
 		_moduleLogLevels[it->first] = level;
 	}
 	_moduleLogLevelsMutex.unlock();
@@ -355,7 +355,7 @@ logged, the user function will be called. No filtering is performed: All message
 log level will be sent to the user function.
 \param f A pointer to a user function that takes a reference to a CX_MessageFlushData struct and returns nothing.
 */
-void CX_Logger::setMessageFlushCallback(std::function<void(CX_MessageFlushData&)> f) {
+void CX_Logger::setMessageFlushCallback(std::function<void(CX_Logger::MessageFlushData&)> f) {
 	_flushCallback = f;
 }
 
@@ -371,7 +371,7 @@ void CX_Logger::timestamps(bool logTimestamps, std::string format) {
 
 /*! This is the fundamental logging function for this class. Example use:
 \code{.cpp}
-Log.log(CX_LogLevel::LOG_WARNING, "moduleName") << "Special message number: " << 20;
+Log.log(CX_Logger::Level::LOG_WARNING, "moduleName") << "Special message number: " << 20;
 \endcode
 
 Possible output: "[warning] <moduleName> Special message number: 20"
@@ -386,33 +386,33 @@ See CX::CX_Logger::level().
 \note This function and all of the trivial wrappers of this function (verbose(), notice(), warning(),
 error(), fatalError()) are thread-safe.
 */
-CX::Private::CX_LogMessageSink CX_Logger::log(CX_LogLevel level, std::string module) {
+CX::Private::CX_LogMessageSink CX_Logger::log(Level level, std::string module) {
 	return _log(level, module);
 }
 
-/*! \brief Equivalent to `log(CX_LogLevel::LOG_VERBOSE, module)`. */
+/*! \brief Equivalent to `log(CX_Logger::Level::LOG_VERBOSE, module)`. */
 CX::Private::CX_LogMessageSink CX_Logger::verbose(std::string module) {
-	return _log(CX_LogLevel::LOG_VERBOSE, module);
+	return _log(Level::LOG_VERBOSE, module);
 }
 
-/*! \brief Equivalent to `log(CX_LogLevel::LOG_NOTICE, module)`. */
+/*! \brief Equivalent to `log(CX_Logger::Level::LOG_NOTICE, module)`. */
 CX::Private::CX_LogMessageSink CX_Logger::notice(std::string module) {
-	return _log(CX_LogLevel::LOG_NOTICE, module);
+	return _log(Level::LOG_NOTICE, module);
 }
 
-/*! \brief Equivalent to `log(CX_LogLevel::LOG_WARNING, module)`. */
+/*! \brief Equivalent to `log(CX_Logger::Level::LOG_WARNING, module)`. */
 CX::Private::CX_LogMessageSink CX_Logger::warning(std::string module) {
-	return _log(CX_LogLevel::LOG_WARNING, module);
+	return _log(Level::LOG_WARNING, module);
 }
 
-/*! \brief Equivalent to `log(CX_LogLevel::LOG_ERROR, module)`. */
+/*! \brief Equivalent to `log(CX_Logger::Level::LOG_ERROR, module)`. */
 CX::Private::CX_LogMessageSink CX_Logger::error(std::string module) {
-	return _log(CX_LogLevel::LOG_ERROR, module);
+	return _log(Level::LOG_ERROR, module);
 }
 
-/*! \brief Equivalent to `log(CX_LogLevel::LOG_FATAL_ERROR, module)`. */
+/*! \brief Equivalent to `log(CX_Logger::Level::LOG_FATAL_ERROR, module)`. */
 CX::Private::CX_LogMessageSink CX_Logger::fatalError(std::string module) {
-	return _log(CX_LogLevel::LOG_FATAL_ERROR, module);
+	return _log(Level::LOG_FATAL_ERROR, module);
 }
 
 /*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions.
@@ -422,17 +422,40 @@ void CX_Logger::captureOFLogMessages(void) {
 	ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);
 }
 
+/*! See CX::CX_Logger::levelForExceptions() for more information.
+
+\param level The default exception level.
+*/
+void CX_Logger::levelForAllExceptions(Level level) {
+	_exceptionLevelsMutex.lock();
+	_defaultExceptionLevel = level;
+	for (std::map<std::string, Level>::iterator it = _exceptionLevels.begin(); it != _exceptionLevels.end(); it++) {
+		_exceptionLevels[it->first] = level;
+	}
+	_exceptionLevelsMutex.unlock();
+}
+
 /*! When a logged message is stored, if its log level is greater than or
-equal to the exception level, an exception will be thrown. The exception
-will be a std::runtime_error. By default, the exception level is LOG_NONE,
+equal to the exception level for the given module, an exception will be thrown. 
+The exception will be a std::runtime_error. By default, the exception level is LOG_NONE,
 i.e. that no logged messages will cause an exception to be thrown.
 
-\param level The desired exception level. The naming of the values in CX_LogLevel
+Note that this functionality is useful in two ways. The first is that it helps you if
+you want to make sure that your system fails fast rather than continuing in a degraded state.
+The second is that it helps you to localize the source of the problem. It does this by throwing 
+the exception from the call site of the logged message that triggered the exception. If your 
+deubgger automatically triggers a breakpoint on an exception (e.g. Visual Studio), this will 
+allow you to examine the call stack that led to the exception.
+
+\param level The desired exception level. The naming of the values in \ref CX::CX_Logger::Level
 is slightly confusing in the context of this function. Instead of, e.g., LOG_WARNING,
 think of the value as EXCEPTION_ON_WARNING (or greater).
+\param module The module to set the exception level for.
 */
-void CX_Logger::levelForExceptions(CX_LogLevel level) {
-	_exceptionLevel = level;
+void CX_Logger::levelForExceptions(Level level, std::string module) {
+	_exceptionLevelsMutex.lock();
+	_exceptionLevels[module] = level;
+	_exceptionLevelsMutex.unlock();
 }
 
 void CX_Logger::_storeLogMessage(const CX::Private::CX_LogMessageSink& ms) {
@@ -456,14 +479,23 @@ void CX_Logger::_storeLogMessage(const CX::Private::CX_LogMessageSink& ms) {
 	_messageQueueMutex.unlock();
 
 	//Check for exceptions
-	if (ms._level >= _exceptionLevel) {
+	_exceptionLevelsMutex.lock();
+	Level level;
+	if (_exceptionLevels.find(ms._module) != _exceptionLevels.end()) {
+		level = _exceptionLevels[ms._module];
+	} else {
+		level = _defaultExceptionLevel;
+	}
+	_exceptionLevelsMutex.unlock();
+
+	if (ms._level >= level) {
 		std::string formattedMessage = _formatMessage(temp);
 		throw std::runtime_error(formattedMessage);
 	}
 }
 
 /*
-stringstream& CX_Logger::_log(CX_LogLevel level, std::string module) {
+stringstream& CX_Logger::_log(Level level, std::string module) {
 	
 	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(module) == _moduleLogLevels.end()) {
@@ -486,19 +518,19 @@ stringstream& CX_Logger::_log(CX_LogLevel level, std::string module) {
 }
 */
 
-CX::Private::CX_LogMessageSink CX_Logger::_log(CX_LogLevel level, std::string module) {
+CX::Private::CX_LogMessageSink CX_Logger::_log(Level level, std::string module) {
 	return CX::Private::CX_LogMessageSink(this, level, module);
 }
 
-std::string CX_Logger::_getLogLevelString(CX_LogLevel level) {
+std::string CX_Logger::_getLogLevelString(Level level) {
 	switch (level) {
-	case CX_LogLevel::LOG_VERBOSE: return "verbose";
-	case CX_LogLevel::LOG_NOTICE: return "notice";
-	case CX_LogLevel::LOG_WARNING: return "warning";
-	case CX_LogLevel::LOG_ERROR: return "error";
-	case CX_LogLevel::LOG_FATAL_ERROR: return "fatal";
-	case CX_LogLevel::LOG_ALL: return "all";
-	case CX_LogLevel::LOG_NONE: return "none";
+	case Level::LOG_VERBOSE: return "verbose";
+	case Level::LOG_NOTICE: return "notice";
+	case Level::LOG_WARNING: return "warning";
+	case Level::LOG_ERROR: return "error";
+	case Level::LOG_FATAL_ERROR: return "fatal";
+	case Level::LOG_ALL: return "all";
+	case Level::LOG_NONE: return "none";
 	};
 	return "";
 }
@@ -523,15 +555,15 @@ std::string CX_Logger::_formatMessage(const CX::Private::CX_LogMessage& message)
 }
 
 void CX_Logger::_loggerChannelEventHandler(CX::Private::CX_ofLogMessageEventData_t& md) {
-	CX_LogLevel convertedLevel;
+	Level convertedLevel;
 
 	switch (md.level) {
-	case ofLogLevel::OF_LOG_VERBOSE: convertedLevel = CX_LogLevel::LOG_VERBOSE; break;
-	case ofLogLevel::OF_LOG_NOTICE: convertedLevel = CX_LogLevel::LOG_NOTICE; break;
-	case ofLogLevel::OF_LOG_WARNING: convertedLevel = CX_LogLevel::LOG_WARNING; break;
-	case ofLogLevel::OF_LOG_ERROR: convertedLevel = CX_LogLevel::LOG_ERROR; break;
-	case ofLogLevel::OF_LOG_FATAL_ERROR: convertedLevel = CX_LogLevel::LOG_FATAL_ERROR; break;
-	case ofLogLevel::OF_LOG_SILENT: convertedLevel = CX_LogLevel::LOG_NONE; break;
+	case ofLogLevel::OF_LOG_VERBOSE: convertedLevel = Level::LOG_VERBOSE; break;
+	case ofLogLevel::OF_LOG_NOTICE: convertedLevel = Level::LOG_NOTICE; break;
+	case ofLogLevel::OF_LOG_WARNING: convertedLevel = Level::LOG_WARNING; break;
+	case ofLogLevel::OF_LOG_ERROR: convertedLevel = Level::LOG_ERROR; break;
+	case ofLogLevel::OF_LOG_FATAL_ERROR: convertedLevel = Level::LOG_FATAL_ERROR; break;
+	case ofLogLevel::OF_LOG_SILENT: convertedLevel = Level::LOG_NONE; break;
 	}
 
 	this->_log(convertedLevel, md.module) << md.message;

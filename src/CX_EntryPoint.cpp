@@ -15,8 +15,8 @@ void setupCX(void) {
 	ofSetEscapeQuitsApp(false);
 
 	CX::Instances::Log.captureOFLogMessages();
-	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_ALL);
-	CX::Instances::Log.level(CX_LogLevel::LOG_NOTICE, "ofShader"); //Try to eliminate some of the shader gobbeldygook.
+	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
+	CX::Instances::Log.level(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the shader gobbeldygook.
 
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
@@ -42,8 +42,8 @@ void setupCX(void) {
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
 
-	CX::Instances::Log.levelForAllModules(CX_LogLevel::LOG_NOTICE);
-	CX::Instances::Log.level(CX_LogLevel::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
+	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_NOTICE);
+	CX::Instances::Log.level(CX_Logger::Level::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
 		//are really verbose when allocated and it is a lot of gibberish.
 }
 

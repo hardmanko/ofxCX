@@ -78,7 +78,7 @@ namespace CX {
 		bool isButtonHeld(int button) const;
 
 		CX_Mouse::Event waitForButtonPress(int button, bool clear = true, bool eraseEvent = false);
-		CX_Mouse::Event waitForButtonPress(vector<int> buttons, bool clear = true, bool eraseEvent = false);
+		CX_Mouse::Event waitForButtonPress(std::vector<int> buttons, bool clear = true, bool eraseEvent = false);
 
 		void appendEvent(CX_Mouse::Event ev);
 

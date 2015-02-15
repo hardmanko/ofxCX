@@ -21,20 +21,20 @@ By default, CX does not create a log file.
 
 //The body of this function is commented out so as to not interfere with reading what is in the console.
 //You can uncomment it to see the result of this callback.
-void loggerFlushCallback (CX_MessageFlushData& mfd) {
+void loggerFlushCallback (CX_Logger::MessageFlushData& mfd) {
 	//cout << "Callback message: " << mfd.message << endl;
 }
 
 void runExperiment (void) {
 
-	Log.levelForFile(CX_LogLevel::LOG_ERROR, "Errors only.txt"); //You can have different log levels for different files.
+	Log.levelForFile(CX_Logger::Level::LOG_ERROR, "Errors only.txt"); //You can have different log levels for different files.
 		//You can log to any number of files at once, although for each additional file there is a linear performance 
 		//cost that occurs when Log.flush() is called.
 
 	//Calling levelForFile() without a filename causes a log file with a date/time string filename to be created.
-	Log.levelForFile(CX_LogLevel::LOG_ALL);
+	Log.levelForFile(CX_Logger::Level::LOG_ALL);
 
-	Log.levelForConsole(CX_LogLevel::LOG_WARNING); //The log level for the console is also independent of the file log levels.
+	Log.levelForConsole(CX_Logger::Level::LOG_WARNING); //The log level for the console is also independent of the file log levels.
 
 	Log.timestamps(true); //You can log a timestamp for each message, with an optional time format 
 		//argument that defaults to hours:minutes:seconds.milliseconds.
@@ -46,7 +46,7 @@ void runExperiment (void) {
 	Log.error() << "And this is an error.";
 	Log.fatalError() << "Fatal error!!!";
 
-	Log.level(CX_LogLevel::LOG_NOTICE); //Set the log level for "module-less" messages, like those above.
+	Log.level(CX_Logger::Level::LOG_NOTICE, ""); //Set the log level for "module-less" messages (i.e. module is the empty string), like those above.
 	//This means that the verbose message above won't be sent to any of the outputs.
 
 	//By giving a string to the logging functions, it sets that string as the name of the module that
@@ -55,7 +55,7 @@ void runExperiment (void) {
 	Log.error("myModule") << "You can also log to specific named modules that have their own log levels.";
 	
 	//Set the log level for the module "myModule" to ignore anything less than a warning.
-	Log.level(CX_LogLevel::LOG_WARNING, "myModule");
+	Log.level(CX_Logger::Level::LOG_WARNING, "myModule");
 
 	Log.notice("myModule") << "This message should not appear anywhere because it is filtered out.";
 
@@ -80,13 +80,13 @@ void runExperiment (void) {
 	//This is a potentially blocking operation, depending on the number of stored log messages that haven't been flushed.
 	Log.flush();
 
-	Log.levelForConsole(CX_LogLevel::LOG_ALL); //Now, log messages of every kind to the console
+	Log.levelForConsole(CX_Logger::Level::LOG_ALL); //Now, log messages of every kind to the console
 
 	//You can also set the log level for all modules. This allows you to set the log level for all modules, 
 	//then selectively set a different log level for other modules if, e.g. you are trying to debug a specific 
 	//module and want to only see output from it. In that case, you could do:
-	Log.levelForAllModules(CX_LogLevel::LOG_NONE);
-	Log.level(CX_LogLevel::LOG_ALL, "myTargetModule");
+	Log.levelForAllModules(CX_Logger::Level::LOG_NONE);
+	Log.level(CX_Logger::Level::LOG_ALL, "myTargetModule");
 
 
 	Log.notice("myTargetModule") << "A special message, just for you!";
@@ -94,11 +94,11 @@ void runExperiment (void) {
 
 	Log.flush();
 
-	Log.levelForAllModules(CX_LogLevel::LOG_ALL);
+	Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
 
 
 	//If instead of a logged message for the more serious errors, you want an exception:
-	Log.levelForExceptions(CX_LogLevel::LOG_FATAL_ERROR);
+	Log.levelForAllExceptions(CX_Logger::Level::LOG_FATAL_ERROR);
 
 	Log.warning() << "Almost out of memory.";
 	try {
@@ -110,6 +110,18 @@ void runExperiment (void) {
 	}
 	//Note that the error that triggered the exception was logged normally, so if you catch
 	//the exception you don't need to do anything extra to get the message.
+
+	//The exception will be thrown from near the call site of the logging call that generated the exception,
+	//which means that you get a useful stack trace.
+
+
+	//The function Util::checkOFVersion logs with module named "CX::Util::checkOFVersion", so lets enable exceptions for that module
+	Log.levelForExceptions(CX_Logger::Level::LOG_ALL, "CX::Util::checkOFVersion");
+
+	//We should get an exception within this function (this is not a supported version of openFrameworks)
+	//which should allow us to examine the call stack. It's commented out so as not to break the rest of the example.
+	//Util::checkOFVersion(0, 1, 1, true);
+
 
 	Log.flush();
 

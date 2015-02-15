@@ -74,27 +74,58 @@ public:
 	struct InputOptions : public IoOptions {};
 
 
-
 	CX_DataFrame(void);
 
 	CX_DataFrame& operator=(const CX_DataFrame& df);
 
+	void append(CX_DataFrame df);
+
+	CX_DataFrame copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const;
+	CX_DataFrame copyColumns(std::vector<std::string> columns);
+
+	void clear(void);
+
+
+	//Cell operations
 	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
 	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
 
 	CX_DataFrameCell at(rowIndex_t row, std::string column);
 	CX_DataFrameCell at(std::string column, rowIndex_t row);
 
-	CX_DataFrameColumn operator[] (std::string column);
+
+	//Row operations
+	void appendRow(CX_DataFrameRow row);
+	void insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex);
+	bool deleteRow(rowIndex_t row);
 	CX_DataFrameRow operator[] (rowIndex_t row);
 
-	void appendRow (CX_DataFrameRow row);
-	void insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex);
 	void setRowCount(rowIndex_t rowCount);
+	rowIndex_t getRowCount(void) const;
+
+	bool reorderRows(const vector<CX_DataFrame::rowIndex_t>& newOrder);
+
+	void shuffleRows(void);
+	void shuffleRows(CX_RandomNumberGenerator &rng);
+
+
+	//Column operations
 	void addColumn(std::string columnName);
+	bool deleteColumn(std::string columnName);
 
-	void append(CX_DataFrame df);
+	std::vector<std::string> getColumnNames(void) const;
+	bool columnExists(std::string columnName) const;
+	
+	CX_DataFrameColumn operator[] (std::string column);
+	template <typename T> std::vector<T> copyColumn(std::string column) const;
+	template <typename T> std::vector<std::vector<T>> copyVectorColumn(std::string column) const;
 
+	bool columnContainsVectors(std::string columnName) const;
+	std::vector<std::string> convertVectorColumnToColumns(std::string columnName, int startIndex, bool deleteOriginal, std::string newBaseName = "");
+	void convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals);
+
+
+	//Data IO
 	std::string print(std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
@@ -110,51 +141,37 @@ public:
 	bool readFromFile(std::string filename, InputOptions iOpt);
 	bool readFromFile(std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
 
-	void clear(void);
-	bool deleteColumn(std::string columnName);
-	bool deleteRow(rowIndex_t row);
-
-	std::vector<std::string> getColumnNames(void) const;
-	bool columnExists(std::string columnName) const;
-	bool columnContainsVectors(std::string columnName) const;
-
-	rowIndex_t getRowCount(void) const;
-
-	bool reorderRows(const vector<CX_DataFrame::rowIndex_t>& newOrder);
-	CX_DataFrame copyRows(vector<CX_DataFrame::rowIndex_t> rowOrder) const;
-	CX_DataFrame copyColumns(vector<std::string> columns);
-	void shuffleRows(void);
-	void shuffleRows(CX_RandomNumberGenerator &rng);
-
-	template <typename T> std::vector<T> copyColumn(std::string column) const;
-	std::vector<std::string> convertVectorColumnToColumns(std::string columnName, int startIndex, bool deleteOriginal, std::string newBaseName = "");
-	void convertAllVectorColumnsToMultipleColumns(int startIndex, bool deleteOriginals);
 
 private:
 	friend class CX_DataFrameRow;
 	friend class CX_DataFrameColumn;
 
-	std::map <std::string, vector<CX_DataFrameCell>> _data;
+	std::map <std::string, std::vector<CX_DataFrameCell>> _data;
 	rowIndex_t _rowCount;
 	IoOptions _ioOptions;
 
-	void _resizeToFit (std::string column, rowIndex_t row);
-	void _resizeToFit (rowIndex_t row);
-	void _resizeToFit (std::string column);
+	void _resizeToFit(std::string column, rowIndex_t row);
+	void _resizeToFit(rowIndex_t row);
+	void _resizeToFit(std::string column);
 
 	void _equalizeRowLengths (void);
 };
 
 /*! Makes a copy of the data contained in the named column, converting it to the specified type
 (such a conversion must be possible).
-\tparam T The type of data to extract. Must not be std::vector<C>, where C is any type.
+
+Note that if it is a vector column, you will only get the first element of each cell.
+Use CX::CX_DataFrame::copyVectorColumn() to get all of the elements of each cell.
+
+\tparam T The type of data to extract.
 \param column The name of the column to copy data from.
 \return A vector containing the copied data. */
-template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column) const {
+template <typename T> 
+std::vector<T> CX_DataFrame::copyColumn(std::string column) const {
 	//_resizeToFit(column);
-	vector<T> rval;
+	std::vector<T> rval;
 	if (_data.find(column) == _data.end()) {
-		CX::Instances::Log.error("CX_DataFrame") << "copyColumn() given nonexistent column name.";
+		CX::Instances::Log.error("CX_DataFrame") << "copyColumn() given a nonexistent column name.";
 		return rval;
 	}
 
@@ -165,8 +182,29 @@ template <typename T> std::vector<T> CX_DataFrame::copyColumn(std::string column
 	return rval;
 }
 
+/*! Makes a copy of the data contained in the named column, converting it to 
+vectors of the specified type (such a conversion must be possible).
+
+\tparam T The type of data to extract.
+\param column The name of the column to copy data from.
+\return A vector of vectors containing the copied data. */
+template <typename T> 
+std::vector<std::vector<T>> CX_DataFrame::copyVectorColumn(std::string column) const {
+	std::vector<std::vector<T>> rval;
+	if (_data.find(column) == _data.end()) {
+		CX::Instances::Log.error("CX_DataFrame") << "copyColumn() given a nonexistent column name.";
+		return rval;
+	}
+
+	for (unsigned int i = 0; i < _data.at(column).size(); i++) {
+		const CX_DataFrameCell& c = _data.at(column).at(i);
+		rval.push_back(c.toVector<T>());
+	}
+	return rval;
+}
+
 /*! This class represents a column from a CX_DataFrame. It has special behavior that may not be obvious.
-If it is extracted from a CX_DataFrame with the use of CX_DataFrame::operator[](std::string),
+If it is extracted from a CX_DataFrame with the use of CX::CX_DataFrame::operator[](std::string),
 then the extracted column is linked to the original column of data such that if either are modified, both
 will see the effects.
 
@@ -187,7 +225,7 @@ private:
 };
 
 /*! This class represents a row from a CX_DataFrame. It has special behavior that may not be obvious.
-If it is extracted from a CX_DataFrame with the use of CX_DataFrame::operator[](CX_DataFrame::rowIndex_t),
+If it is extracted from a CX_DataFrame with the use of CX::CX_DataFrame::operator[](CX_DataFrame::rowIndex_t),
 then the extracted row is linked to the original row of data such that if either are modified, both
 will see the effects. See the code example.
 If a CX_DataFrameRow is constructed normally (not extracted from a CX_DataFrame) it is not linked to any
