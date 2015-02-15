@@ -111,7 +111,6 @@ namespace Private {
 
 	CX_LogMessageSink::CX_LogMessageSink(CX_LogMessageSink&& ms)
 	{
-	    this->_message = ms._message;
 	    std::swap(this->_message, ms._message);
 	    std::swap(this->_logger, ms._logger);
 	    std::swap(this->_level, ms._level);
