@@ -51,15 +51,15 @@ namespace CX {
 	messages can also be logged to any number of files using CX_Logger::levelForFile(). For each
 	logging target (i.e. the console and the logfiles), you can filter out less severe messages.
 	For example, you could have two log files, one of which contains all messages and the other
-	of which only contains errors and fatal errors. By default, no logfiles are created and 
+	of which only contains errors and fatal errors. By default, no logfiles are created and
 	all messages (with only a few exceptions) are logged to the console. There are a few openFrameworks
 	classes that are extremely verbose, like ofFbo, and less severe messages from those classes
 	are suppressed by default. You can undo this behavior by simply calling CX_Logger::levelForAllModules()
 	with CX_Logger::Level::LOG_ALL as the argument.
-	
-	This class is designed to be partially thread safe. It is safe to use any of the message logging 
+
+	This class is designed to be partially thread safe. It is safe to use any of the message logging
 	functions (log(), verbose(), notice(), 	warning(), error(), and fatalError()) in multiple threads
-	at once. Other than those functions, the other functions should be called only from one thread 
+	at once. Other than those functions, the other functions should be called only from one thread
 	(presumably the main thread).
 
 	\ingroup errorLogging */
@@ -123,7 +123,7 @@ namespace CX {
 
 		void levelForConsole (Level level);
 		void levelForFile(Level level, std::string filename = "CX_LOGGER_DEFAULT");
-		
+
 		void levelForAllExceptions(Level level);
 		void levelForExceptions(Level level, std::string module);
 
@@ -145,7 +145,7 @@ namespace CX {
 		std::vector<CX::Private::CX_LogMessage> _messageQueue;
 		Poco::Mutex _messageQueueMutex;
 		Poco::Mutex _moduleLogLevelsMutex;
-		
+
 
 		CX::Private::CX_LogMessageSink _log(Level level, std::string module);
 
@@ -190,7 +190,7 @@ namespace CX {
 			}
 
 		private:
-			friend class CX_Logger;
+			friend class CX::CX_Logger;
 
 			CX_LogMessageSink(void);
 			CX_LogMessageSink(CX_LogMessageSink&& ms);

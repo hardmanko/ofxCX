@@ -108,10 +108,16 @@ namespace Private {
 		_logger(nullptr)
 	{
 	}
-	
+
 	CX_LogMessageSink::CX_LogMessageSink(CX_LogMessageSink&& ms)
 	{
-		*this = std::move(ms);
+	    this->_message = ms._message;
+	    std::swap(this->_message, ms._message);
+	    std::swap(this->_logger, ms._logger);
+	    std::swap(this->_level, ms._level);
+	    std::swap(this->_module, ms._module);
+
+        //Make sure that the swapped message has no logger.
 		ms._logger = nullptr;
 	}
 
@@ -259,9 +265,9 @@ void CX_Logger::levelForConsole(Level level) {
 
 /*! Sets the log level for the file with the given file name. If the file does not exist, it will be created.
 If the file does exist, it will be overwritten with a warning logged to cerr (typically the console).
-\param level Log messages with level greater than or equal to this level will be outputted to the file. 
+\param level Log messages with level greater than or equal to this level will be outputted to the file.
 See the \ref CX::CX_Logger::Level enum for valid values.
-\param filename The name of the file to output to. If no file name is given, a file with name 
+\param filename The name of the file to output to. If no file name is given, a file with name
 generated from a date/time from the start time of the experiment will be used.
 */
 void CX_Logger::levelForFile(Level level, std::string filename) {
@@ -436,15 +442,15 @@ void CX_Logger::levelForAllExceptions(Level level) {
 }
 
 /*! When a logged message is stored, if its log level is greater than or
-equal to the exception level for the given module, an exception will be thrown. 
+equal to the exception level for the given module, an exception will be thrown.
 The exception will be a std::runtime_error. By default, the exception level is LOG_NONE,
 i.e. that no logged messages will cause an exception to be thrown.
 
 Note that this functionality is useful in two ways. The first is that it helps you if
 you want to make sure that your system fails fast rather than continuing in a degraded state.
-The second is that it helps you to localize the source of the problem. It does this by throwing 
-the exception from the call site of the logged message that triggered the exception. If your 
-deubgger automatically triggers a breakpoint on an exception (e.g. Visual Studio), this will 
+The second is that it helps you to localize the source of the problem. It does this by throwing
+the exception from the call site of the logged message that triggered the exception. If your
+deubgger automatically triggers a breakpoint on an exception (e.g. Visual Studio), this will
 allow you to examine the call stack that led to the exception.
 
 \param level The desired exception level. The naming of the values in \ref CX::CX_Logger::Level
@@ -496,7 +502,7 @@ void CX_Logger::_storeLogMessage(const CX::Private::CX_LogMessageSink& ms) {
 
 /*
 stringstream& CX_Logger::_log(Level level, std::string module) {
-	
+
 	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(module) == _moduleLogLevels.end()) {
 		_moduleLogLevels[module] = _defaultLogLevel;
