@@ -218,6 +218,22 @@ void CX_Mouse::_mouseDraggedEventHandler(ofMouseEventArgs &a) {
 	_mouseEventHandler(a);
 }
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+void CX_Mouse::_mouseWheelScrollHandler(ofMouseEventArgs &a) {
+	CX_Mouse::Event ev;
+
+	ev.time = CX::Instances::Clock.now();
+	ev.uncertainty = ev.time - _lastEventPollTime;
+
+	ev.type = CX_Mouse::SCROLLED;
+
+	ev.button = -1;
+	ev.x = a.x;
+	ev.y = a.y;
+
+	_mouseEvents.push_back(ev);
+}
+#else
 void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 	CX_Mouse::Event ev;
 	
@@ -232,6 +248,7 @@ void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 
 	_mouseEvents.push_back(ev);
 }
+#endif
 
 void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &ofEvent) {
 	CX_Mouse::Event ev;
@@ -286,14 +303,23 @@ void CX_Mouse::_listenForEvents(bool listen) {
 		ofAddListener(ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler);
 		ofAddListener(ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler);
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+		ofAddListener(ofEvents().mouseScrolled, this, &CX_Mouse::_mouseWheelScrollHandler);
+#else
 		ofAddListener(CX::Private::getEvents().scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler);
+#endif
+
 	} else {
 		ofRemoveListener(ofEvents().mousePressed, this, &CX_Mouse::_mouseButtonPressedEventHandler);
 		ofRemoveListener(ofEvents().mouseReleased, this, &CX_Mouse::_mouseButtonReleasedEventHandler);
 		ofRemoveListener(ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler);
 		ofRemoveListener(ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler);
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+		ofRemoveListener(ofEvents().mouseScrolled, this, &CX_Mouse::_mouseWheelScrollHandler);
+#else
 		ofRemoveListener(CX::Private::getEvents().scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler);
+#endif
 	}
 	_listeningForEvents = listen;
 }

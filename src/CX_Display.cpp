@@ -27,7 +27,11 @@ CX_Display::~CX_Display(void) {
 /*! Set up the display. Must be called for the display to function correctly. */
 void CX_Display::setup(void) {
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+	_renderer = CX::Private::appWindow->renderer();
+#else
 	_renderer = ofGetGLProgrammableRenderer();
+#endif
 
 	//Making the swap thread here is a work-around for some stupidity in oF or Poco (can't tell which) where
 	//objects inheriting from ofThread cannot be constructed "too early" in program execution (where the quotes 
@@ -202,19 +206,30 @@ Disp.endDrawingToBackBuffer();
 \endcode
 */
 void CX_Display::beginDrawingToBackBuffer(void) {
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+	_renderer->startRender();
+	//_renderer->viewport();
+	_renderer->setupScreen();
+#else
 	if (_renderer) {
 		_renderer->startRender();
 	}
 
 	ofViewport();
 	ofSetupScreen();
+#endif
 }
 
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
 void CX_Display::endDrawingToBackBuffer(void) {
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+	_renderer->finishRender();
+#else
 	if (_renderer) {
 		_renderer->finishRender();
 	}
+#endif
+
 	glFlush(); //This is very important, because it seems like commands are buffered in a thread-local fashion initially.
 		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush
 		//that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush

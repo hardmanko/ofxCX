@@ -83,7 +83,13 @@ namespace CX {
 
 	private:
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+		//Because of the new way in which renderers are associated with windows, 
+		//this should instead get the renderer via CX::Private::appWindow->renderer()
+		std::shared_ptr<ofBaseRenderer> _renderer; 
+#else
 		ofPtr<ofGLProgrammableRenderer> _renderer;
+#endif
 
 		std::unique_ptr<Private::CX_VideoBufferSwappingThread> _swapThread;
 

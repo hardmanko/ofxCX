@@ -164,7 +164,7 @@ namespace CX {
 
 		void setMessageFlushCallback(std::function<void(CX_MessageFlushData&)> f);
 
-		void captureOFLogMessages(void);
+		void captureOFLogMessages(bool capture);
 
 	private:
 

@@ -155,12 +155,15 @@ CX_Logger::CX_Logger(void) :
 }
 
 CX_Logger::~CX_Logger(void) {
+	this->captureOFLogMessages(false);
+
 	ofRemoveListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
 
 	flush();
+
 	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
-			_targetInfo[i].file->close();
+			//_targetInfo[i].file->close(); //They should already be closed from flush()
 			delete _targetInfo[i].file;
 		}
 	}
@@ -416,10 +419,17 @@ CX::Private::CX_LogMessageSink CX_Logger::fatalError(std::string module) {
 }
 
 /*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions.
-This function is called during CX setup for CX::Instances::Log. You do not need to call it yourself. */
-void CX_Logger::captureOFLogMessages(void) {
-	ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
-	ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);
+This function is called during CX setup for CX::Instances::Log. You do not need to call it yourself. 
+
+\param capture If `true`, capture oF log messages. If `false`, oF log messages go to the console.
+*/
+void CX_Logger::captureOFLogMessages(bool capture) {
+	if (capture) {
+		ofLogToConsole();
+	} else {
+		ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
+		ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);
+	}
 }
 
 /*! When a logged message is stored, if its log level is greater than or
