@@ -315,6 +315,10 @@ junction will be joined with a circle.
 but that function can break in various ways.
 */
 void lines(std::vector<ofPoint> points, float lineWidth) {
+	if (points.size() < 2) {
+		return;
+	}
+
 	float d = lineWidth / 2;
 	Draw::line(points[0], points[1], lineWidth);
 	for (unsigned int i = 1; i < points.size() - 1; i++) {
