@@ -112,22 +112,32 @@ namespace CX {
 		};
 
 		/*! This struct contains information about errors that were detected during slide presentation.
-		See CX_SlidePresenter::checkForPresentationErrors(). */
+		See CX_SlidePresenter::checkForPresentationErrors() for how to get this information.
+		
+		Note that false positives are possible. For example, when considering late starts, it is possible
+		that a slide was actually presented on time, but CX did not learn that the presentation was started
+		until after the intended start time.
+
+		It is possible for errors to be counted multiple times. For example, one slide might be copied to 
+		the back buffer late (1 error) and, as a result, presented late (2 errors), which also means that 
+		it has an incorrect frame count (3 errors).
+		*/
 		struct PresentationErrorInfo {
 			PresentationErrorInfo(void) :
 				presentationErrorsSuccessfullyChecked(false),
 				incorrectFrameCounts(0),
-				lateCopiesToBackBuffer(0)
+				lateCopiesToBackBuffer(0),
+				lateStarts(0)
 			{}
 
 			/*! \brief The names of all of the slides that had any errors. */
-			std::set< std::string > namesOfSlidesWithErrors;
+			std::vector< std::string > namesOfSlidesWithErrors;
 
 			/*! \brief True if presentation errors were successfully checked for. This does not mean that there were
 			no presentation errors, but that there were no presentation error checking errors. */
 			bool presentationErrorsSuccessfullyChecked;
 
-			/*! The number of slides for which the actual and intended frame counts did not match,
+			/*! \brief The number of slides for which the actual and intended frame counts did not match,
 			indicating that the slide was presented for too many or too few frames.	*/
 			unsigned int incorrectFrameCounts;
 
@@ -135,9 +145,13 @@ namespace CX {
 			to the back buffer was after the actual start time of the slide. */
 			unsigned int lateCopiesToBackBuffer;
 
+			/*! \brief The number of slides for which the start time was later than the intended
+			start time. */
+			unsigned int lateStarts;
+
 			/*! \brief Returns the sum of the different types of errors that are measured. */
 			unsigned int totalErrors(void) {
-				return incorrectFrameCounts + lateCopiesToBackBuffer;
+				return incorrectFrameCounts + lateCopiesToBackBuffer + lateStarts;
 			}
 
 		};

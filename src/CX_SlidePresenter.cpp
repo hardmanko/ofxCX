@@ -499,17 +499,28 @@ CX_SlidePresenter::PresentationErrorInfo CX_SlidePresenter::checkForPresentation
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 		const CX_SlidePresenter::Slide &sl = _slides.at(i);
 
+		bool errorOnThisSlide = false;
+
 		if (sl.intended.frameCount != sl.actual.frameCount) {
 			//This error does not apply to the last slide because the duration of the last slide is undefined.
 			if (i != _slides.size() - 1) {
 				errors.incorrectFrameCounts++;
-				errors.namesOfSlidesWithErrors.insert(sl.name);
+				errorOnThisSlide = true;
 			}
 		}
 
 		if (sl.copyToBackBufferCompleteTime > sl.actual.startTime) {
 			errors.lateCopiesToBackBuffer++;
-			errors.namesOfSlidesWithErrors.insert(sl.name);
+			errorOnThisSlide = true;
+		}
+
+		if (sl.actual.startTime > sl.intended.startTime) {
+			errors.lateStarts++;
+			errorOnThisSlide = true;
+		}
+
+		if (errorOnThisSlide) {
+			errors.namesOfSlidesWithErrors.push_back(sl.name);
 		}
 	}
 
