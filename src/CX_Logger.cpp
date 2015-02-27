@@ -79,25 +79,29 @@ namespace Private {
 	void CX_LoggerChannel::log(ofLogLevel level, const std::string & module, const char* format, va_list args) {
 		int bufferSize = 256;
 
-		char *buffer = new char[bufferSize];
-
 		while (true) {
+
+			char *buffer = new char[bufferSize];
 
 			int result = vsnprintf(buffer, bufferSize - 1, format, args);
 			if ((result > 0) && (result < bufferSize)) {
 				this->log(level, module, std::string(buffer));
-				break;
+
+				delete[] buffer;
+				buffer = nullptr;
+				return;
 			}
+
+			delete[] buffer;
+			buffer = nullptr;
 
 			bufferSize *= 4;
 			if (bufferSize > 17000) { //Largest possible is 16384 chars.
 				this->log(ofLogLevel::OF_LOG_ERROR, "CX_LoggerChannel", "Could not convert formatted arguments: "
 						  "Resulting message would have been too long.");
-				break;
+				return;
 			}
 		}
-
-		delete[] buffer;
 	}
 
 
@@ -560,7 +564,7 @@ std::string CX_Logger::_formatMessage(const CX::Private::CX_LogMessage& message)
 }
 
 void CX_Logger::_loggerChannelEventHandler(CX::Private::CX_ofLogMessageEventData_t& md) {
-	Level convertedLevel;
+	Level convertedLevel = Level::LOG_NOTICE;
 
 	switch (md.level) {
 	case ofLogLevel::OF_LOG_VERBOSE: convertedLevel = Level::LOG_VERBOSE; break;

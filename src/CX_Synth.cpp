@@ -642,7 +642,7 @@ double Envelope::getNextSample(void) {
 		_r = r.getValue();
 	}
 
-	double p;
+	double p = 0;
 
 	switch (_stage) {
 	case 0:
