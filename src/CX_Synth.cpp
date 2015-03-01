@@ -642,30 +642,45 @@ double Envelope::getNextSample(void) {
 		_r = r.getValue();
 	}
 
-	double p;
+	//p is the proportion of the envelope, that controls e.g. how loud the output is.
+	double p = _lastP; //In case somehow none of the cases is hit, the level is just the last level
 
 	switch (_stage) {
+	//Attack:
 	case 0:
+		//If within the attack time
 		if ((_timeSinceLastStage < _a) && (_a != 0)) {
+			//The proportion is the amount of time spent in attack so far divided by the length of the attack
 			p = _timeSinceLastStage / _a;
 			break;
 		} else {
 			_timeSinceLastStage = 0;
 			_stage++;
+			//Intentional fall through
 		}
+	//Decay:
 	case 1:
+		//If within the decay time
 		if ((_timeSinceLastStage < _d) && (_d != 0)) {
+			//The proportion the linear interpolation between the max (1) and the sustain 
+			//level (_s) as a function of time in the decay stage
 			p = 1 - (_timeSinceLastStage / _d) * (1 - _s);
 			break;
 		} else {
 			_timeSinceLastStage = 0;
 			_stage++;
+			//Intentional fall through
 		}
+	//Sustain:
 	case 2:
-		p = _s;
+		p = _s; //The proportion is just the sustain level. Sustain lasts indefinitely until another event ends the sustain.
 		break;
+	//Release:
 	case 3:
+		//If within the release time
 		if ((_timeSinceLastStage < _r) && (_r != 0)) {
+			//The p is the linear interpolation between the level that the envelope was at when the release 
+			//happened (not neccessarily the sustain level!) as a function of time in the release stage
 			p = (1 - _timeSinceLastStage / _r) * _levelAtRelease;
 			break;
 		} else {
