@@ -3,6 +3,8 @@
 #include "ofMain.h"
 #include "ofConstants.h"
 
+#include "CX_Private.h"
+
 static unsigned int multisamplingSampleCount = 4; //This is set during setup
 
 namespace CX {
@@ -42,6 +44,14 @@ namespace Util {
 				"openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
 		}
 		return false;
+	}
+
+	bool setProcessToHighPriority(void) {
+#ifdef TARGET_WIN32
+		return CX::Private::Windows::setProcessToHighPriority();
+#else
+		CX::Instances::Log.error() << "setProcessToHighPriority(): CX does not support setting high process priority on your operating system.";
+#endif
 	}
 
 	/*! Writes data to a file, either appending the data to an existing file or creating a new file, overwriting

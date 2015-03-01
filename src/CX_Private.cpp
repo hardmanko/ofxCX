@@ -126,5 +126,47 @@ int stringToBooleint(std::string s) {
 	return -1;
 }
 
+namespace Windows {
+	std::string convertErrorCodeToString(DWORD errorCode) {
+
+		if (errorCode == 0) {
+			return "No error.";
+		}
+
+		LPSTR messageBuffer = nullptr;
+		size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+									 NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+		std::string message(messageBuffer, size);
+
+		LocalFree(messageBuffer); //Free the buffer.
+
+		return message;
+	}
+
+	bool setProcessToHighPriority(void) {
+		//See https://msdn.microsoft.com/en-us/library/ms686219%28v=vs.85%29.aspx
+
+		DWORD dwError;
+		DWORD dwPriClass;
+
+		HANDLE thisProcess = GetCurrentProcess();
+
+		if (!SetPriorityClass(thisProcess, HIGH_PRIORITY_CLASS)) {
+			dwError = GetLastError();
+			CX::Instances::Log.error() << "Error setting process priority: " << convertErrorCodeToString(dwError);
+			return false;
+		}
+
+		dwPriClass = GetPriorityClass(GetCurrentProcess());
+
+		if (dwPriClass != HIGH_PRIORITY_CLASS) {
+			CX::Instances::Log.error() << "Failed to set priority to high.";
+			return false;
+		}
+		return true;
+	}
+} //namespace Windows
+
 } //namespace Private
 } //namespace CX

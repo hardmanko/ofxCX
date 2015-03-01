@@ -38,6 +38,8 @@ namespace CX {
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log = true);
 
+		bool setProcessToHighPriority(void);
+
 		unsigned int getMsaaSampleCount(void); //Move to Draw ns?
 
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);

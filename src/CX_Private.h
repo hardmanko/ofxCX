@@ -14,7 +14,7 @@
 
 
 #ifdef TARGET_LINUX
-//so apparently sysmacros.h defines some macros with these names on Linux... f
+//so apparently sysmacros.h defines some macros with these names on Linux...
 #ifdef major
 #undef major
 #endif
@@ -62,6 +62,12 @@ namespace Private {
 
 	int stringToBooleint(std::string s);
 
+#ifdef TARGET_WIN32
+	namespace Windows {
+		std::string convertErrorCodeToString(DWORD errorCode);
+		bool setProcessToHighPriority(void);
+	}
+#endif
 
 }
 }
