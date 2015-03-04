@@ -89,9 +89,9 @@ ofPoint CX_Mouse::getCursorPosition(void) {
 \param show If true, the cursor will be shown, if false it will not be shown. */
 void CX_Mouse::showCursor(bool show) {
 	if (show) {
-		CX::Private::appWindow->showCursor();
+		ofShowCursor();
 	} else {
-		CX::Private::appWindow->hideCursor();
+		ofHideCursor();
 	}
 }
 

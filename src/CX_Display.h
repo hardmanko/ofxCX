@@ -65,7 +65,6 @@ namespace CX {
 		void setFramePeriod(CX_Millis knownPeriod);
 
 		void setWindowResolution(int width, int height);
-		void setWindowTitle(std::string title);
 		ofRectangle getResolution(void) const;
 		ofPoint getCenter(void) const;
 

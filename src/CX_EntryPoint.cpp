@@ -168,7 +168,8 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
 
 	CX::Private::appWindow->initializeWindow();
-	CX::Private::appWindow->setWindowTitle(config.windowTitle);
+
+	ofSetWindowTitle(config.windowTitle);
 
 	return true;
 }

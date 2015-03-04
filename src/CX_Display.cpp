@@ -45,7 +45,6 @@ example below:
 \code
 display.windowWidth = 600
 display.windowHeight = 300
-display.windowTitle = My Neat Name
 display.fullscreen = false
 display.hardwareVSync = true
 //display.softwareVSync = false //Commented out: no change
@@ -82,10 +81,6 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 	if (kv.find("display.windowHeight") != kv.end()) {
 		int height = ofFromString<int>(kv.at("display.windowHeight"));
 		this->setWindowResolution(this->getResolution().width, height);
-	}
-
-	if (kv.find("display.windowTitle") != kv.end()) {
-		this->setWindowTitle(kv["display.windowTitle"]);
 	}
 
 	if (kv.find("display.hardwareVSync") != kv.end()) {
@@ -297,12 +292,6 @@ void CX_Display::setWindowResolution(int width, int height) {
 	}
 }
 
-/*! Sets the title of the experiment window.
-\param title The new window title. */
-void CX_Display::setWindowTitle(std::string title) {
-	CX::Private::appWindow->setWindowTitle(title);
-}
-
 /*! This function estimates the typical period of the display refresh.
 This function blocks for estimationInterval while the swapping thread swaps in the background (see \ref blockingCode).
 This function is called during setup of this class, so
@@ -416,12 +405,12 @@ void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
 the resolution may not be the same as the resolution of display in windowed mode, and vice
 versa. */
 void CX_Display::setFullscreen(bool fullscreen) {
-	CX::Private::appWindow->setFullscreen(fullscreen);
+	ofSetFullscreen(fullscreen);
 }
 
 /*! \brief Returns `true` if the display is in full screen mode, false otherwise. */
 bool CX_Display::isFullscreen(void) {
-	return (CX::Private::appWindow->getWindowMode() == OF_FULLSCREEN);
+	return (ofGetWindowMode() == OF_FULLSCREEN);
 }
 
 /*! Sets whether the display is using hardware VSync to control frame presentation.

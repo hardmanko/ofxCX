@@ -54,9 +54,7 @@ void runExperiment(void) {
 	Input.setup(true, true);
 
 	Disp.setWindowResolution(800, 600);
-	Disp.setWindowTitle("CX Rendering Test");
-
-	Disp.setYIncreasesUpwards(false);
+	ofSetWindowTitle("CX Rendering Test");
 
 #ifdef CX_RT_USE_FBO
 	//This is the most simple way to use an ofFbo. You must allocate the fbo before you use it.
