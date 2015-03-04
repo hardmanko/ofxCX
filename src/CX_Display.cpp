@@ -1,6 +1,7 @@
 #include "CX_Display.h"
 
 #include "CX_Private.h" //glfwContext
+#include "CX_AppWindow.h"
 
 /*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
 is that during CX setup, before reaching user code in runExperiment(), CX_Display::setup() is called.
@@ -197,20 +198,30 @@ Disp.endDrawingToBackBuffer();
 \endcode
 */
 void CX_Display::beginDrawingToBackBuffer(void) {
+#ifdef TARGET_RASPBERRY_PI
+	((CX::Private::CX_RPiAppWindow*)CX::Private::appWindow.get())->beginRendering();
+#else
 	if (_renderer) {
 		_renderer->startRender();
 	}
 
 	ofViewport();
 	ofSetupScreen();
+#endif
 }
 
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
 void CX_Display::endDrawingToBackBuffer(void) {
+#ifdef TARGET_RASPBERRY_PI
+	((CX::Private::CX_RPiAppWindow*)CX::Private::appWindow.get())->drawMouseCursor();
+	((CX::Private::CX_RPiAppWindow*)CX::Private::appWindow.get())->endRendering();
+#else
 	if (_renderer) {
 		_renderer->finishRender();
 	}
-	glFlush(); //This is very important, because it seems like commands are buffered in a thread-local fashion initially.
+#endif
+
+	glFlush(); //This is very important, because it seems like OpenGL commands are buffered in a thread-local fashion initially.
 		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush
 		//that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush
 		//here guarantees at least some amount of security that the rendering thread's commands will be executed before
@@ -227,7 +238,12 @@ void CX_Display::swapBuffers(void) {
 			"while automatic buffer swapping mode was in use.";
 	}
 
+#ifdef TARGET_RASPBERRY_PI
+	((CX::Private::CX_RPiAppWindow*)CX::Private::appWindow.get())->swapBuffers();
+#else
 	glfwSwapBuffers(CX::Private::glfwContext);
+#endif
+	
 	if (_softVSyncWithGLFinish) {
 		glFinish();
 	}
@@ -425,11 +441,7 @@ a Vsync setting, it is still possible that this function will have not have the
 expected effect. OpenGL seems to struggle with VSync.
 \see See \ref visualStimuli for information on what VSync is. */
 void CX_Display::useHardwareVSync(bool b) {
-	if (b) {
-		glfwSwapInterval(1);
-	} else {
-		glfwSwapInterval(0);
-	}
+	ofSetVerticalSync(b);
 }
 
 /*! Sets whether the display is using software VSync to control frame presentation.

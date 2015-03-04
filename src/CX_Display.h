@@ -18,7 +18,6 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 #include "ofAppRunner.h"
 #include "ofGLProgrammableRenderer.h"
 
-#include "CX_Private.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 #include "CX_VideoBufferSwappingThread.h"

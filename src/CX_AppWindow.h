@@ -1,6 +1,121 @@
-/* This class is very obviously based heavily on ofAppGLFWWindow, but I thought I would clarify the matter. -KH */
+/* These classes are very obviously based heavily on ofAppGLFWWindow and ofAppEGLWindow; they are forks of the original oF classes. -Kyle */
 
 #pragma once
+
+#ifdef TARGET_RASPBERRY_PI
+#include "ofAppEGLWindow.h"
+
+namespace CX {
+namespace Private {
+	class CX_RPiAppWindow : public ofAppEGLWindow {
+	public:
+
+		void beginRendering(void) {
+			// take care of any requests for a new screen mode
+			if (windowMode != OF_GAME_MODE && bNewScreenMode){
+				if (windowMode == OF_FULLSCREEN){
+					setWindowRect(getScreenRect());
+				} else if (windowMode == OF_WINDOW){
+					setWindowRect(nonFullscreenWindowRect);
+				}
+				bNewScreenMode = false;
+			}
+
+				///////////////////////////////////////////////////////////////////////////////////////
+				// set viewport, clear the screen
+
+				ofPtr<ofGLProgrammableRenderer> renderer = ofGetGLProgrammableRenderer();
+				if (renderer){
+					renderer->startRender();
+				}
+
+				ofViewport(0, 0, getWindowWidth(), getWindowHeight());    // used to be glViewport( 0, 0, width, height );
+
+				/*
+				float * bgPtr = ofBgColorPtr();
+				bool bClearAuto = ofbClearBg();
+
+				if (bClearAuto == true || ofGetFrameNum() < 3){
+				ofClear(bgPtr[0] * 255, bgPtr[1] * 255, bgPtr[2] * 255, bgPtr[3] * 255);
+				}
+				*/
+
+				if (bEnableSetupScreen) ofSetupScreen(); // this calls into the current renderer (ofSetupScreenPerspective)
+
+		}
+
+		void endRendering(void) {
+			ofPtr<ofGLProgrammableRenderer> renderer = ofGetGLProgrammableRenderer();
+			if (renderer) {
+				renderer->finishRender();
+			}
+
+			//swapBuffers();
+
+			nFramesSinceWindowResized++;
+		}
+
+		void swapBuffers(void) {
+			EGLBoolean success = eglSwapBuffers(eglDisplay, eglSurface);
+			if (!success) {
+				GLint error = eglGetError();
+				ofLogNotice("ofAppEGLWindow") << "display(): eglSwapBuffers failed: " << eglErrorString(error);
+			}
+		}
+
+		void drawMouseCursor(void) {
+			if (isUsingX11 || !bShowCursor) {
+				return;
+			}
+
+			GLboolean bIsDepthTestEnabled = GL_FALSE;
+			glGetBooleanv(GL_DEPTH_TEST, &bIsDepthTestEnabled);
+
+			if (bIsDepthTestEnabled == GL_TRUE) {
+				glDisable(GL_DEPTH_TEST);
+			}
+
+			bool isUsingNormalizedTexCoords = ofGetUsingNormalizedTexCoords();
+			if (isUsingNormalizedTexCoords) {
+				ofDisableNormalizedTexCoords();
+			}
+
+			ofPushStyle();
+			ofEnableAlphaBlending();
+			ofDisableTextureEdgeHack();
+			ofSetColor(255);
+			mouseCursor.draw(ofGetMouseX(), ofGetMouseY());
+			ofEnableTextureEdgeHack();
+			//TODO: we need a way of querying the previous state of texture hack
+			ofPopStyle();
+
+			if (bIsDepthTestEnabled == GL_TRUE) {
+				glEnable(GL_DEPTH_TEST);
+			}
+
+			if (isUsingNormalizedTexCoords) {
+				ofEnableNormalizedTexCoords();
+			}
+
+		}
+
+		using ofAppEGLWindow::checkEvents;
+
+	private:
+
+
+};
+
+	typedef CX_RPiAppWindow CX_AppWindow;
+} //namespace Private
+} //namespace CX
+
+
+
+#else //target anything but RPi
+
+
+
 
 #include "ofConstants.h"
 
@@ -18,168 +133,170 @@
 
 class ofBaseApp;
 
+
 namespace CX {
-namespace Private {
-
-class CX_AppWindow : public ofAppBaseWindow {
-
-	static GLFWwindow* windowP;
-
-public:
-
-	CX_AppWindow();
-	~CX_AppWindow(){}
+	namespace Private {
 
 
-	// window settings, this functions can be called from main before calling ofSetupOpenGL
-	void setNumSamples(int samples);
-	void setDoubleBuffering(bool doubleBuff);
-	void setColorBits(int r, int g, int b);
-	void setAlphaBits(int a);
-	void setDepthBits(int depth);
-	void setStencilBits(int stencil);
-	void listVideoModes();
-	bool isWindowIconified();
-	bool isWindowActive();
-	bool isWindowResizeable();
-	void iconify(bool bIconify);
-	void setMultiDisplayFullscreen(bool bMultiFullscreen); //note this just enables the mode, you have to toggle fullscreen to activate it.
+		class CX_AppWindow : public ofAppBaseWindow {
+
+			static GLFWwindow* windowP;
+
+		public:
+
+			CX_AppWindow();
+			~CX_AppWindow(){}
 
 
-	// this functions are only meant to be called from inside OF don't call them from your code
-	void setOpenGLVersion(int major, int minor);
-	void setGLSLVersion(int major, int minor); //0.0 is interpreted as "does not have GLSL".
-	void setupOpenGL(int w, int h, int screenMode);
-	void setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction = nullptr);
-	void initializeWindow();
-	void runAppViaInfiniteLoop(ofBaseApp * appPtr);
+			// window settings, this functions can be called from main before calling ofSetupOpenGL
+			void setNumSamples(int samples);
+			void setDoubleBuffering(bool doubleBuff);
+			void setColorBits(int r, int g, int b);
+			void setAlphaBits(int a);
+			void setDepthBits(int depth);
+			void setStencilBits(int stencil);
+			void listVideoModes();
+			bool isWindowIconified();
+			bool isWindowActive();
+			bool isWindowResizeable();
+			void iconify(bool bIconify);
+			void setMultiDisplayFullscreen(bool bMultiFullscreen); //note this just enables the mode, you have to toggle fullscreen to activate it.
 
 
-	void hideCursor();
-	void showCursor();
+			// this functions are only meant to be called from inside OF don't call them from your code
+			void setOpenGLVersion(int major, int minor);
+			void setGLSLVersion(int major, int minor); //0.0 is interpreted as "does not have GLSL".
+			void setupOpenGL(int w, int h, int screenMode);
+			void setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction = nullptr);
+			void initializeWindow();
+			void runAppViaInfiniteLoop(ofBaseApp * appPtr);
 
-	int getHeight();
-	int getWidth();
 
-	ofVec3f		getWindowSize();
-	ofVec3f		getScreenSize();
-	ofVec3f 	getWindowPosition();
+			void hideCursor();
+			void showCursor();
 
-	void setWindowTitle(string title);
-	void setWindowPosition(int x, int y);
-	void setWindowShape(int w, int h);
+			int getHeight();
+			int getWidth();
 
-	void			setOrientation(ofOrientation orientation);
-	ofOrientation	getOrientation();
+			ofVec3f		getWindowSize();
+			ofVec3f		getScreenSize();
+			ofVec3f 	getWindowPosition();
 
-	int			getWindowMode();
+			void setWindowTitle(string title);
+			void setWindowPosition(int x, int y);
+			void setWindowShape(int w, int h);
 
-	void		setFullscreen(bool fullscreen);
-	void		toggleFullscreen();
+			void			setOrientation(ofOrientation orientation);
+			ofOrientation	getOrientation();
 
-	void		enableSetupScreen();
-	void		disableSetupScreen();
+			int			getWindowMode();
 
-	void		setVerticalSync(bool bSync);
+			void		setFullscreen(bool fullscreen);
+			void		toggleFullscreen();
 
-	int			getCurrentMonitor();
+			void		enableSetupScreen();
+			void		disableSetupScreen();
+
+			void		setVerticalSync(bool bSync);
+
+			int			getCurrentMonitor();
 
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
-	Display* 	getX11Display();
-	Window  	getX11Window();
+			Display* 	getX11Display();
+			Window  	getX11Window();
 #endif
 
 #if defined(TARGET_LINUX) && !defined(TARGET_OPENGLES)
-	GLXContext 	getGLXContext();
+			GLXContext 	getGLXContext();
 #endif
 
 #if defined(TARGET_LINUX) && defined(TARGET_OPENGLES)
-	EGLDisplay 	getEGLDisplay();
-	EGLContext 	getEGLContext();
-	EGLSurface 	getEGLSurface();
+			EGLDisplay 	getEGLDisplay();
+			EGLContext 	getEGLContext();
+			EGLSurface 	getEGLSurface();
 #endif
 
 #if defined(TARGET_OSX)
-	void *		getNSGLContext();
-	void *		getCocoaWindow();
+			void *		getNSGLContext();
+			void *		getCocoaWindow();
 #endif
 
 #if defined(TARGET_WIN32)
-	HGLRC 		getWGLContext();
-	HWND 		getWin32Window();
+			HGLRC 		getWGLContext();
+			HWND 		getWin32Window();
 #endif
 
 
-private:
-	// callbacks
-	void			display(void);
+		private:
+			// callbacks
+			void			display(void);
 
-	static void     error_cb(int code, const char* message);
-	static void 	mouse_cb(GLFWwindow* windowP_, int button, int state, int mods);
-	static void 	motion_cb(GLFWwindow* windowP_, double x, double y);
+			static void     error_cb(int code, const char* message);
+			static void 	mouse_cb(GLFWwindow* windowP_, int button, int state, int mods);
+			static void 	motion_cb(GLFWwindow* windowP_, double x, double y);
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
-	static void 	keyboard_cb(GLFWwindow* windowP_, int key, int scancode, unsigned int codepoint, int action, int mods);
+			static void 	keyboard_cb(GLFWwindow* windowP_, int key, int scancode, unsigned int codepoint, int action, int mods);
 #elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
-	static void 	keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods);
+			static void 	keyboard_cb(GLFWwindow* windowP_, int key, int scancode, int action, int mods);
 #endif
-	static void 	resize_cb(GLFWwindow* windowP_, int w, int h);
-	static void 	exit_cb(GLFWwindow* windowP_);
-	static void		scroll_cb(GLFWwindow* windowP_, double x, double y);
-	static void		drop_cb_080(GLFWwindow* windowP_, const char* dropString);
-	static void 	drop_cb(GLFWwindow* windowP_, int numFiles, const char** dropString);
-	static void 	exitApp();
+			static void 	resize_cb(GLFWwindow* windowP_, int w, int h);
+			static void 	exit_cb(GLFWwindow* windowP_);
+			static void		scroll_cb(GLFWwindow* windowP_, double x, double y);
+			static void		drop_cb_080(GLFWwindow* windowP_, const char* dropString);
+			static void 	drop_cb(GLFWwindow* windowP_, int numFiles, const char** dropString);
+			static void 	exitApp();
 
 #ifdef TARGET_LINUX
-	void setWindowIcon(const string & path);
-	void setWindowIcon(const ofPixels & iconPixels);
+			void setWindowIcon(const string & path);
+			void setWindowIcon(const ofPixels & iconPixels);
 #endif
 
-	//utils
-	int				samples;
-	int				rBits, gBits, bBits, aBits, depthBits, stencilBits;
+			//utils
+			int				samples;
+			int				rBits, gBits, bBits, aBits, depthBits, stencilBits;
 
-	int				windowMode;
+			int				windowMode;
 
-	bool			bEnableSetupScreen;
+			bool			bEnableSetupScreen;
 
-	int				requestedWidth;
-	int				requestedHeight;
+			int				requestedWidth;
+			int				requestedHeight;
 
-	int 			nonFullScreenW;
-	int 			nonFullScreenH;
-	int 			nonFullScreenX;
-	int 			nonFullScreenY;
+			int 			nonFullScreenW;
+			int 			nonFullScreenH;
+			int 			nonFullScreenX;
+			int 			nonFullScreenY;
 
-	int				buttonInUse;
-	bool			buttonPressed;
+			int				buttonInUse;
+			bool			buttonPressed;
 
-	int				windowW;
-	int				windowH;
+			int				windowW;
+			int				windowH;
 
-	int 			nFramesSinceWindowResized;
-	bool			bDoubleBuffered;
-	bool            bMultiWindowFullscreen;
+			int 			nFramesSinceWindowResized;
+			bool			bDoubleBuffered;
+			bool            bMultiWindowFullscreen;
 
-	static CX_AppWindow	* instance;
-	static ofBaseApp *	ofAppPtr;
+			static CX_AppWindow	* instance;
+			static ofBaseApp *	ofAppPtr;
 
-	ofOrientation orientation;
+			ofOrientation orientation;
 
-	int glVersionMinor, glVersionMajor;
+			int glVersionMinor, glVersionMajor;
 
-	int glslVersionMinor;
-	int glslVersionMajor;
+			int glslVersionMinor;
+			int glslVersionMajor;
 
-	bool iconSet;
+			bool iconSet;
 
 #ifdef TARGET_WIN32
-	LONG lExStyle, lStyle;
+			LONG lExStyle, lStyle;
 #endif // TARGET_WIN32
-};
+		};
 
-} //namespace Private
+	} //namespace Private
 } //namespace CX
 
 
+#endif
 
-//#endif

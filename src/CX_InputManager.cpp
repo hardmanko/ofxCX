@@ -1,6 +1,7 @@
 #include "CX_InputManager.h"
 
 #include "CX_AppWindow.h" //glfwPollEvents()
+#include "CX_Private.h"
 
 namespace CX {
 
@@ -58,8 +59,11 @@ namespace CX {
 	already stored in Mouse, Keyboard, or Joystick that had not been processed by user code at the time this 
 	function was called, this function will return `true`. */
 	bool CX_InputManager::pollEvents(void) {
-
+#ifdef TARGET_RASPBERRY_PI
+		((CX::Private::CX_RPiAppWindow*)CX::Private::appWindow.get())->checkEvents();
+#else
 		glfwPollEvents();
+#endif
 		CX_Millis pollCompleteTime = CX::Instances::Clock.now();
 
 		if (_usingJoystick) {

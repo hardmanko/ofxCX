@@ -18,8 +18,9 @@ void setupCX(void) {
 	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
 	CX::Instances::Log.level(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the shader gobbeldygook.
 
-
+#ifndef TARGET_RASPBERRY_PI
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
+#endif
 
 	bool openedSucessfully = reopenWindow(CX::CX_WindowConfiguration_t()); //or for the first time.
 
@@ -47,6 +48,7 @@ void setupCX(void) {
 		//are really verbose when allocated and it is a lot of gibberish.
 }
 
+#ifndef TARGET_RASPBERRY_PI
 void reopenWindow080(CX_WindowConfiguration_t config) {
 
 	CX::Private::appWindow = ofPtr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
@@ -101,7 +103,44 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 	((CX::Private::CX_AppWindow*)CX::Private::appWindow.get())->setupOpenGL(config.width, config.height, config.mode, config.preOpeningUserFunction);
 }
 
+#else
+
+void reopenWindow084(CX_WindowConfiguration_t config) {
+
+	CX::Private::appWindow = ofPtr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
+
+	//CX::Private::CX_AppWindow* awp = (CX::Private::CX_AppWindow*)CX::Private::appWindow.get();
+
+	ofSetupOpenGL(CX::Private::appWindow, config.width, config.height, config.mode);
+
+	/*
+	unsigned int appWindowAllocationSize = std::max(sizeof(CX::Private::CX_AppWindow), sizeof(ofAppGLFWWindow));
+
+	void* windowP = new char[appWindowAllocationSize];
+	windowP = new(windowP) ofAppGLFWWindow;
+
+	glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
+	ofSetupOpenGL((ofAppGLFWWindow*)windowP, config.width, config.height, config.mode);
+	if (glfwGetCurrentContext() != NULL) {
+		glfwDestroyWindow(glfwGetCurrentContext()); //Close temporary window
+	}
+	glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
+
+	windowP = new(windowP) CX::Private::CX_AppWindow;
+
+	CX::Private::appWindow = ofPtr<ofAppBaseWindow>((CX::Private::CX_AppWindow*)windowP);
+
+	CX::Private::CX_AppWindow* awp = (CX::Private::CX_AppWindow*)CX::Private::appWindow.get();
+	awp->setGLESVersion(2);
+
+	((CX::Private::CX_AppWindow*)CX::Private::appWindow.get())->setupOpenGL(config.width, config.height, config.mode);
+	*/
+}
+#endif
+
 } //namespace Private
+
+#ifndef TARGET_RASPBERRY_PI
 
 /*! This function opens a GLFW window that can be rendered to. If another window was already
 open by the application at the time this is called, that window will be closed. This is useful
@@ -173,6 +212,81 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 
 	return true;
 }
+
+#else //target is RPi
+
+bool reopenWindow(CX_WindowConfiguration_t config) {
+
+	/*
+	if (CX::Private::glfwContext == glfwGetCurrentContext()) {
+		glfwDestroyWindow(CX::Private::glfwContext); //Close previous window
+		CX::Private::glfwContext = NULL;
+	}
+
+	Private::setMsaaSampleCount(config.msaaSampleCount);
+
+	if (config.desiredOpenGLVersion.major <= 0) {
+		config.desiredOpenGLVersion = Private::getOpenGLVersion();
+	}
+	
+
+	if (config.desiredRenderer) {
+		if (config.desiredRenderer->getType() == ofGLProgrammableRenderer::TYPE) {
+			if (Private::glCompareVersions(config.desiredOpenGLVersion, Private::CX_GLVersion(3, 2, 0)) >= 0) {
+				ofSetCurrentRenderer(config.desiredRenderer, true);
+			} else {
+				CX::Instances::Log.warning("CX_EntryPoint") << "Desired renderer could not be used: "
+					"High enough version of OpenGL is not available (requires OpenGL >= 3.2). Falling back on ofGLRenderer.";
+				ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+			}
+		} else {
+			ofSetCurrentRenderer(config.desiredRenderer, true);
+		}
+	} else {
+		//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
+		if (Private::glCompareVersions(config.desiredOpenGLVersion, Private::CX_GLVersion(3, 2, 0)) >= 0) {
+			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
+		} else {
+			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+		}
+	}
+	*/
+
+	try {
+		if (CX::Util::checkOFVersion(0, 8, 4, false)) {
+			CX::Private::reopenWindow084(config);
+		} else {
+			CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX. "
+				"Version 0.8.4 of openFrameworks is recommended.";
+			return false;
+		}
+		//CX::Private::glfwContext = glfwGetCurrentContext();
+	}
+	catch (std::exception& e) {
+		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window: " << e.what();
+	}
+	catch (...) {
+		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window.";
+	}
+
+	/*
+	if (CX::Private::glfwContext == NULL) {
+		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): There was an error setting up the window.";
+		return false;
+	}
+	*/
+
+	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
+
+	CX::Private::appWindow->initializeWindow();
+
+	ofSetWindowTitle(config.windowTitle);
+
+	return true;
+
+}
+
+#endif
 
 } //namespace CX
 

@@ -1,5 +1,7 @@
 #include "CX_AppWindow.h"
 
+#if !defined(TARGET_RASPBERRY_PI)
+
 #include "Poco/URI.h"
 
 #include "ofEvents.h"
@@ -1252,3 +1254,5 @@ HWND CX_AppWindow::getWin32Window(){
 }
 
 #endif
+
+#endif //!defined(TARGET_RASPBERRY_PI)
