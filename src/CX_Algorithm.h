@@ -2,10 +2,14 @@
 
 #include <exception>
 #include <vector>
+#include <map>
+#include <utility> //pair
+#include <string>
 #include <functional>
 
 #include "CX_Logger.h"
 #include "CX_RandomNumberGenerator.h"
+#include "CX_DataFrame.h"
 
 namespace CX {
 	/*! This namespace contains a few complex algorithms that can be difficult to properly implement
@@ -17,6 +21,9 @@ namespace CX {
 
 		template <typename T> 
 		std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors);
+
+		template <typename T>
+		CX_DataFrame fullyCross(std::map<std::string, std::vector<T>>& factors);
 
 		/*! This class provides a way to work with Latin squares in a relatively easy way. 
 		\code{.cpp}
@@ -347,3 +354,54 @@ std::vector< std::vector<T> > CX::Algo::fullyCross (std::vector< std::vector<T> 
 	return rval;
 }
 
+/*! This function does the same thing as \ref CX::Algo::fullyCross(std::vector< std::vector<T> > factors),
+except that it returns a CX_DataFrame, which means that you can access factor values by the name of the
+factor, rather than an index. You can see this in the example.
+
+\code{.cpp}
+string shapes[3] = { "square", "rectangle", "triangle" };
+vector<string> shapesV = Util::arrayToVector(shapes, 3);
+
+string numbers[2] = { "1.5", "3.7" };
+vector<string> numbersV = Util::arrayToVector(numbers, 2);
+
+map<string, vector<string>> factors;
+factors["shapes"] = shapesV;
+factors["numbers"] = numbersV;
+
+CX_DataFrame crossed = Algo::fullyCross(factors);
+
+cout << crossed.print() << endl;
+
+double firstNumber = crossed(0, "numbers").toDouble();
+string secondShape = crossed(1, "shapes").toString();
+\endcode
+
+\tparam T The type of data to use. Typically, using `string`s works well, as you can stringify a number
+(or other type) and then extract that type from the CX_DataFrame, as can be seen in the example with the
+"numbers" factor.
+\param factors A map that uses the name of a factor as the key and a vector of factor levels as the value.
+*/
+template <typename T>
+CX::CX_DataFrame CX::Algo::fullyCross(std::map<std::string, std::vector<T>>& factors) {
+	
+	std::vector< std::string > factorNames;
+	std::vector< std::vector<T> > vFactors;
+
+	for (std::pair<std::string, std::vector<T>> f : factors) {
+		factorNames.push_back(f.first);
+		vFactors.push_back(f.second);
+	}
+
+	std::vector< std::vector<T> > crossed = fullyCross(vFactors);
+
+	CX::CX_DataFrame rval;
+
+	for (unsigned int i = 0; i < crossed.size(); i++) {
+		for (unsigned int f = 0; f < crossed.at(i).size(); f++) {
+			rval(i, factorNames.at(f)) = crossed.at(i).at(f);
+		}
+	}
+
+	return rval;
+}
