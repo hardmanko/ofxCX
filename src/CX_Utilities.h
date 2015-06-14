@@ -416,16 +416,21 @@ template <typename T_OUT, typename T_IN> T_OUT CX::Util::var(std::vector<T_IN> v
 }
 
 /*! Uses std::unique to find all of the unique values in `vals` and return copies of those values.
-\param vals Th vector of values to find unique values in.
+\param vals The vector of values to find unique values in.
 \return A vector containing the unique values in `vals`.
 */
-template <typename T> std::vector<T> CX::Util::unique(std::vector<T> vals) {
+template <typename T> 
+std::vector<T> CX::Util::unique(std::vector<T> vals) {
+	 
+	//Requires the sort, because std::unique needs the vector to be sorted.
+	std::sort(vals.begin(), vals.end());
 	auto pastEnd = std::unique(vals.begin(), vals.end());
 	std::vector<T> uniqueVals;
 	for (auto it = vals.begin(); it != pastEnd; it++) {
 		uniqueVals.push_back(*it);
 	}
 	return uniqueVals;
+	
 }
 
 /*! Concatenates together two vectors A and B.

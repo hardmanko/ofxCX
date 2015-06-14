@@ -348,7 +348,7 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 			CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough valid swaps occurred during the " <<
 				estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 50 ms), you "
 				"could try making it longer. If the estimation interval was longer, this is an indication that there is something "
-				"wrong with the video card configuration. Try using CX_Display::testBufferSwapping() to narrow down the source"
+				"wrong with the video card configuration. Try using CX_Display::testBufferSwapping() to narrow down the source "
 				"of the problems.";
 		}
 
