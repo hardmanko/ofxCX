@@ -45,6 +45,8 @@ namespace Util {
 
 		std::string getStatString(void);
 
+		std::string name; //!< If this is set, it will be printed at the start of the string returned by getStatString() and in automatically logged messages.
+
 	private:
 		CX_Clock *_clock;
 		std::vector<CX_Millis> _timePoints;
@@ -103,6 +105,8 @@ namespace Util {
 		CX_Millis min(void);
 		CX_Millis max(void);
 		CX_Millis stdDev(void);
+
+		std::string name; //!< If this is set, it will be printed at the start of the string returned by getStatString() and in automatically logged messages.
 
 	private:
 		CX_Clock *_clock;

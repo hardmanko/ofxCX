@@ -9,11 +9,14 @@ namespace Util {
 
 	CX_LapTimer::CX_LapTimer(void) :
 		_clock(nullptr),
-		_samplesBetweenLogging(0)
+		_samplesBetweenLogging(0),
+		name("")
 	{}
 
 	/*! Construct and set up a CX_LapTimer. See CX_LapTimer::setup() for a description of the parameters. */
-	CX_LapTimer::CX_LapTimer(CX_Clock *clock, unsigned int logSamples) {
+	CX_LapTimer::CX_LapTimer(CX_Clock *clock, unsigned int logSamples) :
+		name("")
+	{
 		setup(clock, logSamples);
 	}
 
@@ -42,7 +45,7 @@ namespace Util {
 		_durationRecalculationRequired = true;
 
 		if ((_samplesBetweenLogging != 0) && (_timePoints.size() == _samplesBetweenLogging)) {
-			CX::Instances::Log.notice("CX_LapTimer") << "Data collected: " << getStatString();
+			CX::Instances::Log.notice("CX_LapTimer") << "Data collected." << getStatString();
 			restart();
 		}
 	}
@@ -60,6 +63,10 @@ namespace Util {
 	*/
 	std::string CX_LapTimer::getStatString(void) {
 		std::stringstream s;
+
+		if (this->name != "") {
+			s << " Name: " << this->name << std::endl;
+		}
 
 		s << "Min: " << this->min() << std::endl <<
 			"Mean: " << this->mean() << std::endl <<
@@ -112,7 +119,8 @@ namespace Util {
 
 	CX_SegmentProfiler::CX_SegmentProfiler(void) :
 		_clock(nullptr),
-		_samplesBetweenLogging(0)
+		_samplesBetweenLogging(0),
+		name("")
 	{}
 
 	/*! Set up the CX_SegmentProfiler with the selected clock source and the number of samples to log between each automatic logging of results.
@@ -122,7 +130,8 @@ namespace Util {
 	*/
 	CX_SegmentProfiler::CX_SegmentProfiler(CX_Clock* clock, unsigned int logSamples) :
 		_clock(clock),
-		_samplesBetweenLogging(logSamples)
+		_samplesBetweenLogging(logSamples),
+		name("")
 	{}
 
 	/*! Set up the CX_SegmentProfiler with the selected clock source and the number of samples to log between each automatic logging of results.
@@ -147,7 +156,7 @@ namespace Util {
 	void CX_SegmentProfiler::t2(void) {
 		_durations.push_back((_clock->now() - _t1).value());
 		if ((_samplesBetweenLogging != 0) && (_durations.size() == _samplesBetweenLogging)) {
-			CX::Instances::Log.notice("CX_SegmentProfiler") << "Data collected: " << getStatString();
+			CX::Instances::Log.notice("CX_SegmentProfiler") << "Data collected." << getStatString();
 			restart();
 		}
 	}
@@ -187,6 +196,10 @@ namespace Util {
 	*/
 	std::string CX_SegmentProfiler::getStatString(void) {
 		std::stringstream s;
+
+		if (this->name != "") {
+			s << " Name: " << this->name << std::endl;
+		}
 
 		s << "Min: " << this->min() << std::endl <<
 			"Mean: " << this->mean() << std::endl <<
