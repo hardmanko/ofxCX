@@ -42,7 +42,7 @@ void runExperiment(void) {
 	Disp.swapBuffers();
 
 	Input.Keyboard.waitForKeypress(-1);
-	}
+}
 \endcode
 
 Advanced users:

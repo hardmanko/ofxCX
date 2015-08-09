@@ -45,7 +45,7 @@ namespace Util {
 		_durationRecalculationRequired = true;
 
 		if ((_samplesBetweenLogging != 0) && (_timePoints.size() == _samplesBetweenLogging)) {
-			CX::Instances::Log.notice("CX_LapTimer") << "Data collected." << getStatString();
+			CX::Instances::Log.notice("CX_LapTimer") << "Stats for last " << _samplesBetweenLogging << " samples." << getStatString();
 			restart();
 		}
 	}
@@ -59,7 +59,7 @@ namespace Util {
 	}
 
 	/*! Get a string summarizing some basic descriptive statistics for the currently stored lap durations. 
-	\return A string containing the minimum, mean, maximum, and standard deviation of the collected samples.
+	\return A string containing the minimum, mean, maximum, and standard deviation, in ms, of the collected samples.
 	*/
 	std::string CX_LapTimer::getStatString(void) {
 		std::stringstream s;
@@ -68,10 +68,8 @@ namespace Util {
 			s << " Name: " << this->name << std::endl;
 		}
 
-		s << "Min: " << this->min() << std::endl <<
-			"Mean: " << this->mean() << std::endl <<
-			"Max: " << this->max() << std::endl <<
-			"Std. Dev.: " << this->stdDev() << std::endl;
+		s << "Range: " << this->min() << ", " << this->max() << " ms" << std::endl <<
+			"Mean (SD): " << this->mean() << " (" << this->stdDev() << ") ms" << std::endl;
 
 		return s.str();
 	}
@@ -156,7 +154,7 @@ namespace Util {
 	void CX_SegmentProfiler::t2(void) {
 		_durations.push_back((_clock->now() - _t1).value());
 		if ((_samplesBetweenLogging != 0) && (_durations.size() == _samplesBetweenLogging)) {
-			CX::Instances::Log.notice("CX_SegmentProfiler") << "Data collected." << getStatString();
+			CX::Instances::Log.notice("CX_SegmentProfiler") << "Stats for last " << _samplesBetweenLogging << " samples." << getStatString();
 			restart();
 		}
 	}
@@ -192,7 +190,7 @@ namespace Util {
 	}
 
 	/*! Get a string summarizing some basic descriptive statistics for the currently stored data.
-	\return A string containing the minimum, mean, maximum, and standard deviation of the stored data.
+	\return A string containing the minimum, mean, maximum, and standard deviation, in ms, of the stored data.
 	*/
 	std::string CX_SegmentProfiler::getStatString(void) {
 		std::stringstream s;
@@ -201,10 +199,8 @@ namespace Util {
 			s << " Name: " << this->name << std::endl;
 		}
 
-		s << "Min: " << this->min() << std::endl <<
-			"Mean: " << this->mean() << std::endl <<
-			"Max: " << this->max() << std::endl <<
-			"Std. Dev.: " << this->stdDev() << std::endl;
+		s << "Range: " << this->min() << ", " << this->max() << " ms" << std::endl <<
+			"Mean (SD): " << this->mean() << " (" << this->stdDev() << ") ms" << std::endl;
 
 		return s.str();
 	}

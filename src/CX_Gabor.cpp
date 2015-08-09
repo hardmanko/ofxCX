@@ -70,12 +70,14 @@ void main() {
 namespace CX {
 namespace Draw {
 
-
+//Function bodies for various wave and envelope functions.
+//wp is the waveform position, from 0 to 1.
 std::string Gabor::Wave::saw = "return wp;";
 std::string Gabor::Wave::sine = "return (sin(wp * 6.283185307179586232) + 1) / 2;";
 std::string Gabor::Wave::square = "if (wp < 0.5) return 1; \n return 0;";
 std::string Gabor::Wave::triangle = "if (wp < .5) return (2 * wp); \n return 2 - (2 * wp);";
 
+//d is the distance from the center and cp is the control parameter (provided by the user).
 std::string Gabor::Envelope::none = "return 1;";
 std::string Gabor::Envelope::circle = "if (d <= cp) return 1; \n return 0;";
 std::string Gabor::Envelope::linear = "if (d > cp) return 0; \n return 1 - (d / cp);";
