@@ -11,6 +11,8 @@
 #include <stdio.h> //vsnprintf
 #include <stdarg.h> //va_args
 
+#include "Poco/Mutex.h"
+
 #include "ofUtils.h"
 #include "ofFileUtils.h"
 #include "ofEvents.h"
@@ -42,7 +44,11 @@ namespace CX {
 		class CX_LogMessageSink {
 		public:
 
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+			~CX_LogMessageSink(void) noexcept(false);
+#else
 			~CX_LogMessageSink(void);
+#endif
 
 			CX_LogMessageSink& operator<<(std::ostream& (*func)(std::ostream&));
 
@@ -113,12 +119,12 @@ namespace CX {
 
 	example-logging shows a number of the features of CX_Logger.
 
-	CX_Logger is designed to help prevent timing errors. Messages can be logged at any time during
-	program execution. If these messages were immediately outputted to the console or to files,
-	it could disrupt a timing-critical section of code. For this reason, logged messages are stored
-	by the CX_Logger until the user requests that all stored messages be outputted to the logging
-	targets with CX_Logger::flush(). The user can choose an appropriate, non-timing-critical time
-	at which to call flush().
+	CX_Logger is designed so that the logging of messages should not reseult in timing errors. 
+	Messages can be logged at any time during program execution. If these messages were immediately 
+	outputted to the console or to files, it could disrupt a timing-critical section of code. 
+	For this reason, logged messages are stored by the CX_Logger until the user requests that 
+	all stored messages be outputted to the logging	targets with CX_Logger::flush(). The user 
+	can choose an appropriate, non-timing-critical point at which to call flush().
 
 	By default, messages are logged to the console window that opens with CX programs. Optionally,
 	messages can also be logged to any number of files using CX_Logger::levelForFile(). For each
@@ -177,7 +183,7 @@ namespace CX {
 		CX::Private::CX_LogMessageSink _log(CX_LogLevel level, std::string module);
 
 		friend class CX::Private::CX_LogMessageSink;
-		void _storeLogMessage(const CX::Private::CX_LogMessageSink& msg);
+		void _storeLogMessage(CX::Private::CX_LogMessageSink& msg);
 
 		std::function<void(CX_MessageFlushData&)> _flushCallback;
 

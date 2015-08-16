@@ -24,7 +24,8 @@ CX_Display::~CX_Display(void) {
 	_swapThread->waitForThread(false);
 }
 
-/*! Set up the display. Must be called for the display to function correctly. */
+/*! Set up the display. Must be called for the display to function correctly. 
+This is called during CX setup; the user should not need to call it. */
 void CX_Display::setup(void) {
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0

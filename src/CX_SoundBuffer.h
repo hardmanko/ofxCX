@@ -76,9 +76,7 @@ namespace CX {
 		which is equal to the number of sample frames times the number of channels. */
 		uint64_t getTotalSampleCount (void) const { return _soundData.size(); };
 
-		/*! This function returns the number of sample frames in the sound data held by the CX_SoundBuffer,
-		which is equal to the total number of samples divided by the number of channels. */
-		uint64_t getSampleFrameCount (void) const { return _soundData.size()/_soundChannels; };
+		uint64_t getSampleFrameCount(void) const;
 
 		/*! This function returns a reference to the raw data underlying the CX_SoundBuffer.
 		\return A reference to the data. Modify at your own risk! */

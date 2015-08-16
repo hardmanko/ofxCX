@@ -20,10 +20,18 @@ bool CX_SoundBuffer::loadFile (string fileName) {
 	_successfullyLoaded = true;
 
 	ofFmodSoundPlayer fmPlayer;
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+	bool loadSuccessful = fmPlayer.load(fileName, false);
+#else
 	bool loadSuccessful = fmPlayer.loadSound(fileName, false);
+#endif
 	if (!loadSuccessful) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "Error loading " << fileName;
-		fmPlayer.unloadSound(); //Just in case.
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+		fmPlayer.unload(); //Just in case.
+#else
+		fmPlayer.unloadSound();
+#endif
 		_successfullyLoaded = false;
 		return _successfullyLoaded;
 	}
@@ -38,7 +46,11 @@ bool CX_SoundBuffer::loadFile (string fileName) {
 	FMOD_RESULT formatResult = FMOD_Sound_GetFormat( fmSound, &soundType, &soundFormat, &channels, &bits );
 	if (formatResult != FMOD_OK) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "Error getting sound format of " << fileName;
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+		fmPlayer.unload();
+#else
 		fmPlayer.unloadSound();
+#endif
 		_successfullyLoaded = false;
 		return _successfullyLoaded;
 	}
@@ -128,7 +140,11 @@ bool CX_SoundBuffer::loadFile (string fileName) {
 	};
 
 	//Clean up by unloading this sound.
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+	fmPlayer.unload();
+#else
 	fmPlayer.unloadSound();
+#endif
 
 	if (_successfullyLoaded) {
 		name = fileName;
@@ -639,6 +655,15 @@ void CX_SoundBuffer::resample (float newSampleRate) {
 
 	_soundSampleRate = newSampleRate;
 
+}
+
+/*! This function returns the number of sample frames in the sound data held by the CX_SoundBuffer,
+which is equal to the total number of samples divided by the number of channels. */
+uint64_t CX_SoundBuffer::getSampleFrameCount(void) const {
+	if (_soundChannels == 0) {
+		return 0;
+	}
+	return _soundData.size() / _soundChannels; 
 }
 
 /*! This function reverses the sound data stored in the CX_SoundBuffer so that if it is played, it will

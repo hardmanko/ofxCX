@@ -4,6 +4,8 @@
 
 namespace CX {
 
+	typedef int64_t cxTick_t;
+
 	template <typename T> class CX_Time_t;
 
 	typedef CX_Time_t<std::ratio<3600, 1> > CX_Hours; //!< Hours.
@@ -20,17 +22,17 @@ namespace CX {
 		}
 
 		template<>
-		inline long long convertTimeCount<std::nano, std::nano, long long>(long long countIn) {
+		inline cxTick_t convertTimeCount<std::nano, std::nano, cxTick_t>(cxTick_t countIn) {
 			return countIn;
 		}
 
 		template<>
-		inline long long convertTimeCount<std::micro, std::micro, long long>(long long countIn) {
+		inline cxTick_t convertTimeCount<std::micro, std::micro, cxTick_t>(cxTick_t countIn) {
 			return countIn;
 		}
 
 		template<>
-		inline long long convertTimeCount<std::milli, std::milli, long long>(long long countIn) {
+		inline cxTick_t convertTimeCount<std::milli, std::milli, cxTick_t>(cxTick_t countIn) {
 			return countIn;
 		}
 	}
@@ -151,17 +153,17 @@ namespace CX {
 		\endcode
 		*/
 		CX_Time_t(double t) {
-			_nanos = (long long)Private::convertTimeCount<std::nano, TimeUnit, double>(t);
+			_nanos = (cxTick_t)Private::convertTimeCount<std::nano, TimeUnit, double>(t);
 		}
 
 		/*! \copydoc CX_Time_t::CX_Time_t(double) */
 		CX_Time_t(int t) {
-			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
+			_nanos = Private::convertTimeCount<std::nano, TimeUnit, cxTick_t>(t);
 		}
 
 		/*! \copydoc CX_Time_t::CX_Time_t(double) */
-		CX_Time_t(long long t) {
-			_nanos = Private::convertTimeCount<std::nano, TimeUnit, long long>(t);
+		CX_Time_t(cxTick_t t) {
+			_nanos = Private::convertTimeCount<std::nano, TimeUnit, cxTick_t>(t);
 		}
 
 		/*! Constructs a CX_Time_t based on another instance of a CX_Time_t. If the TimeUnit
@@ -208,7 +210,7 @@ namespace CX {
 		}
 
 		/*! \brief Get the time stored by this CX_Time_t in nanoseconds. */
-		long long nanos(void) const {
+		cxTick_t nanos(void) const {
 			return _nanos;
 		}
 
@@ -302,14 +304,14 @@ namespace CX {
 		/*! \brief Get the minimum time value that can be represented with this class. */
 		static CX_Time_t<TimeUnit> min(void) {
 			CX_Time_t<TimeUnit> t(0);
-			t._nanos = std::numeric_limits<long long>::min();
+			t._nanos = std::numeric_limits<cxTick_t>::min();
 			return t;
 		}
 
 		/*! \brief Get the maximum time value that can be represented with this class. */
 		static CX_Time_t<TimeUnit> max(void) {
 			CX_Time_t<TimeUnit> t(0);
-			t._nanos = std::numeric_limits<long long>::max();
+			t._nanos = std::numeric_limits<cxTick_t>::max();
 			return t;
 		}
 
@@ -330,7 +332,7 @@ namespace CX {
 		}
 
 	private:
-		long long _nanos;
+		cxTick_t _nanos;
 
 	};
 

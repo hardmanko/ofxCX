@@ -46,7 +46,8 @@ exception and logs an error if either the row or column is out of bounds.
 CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
 	try {
 		return _data.at(column).at(row);
-	} catch (std::exception& e) {
+	} catch (...) {
+		//This just assumes that an exception here is out of bounds access...
 		std::stringstream s;
 		s << "CX_DataFrame: Out of bounds access with at() on indices (\"" << column << "\", " << row << ")";
 		Instances::Log.error("CX_DataFrame") << s.str();

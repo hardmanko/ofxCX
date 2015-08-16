@@ -1,7 +1,7 @@
 #include "CX_AppWindow.h"
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
-
+//do nothing
 #else
 
 #include "Poco/URI.h"

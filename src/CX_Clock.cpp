@@ -1,12 +1,17 @@
 #include "CX_Clock.h"
 
+#include "ofUtils.cpp" //for whatever reason, the function I need (ofGetMonotonicTime) is not in the header, only in the .cpp
+
+#define CX_NANOS_PER_SECOND 1000000000LL
+
 namespace CX {
 
 CX_Clock CX::Instances::Clock;
 
 CX_Clock::CX_Clock (void) {
 
-#ifdef TARGET_WIN32
+#if defined(TARGET_WIN32) && OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8
+	//On windows for oF 0.8.x, use the custom clock. Elsewhere, the precision is good enough with std::chrono::high_resolution_clock.
 	_impl = new CX::CX_WIN32_PerformanceCounterClock();
 #else
 	_impl = new CX::CX_StdClockWrapper<std::chrono::high_resolution_clock>();
@@ -20,30 +25,30 @@ CX_Clock::CX_Clock (void) {
 If the precision of the clock is worse than microsecond accuracy, a warning is logged including 
 information about the actual precision of the clock.
 
-Depending on the number of iterations, this function may be considered blocking. See \ref blockingCode.
+Depending on the number of iterations, this function may be blocking. See \ref blockingCode.
 
 \param iterations Number of time duration samples to take. More iterations should give a better
 estimate. 
-\return A string containing some information about the precision of the clock.
+\return A CX_Clock::PrecisionTestResults struct containing some information about the precision of the clock.
 */
 CX_Clock::PrecisionTestResults CX_Clock::precisionTest(unsigned int iterations) {
-	std::vector<long long> durations(iterations);
+	std::vector<cxTick_t> durations(iterations);
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
 		//Get two timestamps with as little code in between as possible.
-		long long t1 = _impl->nanos();
-		long long t2 = _impl->nanos();
+		cxTick_t t1 = _impl->nanos();
+		cxTick_t t2 = _impl->nanos();
 
 		durations[i] = t2 - t1;
 	}
 
-	long long maxDuration = 0;
-	long long minDuration = std::numeric_limits<long long>::max();
-	long long minNonzeroDuration = std::numeric_limits<long long>::max();
+	cxTick_t maxDuration = 0;
+	cxTick_t minDuration = std::numeric_limits<cxTick_t>::max();
+	cxTick_t minNonzeroDuration = std::numeric_limits<cxTick_t>::max();
 
 	for (unsigned int i = 0; i < durations.size(); i++) {
 
-		long long duration = durations[i];
+		cxTick_t duration = durations[i];
 		durations[i] = duration;
 
 		if (duration > maxDuration) {
@@ -59,19 +64,11 @@ CX_Clock::PrecisionTestResults CX_Clock::precisionTest(unsigned int iterations) 
 		}
 	}
 
-	if (minNonzeroDuration > 1000000) {
-		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
-			"millisecond precision. Observed tick period of the system clock is " << (double)minNonzeroDuration / 1000000.0 << " milliseconds. "
-			"See CX_Clock::setImplementation() for information about using a different clock source than the default one.";
-	} else {
-		CX::Instances::Log.notice("CX_Clock") << "Clock precision test passed: Precision is better than 1 ms.";
-	}
-
 	PrecisionTestResults res;
 
 	std::stringstream ss;
 	ss << iterations << " iterations of a clock precision test gave the following results: \n" <<
-		"Minimum nonzero duration: " << minNonzeroDuration << " ns" << endl <<
+		"Minimum nonzero time step: " << minNonzeroDuration << " ns" << endl <<
 		"Smallest time step: " << minDuration << " ns" << endl <<
 		"Largest time step: " << maxDuration << " ns" << endl;
 
@@ -80,6 +77,14 @@ CX_Clock::PrecisionTestResults CX_Clock::precisionTest(unsigned int iterations) 
 	res.minNonzeroDuration = CX_Nanos(minNonzeroDuration);
 	res.minDuration = CX_Nanos(minDuration);
 	res.maxDuration = CX_Nanos(maxDuration);
+
+	if (res.minNonzeroDuration > CX_Millis(1)) {
+		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
+			"millisecond precision. Observed tick period of the system clock is " << res.minNonzeroDuration.millis() << " milliseconds. "
+			"See CX_Clock::setImplementation() for information about using a different clock source than the default one." << std::endl << res.summaryString;
+	} else {
+		CX::Instances::Log.notice("CX_Clock") << "Clock precision test passed: Precision is better than 1 ms.";
+	}
 
 	return res;
 }
@@ -166,12 +171,26 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 }
 
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+cxTick_t CX_ofMonotonicTimeClock::nanos(void) {
+	uint64_t seconds;
+	uint64_t nanos;
+	ofGetMonotonicTime(seconds, nanos);
+	seconds -= _startTime.seconds;
+	nanos -= _startTime.nanos;
+
+	return (cxTick_t)(seconds * CX_NANOS_PER_SECOND + nanos);
+}
+
+void CX_ofMonotonicTimeClock::resetStartTime(void) {
+	ofGetMonotonicTime(_startTime.seconds, _startTime.nanos);
+}
+#endif
+
 
 #ifdef TARGET_WIN32
 
 #include "Windows.h"
-
-#define CX_NANOS_PER_SECOND 1000000000LL
 
 CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 	_resetFrequency();
@@ -179,16 +198,16 @@ CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 }
 
 //This only has at best 1 microsecond precision.
-long long CX_WIN32_PerformanceCounterClock::nanos(void) {
+cxTick_t CX_WIN32_PerformanceCounterClock::nanos(void) {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
 
-	long long adjustedCount = count.QuadPart - _startTime;
-	long long seconds = adjustedCount / _frequency;
+	cxTick_t adjustedCount = count.QuadPart - _startTime;
+	cxTick_t seconds = adjustedCount / _frequency;
 
 	//Note that if _frequency is greater than or equal to 10 GHz (or just slightly lower), this multiplication will overflow
 	//before reaching the division.
-	long long nanos = ((adjustedCount % _frequency) * CX_NANOS_PER_SECOND) / _frequency;
+	cxTick_t nanos = ((adjustedCount % _frequency) * CX_NANOS_PER_SECOND) / _frequency;
 
 	return (seconds * CX_NANOS_PER_SECOND) + nanos;
 }
@@ -199,7 +218,7 @@ void CX_WIN32_PerformanceCounterClock::resetStartTime(void) {
 	_startTime = count.QuadPart;
 }
 
-void CX_WIN32_PerformanceCounterClock::setStartTime(long long ticks) {
+void CX_WIN32_PerformanceCounterClock::setStartTime(cxTick_t ticks) {
 	_startTime = ticks;
 }
 

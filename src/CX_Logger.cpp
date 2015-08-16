@@ -111,7 +111,12 @@ namespace Private {
 	
 	CX_LogMessageSink::CX_LogMessageSink(CX_LogMessageSink&& ms)
 	{
-		*this = std::move(ms);
+		this->_level = ms._level;
+		this->_logger = ms._logger;
+
+		this->_message = ms._message; //is it a problem that this is a shared pointer?
+		this->_module = ms._module;
+
 		ms._logger = nullptr;
 	}
 
@@ -123,7 +128,15 @@ namespace Private {
 		_message = std::shared_ptr<std::ostringstream>(new std::ostringstream);
 	}
 
+	/* This destructor is marked noexcept(false) because it sometimes throws exceptions
+	(by design) in CX_Logger::_storeLogMessage() if exceptions are enabled to with 
+	CX_Logger::levelForExceptions().
+	*/
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+	CX_LogMessageSink::~CX_LogMessageSink(void) noexcept(false) {
+#else
 	CX_LogMessageSink::~CX_LogMessageSink(void) {
+#endif
 		if (_logger != nullptr) {
 			_logger->_storeLogMessage(*this);
 		}
@@ -437,6 +450,21 @@ equal to the exception level, an exception will be thrown. The exception
 will be a std::runtime_error. By default, the exception level is LOG_NONE,
 i.e. that no logged messages will cause an exception to be thrown.
 
+You might want to use this feature for two reasons:
+1) There are certain really serious errors that sometimes happen while
+the experiment is running that are not themselves exceptions but that
+you want to be exceptions so that they will not allow the program to
+continue in an erroneous state.
+2) For debugging purposes. When an exception is thrown it triggers a
+breakpoint in some IDEs. When that happens, you have a full stack trace
+and interactive debugger environment to work with to help determine why
+the logged message was logged.
+
+Note that, for technical reasons, this exception throwing feature
+may not work properly on some systems. If you get unexpected program
+termination when trying to use this feature, you may just want to not
+use it.
+
 \param level The desired exception level. The naming of the values in CX_LogLevel
 is slightly confusing in the context of this function. Instead of, e.g., LOG_WARNING,
 think of the value as EXCEPTION_ON_WARNING (or greater).
@@ -445,7 +473,7 @@ void CX_Logger::levelForExceptions(CX_LogLevel level) {
 	_exceptionLevel = level;
 }
 
-void CX_Logger::_storeLogMessage(const CX::Private::CX_LogMessageSink& ms) {
+void CX_Logger::_storeLogMessage(CX::Private::CX_LogMessageSink& ms) {
 	//If the module is unknown to the logger, it becomes known with the default log level.
 	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(ms._module) == _moduleLogLevels.end()) {
@@ -455,7 +483,7 @@ void CX_Logger::_storeLogMessage(const CX::Private::CX_LogMessageSink& ms) {
 
 
 	CX::Private::CX_LogMessage temp(ms._level, ms._module);
-	temp.message = (*ms._message).str();
+	temp.message = (*(ms._message)).str();
 
 	if (_logTimestamps) {
 		temp.timestamp = CX::Instances::Clock.getDateTimeString(_timestampFormat);
@@ -465,36 +493,12 @@ void CX_Logger::_storeLogMessage(const CX::Private::CX_LogMessageSink& ms) {
 	_messageQueue.push_back(temp);
 	_messageQueueMutex.unlock();
 
-	//Check for exceptions
-	if (ms._level >= _exceptionLevel) {
+	//Check for exceptions. Only throw if there is not an uncaught exception
+	if (ms._level >= _exceptionLevel && !std::uncaught_exception()) {
 		std::string formattedMessage = _formatMessage(temp);
 		throw std::runtime_error(formattedMessage);
 	}
 }
-
-/*
-stringstream& CX_Logger::_log(CX_LogLevel level, std::string module) {
-	
-	_moduleLogLevelsMutex.lock();
-	if (_moduleLogLevels.find(module) == _moduleLogLevels.end()) {
-		_moduleLogLevels[module] = _defaultLogLevel;
-	}
-	_moduleLogLevelsMutex.unlock();
-
-	CX::Private::CX_LogMessage temp(level, module);
-	temp.message = std::shared_ptr<std::stringstream>(new std::stringstream);
-
-	if (_logTimestamps) {
-		temp.timestamp = CX::Instances::Clock.getDateTimeString(_timestampFormat);
-	}
-
-	_messageQueueMutex.lock();
-	_messageQueue.push_back(temp);
-	_messageQueueMutex.unlock();
-
-	return *temp.message;
-}
-*/
 
 CX::Private::CX_LogMessageSink CX_Logger::_log(CX_LogLevel level, std::string module) {
 	return CX::Private::CX_LogMessageSink(this, level, module);

@@ -1,5 +1,13 @@
 #include "CX_SoundStream.h"
 
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+typedef RtAudioError RT_AUDIO_ERROR_TYPE;
+#else
+typedef RtError RT_AUDIO_ERROR_TYPE;
+#endif
+
+
+
 namespace CX {
 
 	CX_SoundStream::CX_SoundStream (void) :
@@ -28,7 +36,7 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 
 	try {
 		_rtAudio = new RtAudio( config.api );
-	} catch (RtError err) {
+	} catch (RT_AUDIO_ERROR_TYPE err) {
 		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
 		_rtAudio = nullptr;
 		return false;
@@ -75,7 +83,7 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 
 		config.sampleRate = _rtAudio->getStreamSampleRate(); //Check that the desired sample rate was used.
 
-	} catch (RtError err) {
+	} catch (RT_AUDIO_ERROR_TYPE err) {
 		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
@@ -106,7 +114,7 @@ bool CX_SoundStream::start(void) {
 
 	try {
 		_rtAudio->startStream();
-	} catch (RtError &err) {
+	} catch (RT_AUDIO_ERROR_TYPE &err) {
 		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
 		return false;
 	}
@@ -140,7 +148,7 @@ bool CX_SoundStream::stop (void) {
 		} else {
 			CX::Instances::Log.notice("CX_SoundStream") << "stop: Stream was already stopped.";
 		}
-  	} catch (RtError &err) {
+  	} catch (RT_AUDIO_ERROR_TYPE &err) {
    		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
 		return false;
  	}
@@ -162,7 +170,7 @@ bool CX_SoundStream::closeStream(void) {
 		} else {
 			CX::Instances::Log.notice("CX_SoundStream") << "closeStream: Stream was already closed.";
 		}
-  	} catch (RtError &err) {
+  	} catch (RT_AUDIO_ERROR_TYPE &err) {
    		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
 		rval = false;
  	}
@@ -389,7 +397,7 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api)
 
 	try {
 		tempRt = new RtAudio(api);
-	} catch (RtError err) {
+	} catch (RT_AUDIO_ERROR_TYPE err) {
 		CX::Instances::Log.error("CX_SoundStream") << "Exception while getting device list: " << err.getMessage();
 		return devices;
 	}
@@ -398,7 +406,7 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api)
 	for (unsigned int i = 0; i < deviceCount; i++) {
 		try {
 			devices.push_back( tempRt->getDeviceInfo(i) );
-		} catch (RtError err) {
+		} catch (RT_AUDIO_ERROR_TYPE err) {
 			CX::Instances::Log.error("CX_SoundStream") << "Exception while getting device " << i << ": " << err.getMessage();
 			return devices;
 		}

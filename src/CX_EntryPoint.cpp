@@ -5,6 +5,10 @@
 #include "CX_AppWindow.h"
 #include "ofAppGLFWWindow.h"
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+#include "ofAppRunner.h"
+#endif
+
 
 namespace CX {
 namespace Private {
@@ -62,12 +66,9 @@ void reopenWindow090(CX_WindowConfiguration_t config) {
 	settings.glVersionMinor = config.desiredOpenGLVersion.minor;
 	settings.numSamples = config.msaaSampleCount;
 
-	ofCreateMainLoop();
 	ofGetMainLoop()->addWindow(awp);
 
 	awp->setup(settings);
-
-	//ofSetupOpenGL(awp, config.width, config.height, config.mode);
 }
 
 #else
@@ -198,8 +199,8 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 		return false;
 	}
 
-	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
 #if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0)
+	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
 	CX::Private::appWindow->initializeWindow();
 #endif
 	CX::Private::appWindow->setWindowTitle(config.windowTitle);
