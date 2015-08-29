@@ -112,7 +112,7 @@ namespace CX {
 			F23 = GLFW_KEY_F23,
 			F24 = GLFW_KEY_F24,
 			F25 = GLFW_KEY_F25,
-			KP_0 = GLFW_KEY_KP_0, //KP == keypad AKA numpad
+			KP_0 = GLFW_KEY_KP_0, //KP == KeyPad AKA numpad
 			KP_1 = GLFW_KEY_KP_1,
 			KP_2 = GLFW_KEY_KP_2,
 			KP_3 = GLFW_KEY_KP_3,
@@ -204,7 +204,8 @@ namespace CX {
 			keys (letters are uppercase). */
 			int glfw;
 
-			int scancode; //!< System-specific scancode. These are not very easy to use, but do not depend on modifier keys.
+			/*! System-specific scancode. These are not very easy to use, but do not depend on modifier keys. */
+			int scancode;
 
 			/*! The locale-specific unicode codepoint for the key. This is the most like the natural 
 			language value of the key, so it naturally depends on modifier keys. */

@@ -302,6 +302,4 @@ std::istream& operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	return is;
 }
 
-
-
-}
+} // namespace CX
