@@ -164,6 +164,30 @@ namespace Util {
 		return rval;
 	}
 
+	/*! Write key-value pairs stored in a map<string, string> to a file. 
+	A delimiter is inserted between each key-value pair.
+	Each key-value pair in on its own line.
+
+	\param kv A map<string, string> with the keys and values.
+	\param filename The file to write to.
+	\param delimiter A string to separate keys from values. Defaults to "=".
+
+	If the contents of `kv` are `{ "pigs" : "happy", "cowsMilked" : "no" }` and `delimiter` is "=", the output could be
+	\code
+	pigs=happy
+	cowsMilked=no
+	\endcode
+	*/
+	bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter) {
+
+		std::ostringstream ss;
+		for (const std::pair<std::string, std::string>& p : kv) {
+			ss << p.first + delimiter + p.second << std::endl;
+		}
+
+		return Util::writeToFile(filename, ss.str(), false);
+	}
+
 
 	/*! Returns the angle in degrees "between" p1 and p2. If you take the difference between p2 and p1,
 	you get a resulting vector, V, that gives the displacement from p1 to p2. Imagine that you create a 

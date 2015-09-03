@@ -59,6 +59,7 @@ namespace CX {
 
 		bool writeToFile(std::string filename, std::string data, bool append = true);
 		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
+		bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter = "=");
 
 		/*! The way in which numbers should be rounded with CX::Util::round(). */
 		enum class CX_RoundingConfiguration {
