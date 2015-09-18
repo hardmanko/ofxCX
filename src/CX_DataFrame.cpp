@@ -316,9 +316,11 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 
 	vector<string> headers = ofSplitString(file.getFirstLine(), iOpt.cellDelimiter, false, false);
 	rowIndex_t rowNumber = 0;
+	unsigned int fileRowNumber = 0;
 
 	do {
 		string line = file.getNextLine();
+		
 
 		vector<string> rowCells;
 		vector<bool> isVector;
@@ -351,9 +353,11 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 			}
 		}
 
-		if (rowCells.size() != headers.size()) {
-			Instances::Log.error("CX_DataFrame") << "Error while loading file " << filename <<
-				": Row column count (" << rowCells.size() << ") does not match header column count (" << headers.size() << "). On row " << rowNumber;
+		if (line == "") {
+			Instances::Log.warning("CX_DataFrame") << "readFromFile(): Blank line skipped on line " << fileRowNumber << ".";
+		} else if (rowCells.size() != headers.size()) {
+			Instances::Log.error("CX_DataFrame") << "readFromFile(): Error while loading " << filename <<
+				": The number of columns (" << headers.size() << ") on line " << fileRowNumber << " does not match the number of headers (" << headers.size() << ").";
 
 			this->clear();
 			return false;
@@ -381,6 +385,8 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 			}
 			rowNumber++;
 		}
+
+		fileRowNumber++;
 
 	} while (!file.isLastLine());
 
