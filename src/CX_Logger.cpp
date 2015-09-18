@@ -277,7 +277,7 @@ void CX_Logger::levelForFile(Level level, std::string filename) {
 	if (filename == "CX_LOGGER_DEFAULT") {
 		filename = "Log file " + CX::Instances::Clock.getExperimentStartDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
 	}
-	filename = "logfiles/" + filename;
+	filename = filename;
 	filename = ofToDataPath(filename);
 
 	bool fileFound = false;
