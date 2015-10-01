@@ -11,6 +11,8 @@
 #include <stdio.h> //vsnprintf
 #include <stdarg.h> //va_args
 
+#include "Poco/Mutex.h"
+
 #include "ofUtils.h"
 #include "ofFileUtils.h"
 #include "ofEvents.h"
@@ -136,7 +138,7 @@ namespace CX {
 
 		void setMessageFlushCallback(std::function<void(MessageFlushData&)> f);
 
-		void captureOFLogMessages(void);
+		void captureOFLogMessages(bool capture);
 
 	private:
 
@@ -150,7 +152,7 @@ namespace CX {
 		CX::Private::CX_LogMessageSink _log(Level level, std::string module);
 
 		friend class CX::Private::CX_LogMessageSink;
-		void _storeLogMessage(const CX::Private::CX_LogMessageSink& msg);
+		void _storeLogMessage(CX::Private::CX_LogMessageSink& msg);
 
 		std::function<void(MessageFlushData&)> _flushCallback;
 
@@ -179,7 +181,11 @@ namespace CX {
 		//so that it can only be made by a CX_Logger.
 		class CX_LogMessageSink {
 		public:
+#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+			~CX_LogMessageSink(void) noexcept(false);
+#else
 			~CX_LogMessageSink(void);
+#endif
 
 			CX_LogMessageSink& operator<<(std::ostream& (*func)(std::ostream&));
 

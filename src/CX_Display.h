@@ -28,8 +28,12 @@ namespace CX {
 
 	/*! This class represents an abstract visual display surface, which is my way of saying that it doesn't
 	necessarily represent a monitor. The display surface can either be a window or, if full screen, the whole
-	monitor. It is also a bit abstract in that it does not draw anything, but only creates an context in which
+	monitor. It is also a bit abstract in that it does not draw anything, but only creates a context in which
 	things can be drawn.
+
+	An instance of this class is created for the user. It is called \ref CX::Instances::Disp. The user should not
+	need another instance of this class.
+
 	\ingroup video
 	*/
 	class CX_Display {
@@ -82,7 +86,11 @@ namespace CX {
 
 	private:
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+		std::shared_ptr<ofBaseRenderer> _renderer; 
+#else
 		ofPtr<ofGLProgrammableRenderer> _renderer;
+#endif
 
 		std::unique_ptr<Private::CX_VideoBufferSwappingThread> _swapThread;
 

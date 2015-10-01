@@ -6,10 +6,15 @@ unsigned int CX_DataFrameCell::_floatingPointPrecision = std::numeric_limits<dou
 
 /*! Set the precision with which floating point numbers (`float`s and `double`s) are stored, in number of significant digits.
 This value will be used for all `CX_DataFrameCell`s. Changing this value after storing data will
-not change the precision of that data. Defaults to 20 significant digits.
+not change the precision of that data.
+
+Defaults to `std::numeric_limits<double>::max_digits10` significant digits. To quote cppreference.com,
+"The value of std::numeric_limits<T>::max_digits10 is the number of base-10 digits that are necessary to
+uniquely represent all distinct values of the type T, such as necessary for serialization/deserialization to text."
+That is to say, the default value is sufficient for lossless conversion between a double precision float
+and the string representation of that value stored by the CX_DataFrameCell.
+
 \param prec The number of significant digits.
-\note The fact that floating point values are (potentially) stored with less than full precision is one
-of the reasons that `CX_DataFrame`s should not be used for numerical analysis, just storage.
 */
 void CX_DataFrameCell::setFloatingPointPrecision(unsigned int prec) {
 	_floatingPointPrecision = prec;
@@ -25,7 +30,7 @@ CX_DataFrameCell::CX_DataFrameCell(void) {
 	*_type = "NULL";
 }
 
-/*! Constructs the cell with a string literal, treating it as a std::string. */
+/*! Constructs the cell with a string literal, treating it's type as the same as a `std::string`. */
 CX_DataFrameCell::CX_DataFrameCell(const char* c) {
 	_allocatePointers();
 
@@ -39,7 +44,7 @@ void CX_DataFrameCell::_allocatePointers(void) {
 	_ignoreStoredType = std::shared_ptr<bool>(new bool);
 }
 
-/*! Assigns a string literal to the cell, treating it as a std::string. */
+/*! Assigns a string literal to the cell, treating it's type as the same as a `std::string`. */
 CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 	//*_str = c;
 	this->store<const char*>(c);
@@ -51,6 +56,18 @@ CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
 /*! Gets a string representing the type of data stored within the cell. This string is implementation-defined
 (which is the C++ standards committee way of saying "It can be anything at all"). It is only guranteed to be
 the same for the same type, but not neccessarily be different for different types.
+
+You can test if the type of data stored in a CX_DataFrameCell is some type T with the following code snippet.
+\code{.cpp}
+CX_DataFrameCell cell; //Assume this actually has some data in it.
+bool typesMatch = (cell.getStoredType() == typeid(T).name())
+\endcode
+
+If the stored data is a vector (i.e. has length > 1), the returned string is "vector<TID>", where
+"TID" is replaced with the type string. In other words, you can test if the stored type is a vector<T>
+by looking for "vector<" at the beginning of the return value of this function, getting the type name
+between the surrounding angle brackets, and then using ` typeid(T).name()` as in the code snippet above.
+
 \return A string containing the name of the stored type as given by typeid(typename).name(). */
 std::string CX_DataFrameCell::getStoredType(void) const {
 	if (*_ignoreStoredType) {

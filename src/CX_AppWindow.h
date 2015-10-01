@@ -4,6 +4,15 @@
 
 #include "ofConstants.h"
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#include "ofAppGLFWWindow.h"
+namespace CX {
+	namespace Private {
+		typedef ofAppGLFWWindow CX_AppWindow;
+	}
+}
+#else
+
 #define GLFW_INCLUDE_NONE
 
 #if (_MSC_VER)
@@ -20,6 +29,8 @@ class ofBaseApp;
 
 namespace CX {
 namespace Private {
+
+
 
 class CX_AppWindow : public ofAppBaseWindow {
 
@@ -138,7 +149,7 @@ private:
 	int				samples;
 	int				rBits, gBits, bBits, aBits, depthBits, stencilBits;
 
-	int				windowMode;
+	int				windowMode;	
 
 	bool			bEnableSetupScreen;
 
@@ -180,6 +191,6 @@ private:
 } //namespace Private
 } //namespace CX
 
-
+#endif //end of090
 
 //#endif

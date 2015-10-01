@@ -5,6 +5,10 @@
 #include "CX_AppWindow.h"
 #include "ofAppGLFWWindow.h"
 
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+#include "ofAppRunner.h"
+#endif
+
 
 namespace CX {
 namespace Private {
@@ -14,7 +18,7 @@ void setupCX(void) {
 	ofSetWorkingDirectoryToDefault();
 	ofSetEscapeQuitsApp(false);
 
-	CX::Instances::Log.captureOFLogMessages();
+	CX::Instances::Log.captureOFLogMessages(true);
 	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
 	CX::Instances::Log.level(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the shader gobbeldygook.
 
@@ -39,6 +43,11 @@ void setupCX(void) {
 		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
 	}
 
+	ofSetEscapeQuitsApp(false);
+
+	//This is temporary: I think there's an oF bug about it
+	glfwSetWindowPos(CX::Private::glfwContext, 200, 200);
+
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
 
@@ -46,6 +55,24 @@ void setupCX(void) {
 	CX::Instances::Log.level(CX_Logger::Level::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
 		//are really verbose when allocated and it is a lot of gibberish.
 }
+
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+void reopenWindow090(CX_WindowConfiguration_t config) {
+	CX::Private::appWindow = shared_ptr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
+
+	std::shared_ptr<CX::Private::CX_AppWindow> awp = std::dynamic_pointer_cast<CX::Private::CX_AppWindow>(CX::Private::appWindow);
+
+	ofGLFWWindowSettings settings;
+	settings.glVersionMajor = config.desiredOpenGLVersion.major;
+	settings.glVersionMinor = config.desiredOpenGLVersion.minor;
+	settings.numSamples = config.msaaSampleCount;
+
+	ofGetMainLoop()->addWindow(awp);
+
+	awp->setup(settings);
+}
+
+#else
 
 void reopenWindow080(CX_WindowConfiguration_t config) {
 
@@ -101,6 +128,8 @@ void reopenWindow084(CX_WindowConfiguration_t config) {
 	((CX::Private::CX_AppWindow*)CX::Private::appWindow.get())->setupOpenGL(config.width, config.height, config.mode, config.preOpeningUserFunction);
 }
 
+#endif
+
 } //namespace Private
 
 /*! This function opens a GLFW window that can be rendered to. If another window was already
@@ -122,6 +151,8 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 		config.desiredOpenGLVersion = Private::getOpenGLVersion();
 	}
 
+#if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0)
+
 	if (config.desiredRenderer) {
 		if (config.desiredRenderer->getType() == ofGLProgrammableRenderer::TYPE) {
 			if (Private::glCompareVersions(config.desiredOpenGLVersion, Private::CX_GLVersion(3, 2, 0)) >= 0) {
@@ -142,17 +173,21 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 			ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
 		}
 	}
+#endif
 
 	try {
-		if (CX::Util::checkOFVersion(0, 8, 0, false)) {
-			CX::Private::reopenWindow080(config);
-		} else if (CX::Util::checkOFVersion(0, 8, 4, false)) {
-			CX::Private::reopenWindow084(config);
-		} else {
-			CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX. "
-				"Version 0.8.4 of openFrameworks is recommended.";
-			return false;
-		}
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+		CX::Private::reopenWindow090(config);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
+		CX::Private::reopenWindow084(config);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
+		CX::Private::reopenWindow080(config);
+#else
+		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX. "
+			"Version 0.8.4 of openFrameworks is recommended.";
+		return false;
+#endif
+
 		CX::Private::glfwContext = glfwGetCurrentContext();
 	} catch (std::exception& e) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window: " << e.what();
@@ -165,10 +200,10 @@ bool reopenWindow(CX_WindowConfiguration_t config) {
 		return false;
 	}
 
+#if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0)
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
-
 	CX::Private::appWindow->initializeWindow();
-
+#endif
 	ofSetWindowTitle(config.windowTitle);
 
 	return true;

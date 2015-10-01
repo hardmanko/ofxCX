@@ -92,7 +92,7 @@ namespace CX {
 	public:
 	    virtual ~CX_BaseClockInterface(void) {}
 
-		virtual long long nanos(void) = 0; //!< Returns the current time in nanoseconds.
+		virtual cxTick_t nanos(void) = 0; //!< Returns the current time in nanoseconds.
 		virtual void resetStartTime(void) = 0; //!< Resets the start time, so that an immediate call to nanos() would return 0.
 
 		/*! \brief Returns a helpful name describing the clock implementation. */
@@ -110,7 +110,7 @@ namespace CX {
 			resetStartTime();
 		}
 
-		long long nanos(void) override {
+		cxTick_t nanos(void) override {
 			return std::chrono::duration_cast<std::chrono::nanoseconds>(stdClock::now() - _startTime).count();
 		}
 
@@ -128,6 +128,26 @@ namespace CX {
 		typename stdClock::time_point _startTime;
 	};
 
+	/*! This clock implementation uses ofGetMonotonicTime() (in ofUtils.cpp).
+	*/
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+	class CX_ofMonotonicTimeClock : public CX_BaseClockInterface {
+	public:
+
+		cxTick_t nanos(void) override;
+		void resetStartTime(void) override;
+
+		std::string getName(void) override {
+			return "CX_ofMonotonicTimeClock";
+		}
+
+	private:
+		struct {
+			uint64_t seconds;
+			uint64_t nanos;
+		} _startTime;
+	};
+#endif
 
 #ifdef TARGET_WIN32
 
@@ -135,17 +155,17 @@ namespace CX {
 	public:
 		CX_WIN32_PerformanceCounterClock(void);
 
-		long long nanos(void) override;
+		cxTick_t nanos(void) override;
 		void resetStartTime(void) override;
-		void setStartTime(long long ticks);
+		void setStartTime(cxTick_t ticks);
 
 		std::string getName(void) override;
 
 	private:
 		void _resetFrequency(void);
 
-		long long _startTime;
-		long long _frequency;
+		cxTick_t _startTime;
+		cxTick_t _frequency;
 	};
 
 #endif

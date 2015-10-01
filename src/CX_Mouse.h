@@ -97,7 +97,12 @@ namespace CX {
 		void _mouseButtonReleasedEventHandler (ofMouseEventArgs &a);
 		void _mouseMovedEventHandler (ofMouseEventArgs &a);
 		void _mouseDraggedEventHandler (ofMouseEventArgs &a);
+
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+		void _mouseWheelScrollHandler(ofMouseEventArgs &a);
+#else
 		void _mouseWheelScrollHandler (Private::CX_MouseScrollEventArgs_t &a);
+#endif
 
 		void _mouseEventHandler(ofMouseEventArgs& ofEvent);
 
