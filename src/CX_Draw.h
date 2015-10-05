@@ -38,6 +38,7 @@ namespace Draw {
 	void ring(ofPoint center, float radius, float width, unsigned int resolution);
 	void arc(ofPoint center, float radiusX, float radiusY, float width, float angleBegin, float angleEnd, unsigned int resolution);
 
+	std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, std::vector<float> times);
 	std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsigned int resolution);
 	void bezier(std::vector<ofPoint> controlPoints, float width, unsigned int resolution);
 

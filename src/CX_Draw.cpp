@@ -404,9 +404,16 @@ void arc(ofPoint center, float radiusX, float radiusY, float width, float angleB
 	vbo.draw(GL_TRIANGLE_STRIP, 0, vertices.size());
 }
 
-/*! Gets the vertices needed to draw a bezier curve. See CX::Draw::bezier() for parameter meanings.
-\return A vector of points created based on the `controlPoints`. */
-std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsigned int resolution) {
+
+
+
+/*! Gets the vertices needed to draw a bezier curve.
+\param controlPoints Control points for the bezier.
+\param times A vector of "times" in the interval [0,1] giving the times at which 
+to evaluate the bezier curve. Values outside of the interval [0,1] are clamped to be in the interval.
+\return A vector of points along the bezier curve.
+*/
+std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, std::vector<float> times) {
 	std::vector< std::vector<LineSegment> > segs(controlPoints.size() - 1);
 	for (unsigned int i = 0; i < segs.size(); i++) {
 		segs[i].resize(controlPoints.size() - i - 1);
@@ -418,18 +425,18 @@ std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsig
 		segs[0][i].p2 = controlPoints[i + 1];
 	}
 
-	vector<ofPoint> outputPoints(resolution + 1);
+	vector<ofPoint> outputPoints(times.size());
 
 	vector<ofPoint> nextLayerCP(segs.size());
-	for (unsigned int res = 0; res < resolution + 1; res++) {
-		float t = (float)res / resolution;
+	for (unsigned int ti = 0; ti < times.size(); ti++) {
+		float t = Util::clamp<float>(times[ti], 0, 1);
 
 		for (unsigned int layer = 0; layer < segs.size(); layer++) {
 			for (unsigned int segment = 0; segment < segs[layer].size(); segment++) {
 				ofPoint p = segs[layer][segment].pointAlong(t);
 				nextLayerCP[segment] = p;
 				if (layer == segs.size() - 1) {
-					outputPoints[res] = p;
+					outputPoints[ti] = p;
 				}
 			}
 			//You've finished layer i, prepare layer i + 1
@@ -440,6 +447,17 @@ std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsig
 		}
 	}
 	return outputPoints;
+}
+
+/*! Gets the vertices needed to draw a bezier curve.
+\param controlPoints Control points for the bezier.
+\param resolution Controls the approximation of the bezier curve. There will be `resolution` line segments drawn to
+complete the curve (`resolution + 1` points).
+\return A vector of points created based on the `controlPoints`. */
+std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, unsigned int resolution) {
+	std::vector<float> times = Util::sequenceAlong<float>(0, 1, resolution + 1);
+
+	return getBezierVertices(controlPoints, times);
 }
 
 /*! Draws a bezier curve with an arbitrary number of control points. May become slow with a large number
