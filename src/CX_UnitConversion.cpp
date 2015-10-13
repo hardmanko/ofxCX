@@ -3,6 +3,7 @@
 namespace CX {
 namespace Util {
 
+
 	/*! Returns the number of pixels needed to subtend deg degrees of visual angle. You might want to round this
 	if you want to align to pixel boundaries. However, if you are antialiasing your stimuli you
 	might want to use floating point values to get precise subpixel rendering.
@@ -22,6 +23,28 @@ namespace Util {
 		float length = pixels / pixelsPerUnit;
 		float rad = asin(length / (2 * viewingDistance));
 		return 2 * rad * 180 / PI;
+	}
+
+	//////////////////////////
+	// CX_BaseUnitConverter //
+	//////////////////////////
+
+	/*! Applies the unit conversion to a whole vector. */
+	std::vector<float> CX_BaseUnitConverter::operator() (const std::vector<float>& vx) {
+		std::vector<float> rval(vx.size());
+		for (unsigned int i = 0; i < rval.size(); i++) {
+			rval[i] = this->operator()(vx[i]);
+		}
+		return rval;
+	}
+
+	/*! Applies the inverse unit conversion to a whole vector. */
+	std::vector<float> CX_BaseUnitConverter::inverse(const std::vector<float>& vy) {
+		std::vector<float> rval(vy.size());
+		for (unsigned int i = 0; i < rval.size(); i++) {
+			rval[i] = this->inverse(vy[i]);
+		}
+		return rval;
 	}
 
 
@@ -332,6 +355,30 @@ namespace Util {
 	/*! Equivalent to `inverse(ofPoint(x,y,z));` */
 	ofPoint CX_CoordinateConverter::inverse(float x, float y, float z) {
 		return this->inverse(ofPoint(x, y, z));
+	}
+
+	/*! Applies the conversion on a whole vector of points at once.	
+	\param p The vector of points to convert.
+	\return The converted points.
+	*/
+	std::vector<ofPoint> CX_CoordinateConverter::operator() (const std::vector<ofPoint>& p) {
+		std::vector<ofPoint> rval(p.size());
+		for (unsigned int i = 0; i < rval.size(); i++) {
+			rval[i] = this->operator()(p[i]);
+		}
+		return rval;
+	}
+
+	/*! Applies the inverse conversion on a whole vector of points at once.	
+	\param p The vector of points to inverse convert.
+	\return The inverse converted points.
+	*/
+	std::vector<ofPoint> CX_CoordinateConverter::inverse(const std::vector<ofPoint>& p) {
+		std::vector<ofPoint> rval(p.size());
+		for (unsigned int i = 0; i < rval.size(); i++) {
+			rval[i] = this->inverse(p[i]);
+		}
+		return rval;
 	}
 
 	/*! Sets the unit converter that will be used when converting the coordinate system.

@@ -25,6 +25,10 @@ namespace Util {
 		virtual float inverse(float y) {
 			return (y + 2) / 5; //x = (y + 2)/5
 		}
+
+		//No need to override these functions unless your conversion does something really unusual.
+		virtual std::vector<float> operator() (const std::vector<float>& vx);
+		virtual std::vector<float> inverse(const std::vector<float>& vy);
 	};
 
 	/*! This simple utility class is used for converting degrees of visual angle to pixels on a monitor.
@@ -133,6 +137,9 @@ namespace Util {
 
 		ofPoint inverse(ofPoint p);
 		ofPoint inverse(float x, float y, float z = 0);
+
+		std::vector<ofPoint> operator() (const std::vector<ofPoint>& p);
+		std::vector<ofPoint> inverse(const std::vector<ofPoint>& p);
 
 	private:
 		ofPoint _origin;
