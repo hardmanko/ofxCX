@@ -47,7 +47,7 @@
 \hbadness=750
 \setlength{\emergencystretch}{15pt}
 \setlength{\parindent}{0cm}
-\setlength{\parskip}{0.2cm}
+\setlength{\parskip}{0.2cm plus0cm minus0.1cm}
 \makeatletter
 \renewcommand{\paragraph}{%
   \@startsection{paragraph}{4}{0ex}{-1.0ex}{1.0ex}{%
@@ -80,9 +80,14 @@
 \renewcommand{\chaptermark}[1]{%
   \markboth{#1}{}%
 }
-\renewcommand{\sectionmark}[1]{%
-  \markright{\thesection\ #1}%
-}
+
+%\renewcommand{\sectionmark}[1]{%
+%  \markright{\thesection\ #1}%
+%}
+
+\renewcommand\thesection{\arabic{section}.}
+\renewcommand\thesubsection{\thesection\arabic{subsection}.}
+\renewcommand\thesubsubsection{\thesubsection\arabic{subsubsection}}
 
 % Indices & bibliography
 \usepackage{natbib}

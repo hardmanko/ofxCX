@@ -9,7 +9,7 @@ is a very good language for anything requiring a high degree of timing precision
 free and open source. See [this page](http://www.kylehardman.com/psychology/c-experiment-software) for a summary of the features of CX.
 
 The documentation for CX can be found in the `docs` subfolder and in the code files. A fairly up-to-date pdf version of the documentation is contained in `docs/CX_Manual.pdf` 
-(or try [this link](https://github.com/hardmanko/ofxCX/releases/download/v0.1.1/CX_Manual.pdf) if you don't want to download the whole repo). 
+(or try [this link](https://github.com/hardmanko/ofxCX/releases/download/v0.1.2/CX_Manual.pdf) if you don't want to download the whole repo). 
 You can generate other formats of the documentation by using Doxygen with the Doxyfile in the `docs` subfolder.
 
 License
@@ -36,6 +36,8 @@ This is beta software, don't expect it to be bug-free. Please report any issues 
 
 Version history
 ------------
+v0.1.2 - This release has a few new features and minor bug fixes.
+
 v0.1.1 - This is mostly a documentation release, but there are a number of new features and some bug fixes.
 
 v0.1.0 - Intial release.
