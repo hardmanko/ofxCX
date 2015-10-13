@@ -46,6 +46,12 @@ namespace Util {
 		return false;
 	}
 
+	/*! Attempts to set the process that CX is running in to high priority.
+
+	Note: This function only works on Windows. 
+	
+	\return `false` if a known error is encountered.
+	*/
 	bool setProcessToHighPriority(void) {
 #ifdef TARGET_WIN32
 		return CX::Private::Windows::setProcessToHighPriority();

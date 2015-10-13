@@ -142,7 +142,7 @@ namespace CX {
 			}
 
 			/*! Get the next value sampled from the provided data.
-			\return An element sampled from the provided values, or if there were no values provided, 
+			\return An element sampled from the provided values, or, if there were no values provided, 
 			a warning will be logged and a default-constructed instance of T will be returned. */
 			T getNextValue(void) {
 				if (_values.size() == 0) {
@@ -189,219 +189,221 @@ namespace CX {
 			unsigned int _blockPosition;
 			unsigned int _blockNumber;
 		};
-	}
-}
 
-/*! This algorithm is designed to deal with the situation in which a number
-of random values must be generated that are each at least some distance from every other
-random value. This is a very generic implementation of this algorithm. It works by taking
-pointers to two functions that work on whatever type of data you are using. 
+		
+		/*! This algorithm is designed to deal with the situation in which a number
+		of random values must be generated that are each at least some distance from every other
+		random value. This is a very generic implementation of this algorithm. It works by taking
+		pointers to two functions that work on whatever type of data you are using. 
 
-The first function is a distance function: it returns the distance between two values of the type.
-You can define distance in whatever way you would like. Distance does not even need to be 
-unidimensional: note that the type of data used for distance is a template parameter. The 
-distance type must have operator<(distT,distT) defined.
+		The first function is a distance function: it returns the distance between two values of the type.
+		You can define distance in whatever way you would like. Distance does not even need to be 
+		unidimensional: note that the type of data used for distance is a template parameter. The 
+		distance type must have operator<(distT,distT) defined.
 
-The second function generates random values of the type.
+		The second function generates random values of the type.
 
 
-\tparam <dataT> The type of data you are working with.
-\tparam <distT> The type of distance units used.
+		\tparam <dataT> The type of data you are working with.
+		\tparam <distT> The type of distance units used.
 
-\param count The number of values you want to be generated.
-\param minDistance The minimum distance between any two values. This will be compared to the result of distanceFunction.
-\param distanceFunction A function that computes the distance, in whatever units you want, between two values of type T.
-\param randomDeviate A function that generates random values of type T.
-\param maxSequentialFailures The maximum number of times in a row that a newly-generated value can be less than minDistance
-from at least one other value. If this number of failures is reached, the process will be restarted depending on the setting
-of maxRestarts. This is to help make sure that if the algorithm is having a hard time finding a value that works given the
-other values that have been selected, it doesn't just run forever, but tries over with new values.
-\param maxRestarts If non-negative, the number of times that the algorithm will restart before giving up. If negative,
-the algorithm will never give up. Note that this may result in an infinite loop if it is impossible to get enough samples.
-\return A vector of values. If the function terminated prematurely due to maxSequentialFailures being reached, the
-returned vector will have 0 elements.
+		\param count The number of values you want to be generated.
+		\param minDistance The minimum distance between any two values. This will be compared to the result of distanceFunction.
+		\param distanceFunction A function that computes the distance, in whatever units you want, between two values of type T.
+		\param randomDeviate A function that generates random values of type T.
+		\param maxSequentialFailures The maximum number of times in a row that a newly-generated value can be less than minDistance
+		from at least one other value. If this number of failures is reached, the process will be restarted depending on the setting
+		of maxRestarts. This is to help make sure that if the algorithm is having a hard time finding a value that works given the
+		other values that have been selected, it doesn't just run forever, but tries over with new values.
+		\param maxRestarts If non-negative, the number of times that the algorithm will restart before giving up. If negative,
+		the algorithm will never give up. Note that this may result in an infinite loop if it is impossible to get enough samples.
+		\return A vector of values. If the function terminated prematurely due to maxSequentialFailures being reached, the
+		returned vector will have 0 elements.
 
-\code{.cpp}
-//This example function generates locCount points with both x and y values bounded by minimumValues and maximumValues that
-//are at least minDistance pixels from each other.
-std::vector<ofPoint> getObjectLocations(int locCount, float minDistance, ofPoint minimumValues, ofPoint maximumValues) {
-	//pointDistance is an anonymous function that takes two ofPoints as arguments and returns a float.
-	auto pointDistance = [](ofPoint a, ofPoint b) -> float {
-		return a.distance(b);
-	};
+		\code{.cpp}
+		//This example function generates locCount points with both x and y values bounded by minimumValues and maximumValues that
+		//are at least minDistance from each other.
+		std::vector<ofPoint> getObjectLocations(int locCount, float minDistance, ofPoint minimumValues, ofPoint maximumValues) {
+			//pointDistance is an anonymous function that takes two ofPoints as arguments and returns a float.
+			auto pointDistance = [](ofPoint a, ofPoint b) -> float {
+				return a.distance(b);
+			};
 
-	//randomPoint is an anaonymous function that takes no arguments explicitly, but it captures by reference everything from
-	//the enclosing environment (specifically minimumValues and maximumValues).
-	auto randomPoint = [&]() -> ofPoint {
-		ofPoint rval;
-		rval.x = RNG.randomInt(minimumValues.x, maximumValues.x);
-		rval.y = RNG.randomInt(minimumValues.y, maximumValues.y);
-		return rval;
-	};
+			//randomPoint is an anonymous function that takes no arguments explicitly, but it captures by reference everything from
+			//the enclosing environment (specifically minimumValues and maximumValues).
+			auto randomPoint = [&]() -> ofPoint {
+				ofPoint rval;
+				rval.x = RNG.randomInt(minimumValues.x, maximumValues.x);
+				rval.y = RNG.randomInt(minimumValues.y, maximumValues.y);
+				return rval;
+			};
 
-	return CX::Algo::generateSeparatedValues<ofPoint, float>(locCount, minDistance, pointDistance, randomPoint, 1000, 100);
-}
-
-//Call of example function
-vector<ofPoint> v = getObjectLocations(5, 50, ofPoint(0, 0), ofPoint(400, 400));
-\endcode
-*/
-template <typename dataT, typename distT>
-std::vector<dataT> CX::Algo::generateSeparatedValues(int count, distT minDistance, std::function<distT(dataT, dataT)> distanceFunction,
-													 std::function<dataT(void)> randomDeviate, unsigned int maxSequentialFailures, int maxRestarts)
-{
-	std::vector<dataT> samples;
-	unsigned int sequentialFailures = 0;
-
-	while (samples.size() < count) {
-		bool sampleRejected = false;
-		dataT sample = randomDeviate();
-
-		for (dataT& s : samples) {
-			if (distanceFunction(s, sample) < minDistance) {
-				sampleRejected = true;
-				break;
-			}
+			return CX::Algo::generateSeparatedValues<ofPoint, float>(locCount, minDistance, pointDistance, randomPoint, 1000, 100);
 		}
 
-		if (sampleRejected) {
-			if (++sequentialFailures >= maxSequentialFailures) {
-				//If maxRestarts is greater than 0, restart. If it's less than 0, restart continuously.
-				if (maxRestarts != 0) {
-					if (maxRestarts < 0) {
-						maxRestarts++;
+		//Call of example function
+		vector<ofPoint> v = getObjectLocations(5, 50, ofPoint(0, 0), ofPoint(400, 400));
+		\endcode
+		*/
+		template <typename dataT, typename distT>
+		std::vector<dataT> generateSeparatedValues(int count, distT minDistance, std::function<distT(dataT, dataT)> distanceFunction,
+															 std::function<dataT(void)> randomDeviate, unsigned int maxSequentialFailures, int maxRestarts)
+		{
+			std::vector<dataT> samples;
+			unsigned int sequentialFailures = 0;
+
+			while (samples.size() < count) {
+				bool sampleRejected = false;
+				dataT sample = randomDeviate();
+
+				for (dataT& s : samples) {
+					if (distanceFunction(s, sample) < minDistance) {
+						sampleRejected = true;
+						break;
 					}
-					return generateSeparatedValues(count, minDistance, distanceFunction, randomDeviate, maxSequentialFailures, maxRestarts - 1);
+				}
+
+				if (sampleRejected) {
+					if (++sequentialFailures >= maxSequentialFailures) {
+						//If maxRestarts is greater than 0, restart. If it's less than 0, restart continuously.
+						if (maxRestarts != 0) {
+							if (maxRestarts < 0) {
+								maxRestarts++;
+							}
+							return generateSeparatedValues(count, minDistance, distanceFunction, randomDeviate, maxSequentialFailures, maxRestarts - 1);
+						} else {
+							CX::Instances::Log.error("CX::Algo::generateSeparatedValues") << "Maximum number of restarts reached. Returning an empty vector.";
+							return std::vector<dataT>();
+						}
+					}
 				} else {
-					CX::Instances::Log.error("CX::Algo::generateSeparatedValues") << "Maximum number of restarts reached. Returning an empty vector.";
-					return std::vector<dataT>();
+					sequentialFailures = 0;
+					samples.push_back(sample);
+				}
+
+			}
+
+			return samples;
+		}
+
+		/*!
+		This function fully crosses the levels of the factors of a design. For example, for a 2X3 design,
+		it would give you all 6 combinations of the levels of the design.
+		\param factors A vector of factors, each factor being a vector containing all the levels of that factor.
+		\return A vector of crossed factor levels. It's length is equal to the product of the levels of the factors.
+		The length of each "row" is equal to the number of factors.
+
+		Example use:
+		\code{.cpp}
+		std::vector< std::vector<int> > levels(2); //Two factors
+		levels[0].push_back(1); //The first factor has two levels (1 and 2)
+		levels[0].push_back(2);
+		levels[1].push_back(3); //The second factor has three levels (3, 4, and 5)
+		levels[1].push_back(4);
+		levels[1].push_back(5);
+		auto crossed = fullyCross(levels);
+		\endcode
+		crossed should contain a vector with six subvectors with the contents: 
+		\code
+		{ {1,3}, {1,4}, {1,5}, {2,3}, {2,4}, {2,5} }
+		\endcode
+		where
+		\code
+		crossed[3][0] == 2
+		crossed[3][1] == 3
+		crossed[0][1] == 3
+		\endcode
+		*/
+		template <typename T>
+		std::vector< std::vector<T> > fullyCross (std::vector< std::vector<T> > factors) {
+
+			unsigned int crossedLevels = 1;
+			for (unsigned int factor = 0; factor < factors.size(); factor++) {
+				crossedLevels *= factors[factor].size();
+			}
+
+			std::vector< std::vector<T> > formatOne(factors.size());
+			unsigned int lback = 1;
+			for (unsigned int factor = 0; factor < factors.size(); factor++) {
+
+				unsigned int lcurrent = factors[factor].size();
+				unsigned int lforward = crossedLevels / (lback * lcurrent);
+
+				for (unsigned int b = 0; b < lback; b++) {
+					for (unsigned int c = 0; c < lcurrent; c++) {
+						for (unsigned int f = 0; f < lforward; f++) {
+							formatOne[factor].push_back(factors[factor][c]);
+						}
+					}
+				}
+
+				lback *= lcurrent;
+			}
+
+			//Now we have the data, but in wrong format, so transpose it.
+			std::vector< std::vector<T> > rval(crossedLevels);
+			for (unsigned int level = 0; level < crossedLevels; level++) {
+				rval[level].resize( factors.size() );
+				for (unsigned int factor = 0; factor < factors.size(); factor++) {
+					rval[level][factor] = formatOne[factor][level];
 				}
 			}
-		} else {
-			sequentialFailures = 0;
-			samples.push_back(sample);
+
+			return rval;
 		}
 
-	}
+		/*! This function does the same thing as \ref CX::Algo::fullyCross(std::vector< std::vector<T> > factors),
+		except that it returns a CX_DataFrame, which means that you can access factor values by the name of the
+		factor, rather than an index. You can see this in the example.
 
-	return samples;
-}
+		\code{.cpp}
+		string shapes[3] = { "square", "rectangle", "triangle" };
+		vector<string> shapesV = Util::arrayToVector(shapes, 3);
 
-/*!
-This function fully crosses the levels of the factors of a design. For example, for a 2X3 design,
-it would give you all 6 combinations of the levels of the design.
-\param factors A vector of factors, each factor being a vector containing all the levels of that factor.
-\return A vector of crossed factor levels. It's length is equal to the product of the levels of the factors.
-The length of each "row" is equal to the number of factors.
+		string numbers[2] = { "1.5", "3.7" };
+		vector<string> numbersV = Util::arrayToVector(numbers, 2);
 
-Example use:
-\code{.cpp}
-std::vector< std::vector<int> > levels(2); //Two factors
-levels[0].push_back(1); //The first factor has two levels (1 and 2)
-levels[0].push_back(2);
-levels[1].push_back(3); //The second factor has three levels (3, 4, and 5)
-levels[1].push_back(4);
-levels[1].push_back(5);
-auto crossed = fullyCross(levels);
-\endcode
-crossed should contain a vector with six subvectors with the contents: 
-\code
-{ {1,3}, {1,4}, {1,5}, {2,3}, {2,4}, {2,5} }
-\endcode
-where
-\code
-crossed[3][0] == 2
-crossed[3][1] == 3
-crossed[0][1] == 3
-\endcode
+		map<string, vector<string>> factors;
+		factors["shapes"] = shapesV;
+		factors["numbers"] = numbersV;
 
-*/
-template <typename T>
-std::vector< std::vector<T> > CX::Algo::fullyCross (std::vector< std::vector<T> > factors) {
+		CX_DataFrame crossed = Algo::fullyCross(factors);
 
-	unsigned int crossedLevels = 1;
-	for (unsigned int factor = 0; factor < factors.size(); factor++) {
-		crossedLevels *= factors[factor].size();
-	}
+		cout << crossed.print() << endl;
 
-	std::vector< std::vector<T> > formatOne(factors.size());
-	unsigned int lback = 1;
-	for (unsigned int factor = 0; factor < factors.size(); factor++) {
+		double firstNumber = crossed(0, "numbers").toDouble();
+		string secondShape = crossed(1, "shapes").toString();
+		\endcode
 
-		unsigned int lcurrent = factors[factor].size();
-		unsigned int lforward = crossedLevels / (lback * lcurrent);
-
-		for (unsigned int b = 0; b < lback; b++) {
-			for (unsigned int c = 0; c < lcurrent; c++) {
-				for (unsigned int f = 0; f < lforward; f++) {
-					formatOne[factor].push_back(factors[factor][c]);
-				}
-			}
-		}
-
-		lback *= lcurrent;
-	}
-
-	//Now we have the data, but in wrong format, so transpose it.
-	std::vector< std::vector<T> > rval(crossedLevels);
-	for (unsigned int level = 0; level < crossedLevels; level++) {
-		rval[level].resize( factors.size() );
-		for (unsigned int factor = 0; factor < factors.size(); factor++) {
-			rval[level][factor] = formatOne[factor][level];
-		}
-	}
-
-	return rval;
-}
-
-/*! This function does the same thing as \ref CX::Algo::fullyCross(std::vector< std::vector<T> > factors),
-except that it returns a CX_DataFrame, which means that you can access factor values by the name of the
-factor, rather than an index. You can see this in the example.
-
-\code{.cpp}
-string shapes[3] = { "square", "rectangle", "triangle" };
-vector<string> shapesV = Util::arrayToVector(shapes, 3);
-
-string numbers[2] = { "1.5", "3.7" };
-vector<string> numbersV = Util::arrayToVector(numbers, 2);
-
-map<string, vector<string>> factors;
-factors["shapes"] = shapesV;
-factors["numbers"] = numbersV;
-
-CX_DataFrame crossed = Algo::fullyCross(factors);
-
-cout << crossed.print() << endl;
-
-double firstNumber = crossed(0, "numbers").toDouble();
-string secondShape = crossed(1, "shapes").toString();
-\endcode
-
-\tparam T The type of data to use. Typically, using `string`s works well, as you can stringify a number
-(or other type) and then extract that type from the CX_DataFrame, as can be seen in the example with the
-"numbers" factor.
-\param factors A map that uses the name of a factor as the key and a vector of factor levels as the value.
-*/
-template <typename T>
-CX::CX_DataFrame CX::Algo::fullyCross(std::map<std::string, std::vector<T>>& factors) {
+		\tparam T The type of data to use. Typically, using `string`s works well, as you can stringify a number
+		(or other type) and then extract that type from the CX_DataFrame, as can be seen in the example with the
+		"numbers" factor.
+		\param factors A map that uses the name of a factor as the key and a vector of factor levels as the value.
+		*/
+		template <typename T>
+		CX_DataFrame fullyCross(std::map<std::string, std::vector<T>>& factors) {
 	
-	std::vector< std::string > factorNames;
-	std::vector< std::vector<T> > vFactors;
+			std::vector< std::string > factorNames;
+			std::vector< std::vector<T> > vFactors;
 
-	for (std::pair<std::string, std::vector<T>> f : factors) {
-		factorNames.push_back(f.first);
-		vFactors.push_back(f.second);
-	}
+			for (std::pair<std::string, std::vector<T>> f : factors) {
+				factorNames.push_back(f.first);
+				vFactors.push_back(f.second);
+			}
 
-	std::vector< std::vector<T> > crossed = fullyCross(vFactors);
+			std::vector< std::vector<T> > crossed = fullyCross(vFactors);
 
-	CX::CX_DataFrame rval;
+			CX::CX_DataFrame rval;
 
-	for (unsigned int i = 0; i < crossed.size(); i++) {
-		for (unsigned int f = 0; f < crossed.at(i).size(); f++) {
-			rval(i, factorNames.at(f)) = crossed.at(i).at(f);
+			for (unsigned int i = 0; i < crossed.size(); i++) {
+				for (unsigned int f = 0; f < crossed.at(i).size(); f++) {
+					rval(i, factorNames.at(f)) = crossed.at(i).at(f);
+				}
+			}
+
+			return rval;
 		}
-	}
 
-	return rval;
-}
+
+	} //namespace Algo
+} //namespace CX
