@@ -14,8 +14,13 @@ namespace CX {
 namespace Private {
 
 void setupCX(void) {
-
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+	ofInit();
+#else //Older versions...
 	ofSetWorkingDirectoryToDefault();
+#endif
+
+	
 	ofSetEscapeQuitsApp(false);
 
 	CX::Instances::Log.captureOFLogMessages(true);
@@ -43,8 +48,6 @@ void setupCX(void) {
 		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
 	}
 
-	ofSetEscapeQuitsApp(false);
-
 	//This is temporary: I think there's an oF bug about it
 	glfwSetWindowPos(CX::Private::glfwContext, 200, 200);
 
@@ -57,7 +60,24 @@ void setupCX(void) {
 }
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+//The window doesn't close automatically, so kill the window.
+bool exitCallbackHandler(ofEventArgs& args) {
+
+	//glfwDestroyWindow is not supposed to be called from callbacks...
+	//if (glfwGetCurrentContext() != nullptr) {
+	//	glfwDestroyWindow(glfwGetCurrentContext());
+	//}
+
+	glfwTerminate(); //this also should not be called from callbacks...
+	//without calling this, the window hangs.
+
+	std::exit(0);
+
+	return true;
+}
+
 void reopenWindow090(CX_WindowConfiguration_t config) {
+
 	CX::Private::appWindow = shared_ptr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
 
 	std::shared_ptr<CX::Private::CX_AppWindow> awp = std::dynamic_pointer_cast<CX::Private::CX_AppWindow>(CX::Private::appWindow);
@@ -70,6 +90,14 @@ void reopenWindow090(CX_WindowConfiguration_t config) {
 	ofGetMainLoop()->addWindow(awp);
 
 	awp->setup(settings);
+
+	//This must happen after the window has been set up.
+	ofAddListener(ofEvents().exit, &exitCallbackHandler, ofEventOrder::OF_EVENT_ORDER_AFTER_APP);
+
+	//ofAppGLFWWindow doesn't show the window until the first call to update()
+	if (glfwGetCurrentContext() != nullptr) {
+		glfwShowWindow(glfwGetCurrentContext());
+	}
 }
 
 #else

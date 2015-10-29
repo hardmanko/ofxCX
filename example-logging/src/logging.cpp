@@ -97,7 +97,7 @@ void runExperiment (void) {
 	Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
 
 
-	//If instead of a logged message for the more serious errors, you want an exception:
+	//If for more serious errors, in addition to a logged message, you also want an exception, do this:
 	Log.levelForAllExceptions(CX_Logger::Level::LOG_FATAL_ERROR);
 
 	Log.warning() << "Almost out of memory.";
@@ -112,15 +112,17 @@ void runExperiment (void) {
 	//the exception you don't need to do anything extra to get the message.
 
 	//The exception will be thrown from near the call site of the logging call that generated the exception,
-	//which means that you get a useful stack trace.
+	//which means that you get a useful stack trace if your debugger automatically breaks on unhandled exceptions (Visual Studio does).
 
 
 	//The function Util::checkOFVersion logs with module named "CX::Util::checkOFVersion", so lets enable exceptions for that module
+	//for all message severities.
 	Log.levelForExceptions(CX_Logger::Level::LOG_ALL, "CX::Util::checkOFVersion");
 
-	//We should get an exception within this function (this is not a supported version of openFrameworks)
-	//which should allow us to examine the call stack. It's commented out so as not to break the rest of the example.
-	//Util::checkOFVersion(0, 1, 1, true);
+	//We should get an exception within this function call (0.1.1 is not a supported version of openFrameworks)
+	//which should allow us to examine the call stack if the IDE we're using supports debugging with call stacks.
+	//It's commented out so as not to break the rest of the example.
+	Util::checkOFVersion(0, 1, 1, true);
 
 
 	Log.flush();

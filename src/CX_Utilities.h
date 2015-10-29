@@ -459,17 +459,15 @@ std::vector<T> CX::Util::concatenate(T A, const std::vector<T>& B) {
 
 /*! Gets the values from `values` that do not match the values in `exclude`.
 \param values The starting set of values.
-\param exclude The set of values to exclude from `values`.
+\param exclude The set of values to exclude from `values`. This may contain duplicates.
 \return A vector containing the values that were not excluded. This vector may be empty. */
 template <typename T>
 std::vector<T> CX::Util::exclude(const std::vector<T>& values, const std::vector<T>& exclude) {
 	std::vector<T> kept;
 
-	std::vector<T> uniqueExclude = unique(exclude);
-
 	for (T val : values) {
 		bool valueExcluded = false;
-		for (T ex : uniqueExclude) {
+		for (T ex : exclude) {
 			if (val == ex) {
 				valueExcluded = true;
 				break;

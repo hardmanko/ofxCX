@@ -12,11 +12,9 @@
 #define CX_RT_USE_SHADER //ofShader (shaders are used for all kinds of drawing is ofGLProgammableRenderer is being used)
 
 #ifdef CX_RT_USE_FBO
-//As of oF 0.9.0, you can't declare an ofFbo at global scope due to a complex initialization-order 
-//issue (I hesitate to call it a bug). So, declare them as pointers and allocate them in runExperiment.
-ofFbo* mainFbo;
-ofFbo* transparency;
-ofFbo* trivialFbo;
+ofFbo mainFbo;
+ofFbo transparency;
+ofFbo trivialFbo;
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -60,27 +58,21 @@ void runExperiment(void) {
 
 #ifdef CX_RT_USE_FBO
 
-	//Allocate on the fbo pointers (this does not allocate memory for the contents of the fbo, which is done 
-	//with the allocate() method, done below.
-	mainFbo = new ofFbo;
-	transparency = new ofFbo;
-	trivialFbo = new ofFbo;
-
 	//This is the most simple way to use an ofFbo. You must allocate the fbo before you use it.
 	//Make it 100 X 100 pixels. GL_RGB means that is should be in color (red, green, and blue channels).
-	trivialFbo->allocate(100, 100, GL_RGB); 
+	trivialFbo.allocate(100, 100, GL_RGB); 
 		
-	trivialFbo->begin(); //All drawing that happens between begin() and end() causes the drawing to be rendered to the ofFbo.
+	trivialFbo.begin(); //All drawing that happens between begin() and end() causes the drawing to be rendered to the ofFbo.
 	ofBackground(0, 255, 0); //Draw a green background.
-	trivialFbo->end(); //Finish drawing to the fbo.
+	trivialFbo.end(); //Finish drawing to the fbo.
 
 
 	//Here is an example of both 1) storing drawn data in a framebuffer and then drawing that framebuffer at multiple places
 	//and 2) drawing with transparency.
 	//transparency is an ofFbo. You can allocate and draw to it once, then draw the contents of it later into other framebuffers.
-	transparency->allocate(200, 200, GL_RGBA); //Allocate a 200x200 pixel framebuffer with an alpha channel. The default is GL_RGBA.
+	transparency.allocate(200, 200, GL_RGBA); //Allocate a 200x200 pixel framebuffer with an alpha channel. The default is GL_RGBA.
 
-	transparency->begin(); //Begin rendering to the framebuffer. This means that all rendering commands that are used before
+	transparency.begin(); //Begin rendering to the framebuffer. This means that all rendering commands that are used before
 		//transparency.end() is called go into this framebuffer.
 
 	//Fill the background of the framebuffer, making it opaque (with an alpha value of 255)
@@ -99,9 +91,9 @@ void runExperiment(void) {
 	ofSetColor(0);
 	ofDrawBitmapString( "ofFbo + transparency", 10, 10 );
 
-	transparency->end(); //Stop drawing to the transparency fbo
+	transparency.end(); //Stop drawing to the transparency fbo
 
-	mainFbo->allocate(Disp.getResolution().x, Disp.getResolution().y, GL_RGBA, CX::Util::getMsaaSampleCount());
+	mainFbo.allocate(Disp.getResolution().x, Disp.getResolution().y, GL_RGBA, CX::Util::getMsaaSampleCount());
 #endif
 
 #ifdef CX_RT_USE_PATH
@@ -175,17 +167,17 @@ void updateDrawings (void) {
 
 #ifdef CX_RT_USE_FBO
 	if (drawingToFboFirst) {
-		mainFbo->begin();
+		mainFbo.begin();
 			drawStuff();
 			ofSetColor(255);
 			ofDrawBitmapString("FBO", 20, 20);
 			ofClearAlpha(); //Remove transparency
-		mainFbo->end();
+		mainFbo.end();
 
 		//Disp.setYIncreasesUpwards(false);
 		Disp.beginDrawingToBackBuffer();
 		ofSetColor(255);
-		mainFbo->draw(0,0);
+		mainFbo.draw(0,0);
 		Disp.endDrawingToBackBuffer();
 		//Disp.setYIncreasesUpwards(true);
 				
@@ -246,10 +238,10 @@ void drawStuff (void) {
 #ifdef CX_RT_USE_FBO
 	ofSetColor(255); //Before drawing an ofFbo, if the color is not set to white, 
 		//the output looks wrong (merged with the current color that was set).
-	transparency->draw(30, 280);
+	transparency.draw(30, 280);
 
 	ofSetColor(255);
-	trivialFbo->draw(30, 450);
+	trivialFbo.draw(30, 450);
 #endif
 
 #ifdef CX_RT_USE_TEXTURE

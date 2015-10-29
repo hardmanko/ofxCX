@@ -1,7 +1,7 @@
 /* This is a minimal exaple that shows:
-1) How to display basic text on screen.
+1) How to display text on screen.
 2) How to write text to the console that opens with each program.
-3) How to wait for a keypress.
+3) How to wait for any keypress before continuing.
 */
 
 #include "CX.h"

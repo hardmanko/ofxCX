@@ -20,7 +20,7 @@ presenter. The standard framebuffer approach has the following major steps:
 
 Using drawing functions, we avoid steps 1 and 3. Step 1 can be very costly in terms of time. Step 3
 may take longer than just drawing stimuli directly to the back buffer. With drawing functions, 
-step 2 becomes "Draw your stimuli to the back buffer directly". For an N-back task, there are no 
+steps 1 through 3 become "Draw your stimuli to the back buffer directly". For an N-back task, there are no 
 indefinitely-long inter-trial pauses where you can prepare stimuli: you have to get the next stimulus 
 ready within a fixed interval, so using drawing functions may be the best approach to acheive good timing
 precision. We are going to examine that issue with this example.
@@ -43,7 +43,7 @@ to the back buffer.
 
 We will be using a special kind of function object, known as a functor in C++ 
 (http://www.cprogramming.com/tutorial/functors-function-objects-in-c++.html)
-to do our drawing. A functor is basically a structure that can be called like a function using operator().
+to do our drawing. A functor is basically a struct that can be called like a function using operator().
 But unlike a normal function, a functor carries data along with it that can be used in the function call.
 Thus, a fuctor is a way to have a function without any arguments for which you can still specify those
 arguments (in a sense) by setting data members of the functor struct. See struct stimulusFunctor below for an
@@ -88,7 +88,6 @@ void generateTrials(void);
 
 
 
-
 //This is a "functor": an object that has data members (letter and showInstructions), but can be called
 //as a function using operator().
 struct stimulusFunctor {
@@ -104,7 +103,7 @@ vector<stimulusFunctor> stimulusFunctors;
 
 void runExperiment(void) {
 
-	//When checking the timing of things, also make sure to try it in full screen mode, because
+	//When checking the timing of things, make sure to try it in full screen mode as well, because
 	//timing errors happen a lot more when experiments is windowed rather than full screen.
 	Disp.setFullscreen(false);
 
@@ -145,6 +144,8 @@ void runExperiment(void) {
 
 	for (int i = 3; i > 0; i--) {
 		if (useFramebuffersForStimuli) {
+			//Note that regardless of whether drawing functions are used later, you can use the standard framebuffer approach as well.
+			//To be clear: You can mix and match framebuffers with drawing functions in a single presentation of slides.
 			SlidePresenter.beginDrawingNextSlide(1000, "fixation");
 			drawFixationSlide(i);
 		} else {
@@ -155,6 +156,7 @@ void runExperiment(void) {
 	}
 
 	for (unsigned int i = 0; i <= nBack; i++) {
+		//Depending on whether using the framebuffer approach or the drawing function approach, call a different setup function.
 		if (useFramebuffersForStimuli) {
 			drawStimuliToFramebuffers(SlidePresenter, i);
 		} else {
@@ -300,10 +302,11 @@ void appendDrawingFunctions(CX_SlidePresenter& sp, int trialIndex) {
 	CX_Millis startTime = Clock.now();
 
 	//Because stimulusFunctors contains objects that can be called as functions, you can treat 
-	//an instance of the object as though it were a function.
+	//an instance of the object as though it were a function. Yes, this is magical.
 	sp.appendSlideFunction(stimulusFunctors[trialIndex], stimulusPresentationDuration, "stimulus");
 
-	//You can also accomplish the same thing using std::bind:
+	//You can also accomplish the same thing using std::bind() and the drawStimulus function directly.
+	//This makes it so you don't need to set up the functors.
 	//sp.appendSlideFunction( std::bind( drawStimulus, df(trialIndex, "letter").toString(), (trialIndex >= nBack) ), stimulusPresentationDuration, "stimulus" );
 
 	sp.appendSlideFunction(drawBlank, interStimulusInterval, "blank");
