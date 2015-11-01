@@ -126,6 +126,7 @@ int stringToBooleint(std::string s) {
 	return -1;
 }
 
+#ifdef TARGET_WIN32
 namespace Windows {
 	std::string convertErrorCodeToString(DWORD errorCode) {
 
@@ -167,6 +168,7 @@ namespace Windows {
 		return true;
 	}
 } //namespace Windows
+#endif
 
 } //namespace Private
 } //namespace CX

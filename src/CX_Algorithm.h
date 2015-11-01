@@ -88,7 +88,7 @@ namespace CX {
 			std::vector< std::vector<unsigned int> > square; //!< The Latin square.
 			
 		private:
-			unsigned int _columns;
+			size_t _columns;
 		};
 
 

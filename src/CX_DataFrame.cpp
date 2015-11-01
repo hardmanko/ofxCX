@@ -105,11 +105,10 @@ std::string CX_DataFrame::print(const std::set<std::string>& columns, std::strin
 
 /*! Reduced argument version of print(). Prints all columns and the selected rows. */
 std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
-	set<string> columns;
-	vector<string> names = getColumnNames();
-	for (rowIndex_t i = 0; i < names.size(); i++) {
-		columns.insert(names[i]);
-	}
+	std::vector<std::string> names = getColumnNames();
+
+	std::set<std::string> columns(names.begin(), names.end());
+
 	return print(columns, rows, delimiter, printRowNumbers);
 }
 
@@ -203,7 +202,7 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 				}
 
 				//TODO: Update this to be more sensible/allow configuration.
-				string s;
+				std::string s;
 				if (it->second[oOpt.rowsToPrint[i]].isVector()) {
 					std::vector<std::string> v = it->second[oOpt.rowsToPrint[i]].toVector<std::string>(false);
 					s = oOpt.vectorEncloser + CX::Util::vectorToString(v, oOpt.vectorElementDelimiter) + oOpt.vectorEncloser;
@@ -314,19 +313,19 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 
 	this->clear();
 
-	vector<string> headers = ofSplitString(file.getFirstLine(), iOpt.cellDelimiter, false, false);
+	std::vector<std::string> headers = ofSplitString(file.getFirstLine(), iOpt.cellDelimiter, false, false);
 	rowIndex_t rowNumber = 0;
 	unsigned int fileRowNumber = 0;
 
 	do {
-		string line = file.getNextLine();
+		std::string line = file.getNextLine();
 		
 
-		vector<string> rowCells;
-		vector<bool> isVector;
+		std::vector<std::string> rowCells;
+		std::vector<bool> isVector;
 		unsigned int cellStart = 0;
 
-		for (unsigned int i = 0; i < line.size(); i++) {
+		for (size_t i = 0; i < line.size(); i++) {
 
 			bool enclosed = false;
 
@@ -399,7 +398,7 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 \return True if the column was found and deleted, false if it was not found.
 */
 bool CX_DataFrame::deleteColumn (std::string columnName) {
-	map<string, vector<CX_DataFrameCell>>::iterator it = _data.find(columnName);
+	std::map<std::string, std::vector<CX_DataFrameCell>>::iterator it = _data.find(columnName);
 	if (it != _data.end()) {
 		_data.erase(it);
 		return true;
@@ -414,7 +413,7 @@ bool CX_DataFrame::deleteColumn (std::string columnName) {
 */
 bool CX_DataFrame::deleteRow (rowIndex_t row) {
 	if (row < _rowCount) {
-		for (map<string, vector<CX_DataFrameCell>>::iterator col = _data.begin(); col != _data.end(); col++) {
+		for (std::map<std::string, std::vector<CX_DataFrameCell>>::iterator col = _data.begin(); col != _data.end(); col++) {
 			col->second.erase(col->second.begin() + row);
 		}
 		_rowCount--;
@@ -430,10 +429,12 @@ bool CX_DataFrame::deleteRow (rowIndex_t row) {
 */
 void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	//This implementation looks weird, but don't change it without care: it deals with a number of edge cases.
-	_rowCount++;
+
+	_rowCount++; //increment first so that resizing to _rowCount is the right size.
+
 	std::vector<std::string> names = row.names();
 	for (unsigned int i = 0; i < names.size(); i++) {
-		_data[names[i]].resize(_rowCount);
+		_data[names[i]].resize(_rowCount); //Resize each column individually
 		row[names[i]].copyCellTo( &_data[names[i]].back() ); //Copy the cell in the row into the data frame.
 	}
 	_equalizeRowLengths(); //This deals with the case when the row doesn't have the same columns as the rest of the data frame
@@ -494,8 +495,8 @@ void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
 /*! Returns a vector containing the names of the columns in the data frame.
 \return Vector of strings with the column names. */
 std::vector<std::string> CX_DataFrame::getColumnNames(void) const {
-	vector<string> names;
-	for (map<string, vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
+	std::vector<std::string> names;
+	for (std::map<std::string, std::vector<CX_DataFrameCell>>::const_iterator it = _data.begin(); it != _data.end(); it++) {
 		names.push_back(it->first);
 	}
 	return names;
@@ -524,13 +525,12 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 		}
 	}
 
-	vector<string> names = this->getColumnNames();
+	std::vector<std::string> names = this->getColumnNames();
 
-	for (vector<string>::iterator it = names.begin(); it != names.end(); it++) {
+	for (std::vector<std::string>::iterator it = names.begin(); it != names.end(); it++) {
 
-		vector<CX_DataFrameCell> columnCopy(_rowCount); //Data must first be copied into new columns,
-			//otherwise moving data from one row to another could overwrite a row that hasn't been copied
-			//yet.
+		std::vector<CX_DataFrameCell> columnCopy(_rowCount); //Data must first be copied into new columns,
+			//otherwise moving data from one row to another could overwrite a row that hasn't been copied yet.
 		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
 			this->_data[*it][newOrder[i]].copyCellTo( &columnCopy[i] );
 		}
@@ -539,7 +539,6 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 			columnCopy[i].copyCellTo( &this->_data[*it][newOrder[i]] );
 		}
 
-		//this->_data[*it] = columnCopy;
 	}
 	return true;
 }
@@ -568,26 +567,15 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 
 	CX_DataFrame copyDf;
 
-	vector<string> columnNames = this->getColumnNames();
+	std::vector<std::string> columnNames = this->getColumnNames();
 
-	for (string col : columnNames) {
+	for (std::string col : columnNames) {
         copyDf._resizeToFit(col, rowOrder.size() - 1);
         for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
             this->_data.at(col)[rowOrder[row]].copyCellTo( &copyDf._data[col][row] );
         }
 	}
-	/*
-	for (vector<string>::iterator col = columnNames.begin(); col != columnNames.end(); col++) {
-		//copyDf._data[*col].resize( rowOrder.size() ); //This can be left out. For the first column, it will have to resize that vector repeatedly. For the
-		//next columns, they will be resized to the proper size when they are created.
 
-		copyDf._resizeToFit(*col, rowOrder.size() - 1);
-
-		for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
-			this->operator()(*col, rowOrder[row]).copyCellTo( &copyDf._data[*col][row] );
-		}
-	}
-    */
 	return copyDf;
 }
 
@@ -610,7 +598,7 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 	}
 
 	CX_DataFrame copyDf;
-	for (std::set<string>::iterator col = columnSet.begin(); col != columnSet.end(); col++) {
+	for (std::set<std::string>::iterator col = columnSet.begin(); col != columnSet.end(); col++) {
 		copyDf._resizeToFit(*col, this->getRowCount() - 1);
 		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
 			this->operator()(*col, row).copyCellTo( &copyDf._data[*col][row] );
@@ -783,7 +771,7 @@ void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
 	//If it is an old column but too short, then it needs to be lengthened.
 	if (_data[column].size() <= row) {
 		_rowCount = std::max(_rowCount, row + 1);
-		for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+		for (std::map<std::string, std::vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
 			_data[it->first].resize(_rowCount);
 		}
 		CX::Instances::Log.verbose("CX_DataFrame") << "Data frame resized to fit (\"" << column << "\", " << row << ").";
@@ -809,11 +797,11 @@ void CX_DataFrame::_resizeToFit(std::string column) {
 
 void CX_DataFrame::_equalizeRowLengths(void) {
 	rowIndex_t maxSize = 0;
-	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+	for (std::map<std::string, std::vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
 		maxSize = std::max(_data[it->first].size(), maxSize);
 	}
 
-	for (map<string, vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
+	for (std::map<std::string, std::vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
 		_data[it->first].resize(maxSize);
 	}
 	_rowCount = maxSize;

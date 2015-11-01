@@ -42,7 +42,8 @@ namespace CX {
 			CX_Millis maxDuration;
 		};
 
-		CX_Clock (void);
+		CX_Clock(void);
+		~CX_Clock(void);
 
 		void setImplementation(CX_BaseClockInterface* impl);
 
@@ -56,7 +57,7 @@ namespace CX {
 		void resetExperimentStartTime(void);
 
 		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
-		static std::string getDateTimeString (std::string format = "%Y-%b-%e %h-%M-%S %a");
+		static std::string getDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 
 	private:
 		Poco::LocalDateTime _pocoExperimentStart;

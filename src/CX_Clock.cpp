@@ -21,6 +21,12 @@ CX_Clock::CX_Clock (void) {
 	resetExperimentStartTime();
 }
 
+CX_Clock::~CX_Clock(void) {
+	if (_implSelfAllocated) {
+		delete _impl;
+	}
+}
+
 /*! This function tests the precision of the clock used by CX. The results are computer-specific. 
 If the precision of the clock is worse than microsecond accuracy, a warning is logged including 
 information about the actual precision of the clock.

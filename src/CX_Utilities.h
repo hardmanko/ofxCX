@@ -272,6 +272,8 @@ template <typename T> std::vector<T> CX::Util::sequenceAlong(T start, T end, uns
 Creates a vector of integers going from start to end. start may be greater than end, in which case
 the returned values will be in descending order. This is similar to using CX::sequence, but the step
 size is fixed to 1 and it works properly when trying to create a descending sequence of unsigned integers.
+\param start The starting value.
+\param end The ending value. If `end == start`, this will return `start`.
 \return A vector of the values int the sequence.
 */
 template <typename T> std::vector<T> CX::Util::intVector(T start, T end) {

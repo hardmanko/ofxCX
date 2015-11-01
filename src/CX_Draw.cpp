@@ -356,8 +356,8 @@ void line(ofPoint p1, ofPoint p2, float width) {
 \param width The radial width of the ring.
 \param resolution The ring will be approximated with a number of line segments, which is controlled with `resolution`.
 
-\note This function supersedes drawing rings with ofCircle with fill set to off
-because the line width of the unfilled circle cannot be set to a value greater than 1.
+\note This function supersedes drawing rings with ofCircle with fill set to off because the line width of 
+the unfilled circle cannot be set to a value greater than 1 with ofCircle.
 */
 void ring(ofPoint center, float radius, float width, unsigned int resolution) {
 	float halfWidth = width / 2;

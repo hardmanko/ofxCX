@@ -31,8 +31,8 @@ void LatinSquare::generate(unsigned int dimensions) {
 /*! This function shifts the columns to the right and the last column is moved
 to be the first column. */
 void LatinSquare::reorderRight(void) {
-	for (unsigned int i = 0; i < square.size(); i++) {
-		for (unsigned int j = square[i].size() - 1; j > 0; j--) {
+	for (size_t i = 0; i < square.size(); i++) {
+		for (size_t j = square[i].size() - 1; j > 0; j--) {
 			std::swap(square[i][j], square[i][j - 1]);
 		}
 	}
@@ -41,8 +41,8 @@ void LatinSquare::reorderRight(void) {
 /*! This function shifts the columns to the left and the first column is moved
 to be the last column. */
 void LatinSquare::reorderLeft(void) {
-	for (unsigned int i = 0; i < square.size(); i++) {
-		for (unsigned int j = 0; j < square[i].size() - 1; j++) {
+	for (size_t i = 0; i < square.size(); i++) {
+		for (size_t j = 0; j < square[i].size() - 1; j++) {
 			std::swap(square[i][j], square[i][j + 1]);
 		}
 	}
@@ -50,14 +50,14 @@ void LatinSquare::reorderLeft(void) {
 
 /*! This function moves all of the rows up one place, then moves the topmost row to the bottom. */
 void LatinSquare::reorderUp(void) {
-	for (unsigned int i = 0; i < square.size() - 1; i++) {
+	for (size_t i = 0; i < square.size() - 1; i++) {
 		std::swap(square[i], square[i + 1]);
 	}
 }
 
 /*! This function moves all of the rows down one place, then moves the bottommost row to the top. */
 void LatinSquare::reorderDown(void) {
-	for (unsigned int i = square.size() - 1; i > 0; i--) {
+	for (size_t i = square.size() - 1; i > 0; i--) {
 		std::swap(square[i], square[i - 1]);
 	}
 }
@@ -65,8 +65,8 @@ void LatinSquare::reorderDown(void) {
 /*! Reverses the order of the columns in the latin square. */
 void LatinSquare::reverseColumns(void) {
 	std::vector< std::vector<unsigned int> > copy = square;
-	for (unsigned int i = 0; i < square.size(); i++) {
-		for (unsigned int j = 0, k = square[i].size() - 1; j < square[i].size(); j++, k--) {
+	for (size_t i = 0; i < square.size(); i++) {
+		for (size_t j = 0, k = square[i].size() - 1; j < square[i].size(); j++, k--) {
 			square[i][j] = copy[i][k];
 		}
 	}
@@ -197,12 +197,12 @@ bool LatinSquare::validate(void) const {
 
 /*! Returns the number of columns. */
 unsigned int LatinSquare::columns(void) const {
-	return _columns;
+	return (unsigned int)_columns;
 }
 
 /*! Returns the number of rows. */
 unsigned int LatinSquare::rows(void) const {
-	return square.size();
+	return (unsigned int)square.size();
 }
 
 /*! Returns a copy of the given column. Throws std::out_of_range if the column is out of range. */
