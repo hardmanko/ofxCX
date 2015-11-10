@@ -33,19 +33,22 @@ namespace Synth {
 	struct ModuleControlData_t {
 		ModuleControlData_t(void) :
 			initialized(false),
-			sampleRate(666)
+			sampleRate(666),
+			oversampling(1)
 		{}
 
 		ModuleControlData_t(float sampleRate_) :
 			initialized(true),
-			sampleRate(sampleRate_)
+			sampleRate(sampleRate_),
+			oversampling(1)
 		{}
 
 		bool initialized;
 		float sampleRate;
+		unsigned int oversampling;
 
 		bool operator==(const ModuleControlData_t& right) {
-			return ((this->initialized == right.initialized) && (this->sampleRate == right.sampleRate));
+			return ((this->initialized == right.initialized) && (this->sampleRate == right.sampleRate) && (this->oversampling == right.oversampling));
 		}
 
 		bool operator!=(const ModuleControlData_t& right) {
@@ -384,7 +387,11 @@ namespace Synth {
 			if (_inputs.size() == 0) {
 				return 0;
 			}
-			return _inputs.front()->getNextSample();
+			double sum = 0;
+			for (unsigned int i = 0; i < _data->oversampling; i++) {
+				sum += _inputs.front()->getNextSample();
+			}
+			return sum / _data->oversampling;
 		}
 	private:
 		unsigned int _maxOutputs(void) override { return 0; };
@@ -456,7 +463,8 @@ namespace Synth {
 
 	private:
 		std::function<double(double)> _generatorFunction;
-		float _sampleRate; //This is a slight optimization. This just needs to refer to a data member, rather than _data->sampleRate.
+		float _frequencyDivisor;
+		//float _sampleRate; //This is a slight optimization. This just needs to refer to a data member, rather than _data->sampleRate.
 		double _waveformPos;
 
 		void _dataSetEvent(void);
@@ -743,6 +751,8 @@ namespace Synth {
 		enum class FilterType {
 			LOW_PASS,
 			HIGH_PASS,
+			BAND_PASS,
+			BAND_STOP,
 			USER_DEFINED //!< Should not be used directly.
 		};
 
@@ -759,6 +769,7 @@ namespace Synth {
 		void setup(std::vector<double> coefficients);
 
 		void setCutoff(double cutoff);
+		void setBandCutoffs(double lower, double upper);
 
 		double getNextSample(void);
 
@@ -773,6 +784,9 @@ namespace Synth {
 		std::deque<double> _inputSamples;
 
 		double _calcH(int n, double omega);
+
+		void _applyWindowToCoefs(void);
+
 	};
 
 } //namespace Synth

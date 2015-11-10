@@ -555,7 +555,7 @@ void AdditiveSynth::setHarmonicSeries(std::vector<frequency_t> harmonicSeries) {
 void AdditiveSynth::_recalculateWaveformPositions(void) {
 	double firstHarmonicPos = _harmonics[0].waveformPosition;
 
-	double normalizedFrequency = fundamental.getValue() / _data->sampleRate;
+	double normalizedFrequency = fundamental.getValue() / (_data->sampleRate * _data->oversampling);
 
 	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
 		double relativeFrequency = _harmonics[i].relativeFrequency;
@@ -718,7 +718,7 @@ void Envelope::release(void) {
 }
 
 void Envelope::_dataSetEvent(void) {
-	_timePerSample = 1 / _data->sampleRate;
+	_timePerSample = 1 / (_data->sampleRate * _data->oversampling);
 }
 
 
@@ -779,7 +779,9 @@ void Filter::_recalculateCoefficients(void) {
 		return;
 	}
 
-	double f_angular = 2 * PI * cutoff.getValue() / _data->sampleRate; //Normalized angular frequency
+	double frequencyDivisor = _data->sampleRate * _data->oversampling;
+
+	double f_angular = 2 * PI * cutoff.getValue() / frequencyDivisor; //Normalized angular frequency
 
 	if (_filterType == FilterType::LOW_PASS || _filterType == FilterType::HIGH_PASS) {
 		double x = exp(-f_angular);
@@ -798,7 +800,7 @@ void Filter::_recalculateCoefficients(void) {
 		}
 
 	} else if (_filterType == FilterType::BAND_PASS || _filterType == FilterType::NOTCH) {
-		double R = 1 - (3 * bandwidth.getValue() / _data->sampleRate); //Bandwidth is normalized
+		double R = 1 - (3 * bandwidth.getValue() / frequencyDivisor); //Bandwidth is normalized
 		double K = (1 - 2 * R*cos(f_angular) + (R*R)) / (2 - 2 * cos(f_angular));
 
 		b1 = 2 * R * cos(f_angular);
@@ -881,7 +883,7 @@ Oscillator::Oscillator(void) :
 
 double Oscillator::getNextSample(void) {
 	frequency.updateValue();
-	double addAmount = frequency.getValue() / _sampleRate;
+	double addAmount = frequency.getValue() / _frequencyDivisor;
 
 	_waveformPos = fmod(_waveformPos + addAmount, 1);
 
@@ -907,7 +909,7 @@ void Oscillator::setGeneratorFunction(std::function<double(double)> f) {
 }
 
 void Oscillator::_dataSetEvent(void) {
-	_sampleRate = _data->sampleRate;
+	_frequencyDivisor = _data->sampleRate * _data->oversampling;
 }
 
 /*! Produces a sawtooth wave.
@@ -1287,7 +1289,19 @@ void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 	ModuleBase* input = _inputs.front();
 
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-		float value = CX::Util::clamp<float>(input->getNextSample(), -1, 1);
+		
+		float value;
+		if (this->_data->oversampling > 1) {
+			float sum = 0;
+			for (unsigned int oversamp = 0; oversamp < this->_data->oversampling; oversamp++) {
+				sum += input->getNextSample();
+			}
+			float mean = sum / this->_data->oversampling;
+			value = CX::Util::clamp<float>(mean, -1, 1);
+		} else {
+			value = CX::Util::clamp<float>(input->getNextSample(), -1, 1);
+		}
+
 		for (int ch = 0; ch < d.outputChannels; ch++) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] += value;
 		}
@@ -1357,6 +1371,8 @@ void FIRFilter::setup(FilterType filterType, unsigned int coefficientCount) {
 	}
 
 	_coefCount = coefficientCount;
+
+	_coefficients.assign(_coefCount, 0);
 	_inputSamples.assign(_coefCount, 0); //Fill with zeroes so that we never have to worry about not having enough input data.
 }
 
@@ -1378,27 +1394,132 @@ void FIRFilter::setup(std::vector<double> coefficients) {
 change the cutoff frequency for the filter. This causes the filter coefficients to be recalculated.
 \param cutoff The cutoff frequency, in Hz. */
 void FIRFilter::setCutoff(double cutoff) {
-	if (_filterType == FilterType::USER_DEFINED) {
-		CX::Instances::Log.error("FIRFilter") << "setCutoff() should not be used when the filter type is USER_DEFINED.";
+	if (_filterType != FilterType::LOW_PASS && _filterType != FilterType::HIGH_PASS) {
+		CX::Instances::Log.warning("FIRFilter") << "setCutoff() should only be used when the filter type is LOW_PASS or HIGH_PASS.";
 		return;
 	}
 
-	double omega = PI * cutoff / (_data->sampleRate / 2); //This is pi * normalized frequency, where normalization is based on the nyquist frequency.
+	//See http://www.mikroe.com/chapters/view/72/chapter-2-fir-filters/ (fairly far down the page, table 2-2-1.)
+
+	double omega = 2 * PI * cutoff / (_data->sampleRate);
+
+	int N = _coefCount - 1; //N is the order of the filter
+	float M = (float)N / 2;
+
+	for (int n = 0; n < _coefCount; n++) {
+	//for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
+
+		double hn = 0;
+		if (n == M) {
+			if (_filterType == FilterType::LOW_PASS) {
+				hn = omega / PI;
+			} else if (_filterType == FilterType::HIGH_PASS) {
+				hn = 1 - omega / PI;
+			}
+		} else {
+			float dif = n - M;
+			if (_filterType == FilterType::LOW_PASS) {
+				hn = sin(omega * dif) / (PI * dif);
+			} else if (_filterType == FilterType::HIGH_PASS) {
+				hn = -sin(omega * dif) / (PI * dif);
+			}
+		}
+
+		_coefficients[n] = hn;
+	}
+
+	/* Old version. I don't really know if this was working correctly...
+	double omega = PI * cutoff / ((_data->sampleRate * _data->oversampling) / 2); //This is pi * normalized cutoff frequency, where normalization is based on the nyquist frequency.
 
 	_coefficients.clear();
 
-	//Set up LPF coefficients
+	//Set up LPF coefficients by default
 	for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
 		_coefficients.push_back(_calcH(i, omega));
 	}
 
+	//For HPF, modify the LPF coefs
 	if (_filterType == FilterType::HIGH_PASS) {
 		for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
 			_coefficients[i] *= pow(-1, i);
 		}
 	}
+	*/
 
 
+	_applyWindowToCoefs();
+}
+
+void FIRFilter::setBandCutoffs(double lower, double upper) {
+	if (_filterType != FilterType::BAND_PASS && _filterType != FilterType::BAND_STOP) {
+		CX::Instances::Log.warning("FIRFilter") << "setBandCutoffs() should only be used when the filter type is BAND_PASS or BAND_STOP.";
+		return;
+	}
+
+	auto commonF = [](double omega, int dif) -> double {
+		return sin(omega * dif) / (PI * dif);
+	};
+
+	//See http://www.mikroe.com/chapters/view/72/chapter-2-fir-filters/ (fairly far down the page, table 2-2-1.)
+
+	double oc2 = 2 * PI * lower / (_data->sampleRate);
+	double oc1 = 2 * PI * upper / (_data->sampleRate);
+
+	int N = _coefCount - 1; //N is the order of the filter
+	float M = (float)N / 2;
+
+	for (int n = 0; n < _coefCount; n++) {
+		double hn = 0;
+
+		if (n == M) {
+
+			if (_filterType == FilterType::BAND_PASS) {
+				hn = (oc2 - oc1) / PI;
+			} else if (_filterType == FilterType::BAND_STOP) {
+				hn = 1 - (oc2 - oc1) / PI;
+			}
+		} else {
+
+			float dif = n - M;
+
+			double val1 = commonF(oc1, dif);
+			double val2 = commonF(oc2, dif);
+
+			if (_filterType == FilterType::BAND_PASS) {
+				hn = val2 - val1;
+			} else if (_filterType == FilterType::BAND_STOP) {
+				hn = val1 - val2;
+			}
+		}
+
+		_coefficients[n] = hn;
+	}
+
+	_applyWindowToCoefs();
+}
+
+double FIRFilter::getNextSample(void) {
+	//Because _inputSamples is set up to have _coefCount elements, you just always pop off an element to start.
+	_inputSamples.pop_front();
+	_inputSamples.push_back(_inputs.front()->getNextSample());
+
+	double y_n = 0;
+
+	for (unsigned int i = 0; i < _coefCount; i++) {
+		y_n += _inputSamples[i] * _coefficients[i];
+	}
+
+	return y_n;
+}
+
+double FIRFilter::_calcH(int n, double omega) {
+	if (n == 0) {
+		return omega / PI;
+	}
+	return omega / PI * sinc(n*omega);
+}
+
+void FIRFilter::_applyWindowToCoefs(void) {
 	//Do nothing for rectangular window
 	if (_windowType == WindowType::HANNING) {
 		for (int i = 0; i < _coefCount; i++) {
@@ -1413,27 +1534,6 @@ void FIRFilter::setCutoff(double cutoff) {
 			_coefficients[i] *= a0 - a1 * cos(2 * PI*i / (_coefCount - 1)) + a2*cos(4 * PI*i / (_coefCount - 1));
 		}
 	}
-}
-
-double FIRFilter::getNextSample(void) {
-	//Because _inputSamples is set up to have _coefCount elements, you just always pop off an element to start.
-	_inputSamples.pop_front();
-	_inputSamples.push_back(_inputs.front()->getNextSample());
-
-	double y_n = 0;
-
-	for (int i = 0; i < _coefCount; i++) {
-		y_n += _inputSamples[i] * _coefficients[i];
-	}
-
-	return y_n;
-}
-
-double FIRFilter::_calcH(int n, double omega) {
-	if (n == 0) {
-		return omega / PI;
-	}
-	return omega / PI * sinc(n*omega);
 }
 
 } //namespace Synth
