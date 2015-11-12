@@ -138,7 +138,7 @@ void runExperiment(void) {
 	gabor.color2 = ofColor::black;
 	gabor.envelope.controlParameter = 30;
 	gabor.wave.wavelength = 40;
-	gabor.radius = 300;
+	gabor.radius = 100;
 #endif
 
 	while (true) {

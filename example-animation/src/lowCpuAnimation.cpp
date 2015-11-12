@@ -48,6 +48,9 @@ void runExperiment(void) {
 	Input.setup(false, true);
 	Disp.setWindowResolution(600, 600);
 	Disp.setAutomaticSwapping(true);
+
+	segmentProfiler.name = "Time spent active profiler";
+
 	while (true) {
 		updateAnimation();
 	}
