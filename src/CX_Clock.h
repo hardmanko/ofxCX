@@ -60,7 +60,7 @@ namespace CX {
 		static std::string getDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 
 	private:
-		Poco::LocalDateTime _pocoExperimentStart;
+		Poco::LocalDateTime* _pocoExperimentStart;
 
 		CX_BaseClockInterface* _impl;
 		bool _implSelfAllocated;

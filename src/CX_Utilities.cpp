@@ -57,6 +57,7 @@ namespace Util {
 		return CX::Private::Windows::setProcessToHighPriority();
 #else
 		CX::Instances::Log.error() << "setProcessToHighPriority(): CX does not support setting high process priority on your operating system.";
+		return false;
 #endif
 	}
 

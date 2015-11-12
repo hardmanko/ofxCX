@@ -18,10 +18,19 @@ CX_Clock::CX_Clock (void) {
 #endif
 	_implSelfAllocated = true;
 
+	_pocoExperimentStart = (Poco::LocalDateTime*)(::operator new(sizeof(Poco::LocalDateTime)));
+
+#if defined(TARGET_OSX)
+	//You can't construct a Poco::LocalDateTime at construction time on OSX, so just reset the impl start time.
+	_impl->resetStartTime();
+#else
 	resetExperimentStartTime();
+#endif
+
 }
 
 CX_Clock::~CX_Clock(void) {
+	delete _pocoExperimentStart;
 	if (_implSelfAllocated) {
 		delete _impl;
 	}
@@ -119,7 +128,7 @@ will count up from 0 starting from when this function was called.
 This function also resets the experiment start date/time (see getExperimentStartDateTimeString()).
 */
 void CX_Clock::resetExperimentStartTime(void) {
-	_pocoExperimentStart = Poco::LocalDateTime();
+	*_pocoExperimentStart = Poco::LocalDateTime();
 	if (_impl) {
 		_impl->resetStartTime();
 	}
@@ -162,7 +171,7 @@ CX_Millis CX_Clock::now(void) {
 /*! Get a string representing the date/time of the start of the experiment encoded according to a format.
 \param format See getDateTimeString() for the definition of the format. */
 std::string CX_Clock::getExperimentStartDateTimeString(std::string format) {
-	return Poco::DateTimeFormatter::format(_pocoExperimentStart, format);
+	return Poco::DateTimeFormatter::format(*_pocoExperimentStart, format);
 }
 
 

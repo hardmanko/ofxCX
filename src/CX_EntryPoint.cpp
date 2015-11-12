@@ -42,7 +42,8 @@ void setupCX(void) {
 
 		CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period: " << CX::Instances::Disp.getFramePeriod() << " ms.";
 
-		Clock.precisionTest(100000);
+		CX::Instances::Clock.precisionTest(100000);
+		CX::Instances::Clock.resetExperimentStartTime();
 		
 	} else {
 		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
