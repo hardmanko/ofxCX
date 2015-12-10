@@ -302,19 +302,18 @@ std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
 
 
 /*! This function draws a series of line segments to connect the given points.
-At each point, the line segments are joined with a circle, which results in overdraw.
+At each point, if `circleJoins` is `true` the line segments are joined with a circle, which results in overdraw.
 Overdraw means that some areas are drawn twice, which means that if transparency is
-used, it result in differing colors at the overdrawn areas. A workaround is to
-draw with max alpha into an fbo and then draw the fbo with transparency.
-\param points The points to connect with lines.
-\param lineWidth The width of the line.
-\note If the last point is the same as the first point, the final line segment 
-junction will be joined with a circle.
-\see A more advanced version of this function that attempts to prevent overdraw is
+used, it results in differing colors at the overdrawn areas. A (very inefficient) workaround is to
+draw with max alpha into an fbo and then draw the fbo with transparency. A more advanced version 
+of this function that attempts to prevent overdraw is
 \ref Draw::lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode),
 but that function can break in various ways.
+\param points The points to connect with lines.
+\param lineWidth The width of the line.
+\param circleJoins Whether each junction of two lines should have a circle drawn over it.
 */
-void lines(std::vector<ofPoint> points, float lineWidth) {
+void lines(std::vector<ofPoint> points, float lineWidth, bool circleJoins) {
 	if (points.size() < 2) {
 		return;
 	}
@@ -322,19 +321,22 @@ void lines(std::vector<ofPoint> points, float lineWidth) {
 	float d = lineWidth / 2;
 	Draw::line(points[0], points[1], lineWidth);
 	for (unsigned int i = 1; i < points.size() - 1; i++) {
-		ofCircle(points[i], d);
+		if (circleJoins) {
+			ofCircle(points[i], d);
+		}
 		Draw::line(points[i], points[i + 1], lineWidth);
 	}
 
-	if (points.back() == points.front()) {
+	if (circleJoins && (points.back() == points.front())) {
 		ofCircle(points.front(), d);
 	}
 }
 
 /*! This function draws a line from p1 to p2 with the given width. Note that this function is purely 2D:
-The Z coordinate is ignored.
-\note This function typically supersedes ofLine because the line width of the line drawn
-with ofLine cannot currently be set to a value greater than 1.
+The Z coordinate is basically ignored and should be 0 for best performance.
+\param p1 One end of the line.
+\param p2 The other end of the line.
+\param width The width of the line.
 */
 void line(ofPoint p1, ofPoint p2, float width) {
 	std::vector<LineSegment> ls = getParallelLineSegments(LineSegment(p1, p2), width/2);
@@ -345,9 +347,8 @@ void line(ofPoint p1, ofPoint p2, float width) {
 	points[2] = ls[1].p1;
 	points[3] = ls[1].p2;
 
-	ofVbo vbo;
-	vbo.setVertexData(points, 4, GL_STATIC_DRAW);
-	vbo.draw(GL_TRIANGLE_STRIP, 0, 4);
+	ofTriangle(points[0], points[1], points[2]);
+	ofTriangle(points[1], points[2], points[3]);
 }
 
 /*! This function draws a ring, i.e. an unfilled circle. The filled area of the ring is between `radius + width/2` and `radius - width/2`.

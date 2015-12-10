@@ -10,7 +10,7 @@ typedef RtError RT_AUDIO_ERROR_TYPE;
 
 namespace CX {
 
-	CX_SoundStream::CX_SoundStream (void) :
+CX_SoundStream::CX_SoundStream (void) :
 	_rtAudio(nullptr),
 	_lastSwapTime(0),
 	_lastSampleNumber(0),
@@ -134,7 +134,8 @@ bool CX_SoundStream::isStreamRunning(void) const {
 	return _rtAudio->isStreamRunning();
 }
 
-/*! Stop the stream. If there is an error, a message will be logged.
+/*! Stops the stream. In order to restart the stream, CX::CX_SoundStream::start() must be called.
+If there is an error, a message will be logged.
 \return `false` if there was an error, `true` otherwise. */
 bool CX_SoundStream::stop (void) {
 	if(_rtAudio == nullptr) {
@@ -155,7 +156,7 @@ bool CX_SoundStream::stop (void) {
 	return true;
 }
 
-/*! Closes the sound stream. This does more than stop().
+/*! Closes the sound stream. After the sound stream is closed, CX::CX_SoundStream::setup() must be called to reset the stream.
 \return `false` if an error was encountered while closing the stream, `true` otherwise. */
 bool CX_SoundStream::closeStream(void) {
 	if(_rtAudio == nullptr) {
@@ -245,7 +246,7 @@ RtAudio* CX_SoundStream::getRtAudioInstance(void) const {
 has been compiled to use. If the API you want is not available, you might be able
 to get it by using a different version of RtAudio. */
 std::vector<RtAudio::Api> CX_SoundStream::getCompiledApis (void) {
-	vector<RtAudio::Api> rval;
+	std::vector<RtAudio::Api> rval;
 	RtAudio::getCompiledApi( rval );
 	return rval;
 }
@@ -255,7 +256,7 @@ convertApiToString() for the conversion.
 \param apis A vector of apis to convert to strings.
 \return A vector of string names of the apis. */
 std::vector<std::string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) {
-	vector<string> rval;
+	std::vector<std::string> rval;
 
 	for (unsigned int i = 0; i < apis.size(); i++) {
 		rval.push_back( convertApiToString(apis.at(i)) );
@@ -327,9 +328,9 @@ the specified delimiter between API names.
 \param delim The delimiter between elements of the string.
 \return A string containing the names of the APIs.
 */
-std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std::string delim) {
-	vector<string> sApis = convertApisToStrings(apis);
-	string rval;
+std::string CX_SoundStream::convertApisToString (std::vector<RtAudio::Api> apis, std::string delim) {
+	std::vector<std::string> sApis = convertApisToStrings(apis);
+	std::string rval;
 
 	for (unsigned int i = 0; i < sApis.size(); i++) {
 		rval.append( sApis[i] );
@@ -347,7 +348,7 @@ std::string CX_SoundStream::convertApisToString (vector<RtAudio::Api> apis, std:
 which there is a corresponding valid audio format that RtAudio supports.
 */
 std::vector<std::string> CX_SoundStream::formatsToStrings(RtAudioFormat formats) {
-	vector<string> rval;
+	std::vector<std::string> rval;
 
 	for (unsigned int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
 		switch (formats & (1 << i)) {
@@ -375,8 +376,8 @@ std::vector<std::string> CX_SoundStream::formatsToStrings(RtAudioFormat formats)
 \return A string containing string representations of the valid formats in `formats`.
 */
 std::string CX_SoundStream::formatsToString(RtAudioFormat formats, std::string delim) {
-	vector<string> sFormats = formatsToStrings(formats);
-	string rval;
+	std::vector<std::string> sFormats = formatsToStrings(formats);
+	std::string rval;
 	for (unsigned int i = 0; i < sFormats.size(); i++) {
 		rval.append( sFormats[i] );
 		if (i < sFormats.size() - 1) {
@@ -393,7 +394,7 @@ for information about the members of the RtAudio::DeviceInfo struct.
 */
 std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api) {
 	RtAudio *tempRt;
-	vector<RtAudio::DeviceInfo> devices;
+	std::vector<RtAudio::DeviceInfo> devices;
 
 	try {
 		tempRt = new RtAudio(api);
@@ -422,7 +423,7 @@ input and output channels, etc.
 \return A human-readable formatted string containing the scanned information. Can be printed directly to std::cout or elsewhere.
 */
 std::string CX_SoundStream::listDevices(RtAudio::Api api) {
-	vector<RtAudio::DeviceInfo> devices = getDeviceList(api);
+	std::vector<RtAudio::DeviceInfo> devices = getDeviceList(api);
 
 	stringstream rval;
 	rval << "Available devices for " << convertApiToString(api) << " API:" << endl;

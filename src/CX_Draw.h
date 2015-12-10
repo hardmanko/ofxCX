@@ -32,7 +32,7 @@ namespace Draw {
 		//ARC //unimplemented
 	};
 	ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode);
-	void lines(std::vector<ofPoint> points, float lineWidth);
+	void lines(std::vector<ofPoint> points, float lineWidth, bool circleJoins = true);
 	void line(ofPoint p1, ofPoint p2, float width);
 
 	void ring(ofPoint center, float radius, float width, unsigned int resolution);

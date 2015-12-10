@@ -146,7 +146,7 @@ public:
 
 	static std::vector<RtAudio::Api> getCompiledApis(void);
 	static std::vector<std::string> convertApisToStrings(vector<RtAudio::Api> apis);
-	static std::string convertApisToString(vector<RtAudio::Api> apis, std::string delim = "\r\n");
+	static std::string convertApisToString(std::vector<RtAudio::Api> apis, std::string delim = "\r\n");
 	static std::string convertApiToString(RtAudio::Api api);
 	static RtAudio::Api convertStringToApi(std::string apiString);
 

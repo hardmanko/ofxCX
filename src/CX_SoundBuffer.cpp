@@ -431,7 +431,7 @@ of existing data, it of course means the average on a sample-by-sample basis, no
 + If `O == 0`, the number of channels is just set to N. However, `O == 0`, that usually means that there is no sound data available, so changing the number of channels is kind of meaningless.
 + If `N == 0`, the CX_SoundBuffer is cleared: all data is deleted. If you have no channels, you cannot have data in those channels.
 + If `O == 1`, each of the `N` new channels is set equal to the value of the single old channel.
-+ If `N == 1`, and `average == true` the new channel is set equal to the average of the `O` old channels. If `average == false`, the `O - N` old channels are simply removed.
++ If `N == 1`, and `average == true` the new channel is set equal to the average of the `O` old channels. If `average == false`, all but the first channel are removed.
 + If `N > O`, the first `O` channels are preserved unchanged. If `average == true`, the `N - O` new channels are set to the average of the `O` old channels.
 If `average == false`, the `N - O` new channels are set to 0.
 + If `N < O`, and `average == false`, the data from the `O - N` to-be-removed channels is discarded.
@@ -446,9 +446,9 @@ both before and after changing the number of channels, so you divide c by the nu
 Now, (a + c/2) + (b + c/2) = a + b + c.
 However, there is another problem, which is that abs(a + c/2) can be greater than 1 even if the absolute value of both is no greater than 1.
 Now we need to scale each sample so that it is constrained to the proper range.
-We do that by multiplying by the number of kept channels (2) by the original number of channels (3).
+We do that by taking the ratio of the new and old channels and multiplying the samples by that ratio. `N/O = 2/3` in the example.
 Now we have 2/3 * (a + c/2) = 2a/3 + c/3, which is bounded between -1 and 1, as long as a and c are both bounded.
-Also, 2/3 * [(a + c/2) + (b + c/2)] = 2a/3 + 2b/3 + 2c/3, so the ratios of the components of the original sound are equal.
+Also, 2/3 * [(a + c/2) + (b + c/2)] = 2a/3 + 2b/3 + 2c/3, so the ratios of the components of the original sound are constant in the final sound.
 
 \param newChannelCount The number of channels the CX_SoundBuffer will have after the conversion.
 \param average If `true` and case `N < O` is reached, then the `O - N` old channels that are being removed will be averaged and this
@@ -458,8 +458,8 @@ average will be added back into the `N` remaining channels. If `false` (the defa
 */
 bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average) {
 
-	unsigned int O = _soundChannels;
-	unsigned int N = newChannelCount;
+	unsigned int O = _soundChannels; //Old number of channels
+	unsigned int N = newChannelCount; //New number of channels
 
 	if (O == N) {
 		return true;
@@ -567,10 +567,9 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 		if (average) {
 			//the data from the `O - N` to-be-removed channels are averaged and added on to the `N` remaining channels
 
-			float removed = float(O - N);
 			//Scaling factors
-			float sigma = (float)N / (N + removed);
-			float gamma = 1.0 / N;
+			float sigma = (float)N / (float)O;
+			float gamma = 1.0 / (float)N;
 
 			for (unsigned int sampleFrame = 0; sampleFrame < this->getSampleFrameCount(); sampleFrame++) {
 
@@ -619,7 +618,7 @@ at least when the new sample rate is similar to the old sample rate.
 
 \param newSampleRate The requested sample rate.
 */
-void CX_SoundBuffer::resample (float newSampleRate) {
+void CX_SoundBuffer::resample(float newSampleRate) {
 
 	uint64_t oldSampleCount = getSampleFrameCount();
 	uint64_t newSampleCount = (uint64_t)(getSampleFrameCount() * ((double)newSampleRate / _soundSampleRate));
@@ -685,7 +684,7 @@ void CX_SoundBuffer::reverse(void) {
 \param speedMultiplier Amount to multiply the speed by. Must be greater than 0.
 \note If you would like to use a negative value to reverse the direction of playback, see reverse().
 */
-void CX_SoundBuffer::multiplySpeed (float speedMultiplier) {
+void CX_SoundBuffer::multiplySpeed(float speedMultiplier) {
 	if (speedMultiplier <= 0) {
 		return;
 	}
@@ -701,7 +700,7 @@ Apply gain in terms of decibels.
 Negative infinity is essentially mute, although see multiplyAmplitudeBy() for a more obvious way to mute.
 \param channel The channel that the gain should be applied to. If channel is less than 0, the gain is applied to all channels.
 */
-bool CX_SoundBuffer::applyGain (float decibels, int channel) {
+bool CX_SoundBuffer::applyGain(float decibels, int channel) {
 	float amplitudeMultiplier = sqrt( pow(10.0f, decibels/10.0f) );
 	return multiplyAmplitudeBy( amplitudeMultiplier, channel );
 }
@@ -714,7 +713,7 @@ and then clamped to be within [-1, 1].
 \param channel The channel that the given multiplier should be applied to. If channel 
 is less than 0, the amplitude multiplier is applied to all channels.
 */
-bool CX_SoundBuffer::multiplyAmplitudeBy (float amount, int channel) {
+bool CX_SoundBuffer::multiplyAmplitudeBy(float amount, int channel) {
 
 	if (channel >= (int)_soundChannels) {
 		return false;
@@ -743,6 +742,7 @@ void CX_SoundBuffer::clear(void) {
 	_successfullyLoaded = false;
 	_soundChannels = 0;
 	_soundSampleRate = 0;
+	name = "";
 }
 
 
@@ -761,12 +761,12 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 	ofFile f(filename);
 	if (ofToLower(f.getExtension()) != "wav") {
 		filename += ".wav";
-		CX::Instances::Log.warning("CX_SoundBuffer") << "writeToFile: Can only write wav files - will save file as " << filename;
+		CX::Instances::Log.warning("CX_SoundBuffer") << "writeToFile(): Can only write wav files - will save file as " << filename;
 	}
 
 	fstream file(ofToDataPath(filename).c_str(), ios::out | ios::binary);
 	if (!file.is_open()) {
-		CX::Instances::Log.error("CX_SoundBuffer") << "writeToFile: Error opening sound file '" << filename << "' for writing.";
+		CX::Instances::Log.error("CX_SoundBuffer") << "writeToFile(): Error opening sound file \"" << filename << "\" for writing.";
 		return false;
 	}
 
