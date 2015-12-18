@@ -151,8 +151,14 @@ namespace Util {
 		}
 
 		ofBuffer buf = ofBufferFromFile(filename, false);
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+		ofBuffer::Lines lines = buf.getLines();
+		for (auto it = lines.begin(); it != lines.end(); it++) {
+			std::string line = *it;
+#else
 		while (!buf.isLastLine()) {
 			std::string line = buf.getNextLine();
+#endif
 
 			//Strip comments. Only // is supported for comments, not /* */.
 			if (commentString != "") {

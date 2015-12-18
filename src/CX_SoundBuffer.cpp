@@ -619,6 +619,9 @@ at least when the new sample rate is similar to the old sample rate.
 \param newSampleRate The requested sample rate.
 */
 void CX_SoundBuffer::resample(float newSampleRate) {
+	if (newSampleRate == _soundSampleRate) {
+		return;
+	}
 
 	uint64_t oldSampleCount = getSampleFrameCount();
 	uint64_t newSampleCount = (uint64_t)(getSampleFrameCount() * ((double)newSampleRate / _soundSampleRate));

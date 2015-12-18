@@ -58,7 +58,7 @@ void runExperiment (void) {
 		cout << "There was an error setting up the sound stream." << endl;
 	}
 
-	config = player.getConfiguration(); //By doing this, we can check to see what sample rate was actually used.
+	config = soundStream.getConfiguration(); //By doing this, we can check to see what sample rate was actually used.
 	cout << "Actual sample rate: " << config.sampleRate << endl;
 
 	//Now that the sound stream is set up, we give a pointer to it to the sound player.
