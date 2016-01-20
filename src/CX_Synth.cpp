@@ -1450,6 +1450,10 @@ void FIRFilter::setCutoff(double cutoff) {
 	_applyWindowToCoefs();
 }
 
+/*! Sets the upper and lower cutoffs for a band filter mode (i.e. `BAND_PASS` or `BAND_STOP`).
+\param lower The lower end of the band (Hz).
+\param upper The upper end of the band (Hz).
+*/
 void FIRFilter::setBandCutoffs(double lower, double upper) {
 	if (_filterType != FilterType::BAND_PASS && _filterType != FilterType::BAND_STOP) {
 		CX::Instances::Log.warning("FIRFilter") << "setBandCutoffs() should only be used when the filter type is BAND_PASS or BAND_STOP.";
@@ -1460,6 +1464,7 @@ void FIRFilter::setBandCutoffs(double lower, double upper) {
 		return sin(omega * dif) / (PI * dif);
 	};
 
+	//Super useful page:
 	//See http://www.mikroe.com/chapters/view/72/chapter-2-fir-filters/ (fairly far down the page, table 2-2-1.)
 
 	double oc2 = 2 * PI * lower / (_data->sampleRate);

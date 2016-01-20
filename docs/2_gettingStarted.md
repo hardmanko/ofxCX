@@ -2,88 +2,71 @@ Getting Started {#gettingStarted_page}
 ===============
 
 In brief, you need a few things to use CX:
-+ A reasonably modern computer with Windows or Linux.
-+ A C++ compiler/IDE.
++ A reasonably modern computer with Windows, Linux, or OSx.
 + [openFrameworks](http://www.openframeworks.cc), which CX relies on.
-+ A copy of CX, which you can get from the github repository (https://github.com/hardmanko/ofxCX).
++ A C++ compiler/IDE to compile openFrameworks, CX, and your code.
++ The CX code, which you can get from the github repository (https://github.com/hardmanko/ofxCX).
 
 The sections below go into a more detail about each of these things.
 
 System Requirements
 -------------------
 
-The short version: Use a reasonably modern computer (made around 2010 or later) with either Windows or Linux.
+The short version: Use a reasonably modern computer (made around 2010 or later) with Windows, Linux, or OSx.
 
 The long(er) version:
 
 Although openFrameworks works on a wide variety of hardware and software, CX does not support all of it. For example, CX does not support iPhones, although openFrameworks does.
-CX currently supports computers running Windows and Linux. 
-I have tried to get CX working on OSx, but openFrameworks does not support C++11 on OSx (see this thread https://github.com/openframeworks/openFrameworks/issues/2335). Once openFrameworks, C++11, and OSx work together nicely, CX should be supported on OSx.
-Although, technically, openFrameworks does not support C++11 on Linux or Windows, those platforms work just fine.
+Windows is the best-supported OS as it is the OS that I use. With Linux, you get what you paid for, but I have gotten CX working well on Linux. OSx is ok, but I haven't used CX very much on that OS. Also, OSx is only an option if you use the latest version of openFrameworks (more below).
 
 As far as hardware is concerned, the minimum requirements for openFrameworks and CX are low. However, if your video card is too old, you won't be able to use some types of graphical rendering. 
 Having a video card that supports OpenGL version 3.2 at least is good, although older ones will work, potentially with reduced functionality. 
-Also, a 2+ core CPU is generally a good idea for psychology experiments, because one core can be hogged by CX while the operating system can use the other core for other things. Basically, use a computer made after 2010 and you will have no worries whatsoever. However, CX has been found to work with reduced functionality on computers from the mid 90's, so there is that option, although I cannot make any guarantees that it will work on any given computer of that vintage.
-
-Compiler/IDE
-------------
-
-You will need a C++ compiler/IDE with support for C++11, because CX uses C++11 features extensively. The openFrameworks [download page](http://openframeworks.cc/download/) lists the officially supported IDEs for the different platforms. You can probably make openFrameworks work with other compilers, but this is not recommended for beginners.
-
-For Windows, I primarily use Visual Studio 2012, which is well-supported by openFrameworks. Visual Studio is by far the best C++ IDE of those I have used, but the Professional version of it costs money (unless you are a student, in which case it is free through Dreamspark: https://www.dreamspark.com/).
-If you don't want to buy Visual Studio just to try CX, you can use Visual Studio 2012 Express (http://www.microsoft.com/en-us/download/details.aspx?id=34673), which is free but does not have all of the functionality of the full version of Visual Studio.
-If you want something that is not only gratis, but also libre, you can use Code::Blocks (http://www.codeblocks.org/).
-
-If you are using Linux, you can use [Code::Blocks](http://www.codeblocks.org/) or just use makefiles with the compiler of your choice.
-
+Also, a 2+ core CPU is generally a good idea for psychology experiments, because one core can be hogged by CX while the operating system can use the other core for other things. Basically, use a computer made after 2010 and you will have no worries most of the time. However, CX has been found to work (with a lot of effect) on computers from the mid 90's, so there is that option, although I cannot make any guarantees that it will work on any given computer of that vintage.
 
 Getting openFrameworks
 -------------------------
 
-In order to use CX, you must have openFrameworks installed. Currently versions 0.8.4 and 0.8.0 of openFrameworks are supported by CX.
+In order to use CX, you must have openFrameworks installed. Currently version 0.8.4 of openFrameworks is stably supported by CX. Support for openFrameworks version 0.8.0 is being removed, but it may still work. 
+Support for 0.9.0, which is the latest version of openFrameworks, is being added, but some features may not work on some platforms (there are audio problems on OSx).
+
+I would recommend oF 0.8.4, unless you are on OSx, in which case you must use openFrameworks 0.9.0.
+
 The latest version of openFrameworks can be downloaded from [here](http://openframeworks.cc/download/) and older versions from [here](http://openframeworks.cc/download/older.html). 
 The main openFrameworks download page (http://openframeworks.cc/download/) has information about how to install openFrameworks, depending on what development environment you are using.
 
-### Linux openFramworks 0.8.0 installation notes ###
-There are two issues with installing openFrameworks 0.8.0 on Linux. openFrameworks 0.8.4 does not have these issues. All directories are given relative to where you installed openFrameworks.
 
-#### Problem 1: 
-For at least some Linux distributions, `scripts/linux/WHATEVER_OS/install_dependencies.sh` must be modified so as to ignore some of the gstreamer-ffmpeg stuff, 
-because the script doesn't seem to properly deal with the case of gstreamer_0.1-ffmpeg not existing in the available software sources. 
-A newer version of gstreamer can be installed by commenting out everything related to selecting a gstreamer version, except
+Compiler/IDE
+------------
 
-	GSTREAMER_VERSION=1.0
-	GSTREAMER_FFMPEG=gstreamer${GSTREAMER_VERSION}-libav
+You will need a C++ compiler/IDE with support for C++11, because CX uses C++11 features extensively. The openFrameworks [download page](http://openframeworks.cc/download/) lists the officially supported IDEs for the different platforms. You can probably make openFrameworks work with other compilers, but this is not recommended for beginners. As far as I know, all compilers/IDEs that support openFrameworks AND have c++11 support will work with CX.
 
-which does the trick for me. I'm not sure that 1.0 is the latest version of gstreamer, but this works for me.
+For Windows, I recommend Visual Studio, which is well-supported by openFrameworks. 
++ If using openFrameworks 0.9.0, I recommend [Visual Studio 2015 Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx). It's free.
++ If using openFrameworks 0.8.4, I recommend Visual Studio 2012. The Professional version of it costs money (unless you are a student, in which case it is free through Dreamspark: https://www.dreamspark.com/). If you don't want to buy Visual Studio just to try CX, you can use Visual Studio 2012 Express (http://www.microsoft.com/en-us/download/details.aspx?id=34673), which is free but does not have all of the functionality of the full version of Visual Studio (but it will work).
 
-#### Problem 2: 
-`ofTrueTypeFont.cpp` cannot compile because of some strange folder structure issue. All you need to do is 
-modify `libs/openFrameworks/graphics/ofTrueTypeFont.cpp` a little. At the top of the file, there are include directives for some freetype files. They look like
 
-	#include "freetype2/freetype/freetype.h"
+For Linux, it depends on the version of openFrameworks you're using:
++ For openFrameworks 0.9.0, I recommend Qt Creator.
++ For openFrameworks 0.8.4, I recommend Code::Blocks.
++ For either, you can use makefiles, if you so desire.
 
-and need to be changed by removing the intermediate freetype directory to
-
-	#include "freetype2/freetype.h"
-
-for each include of a freetype file (they are all together at the top of the file). Now running `complileOF.sh` should work.
-
+For OSx, only openFrameworks 0.9.0 is supported by CX. You can either use Xcode (free from the app store) or Qt Creator (free under some license restrictions), either of which seem to be pretty good options.
 
 
 Installing CX
 -------------
 
 Once you have installed openFrameworks, you can install CX.
-First, download CX from its [github repository](https://github.com/hardmanko/ofxCX) by clicking on the "Download ZIP" button on the right (or by using git clone, if you are a git user). If using the zip file, once it is downloaded it should contain one folder with a name like "ofxCX-master". Put this folder into `OFDIR/addons`, where OFDIR is where you put openFrameworks when you installed it. Rename the folder you copied to `ofxCX` so that the directory structure is `OFDIR/addons/ofxCX`. Within the folder `ofxCX` there should be a number of folders (`docs`, examples, `libs`, `src`) plus license and readme files. If what you have matches this, you are now done installing things!
+First, download CX from [the releases area of the GitHub repository](https://github.com/hardmanko/ofxCX/releases). Select a release that is appropriate for the version of openFrameworks you chose and click on the "Source code (zip)" link to download it (you don't need to download the manual separately, it will be in the `docs` subdirectory within the zip). 
+Once the zip file is downloaded it should contain one folder with a name like "ofxCX-0.1.2". Put this folder into `OFDIR/addons`, where OFDIR is where you put openFrameworks when you installed it. The directory structure should be `OFDIR/addons/ofxCX-0.1.2`. Within the folder `ofxCX` there should be a number of folders (`docs`, examples, `libs`, `src`) plus license and readme files. If what you have matches this, you are now done installing things!
 
 
 Creating Your First CX Project
 ------------------------------
 
-1. Use the oF project generator to create a new project that uses the ofxCX addon. The help page for the project generator is [here] (http://openframeworks.cc/tutorials/introduction/002_projectGenerator.html).
+1. Use the oF project generator to create a new project that uses the ofxCX addon. The help page for the project generator is [here](http://openframeworks.cc/tutorials/introduction/002_projectGenerator.html).
   + The project generator asks you what to name your project and allows you to change where to put it (defaults to `OFDIR/apps/myApps/myAppName`, where `myAppName` is the name you picked for your app).
-  + Once you have selected a name and location for the project, click the "Addons" button. On that page, check the box next to "ofxCX" and click on the back button. If "ofxCX" does not appear in the list of addons, you probably didn't put the ofxCX directory in the right place when installing it. 
+  + Once you have selected a name and location for the project, in the addons area, select the version of "ofxCX" that you installed. If "ofxCX" does not appear in the list of addons, you probably didn't put the ofxCX directory in the right place when installing it. 
   + Once ofxCX has been added as an addon, click on the "Generate" button to create the project. There are usually no errors when generating a project.
 
 2. Go to the newly-created project directory (that you chose when creating the project in step 1; typically within `OFDIR/apps/myApps`) and go into the `src` subdirectory.
@@ -102,10 +85,15 @@ Including CX.h brings into your program all of the classes and functions from CX
 `runExperiment` is the CX version of a `main` function: It is called once, after CX has been set up, and the program closes after `runExperiment` returns.
 
 5. Now you need to tell the compiler that it should compile the whole project, including openFrameworks, CX, and your new .cpp file. This step depends on your exact compiler and operating system, but I have provided information for two common configurations.
-  + For Visual Studio (VS), you go to the root directory for your application (up one level from `src`) and open the file with the same name as your project with the `.sln` extension. This should open VS and your project. On the left side of the VS window, there should be a pane called "Solution Explorer". Within the Solution Explorer, there should be a few items. One will be called "Solution 'APP_NAME' (2 projects)", which contains your project, called APP_NAME, and a project called `openframeworksLib`. You should expand your project until you can see a folder called `src`. It will have the same files as you deleted in step 3 listed there, so get rid of them by highlighting them and pressing the delete key (or right click on them and select "Exclude From Project"). Now right click on the `src` folder in VS and select "Add" -> "Existing item...". In the file selector that opens, navigate your way to the `src` folder in your project directory and select the .cpp file you made in step 4. You can alternately drag and drop your cpp file from the Explorer window into the `src` folder within VS. Now press F5, or select "DEBUG" -> "Start Debugging" from the menu bar at the top of the VS window. This will compile and run your project in debug mode. It will take a long time to compile the first time, because it has to compile all of openFrameworks and all of CX the first time. However, subsequent builds will only need to compile your code and will be much faster.
-  + On Linux, if you are using Code::Blocks, you don't need to tell Code::Blocks about the new file you made. The build process simply compiles everything in the `src` directory of your project. Note that on Linux, you need to explicitly enable C++11 features of the compiler before compiling. When the openFrameworks project generator creates a new project on Linux, it creates a file called config.make in the root directory of your project. Find the line in config.make that has "#PROJECT_CFLAGS" on it and change that line to "PROJECT_CFLAGS = -std=c++11" (note that the # at the start of the line has been removed). This will enable C++11 features of the compiler. After opening the Code::Blocks workspace file, you click on the Compile and Run button (looks like a yellow gear and a green play symbol) to compile and run the project. 
+  + For Visual Studio (VS), you go to the root directory for your application (up one level from `src`) and open the file with the same name as your project with the `.sln` extension. This should open VS and your project. 
+    - On the left side of the VS window, there should be a pane called "Solution Explorer". Within the Solution Explorer, there should be a few items. One will be called "Solution 'APP_NAME' (2 projects)", which contains your project, called APP_NAME, and a project called `openframeworksLib`. You should expand your project until you can see a folder called `src`. It will have the same files as you deleted in step 3 listed there, so get rid of them by highlighting them and pressing the delete key (or right click on them and select "Exclude From Project"). 
+    - Now right click on the `src` folder in VS and select "Add" -> "Existing item...". In the file selector that opens, navigate your way to the `src` folder in your project directory and select the .cpp file you made in step 4. You can alternately drag and drop your cpp file from the Explorer window into the `src` folder within VS. 
+	- Now press F5, or select "Debug" -> "Start Debugging" from the menu bar at the top of the VS window. This will compile and run your project in debug mode. It will take a long time to compile the first time, because it has to compile all of openFrameworks and all of CX the first time. However, subsequent builds will only need to compile your code and will be much faster.
+  + On Linux, if you are using Code::Blocks, you don't need to tell Code::Blocks about the new file you made. The build process simply compiles everything in the `src` directory of your project. 
+    - Note that on Linux, you may need to explicitly enable C++11 features of the compiler before compiling. When the openFrameworks project generator creates a new project on Linux, it creates a file called config.make in the root directory of your project. Find the line in config.make that has "#PROJECT_CFLAGS" on it and change that line to "PROJECT_CFLAGS = -std=c++11" (note that the # at the start of the line has been removed). This will enable C++11 features of the compiler. If the line is already there and lists a newer C++ standard (like C++14), you don't need to change anything. 
+	- After opening the Code::Blocks workspace file, you click on the Compile and Run button (looks like a yellow gear and a green play symbol) to compile and run the project. 
 
-That's all you need to do to get started with a blank experiment. However, you probably have no idea what to put into `runExperiment` at this point. There are two places to start. The first is to read some of the tutorials in this manual, which include \ref visualStimuli, \ref audioIO, \ref responseInput, and \ref dataFrameTutorial. The second is to look at the \ref examples_section, which are complete, runnable pieces of code with comments. The advantage of the tutorials is that they are presented in an easy-to-read style. The advantage of the examples is that you can run them and see their output.
+That's all you need to do to get started with a blank experiment. However, you probably have no idea what to put into `runExperiment` at this point. There are two places to start. The first is to read some of the tutorials in this manual, which include \ref visualStimuli, \ref audioIO, \ref responseInput, and \ref dataFrameTutorial. After reading those tutorials, you will have the basics down. The second is to look at the \ref examples_section, which are complete, runnable pieces of code with comments. The advantage of the tutorials is that they are presented in an easy-to-read style. The advantage of the examples is that you can run them and see their output.
 
 \section examples_section Examples
 

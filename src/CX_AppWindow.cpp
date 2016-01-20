@@ -200,7 +200,7 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode) {
 }
 
 //------------------------------------------------------------
-void CX_AppWindow::setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction){
+void CX_AppWindow::setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction, bool resizeable){
 
 	glfwSetErrorCallback(&error_cb); //Set up error callback here so that errors during initialization can be detected.
 
@@ -235,7 +235,11 @@ void CX_AppWindow::setupOpenGL(int w, int h, int screenMode, std::function<void(
 
 	if(glVersionMinor!=-1 && glVersionMajor!=-1){
 
-		glfwWindowHint(GLFW_RESIZABLE, GL_FALSE); //We don't want the window to be resizable by the user.
+		if (resizeable) {
+			glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+		} else {
+			glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+		}
 
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersionMajor);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersionMinor);
@@ -567,6 +571,11 @@ int CX_AppWindow::getHeight()
 			return windowW;
 		}
 	}
+}
+
+//------------------------------------------------------------
+GLFWwindow* CX_AppWindow::getGLFWWindow() {
+	return windowP;
 }
 
 //------------------------------------------------------------

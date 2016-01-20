@@ -5,13 +5,13 @@ Frequently Asked Questions {#faq_page}
 
 There are a couple of details you will need to modify in this citation, depending on which version of CX you are using.
 
-Hardman, K.O. (2015). CX (Version 0.1.1) [Computer Software]. Available from https://github.com/hardmanko/ofxCX/releases/tag/v0.1.1
+Hardman, K.O. (2015). CX (Version 0.1.1) [Computer Software]. Available from https://github.com/hardmanko/ofxCX/releases/tag/v0.1.1.
 
-Make sure to update the version number to whatever version you are using and get the "Retrieved from" URL by going to the release page on GitHub for the release that you are using. I choose to ignore the trailing period on the URL that APA format dictates, but you can do whatever you want about that.
+Make sure to update the version number to whatever version you are using and get the "Retrieved from" URL by going to the release page on GitHub for the release that you are using. Note that the trailing period on the URL is there because APA format dictates it, not because it is part of the URL.
 
-If you are using a development version of the software (e.g. you downloaded the latest version of the master branch), give the version as the hash of the commit you downloaded. If you don't know which commit you downloaded, you have almost no recourse other than trying to figure out which commit you downloaded, which is hard. I strongly recommend unly using tagged releases.
+If you are using a development version of the software (e.g. you downloaded the latest version of the master branch), give the version as the hash of the commit you downloaded. If you don't remember which commit you downloaded, you have almost no recourse other than trying to figure out which commit you downloaded, which is hard. I strongly recommend only using tagged releases.
 
-IF YOU HAVE MODIFIED THE SOURCE CODE FOR CX IN ANY WAY, YOU MUST MENTION THIS IN TEXT. In this case, you may cite CX, but say that you have forked it.
+IF YOU HAVE MODIFIED THE SOURCE CODE FOR CX IN ANY WAY, YOU MUST MENTION THIS IN TEXT. In this case, you should still cite CX, but say that you have forked it.
 
 ### Can I have multiple versions of CX installed at the same time?
 
@@ -19,12 +19,16 @@ Yes, you just need to have the different versions in different directories in th
 
 ### Where should I put files related to an experiment?
 
-All files related to an experiment should go into `PROJECT_DIRECTORY/bin/data`. This makes it possible to just copy the `bin` directory when deploying an experiment, because all neccessary files are in the `data` subdirectory.
+All files related to an experiment should go into `PROJECT_DIRECTORY/bin/data`. This makes it possible to just copy the `bin` directory when deploying an experiment, because all neccessary files are in `bin` (the executable program files) or the `data` subdirectory within `bin`.
 
-### Where are the files I created if I didn't give an absolute path?
+### Where are the files I created in a CX experiment if I didn't give an absolute path?
 
 Any files that are created (e.g. printing a CX_DataFrame to a file) for which you don't provide an absolute path go into `PROJECT_DIRECTORY/bin/data`.
 
 ### My experiment does not work on Windows XP!
 
 See the \ref experimentDeployment page for a solution.
+
+### I've found a bug in CX. How do I tell you about it?
+
+Submit a bug report on the [CX issues page](https://github.com/hardmanko/ofxCX/issues) on GitHub.

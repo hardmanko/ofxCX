@@ -61,7 +61,7 @@ public:
 	void setOpenGLVersion(int major, int minor);
 	void setGLSLVersion(int major, int minor); //0.0 is interpreted as "does not have GLSL".
 	void setupOpenGL(int w, int h, int screenMode);
-	void setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction = nullptr);
+	void setupOpenGL(int w, int h, int screenMode, std::function<void(void)> preOpeningUserFunction = nullptr, bool resizeable = false);
 	void initializeWindow();
 	void runAppViaInfiniteLoop(ofBaseApp * appPtr);
 
@@ -94,6 +94,8 @@ public:
 	void		setVerticalSync(bool bSync);
 
 	int			getCurrentMonitor();
+
+	GLFWwindow* getGLFWWindow();
 
 #if defined(TARGET_LINUX) && !defined(TARGET_RASPBERRY_PI)
 	Display* 	getX11Display();

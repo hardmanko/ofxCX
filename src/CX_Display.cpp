@@ -202,29 +202,21 @@ Disp.endDrawingToBackBuffer();
 \endcode
 */
 void CX_Display::beginDrawingToBackBuffer(void) {
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
-	_renderer->startRender();
-	//_renderer->viewport();
-	_renderer->setupScreen();
-#else
+
 	if (_renderer) {
 		_renderer->startRender();
 	}
 
 	ofViewport();
 	ofSetupScreen();
-#endif
 }
 
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
 void CX_Display::endDrawingToBackBuffer(void) {
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
-	_renderer->finishRender();
-#else
+
 	if (_renderer) {
 		_renderer->finishRender();
 	}
-#endif
 
 	glFlush(); //This is very important, because it seems like commands are buffered in a thread-local fashion initially.
 		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush

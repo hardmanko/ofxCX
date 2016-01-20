@@ -230,7 +230,7 @@ void CX_Logger::flush(void) {
 			for (unsigned int i = 0; i < _targetInfo.size(); i++) {
 				if (m.level >= _targetInfo[i].level) {
 					if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
-						cout << formattedMessage;
+						std::cout << formattedMessage;
 					} else if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
 						*_targetInfo[i].file << formattedMessage;
 					}

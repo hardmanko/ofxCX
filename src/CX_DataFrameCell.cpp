@@ -6,7 +6,7 @@ unsigned int CX_DataFrameCell::_floatingPointPrecision = std::numeric_limits<dou
 
 /*! Set the precision with which floating point numbers (`float`s and `double`s) are stored, in number of significant digits.
 This value will be used for all `CX_DataFrameCell`s. Changing this value after storing data will
-not change the precision of that data.
+not change the precision of the stored data.
 
 Defaults to `std::numeric_limits<double>::max_digits10` significant digits. To quote cppreference.com,
 "The value of std::numeric_limits<T>::max_digits10 is the number of base-10 digits that are necessary to

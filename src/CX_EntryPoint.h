@@ -5,11 +5,12 @@
 namespace CX {
 
 	/*! This structure is used to configure windows opened with CX::reopenWindow(). */
-	struct CX_WindowConfiguration_t {
-		CX_WindowConfiguration_t(void) :
+	struct CX_WindowConfiguration {
+		CX_WindowConfiguration(void) :
 			mode(ofWindowMode::OF_WINDOW),
 			width(800),
 			height(600),
+			resizeable(false),
 			msaaSampleCount(4),
 			windowTitle("CX Experiment"),
 			preOpeningUserFunction(nullptr)
@@ -19,6 +20,8 @@ namespace CX {
 
 		int width; //!< The width of the window, in pixels.
 		int height; //!< The height of the window, in pixels.
+
+		bool resizeable; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges). Only works for oF 0.8.4 and newer.
 
 		unsigned int msaaSampleCount; //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
 
@@ -38,7 +41,29 @@ namespace CX {
 		std::function<void(void)> preOpeningUserFunction;
 	};
 
-	bool reopenWindow(CX_WindowConfiguration_t config);
+	struct CX_InitConfiguation {
+
+		CX_InitConfiguation(void) :
+			captureOFLogMessages(true),
+			framePeriodEstimationInterval(500),
+			clockPrecisionTestIterations(100000)
+		{}
+
+		CX_WindowConfiguration windowConfig; //!< The window configuration.
+
+		bool captureOFLogMessages; //!< If `true`, openFrameworks log messages are captured by CX::Instances::Log.
+
+		/*! The amount of time to spend estimating the frame period. */
+		CX_Millis framePeriodEstimationInterval;
+
+		/*! The number of samples of clock timing data to use to test the clock precision.
+		Passed directly to CX::CX_Clock::precisionTest() */
+		unsigned int clockPrecisionTestIterations;
+	};
+
+	bool reopenWindow(CX_WindowConfiguration config);
+
+	bool initializeCX(CX_InitConfiguation config);
 
 }
 
