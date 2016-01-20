@@ -13,6 +13,8 @@
 
 /*! \defgroup randomNumberGeneration Randomization 
 This module provides a class that is used for random number generation.
+
+An instance of this class is preinstsantiated for you: \ref CX::Instances::RNG.
 */
 
 namespace CX {
@@ -25,21 +27,25 @@ namespace CX {
 	http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine for the parameters used with
 	this algorithm).
 
+	When an instance of this class is constructed, it is automatically seeded from a high-entropy source.
+	In particular, a `std::random_device`. See the documentation for CX_RandomNumberGenerator::CX_RandomNumberGenerator()
+	for more information.
+
 	The monolithic structure of CX_RandomNumberGenerator provides a certain important feature that a collection
 	of loose functions does not have, which is the ability to easily track the random seed being used
 	for the random number generator. The function CX_RandomNumberGenerator::setSeed() sets the seed for
 	all random number generation tasks performed by an instance of this class. CX_RandomNumberGenerator::getSeed()
 	allows you to recover the seed that is being used for random number generation. Due to this structure,
 	you can easily save the seed that was used for each participant, which allows you to repeat the exact
-	randomizations used for that participant (unless random number generation varies as a function of the 
-	responses given by a participant).
+	randomizations used for that participant.
 
 	An instance of this class is preinstantiated for you. See CX::Instances::RNG for information about the instance
 	with that name.
 
-	Because the underlying C++ std library random number generators are not thread safe, CX_RandomNumberGenerator
+	Because the underlying C++ standard library random number generators are not thread safe, CX_RandomNumberGenerator
 	is not thread safe. If you want to use a CX_RandomNumberGenerator in a thread, that thread should have its
-	own CX_RandomNumberGenerator. You may seed the thread's new CX_RandomNumberGenerator with CX::Instances::RNG.
+	own CX_RandomNumberGenerator. You should create a new CX_RandomNumberGenerator for the thread. 
+	You may seed the thread's new CX_RandomNumberGenerator with CX::Instances::RNG, for example.
 
 	\ingroup randomNumberGeneration
 	*/

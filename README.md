@@ -9,7 +9,7 @@ is a very good language for anything requiring a high degree of timing precision
 free and open source. See [this page](http://www.kylehardman.com/psychology/c-experiment-software) for a summary of the features of CX.
 
 The documentation for CX can be found in the `docs` subfolder and in the code files. A fairly up-to-date pdf version of the documentation is contained in `docs/CX_Manual.pdf` 
-(or try [this link](https://github.com/hardmanko/ofxCX/releases/download/v0.1.2/CX_Manual.pdf) if you don't want to download the whole repo). 
+(or try [this link](https://github.com/hardmanko/ofxCX/releases/download/v0.2.0/CX_Manual.pdf) if you don't want to download the whole repo). 
 You can generate other formats of the documentation by using Doxygen with the Doxyfile in the `docs` subfolder.
 
 License
@@ -24,11 +24,9 @@ See the manual for more installation information, like how to get openFrameworks
 
 Compatibility
 ------------
-CX works with oF versions 0.8.0 and 0.8.4 (0.8.4 is strongly recommended), so make sure you are using one of those versions (intervening versions should probably work as well, but they have not been tested).
+CX works with oF versions 0.8.4 and 0.9.0. It used to support 0.8.0, but 0.8.0 is not recommended.
 
-CX is compatible with Windows and Linux and is tested and working on both platforms. As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012 with the Microsoft Visual C++ compiler and Code::Blocks for Windows using GCC. On Linux, CX has been tested with Code::Blocks using GCC.
-
-CX is not compatible with OSx because CX uses C++11 features extensively, but openFrameworks does not support C++11 on OSx (openFrameworks does not officially support C++11 on Linux or Windows either, yet there are no problems with either of those OSes, so I blame Apple, not the openFrameworks devs).
+CX is compatible with Windows and Linux (and OSx is you are using oF 0.9.0). As far as compilers/IDEs are concerned, CX has been tested under Visual Studio 2012/2015 with the Microsoft Visual C++ compiler and Code::Blocks for Windows using GCC. On Linux, CX has been tested with Code::Blocks and Qt Creator, both using GCC. On OSx, Qt Creator has been used.
 
 Known issues
 ------------
@@ -36,6 +34,8 @@ This is beta software, don't expect it to be bug-free. Please report any issues 
 
 Version history
 ------------
+v0.2.0 - This is the first release to officially support oF 0.9.0. Includes some important bug fixes in the startup code.
+
 v0.1.2 - This release has a few new features and minor bug fixes.
 
 v0.1.1 - This is mostly a documentation release, but there are a number of new features and some bug fixes.

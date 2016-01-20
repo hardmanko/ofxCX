@@ -102,7 +102,8 @@ namespace CX {
 		}
 	};
 
-
+	/* A generic wrapper for clocks meeting the standard library clock interface standards. 
+	For example `std::chrono::high_resolution_clock`. */
 	template <class stdClock>
 	class CX_StdClockWrapper : public CX_BaseClockInterface {
 	public:
@@ -129,9 +130,10 @@ namespace CX {
 		typename stdClock::time_point _startTime;
 	};
 
-	/*! This clock implementation uses ofGetMonotonicTime() (in ofUtils.cpp).
-	*/
+
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+	/* This clock implementation uses ofGetMonotonicTime() (in ofUtils.cpp).
+	*/
 	class CX_ofMonotonicTimeClock : public CX_BaseClockInterface {
 	public:
 
@@ -151,7 +153,7 @@ namespace CX {
 #endif
 
 #ifdef TARGET_WIN32
-
+	/* This clock uses the very precise win32 `QueryPerformanceCounter` interface. */
 	class CX_WIN32_PerformanceCounterClock : public CX_BaseClockInterface {
 	public:
 		CX_WIN32_PerformanceCounterClock(void);

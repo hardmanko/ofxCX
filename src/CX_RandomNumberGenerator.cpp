@@ -18,8 +18,9 @@ non-deterministic source (e.g. a hardware device) is not available to the implem
 According to a Stack Overflow comment, Microsoft's implementation of std::random_device is based
 on a ton of stuff, which should result in a fairly random result to be used as a seed for our
 Mersenne Twister. See the comment: http://stackoverflow.com/questions/9549357/the-implementation-of-random-device-in-vs2010/9575747#9575747
-Although this data should have high entropy, it is not a hardware RNG. The random_device is only used 
-to seed the Mersenne Twister, so as long as the initial value is random enough, it should be fine.
+Although this data should have high entropy, it is not always going to be a hardware RNG. 
+The random_device is only used to seed the Mersenne Twister, so as long as the initial value 
+is random enough, it should be fine (this is not cryptography, just fooling humans).
 */
 CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
 	std::random_device rd;

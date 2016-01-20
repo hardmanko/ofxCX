@@ -52,8 +52,8 @@ CX_Mouse::Event CX_Mouse::getNextEvent(void) {
 }
 
 /*! Clear (delete) all events from this input device.
-\note This function only clears already existing events from the device, which means that
-responses made between a call to CX_InputManager::pollEvents() and a subsequent call to
+\note Unpolled events are not cleared by this function, which means that
+responses made after a call to CX_InputManager::pollEvents() but before a call to
 clearEvents() will not be removed by calling clearEvents(). */
 void CX_Mouse::clearEvents(void) {
 	_mouseEvents.clear();
