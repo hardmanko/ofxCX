@@ -28,7 +28,7 @@ CX_Display::~CX_Display(void) {
 This is called during CX setup; the user should not need to call it. */
 void CX_Display::setup(void) {
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 	_renderer = CX::Private::appWindow->renderer();
 #else
 	_renderer = ofGetGLProgrammableRenderer();

@@ -86,7 +86,7 @@ namespace CX {
 
 	private:
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		std::shared_ptr<ofBaseRenderer> _renderer; 
 #else
 		ofPtr<ofGLProgrammableRenderer> _renderer;

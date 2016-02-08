@@ -77,7 +77,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 				CX::Instances::Log.warning("CX_EntryPoint") << "Desired renderer could not be used: "
 					"High enough version of OpenGL is not available (requires OpenGL >= 3.2). Falling back on ofGLRenderer.";
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 				std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
 				std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
 				ofSetCurrentRenderer(newRenderer, true);
@@ -102,7 +102,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 	//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
 	if (Private::glCompareVersions(config.desiredOpenGLVersion, Private::CX_GLVersion(3, 2, 0)) >= 0) {
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLProgrammableRenderer(window));
 		std::dynamic_pointer_cast<ofGLProgrammableRenderer>(newRenderer)->setup(config.desiredOpenGLVersion.major, config.desiredOpenGLVersion.minor);
 		ofSetCurrentRenderer(newRenderer, true);
@@ -113,7 +113,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 
 	} else {
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
 		std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
 		ofSetCurrentRenderer(newRenderer, true);
@@ -127,7 +127,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 	
 }
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 //The window doesn't close automatically, so kill the window.
 bool exitCallbackHandler(ofEventArgs& args) {
 
@@ -279,7 +279,7 @@ bool reopenWindow(CX_WindowConfiguration config) {
 	}
 
 	try {
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		CX::Private::reopenWindow090(config);
 #elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
 		CX::Private::reopenWindow084(config);
@@ -307,7 +307,7 @@ bool reopenWindow(CX_WindowConfiguration config) {
 		return false;
 	}
 
-#if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH == 0)
+#if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0)
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
 	CX::Private::appWindow->initializeWindow();
 #endif
