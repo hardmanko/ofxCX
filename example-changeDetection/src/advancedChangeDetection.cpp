@@ -17,18 +17,18 @@ coordinate system is shown with CX_CoordinateConverter and CX_DegreeToPixelConve
 as the unit converter.
 */
 
+CX_DataFrame generateTrials(int trialCount);
+
 void drawStimuli(void);
 void presentStimuli(void);
 void getResponse(void);
 
-void generateTrials (int trialCount);
-void updateExperiment (void);
-
-CX_SlidePresenter SlidePresenter;
 void drawFixation (void);
 void drawBlank (void);
 void drawSampleArray (void);
 void drawTestArray (void);
+
+CX_SlidePresenter SlidePresenter;
 
 CX_DataFrame trialDf; //The data frame into which data from each trial is stored.
 int trialIndex = 0; //The index of the current trial.
@@ -38,7 +38,7 @@ ofColor backgroundColor(50);
 
 void runExperiment (void) {
 
-	generateTrials(8);
+	trialDf = generateTrials(8);
 
 	Input.setup(true, false);
 
@@ -125,7 +125,7 @@ void getResponse (void) {
 	}
 }
 
-void generateTrials (int trialCount) {
+CX_DataFrame generateTrials (int trialCount) {
 
 	vector<ofColor> objectColors;
 	objectColors.push_back( ofColor::red );
@@ -164,10 +164,9 @@ void generateTrials (int trialCount) {
 	//We'll also use the degree to pixel converter to make our circles have a diameter of 1.5 degrees of visual angle:
 	circleRadius = d2p(1.5/2); //Radius being half the diameter.
 
+	vector<bool> changeTrial = RNG.sample(trialCount, Util::concatenate<bool>(false, true), true);
 
-	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
-
-	vector<int> changeTrial = Util::repeat( Util::intVector<int>(0, 1), trialCount/2 );	
+	CX_DataFrame df;
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
@@ -184,9 +183,7 @@ void generateTrials (int trialCount) {
 
 		tr["locations"] = RNG.sample(arraySize, objectLocations, false);
 
-		tr["changeTrial"] = (bool)changeTrial[trial]; //Cast changeTrial to bool so that it will be stored
-			//by the data frame as a boolean value, which means you won't get warnings when extracting the
-			//value from the cell as bool.
+		tr["changeTrial"] = (bool)changeTrial[trial]; 
 
 		if (changeTrial[trial]) {
 			tr["changedObjectIndex"] = RNG.randomInt(0, arraySize - 1);
@@ -198,21 +195,22 @@ void generateTrials (int trialCount) {
 			tr["newObjectColor"] = backgroundColor;
 		}
 		
-		trialDf.appendRow( tr );
+		df.appendRow( tr );
 	}
 
-	trialDf.shuffleRows(); //Shuffle all of the rows of the data frame so that the trials come in random order.
+	df.shuffleRows(); //Shuffle all of the rows of the data frame so that the trials come in random order.
 
 	//After generating the trials, the column names for all of the parameters that control those trials will be 
 	//in the data frame, but we still need to add two more columns for response data and a column to track presentation errors:
-	trialDf.addColumn("responseCorrect");
-	trialDf.addColumn("responseLatency");
-	trialDf.addColumn("presentationErrors");
+	df.addColumn("responseCorrect");
+	df.addColumn("responseLatency");
+	df.addColumn("presentationErrors");
 
-	//cout << trialDf.print();
+	//cout << df.print();
 
 	Log.flush(); //Check for errors that might have occurred during trial generation
 
+	return df;
 }
 
 void drawFixation(void) {

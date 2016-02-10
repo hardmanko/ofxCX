@@ -79,6 +79,9 @@ namespace CX {
 
 		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
 		template <typename T> std::vector<T> concatenate(T A, const std::vector<T>& B);
+		template <typename T> std::vector<T> concatenate(const std::vector<T>& A, T B);
+		template <typename T> std::vector<T> concatenate(T A, T B);
+
 
 		template <typename T> T max(std::vector<T> vals);
 		template <typename T> T min(std::vector<T> vals);
@@ -456,6 +459,29 @@ std::vector<T> CX::Util::concatenate(T A, const std::vector<T>& B) {
 	std::vector<T> C;
 	C.push_back(A);
 	C.insert(C.end(), B.begin(), B.end());
+	return C;
+}
+
+/*! Concatenates together the value A and the vector B. You should probably use A.push_back(B) instead.
+\param A The first value.
+\param B The vector of values.
+\return The concatenation of A and B, being a vector containing {A1, A2, ... An, B}. */
+template <typename T> 
+std::vector<T> CX::Util::concatenate(const std::vector<T>& A, T B) {
+	std::vector<T> C = A;
+	C.push_back(B);
+	return C;
+}
+
+/*! Concatenates together the values A and B.
+\param A The first value.
+\param B The second value.
+\return The concatenation of A and B, being a vector containing {A, B}. */
+template <typename T> 
+std::vector<T> CX::Util::concatenate(T A, T B) {
+	std::vector<T> C;
+	C.push_back(A);
+	C.push_back(B);
 	return C;
 }
 

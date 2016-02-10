@@ -24,7 +24,6 @@ struct TrialData_t {
 };
 
 //Function declarations (could be in a header file, if preferred).
-void updateExperiment (void);
 vector<TrialData_t> generateTrials (int trialCount);
 void outputData (void);
 
@@ -32,13 +31,14 @@ void drawStimuli(void);
 void presentStimuli(void);
 void getResponse(void);
 
-CX_SlidePresenter SlidePresenter;
 void drawFixation (void);
 void drawBlank (void);
 void drawSampleArray (const TrialData_t &tr);
 void drawTestArray (const TrialData_t &tr);
 
 //Global variables (at least from the perspective of the experiment)
+CX_SlidePresenter SlidePresenter;
+
 vector<TrialData_t> trials;
 int trialIndex = 0;
 
@@ -195,12 +195,9 @@ vector<TrialData_t> generateTrials (int trialCount) {
 		objectLocations.push_back(p);
 	}
 
+	vector<bool> changeTrial = RNG.sample(trialCount, Util::concatenate<bool>(false, true), true);
 
 	vector<TrialData_t> _trials;
-
-	trialCount = trialCount + (trialCount % 2); //Make sure you have an even number of trials
-
-	vector<int> changeTrial = Util::repeat(Util::intVector<int>(0, 1), trialCount / 2);
 
 	for (int trial = 0; trial < trialCount; trial++) {
 
