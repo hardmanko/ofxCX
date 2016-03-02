@@ -92,6 +92,7 @@ void CX_DataFrameCell::deleteStoredType(void) {
 void CX_DataFrameCell::copyCellTo(CX_DataFrameCell* targetCell) const {
 	*targetCell->_data = *this->_data;
 	*targetCell->_type = *this->_type;
+	*targetCell->_ignoreStoredType = *this->_ignoreStoredType;
 }
 
 /*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
