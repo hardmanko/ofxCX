@@ -6,7 +6,7 @@ Introduction
 ofxCX (hereafter referred to as CX) is a "total conversion mod" for [openFrameworks](http://www.openframeworks.cc) (often abbreviated oF) that 
 is designed to be used used for creating psychology experiments. OpenFrameworks and CX are based on C++, which
 is a very good language for anything requiring a high degree of timing precision, such as psychology experiments. OpenFrameworks and CX are both
-free and open source. See [this page](http://www.kylehardman.com/psychology/c-experiment-software) for a summary of the features of CX.
+free and open source. See [this page](http://kylehardman.com/StaticPages/CX/Index.gfmd) for a summary of the features of CX.
 
 The documentation for CX can be found in the `docs` subfolder and in the code files. A fairly up-to-date pdf version of the documentation is contained in `docs/CX_Manual.pdf` 
 (or try [this link](https://github.com/hardmanko/ofxCX/releases/download/v0.2.0/CX_Manual.pdf) if you don't want to download the whole repo). 
