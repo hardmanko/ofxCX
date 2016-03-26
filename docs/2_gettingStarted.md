@@ -26,10 +26,7 @@ Also, a 2+ core CPU is generally a good idea for psychology experiments, because
 Getting openFrameworks
 -------------------------
 
-In order to use CX, you must have openFrameworks installed. Currently version 0.8.4 of openFrameworks is stably supported by CX. Support for openFrameworks version 0.8.0 is being removed, but it may still work. 
-Support for 0.9.0, which is the latest version of openFrameworks, is being added, but some features may not work on some platforms (there are audio problems on OSx).
-
-I would recommend oF 0.8.4, unless you are on OSx, in which case you must use openFrameworks 0.9.0.
+In order to use CX, you must have openFrameworks installed. You should use version openFrameworks version 0.9.3 or newer, if possible. The oldest version of openFrameworks that is supported is 0.8.4, for now, but there is no reason to avoid using newer versions of openFrameworks. I would recommend oF 0.9.3.
 
 The latest version of openFrameworks can be downloaded from [here](http://openframeworks.cc/download/) and older versions from [here](http://openframeworks.cc/download/older.html). 
 The main openFrameworks download page (http://openframeworks.cc/download/) has information about how to install openFrameworks, depending on what development environment you are using.
@@ -41,16 +38,16 @@ Compiler/IDE
 You will need a C++ compiler/IDE with support for C++11, because CX uses C++11 features extensively. The openFrameworks [download page](http://openframeworks.cc/download/) lists the officially supported IDEs for the different platforms. You can probably make openFrameworks work with other compilers, but this is not recommended for beginners. As far as I know, all compilers/IDEs that support openFrameworks AND have c++11 support will work with CX.
 
 For Windows, I recommend Visual Studio, which is well-supported by openFrameworks. 
-+ If using openFrameworks 0.9.0, I recommend [Visual Studio 2015 Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx). It's free.
++ If using openFrameworks 0.9.0 or newer, I recommend [Visual Studio 2015 Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx). It's free.
 + If using openFrameworks 0.8.4, I recommend Visual Studio 2012. The Professional version of it costs money (unless you are a student, in which case it is free through Dreamspark: https://www.dreamspark.com/). If you don't want to buy Visual Studio just to try CX, you can use Visual Studio 2012 Express (http://www.microsoft.com/en-us/download/details.aspx?id=34673), which is free but does not have all of the functionality of the full version of Visual Studio (but it will work).
 
 
 For Linux, it depends on the version of openFrameworks you're using:
-+ For openFrameworks 0.9.0, I recommend Qt Creator.
++ For openFrameworks 0.9.0 or newer, I recommend Qt Creator.
 + For openFrameworks 0.8.4, I recommend Code::Blocks.
-+ For either, you can use makefiles, if you so desire.
++ For either, you can use makefilesw ith gcc and avoid an IDE altogether, if you so desire.
 
-For OSx, only openFrameworks 0.9.0 is supported by CX. You can either use Xcode (free from the app store) or Qt Creator (free under some license restrictions), either of which seem to be pretty good options.
+For OSx, only openFrameworks 0.9.0 or newer is supported by CX. You can either use Xcode (free from the app store) or Qt Creator (free under some license restrictions), either of which seem to be pretty good options.
 
 
 Installing CX
@@ -58,7 +55,7 @@ Installing CX
 
 Once you have installed openFrameworks, you can install CX.
 First, download CX from [the releases area of the GitHub repository](https://github.com/hardmanko/ofxCX/releases). Select a release that is appropriate for the version of openFrameworks you chose and click on the "Source code (zip)" link to download it (you don't need to download the manual separately, it will be in the `docs` subdirectory within the zip). 
-Once the zip file is downloaded it should contain one folder with a name like "ofxCX-0.1.2". Put this folder into `OFDIR/addons`, where OFDIR is where you put openFrameworks when you installed it. The directory structure should be `OFDIR/addons/ofxCX-0.1.2`. Within the folder `ofxCX` there should be a number of folders (`docs`, examples, `libs`, `src`) plus license and readme files. If what you have matches this, you are now done installing things!
+Once the zip file is downloaded it should contain one folder with a name like "ofxCX-0.2.1". Put this folder into `OFDIR/addons`, where OFDIR is where you put openFrameworks when you installed it. The directory structure should be `OFDIR/addons/ofxCX-0.2.1`. Within the folder `ofxCX` there should be a number of folders (`docs`, examples, `libs`, `src`) plus license and readme files. If what you have matches this, you are now done installing things!
 
 
 Creating Your First CX Project
