@@ -58,6 +58,7 @@ namespace CX {
 			LatinSquare(unsigned int dimensions);
 
 			void generate(unsigned int dimensions);
+			void generateBalanced(unsigned int dimensions);
 
 			void reorderRight(void);
 			void reorderLeft(void);

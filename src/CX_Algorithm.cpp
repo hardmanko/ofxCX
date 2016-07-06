@@ -10,7 +10,10 @@ LatinSquare::LatinSquare(void) :
 
 /*! Construct a LatinSquare with the given dimensions. The generated square is the
 basic latin square that, for dimension 3, has {0,1,2} on the first row, {1,2,0}
-on the middle row, and {2,0,1} on the last row. */
+on the middle row, and {2,0,1} on the last row. 
+
+\param dimensions The number of conditions in the experiment.
+*/
 LatinSquare::LatinSquare(unsigned int dimensions) {
 	generate(dimensions);
 }
@@ -25,6 +28,55 @@ void LatinSquare::generate(unsigned int dimensions) {
 		for (unsigned int j = 0; j < dimensions; j++) {
 			square[i][j] = (i + j) % dimensions;
 		}
+	}
+}
+
+/*! Creates a latin square that is balanced in the sense that each condition
+precedes each other condition an equal number of times.
+
+If `dimensions` is even, the number of rows of the latin square will be
+equal to `dimensions`. If `dimensions` is odd, the number of rows will
+be `2 * dimensions`.
+
+\param dimensions The number of conditions in the experiment.
+
+*/
+void LatinSquare::generateBalanced(unsigned int dimensions) {
+
+	vector<unsigned int> currentRow(dimensions);
+	deque<unsigned int> firstHelper;
+	for (unsigned int i = 1; i < dimensions; i++) {
+		firstHelper.push_back(i);
+	}
+
+	currentRow[0] = 0;
+	for (unsigned int i = 1; i < dimensions; i++) {
+		if (i % 2 == 0) {
+			currentRow[i] = firstHelper.back();
+			firstHelper.pop_back();
+		} else {
+			currentRow[i] = firstHelper.front();
+			firstHelper.pop_front();
+		}
+	}
+
+	square.resize(dimensions);
+	_columns = dimensions;
+	for (unsigned int i = 0; i < dimensions; i++) {
+		square[i].resize(dimensions);
+		for (unsigned int j = 0; j < dimensions; j++) {
+			square[i][j] = currentRow[j];
+
+			currentRow[j] = (currentRow[j] + 1) % dimensions;
+		}
+
+	}
+
+	bool isOdd = (dimensions % 2) == 1;
+	if (isOdd) {
+		LatinSquare ls2 = *this;
+		ls2.reverseColumns();
+		this->appendBelow(ls2);
 	}
 }
 
