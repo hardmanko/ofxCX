@@ -82,7 +82,13 @@ namespace CX {
 		void copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination);
 
 		void setYIncreasesUpwards(bool upwards);
-		bool getYIncreasesUpwards(void);
+		bool getYIncreasesUpwards(void) const;
+
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+		std::shared_ptr<ofBaseRenderer> getRenderer(void);
+#else
+		ofPtr<ofGLProgrammableRenderer> getRenderer(void);
+#endif
 
 	private:
 

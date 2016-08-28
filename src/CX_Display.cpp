@@ -30,6 +30,7 @@ void CX_Display::setup(void) {
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 	_renderer = CX::Private::appWindow->renderer();
+	_renderer->setBackgroundAuto(false); //Back compat with oF 0.8.x
 #else
 	_renderer = ofGetGLProgrammableRenderer();
 #endif
@@ -578,9 +579,18 @@ void CX_Display::setYIncreasesUpwards(bool upwards) {
 }
 
 /*! \brief Do y-axis values increase upwards? */
-bool CX_Display::getYIncreasesUpwards(void) {
+bool CX_Display::getYIncreasesUpwards(void) const {
 	//when vFlip is true, y-values increase downwards.
 	return !ofIsVFlipped();
+}
+
+/*! \brief Get a `shared_ptr` to the renderer used by the CX_Display. */
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+std::shared_ptr<ofBaseRenderer> CX_Display::getRenderer(void) {
+#else
+ofPtr<ofGLProgrammableRenderer> CX_Display::getRenderer(void) {
+#endif
+	return _renderer;
 }
 
 /*! This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
