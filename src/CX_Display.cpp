@@ -30,7 +30,6 @@ void CX_Display::setup(void) {
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 	_renderer = CX::Private::appWindow->renderer();
-	_renderer->setBackgroundAuto(false); //Back compat with oF 0.8.x
 #else
 	_renderer = ofGetGLProgrammableRenderer();
 #endif

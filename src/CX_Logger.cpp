@@ -442,10 +442,10 @@ This function is called during CX setup for CX::Instances::Log. You do not need 
 */
 void CX_Logger::captureOFLogMessages(bool capture) {
 	if (capture) {
-		ofLogToConsole();
-	} else {
 		ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
 		ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);
+	} else {
+		ofLogToConsole();
 	}
 }
 

@@ -165,6 +165,8 @@ void reopenWindow090(CX_WindowConfiguration config) {
 	settings.glVersionMinor = config.desiredOpenGLVersion.minor;
 	settings.numSamples = config.msaaSampleCount;
 	settings.resizable = config.resizeable;
+	settings.width = config.width;
+	settings.height = config.height;
 
 	awp->setup(settings);
 
