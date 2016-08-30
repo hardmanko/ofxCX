@@ -174,7 +174,8 @@ CX_Logger::CX_Logger(void) :
 CX_Logger::~CX_Logger(void) {
 	this->captureOFLogMessages(false);
 
-	ofRemoveListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
+	//Doesn't need to be removed because the _ofLoggerChannel is being destructed along with its messageLoggedEvent.
+	//ofRemoveListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
 
 	flush();
 

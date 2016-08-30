@@ -9,7 +9,8 @@ CX_SlidePresenter::CX_SlidePresenter(void) :
 	_presentingSlides(false),
 	_synchronizing(false),
 	_currentSlide(0),
-	_lastFramebufferActive(false),
+	_renderingToFramebuffer(false),
+	_renderingToGarbageFramebuffer(false),
 	_frameNumberOnLastSwapCheck(0)
 {}
 
@@ -33,6 +34,8 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 	}
 
 	_config = config;
+
+	_garbageFbo.allocate(1, 1);
 
 	if (!CX::Private::glFenceSyncSupported()) {
 		_config.useFenceSync = false; //Override the setting
@@ -97,7 +100,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 		}
 	}
 
-	if (_lastFramebufferActive) {
+	if (_renderingToFramebuffer) {
 		CX::Instances::Log.warning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
 		endDrawingCurrentSlide();
 	}
@@ -175,7 +178,7 @@ sp.endDrawingCurrentSlide();
 */
 void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, std::string slideName) {
 
-	if (_lastFramebufferActive) {
+	if (_renderingToFramebuffer) {
 		CX::Instances::Log.verbose("CX_SlidePresenter") << "The previous frame was not finished before new frame started. Call endDrawingCurrentSlide() before starting slide presentation.";
 		endDrawingCurrentSlide();
 	}
@@ -188,6 +191,11 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, std::stri
 
 	if (slideDuration <= CX_Millis(0)) {
 		CX::Instances::Log.warning("CX_SlidePresenter") << "Slide named \"" << slideName << "\" with duration <= 0 ignored.";
+
+		_garbageFbo.begin(); //Begin rendering to an FBO that will never be presented.
+		_renderingToFramebuffer = true;
+		_renderingToGarbageFramebuffer = true;
+
 		return;
 	}
 
@@ -210,16 +218,26 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, std::stri
 	_slides.back().intended.frameCount = _calculateFrameCount(slideDuration);
 
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Beginning to draw to framebuffer.";
+
 	_slides.back().framebuffer.begin();
-	_lastFramebufferActive = true;
+	_renderingToFramebuffer = true;
 
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Slide #" << (_slides.size() - 1) << " (" << _slides.back().name << ") drawing begun. Frame count: " << _slides.back().intended.frameCount;
 }
 
 /*! Ends drawing to the framebuffer of the slide that is currently being drawn to. See beginDrawingNextSlide(). */
-void CX_SlidePresenter::endDrawingCurrentSlide (void) {
-	_slides.back().framebuffer.end();
-	_lastFramebufferActive = false;
+void CX_SlidePresenter::endDrawingCurrentSlide(void) {
+
+	if (_renderingToGarbageFramebuffer) {
+		_garbageFbo.end();
+		_renderingToGarbageFramebuffer = false;
+	} else {
+		if (_slides.size() >= 0) {
+			_slides.back().framebuffer.end();
+		}
+	}
+
+	_renderingToFramebuffer = false;
 }
 
 /*! Add a fully configured slide to the end of the list of slides. The user code
@@ -240,7 +258,7 @@ void CX_SlidePresenter::appendSlide (CX_SlidePresenter::Slide slide) {
 		return;
 	}
 
-	if (_lastFramebufferActive) {
+	if (_renderingToFramebuffer) {
 		CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlide(): The previous slide was not finished before new slide was appended."
 			" Call endDrawingCurrentSlide() before appending a slide.";
 		endDrawingCurrentSlide();
@@ -349,7 +367,7 @@ void CX_SlidePresenter::appendSlideFunction(std::function<void(void)> drawingFun
 		return;
 	}
 
-	if (_lastFramebufferActive) {
+	if (_renderingToFramebuffer) {
 		CX::Instances::Log.verbose("CX_SlidePresenter") << "appendSlideFunction(): The previous slide was not finished "
 			"before a new slide function was appended. Call endDrawingCurrentSlide() before appending a slide function.";
 		endDrawingCurrentSlide();

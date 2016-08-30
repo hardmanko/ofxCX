@@ -314,7 +314,9 @@ namespace CX {
 		std::vector<CX_SlidePresenter::Slide> _slides;
 		std::vector<ExtraSlideInfo> _slideInfo;
 
-		bool _lastFramebufferActive;
+		ofFbo _garbageFbo;
+		bool _renderingToFramebuffer;
+		bool _renderingToGarbageFramebuffer;
 
 		unsigned int _calculateFrameCount(CX_Millis duration);
 
