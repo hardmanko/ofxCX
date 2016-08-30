@@ -9,19 +9,22 @@ is a very good language for anything requiring a high degree of timing precision
 free and open source. See [this page](http://kylehardman.com/StaticPages/CX/Index.gfmd) for a summary of the features of CX.
 
 A pdf version of the documentation is included with each release in the `CX_Manual.pdf` file in the `docs` subfolder. 
-You can also access the pdf [here](https://github.com/hardmanko/ofxCX/releases/download/v0.2.1/CX_Manual.pdf). 
+You can also access the pdf [here](https://github.com/hardmanko/ofxCX/releases/download/v0.2.2/CX_Manual.pdf). 
 An online version of the documentation can be found [here](http://kylehardman.com/Content/StaticPages/CX/doxygen/index.html).
 You can generate other formats of the documentation by using Doxygen with the Doxyfile in the `docs` subfolder.
+
 
 License
 -------
 This addon is distributed under the MIT license (see `license.md`).
+
 
 Installation
 ------------
 Pick a release to download (see the "Releases" tab) or just download the current version of the repository.
 Put the contents of whatever you downloaded into a subdirectory directory under `%openFrameworksDirectory%/addons` (typically `%openFrameworksDirectory%/addons/ofxCX`). 
 See the manual for more installation information, like how to get openFrameworks and how to use the examples for CX.
+
 
 Compatibility
 ------------
@@ -34,8 +37,11 @@ Known issues
 ------------
 This is beta software, don't expect it to be bug-free. Please report any issues you have in the issue tracker.
 
+
 Version history
 ------------
+v0.2.2 - Some bugfixes to CX_SlidePresenter and some additional functionality.
+
 v0.2.1 - This release includes support for oF 0.9.1 through 0.9.3 and minor bugfixes.
 
 v0.2.0 - This is the first release to officially support oF 0.9.0. Includes some important bug fixes in the startup code.
