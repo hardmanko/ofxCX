@@ -75,7 +75,8 @@ CX_DataFrameColumn CX_DataFrame::operator[] (std::string column) {
 /*! Extract a row from the data frame. Note that the returned value is not a
 copy of the original row. Rather, it represents the original row so that
 if the returned row is modified, it will also modify the original data in the
-parent data frame.
+parent data frame. If you want a copy of the row rather than a reference to 
+the row, use copyRow().
 \param row The index of the row to extract.
 \return A CX_DataFrameRow.
 */
@@ -543,7 +544,30 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 	return true;
 }
 
-/*! Creates CX_DataFrame containing a copy of the rows specified in rowOrder. The new data frame is not linked to the existing data frame.
+/*! Creates a CX_DataFrameRow that contains a copy of the given row of the CX_DataFrame.
+
+\param row The row to copy.
+\return A CX_DataFrameRow containing a copy of the row of the CX_DataFrame.
+*/
+CX_DataFrameRow CX_DataFrame::copyRow(rowIndex_t row) const {
+
+	CX_DataFrameRow r;
+
+	if (row >= _rowCount) {
+		CX::Instances::Log.error("CX_DataFrame") << "copyRow(): row is out of range.";
+		return r;
+	}
+
+	std::vector<std::string> columnNames = this->getColumnNames();
+
+	for (std::string col : columnNames) {
+		this->_data.at(col).at(row).copyCellTo(&(r[col]));
+	}
+
+	return r;
+}
+
+/*! Creates a CX_DataFrame containing a copy of the rows specified in rowOrder. The new data frame is not linked to the existing data frame.
 \param rowOrder A vector of CX_DataFrame::rowIndex_t containing the rows from this data frame to be copied out.
 The indices in rowOrder may be in any order: They don't need to be ascending. Additionally, the same row to be
 copied may be specified multiple times.

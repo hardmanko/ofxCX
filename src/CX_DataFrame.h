@@ -80,6 +80,7 @@ public:
 
 	void append(CX_DataFrame df);
 
+	CX_DataFrameRow copyRow(rowIndex_t row) const;
 	CX_DataFrame copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const;
 	CX_DataFrame copyColumns(std::vector<std::string> columns);
 

@@ -142,6 +142,21 @@ namespace CX {
 				restartSampling();
 			}
 
+			/*! Set up the BlockSampler from a CX_DataFrame. This only works if the
+			BlockSampler is templated to use CX_DataFrameRow as its type. Each row
+			of the CX_DataFrame will be copied into the BlockSampler.
+			
+			\param rng A pointer to a CX_RandomNumberGenerator that will be used to randomize the sampled data.
+			\param df A CX_DataFrame.
+			*/
+			void setup(CX_RandomNumberGenerator* rng, const CX_DataFrame& df) {
+				std::vector<CX_DataFrameRow> allRows(df.getRowCount());
+				for (CX_DataFrame::rowIndex_t i = 0; i < df.getRowCount(); i++) {
+					allRows[i] = df.copyRow(i);
+				}
+				this->setup(rng, allRows);
+			}
+
 			/*! Get the next value sampled from the provided data.
 			\return An element sampled from the provided values, or, if there were no values provided, 
 			a warning will be logged and a default-constructed instance of T will be returned. */
@@ -191,7 +206,7 @@ namespace CX {
 			unsigned int _blockNumber;
 		};
 
-		
+
 		/*! This algorithm is designed to deal with the situation in which a number
 		of random values must be generated that are each at least some distance from every other
 		random value. This is a very generic implementation of this algorithm. It works by taking
