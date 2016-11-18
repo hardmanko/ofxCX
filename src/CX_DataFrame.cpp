@@ -567,11 +567,11 @@ CX_DataFrameRow CX_DataFrame::copyRow(rowIndex_t row) const {
 	return r;
 }
 
-/*! Creates a CX_DataFrame containing a copy of the rows specified in rowOrder. The new data frame is not linked to the existing data frame.
-\param rowOrder A vector of CX_DataFrame::rowIndex_t containing the rows from this data frame to be copied out.
-The indices in rowOrder may be in any order: They don't need to be ascending. Additionally, the same row to be
-copied may be specified multiple times.
-\return A CX_DataFrame containing the rows specified in rowOrder.
+/*! Creates a `CX_DataFrame` containing a copy of the rows specified in `rowOrder`. The new data frame is not linked to the existing data frame.
+\param rowOrder A vector of `CX_DataFrame::rowIndex_t` containing the rows from this data frame to be copied out.
+The indices in `rowOrder` may be in any order: They don't need to be ascending. Additionally, the same row to be
+copied may be specified multiple times, which will result in multiple copies of that row being created in the new data frame.
+\return A `CX_DataFrame` containing the rows specified in `rowOrder`.
 
 \note This function may be \ref blockingCode if the amount of copied data is large.
 */

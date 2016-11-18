@@ -128,4 +128,17 @@ std::mt19937_64& CX_RandomNumberGenerator::getGenerator(void) {
 	return _mersenneTwister; 
 }
 
+/*!	This function works like CX_RandomNumberGenerator::sampleBlocks(),
+except it samples rows from a `CX_DataFrame` rather than values from a
+vector. It returns a `CX_DataFrame`.
+\param df The `CX_DataFrame` to sample from.
+\param blocksToSample The number of blocks to sample.
+\return A `CX_DataFrame` with `df.getRowCount() * blocksToSample` rows.
+*/
+CX_DataFrame CX_RandomNumberGenerator::sampleBlocksDF(const CX_DataFrame& df, unsigned int blocksToSample) {
+	vector<unsigned int> rowIndices = Util::intVector<unsigned int>(0, df.getRowCount() - 1);
+	vector<unsigned int> blockIndices = this->sampleBlocks(rowIndices, blocksToSample);
+	return df.copyRows(blockIndices);
+}
+
 } //namespace CX

@@ -10,6 +10,7 @@
 #include "./Poco/Checksum.h"
 
 #include "CX_Utilities.h"
+#include "CX_DataFrame.h"
 
 /*! \defgroup randomNumberGeneration Randomization 
 This module provides a class that is used for random number generation.
@@ -79,6 +80,7 @@ namespace CX {
 		template <typename T> std::vector<T> sampleExclusive(unsigned int count, const std::vector<T>& values, const std::vector<T>& exclude, bool withReplacement);
 
 		template <typename T> std::vector<T> sampleBlocks(const std::vector<T>& values, unsigned int blocksToSample);
+		CX_DataFrame sampleBlocksDF(const CX_DataFrame& df, unsigned int blocksToSample);
 
 		template <typename stdDist>	std::vector<typename stdDist::result_type> sampleRealizations(unsigned int count, stdDist dist);
 		template <typename T> std::vector<T> sampleUniformRealizations(unsigned int count, T lowerBound_closed, T upperBound_open);
@@ -260,7 +262,6 @@ namespace CX {
 
 		return rval;
 	}
-
 
 	/*! Samples count deviates from a uniform distribution with the range [lowerBound_closed, upperBound_open).
 	\tparam T The precision with which to sample (should be `float` or `double` most of the time).
