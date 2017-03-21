@@ -66,15 +66,17 @@ namespace Util {
 	\param filename Name of the file to write to. If it is a relative file name, it will be placed relative
 	the the data directory.
 	\param data The data to write
-	\param append If true, data will be appended to an existing file, if it exists. If append is false, any
-	existing file will be overwritten and a warning will be logged. If no file exists, a new one will be created.
+	\param append If `true`, data will be appended to an existing file, if it exists. If `false`, any
+	existing file will be overwritten and a warning will be logged (if `overwriteWarning` is `true`). 
+	If no file exists, a new one will be created.
+	\param overwriteWarning If `true`, a warning will be logged if a file will be overwritten.
 	\return True if an error was encountered while writing the file, true otherwise. If there was an error,
 	an error message will be logged.
 	*/
-	bool writeToFile(std::string filename, std::string data, bool append) {
+	bool writeToFile(std::string filename, std::string data, bool append, bool overwriteWarning) {
 		filename = ofToDataPath(filename);
 		ofFile out(filename, ofFile::Reference);
-		if (out.exists() && !append) {
+		if (overwriteWarning && out.exists() && !append) {
 			CX::Instances::Log.warning("CX::Util::writeToFile") << "File \"" << filename << "\" already exists. It will be overwritten.";
 		}
 		out.close();

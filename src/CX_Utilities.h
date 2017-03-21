@@ -57,7 +57,7 @@ namespace CX {
 		template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
 		template <typename T> std::vector<T> stringToVector(std::string s, std::string delimiter);
 
-		bool writeToFile(std::string filename, std::string data, bool append = true);
+		bool writeToFile(std::string filename, std::string data, bool append = true, bool overwriteWarning = true);
 		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 		bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter = "=");
 
