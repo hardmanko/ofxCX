@@ -1,5 +1,7 @@
 #include "CX_DataFrame.h"
 
+#include "CX_RandomNumberGenerator.h"
+
 //CX_DataFrame::DataFrameConfiguration CX_DataFrame::Configuration = { ",", "\"", "\"", "\t" };
 
 namespace CX {

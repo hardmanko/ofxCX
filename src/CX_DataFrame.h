@@ -12,14 +12,15 @@
 
 #include "CX_Utilities.h"
 #include "CX_Logger.h"
-#include "CX_RandomNumberGenerator.h"
 
 #include "CX_DataFrameCell.h"
 
 namespace CX {
 
+// Foward declarations
 class CX_DataFrameRow;
 class CX_DataFrameColumn;
+class CX_RandomNumberGenerator;
 
 /*! \defgroup dataManagement Data
 This module is related to storing experimental data. CX_DataFrame is the most important class in this module.

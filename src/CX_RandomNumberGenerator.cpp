@@ -1,5 +1,7 @@
 #include "CX_RandomNumberGenerator.h"
 
+#include "CX_DataFrame.h"
+
 namespace CX {
 
 /*! An instance of CX_RandomNumberGenerator that is very lightly hooked into the CX backend. The only
@@ -136,8 +138,8 @@ vector. It returns a `CX_DataFrame`.
 \return A `CX_DataFrame` with `df.getRowCount() * blocksToSample` rows.
 */
 CX_DataFrame CX_RandomNumberGenerator::sampleBlocksDF(const CX_DataFrame& df, unsigned int blocksToSample) {
-	vector<unsigned int> rowIndices = Util::intVector<unsigned int>(0, df.getRowCount() - 1);
-	vector<unsigned int> blockIndices = this->sampleBlocks(rowIndices, blocksToSample);
+	std::vector<unsigned int> rowIndices = Util::intVector<unsigned int>(0, df.getRowCount() - 1);
+	std::vector<unsigned int> blockIndices = this->sampleBlocks(rowIndices, blocksToSample);
 	return df.copyRows(blockIndices);
 }
 

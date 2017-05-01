@@ -10,7 +10,7 @@
 #include "./Poco/Checksum.h"
 
 #include "CX_Utilities.h"
-#include "CX_DataFrame.h"
+
 
 /*! \defgroup randomNumberGeneration Randomization 
 This module provides a class that is used for random number generation.
@@ -19,6 +19,8 @@ An instance of this class is preinstsantiated for you: \ref CX::Instances::RNG.
 */
 
 namespace CX {
+
+	class CX_DataFrame; // forward declaration
 
 	/*! \brief The type of integer returned by the CX_RandomNumberGenerator::randomInt() functions. */
 	typedef int64_t CX_RandomInt_t;
