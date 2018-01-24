@@ -60,9 +60,9 @@ namespace CX {
 	with CX_Logger::Level::LOG_ALL as the argument.
 
 	This class is designed to be partially thread safe. It is safe to use any of the message logging
-	functions (log(), verbose(), notice(), 	warning(), error(), and fatalError()) in multiple threads
+	functions (log(), verbose(), notice(), warning(), error(), and fatalError()) in multiple threads
 	at once. Other than those functions, the other functions should be called only from one thread
-	(presumably the main thread).
+	(the main thread).
 
 	\ingroup errorLogging */
 	class CX_Logger {

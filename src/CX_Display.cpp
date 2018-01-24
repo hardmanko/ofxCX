@@ -154,11 +154,11 @@ CX_Millis CX_Display::estimateNextSwapTime(void) const {
 
 
 /*! Check to see if the display has swapped the front and back buffers since the last call to this function.
-This is generally used in conjuction with automatic swapping of the buffers (setAutomaticSwapping())
-or with an individual threaded swap of the buffers (swapBuffersInThread()). This technically works
-with swapBuffers(), but given that that function only returns once the buffers have
+This is generally used in conjuction with automatic swapping of the buffers (`setAutomaticSwapping()`)
+or with an individual threaded swap of the buffers (`swapBuffersInThread()`). This technically works
+with `swapBuffers()`, but given that that function only returns once the buffers have
 swapped, using this function to check that the buffers have swapped is redundant.
-\return True if a swap has been made since the last call to this function, false otherwise. */
+\return `true` if a swap has been made since the last call to this function, `false` otherwise. */
 bool CX_Display::hasSwappedSinceLastCheck(void) {
 	uint64_t currentFrameNumber = this->getFrameNumber();
 	if (currentFrameNumber != _frameNumberOnLastSwapCheck) {

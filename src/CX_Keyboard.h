@@ -223,7 +223,7 @@ namespace CX {
 			keys. For example, you could use (myKeyEvent.key == 'E') to test if the key was the E key.
 			This does not depend on modifier keys: You always check for uppercase letters. For the
 			number row keys, you check for the number, not the special character that is produced when
-			shift is held, etc.
+			shift is held.
 
 			For special keys, this value can be compared to the values in the CX::Keycode enum.
 			*/
@@ -271,9 +271,9 @@ namespace CX {
 
 		std::set<int> _heldKeys;
 
-		void _keyPressHandler (ofKeyEventArgs &a);
-		void _keyReleaseHandler (ofKeyEventArgs &a);
-		void _keyRepeatHandler (CX::Private::CX_KeyRepeatEventArgs_t &a);
+		void _keyPressHandler(ofKeyEventArgs &a);
+		void _keyReleaseHandler(ofKeyEventArgs &a);
+		void _keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a);
 		void _keyEventHandler(CX_Keyboard::Event &a);
 
 		void _listenForEvents (bool listen);

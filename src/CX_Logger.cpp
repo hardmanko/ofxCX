@@ -133,7 +133,7 @@ namespace Private {
 	}
 
 	/* This destructor is marked noexcept(false) because it sometimes throws exceptions
-	(by design) in CX_Logger::_storeLogMessage() if exceptions are enabled to with 
+	(by design) in CX_Logger::_storeLogMessage() if exceptions are enabled with 
 	CX_Logger::levelForExceptions().
 	*/
 #if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0

@@ -26,6 +26,12 @@ namespace CX {
 		CX_DataFrame fullyCross(std::map<std::string, std::vector<T>>& factors);
 
 		/*! This class provides a way to work with Latin squares in a relatively easy way. 
+
+		The constructed Latin squares use 0-indexed integers for the values, 
+		meaning that a 3x3 square will have the values 0, 1, and 2 in various orders.
+
+		Each row of the square is one condition of the design, so take use rows to determine condition order.
+
 		\code{.cpp}
 		Algo::LatinSquare ls(4); //Construct a standard 4x4 LatinSquare.
 		cout << "This latin square has " << ls.rows() << " rows and " << ls.columns() << " columns." << endl;
