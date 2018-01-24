@@ -222,25 +222,9 @@ namespace Util {
 
 		ofPoint p = p2 - p1;
 		float angle = atan2(p.y, p.x);
+		angle = ofRadToDeg(angle);
 
-		/*
-		float angle = 0;
-		if (p.x == 0) {
-			if (p.y >= 0) {
-				angle = PI / 2;
-			} else {
-				angle = -PI / 2;
-			}
-		} else {
-			angle = atan(p.y / p.x);
-		}
-		
-		if (p.x < 0) {
-			angle += PI;
-		}
-		*/
-
-		return fmod(360 + ofRadToDeg(angle), 360);
+		return fmod(360 + angle, 360);
 	}
 
 	/*! This function begins at point `start` and travels `distance` from that point along `angle`, returning the resulting point.

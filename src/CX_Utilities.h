@@ -42,6 +42,13 @@ namespace CX {
 
 		unsigned int getMsaaSampleCount(void); //Move to Draw ns?
 
+		bool writeToFile(std::string filename, std::string data, bool append = true, bool overwriteWarning = true);
+		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
+		bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter = "=");
+
+		template <typename T> T rgbStringToColor(std::string rgba, std::string delim = ",");
+
+
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 
 		template <typename T> std::vector<T> sequence(T start, T end, T stepSize);
@@ -56,10 +63,6 @@ namespace CX {
 
 		template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
 		template <typename T> std::vector<T> stringToVector(std::string s, std::string delimiter);
-
-		bool writeToFile(std::string filename, std::string data, bool append = true, bool overwriteWarning = true);
-		std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
-		bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter = "=");
 
 		/*! The way in which numbers should be rounded with CX::Util::round(). */
 		enum class CX_RoundingConfiguration {
@@ -94,6 +97,40 @@ namespace CX {
 		ofPoint getRelativePointFromDistanceAndAngle(ofPoint start, float distance, float angle);
 
 	}
+}
+
+
+/*! Convert a string containing delimited RGB[A] coordinates to an ofColor.
+
+The string `rgba` should have this format: `R, G, R[, A]`, where RGBA are the red, green, blue, 
+and alpha components of the color, the commas are the delimiters, 
+and the brackets denote that the alpha value is optional.
+
+\tparam T One of the ofColor classes: ofColor, ofShortColor, or ofFloatColor.
+\param rgba A delimited string containing RGB, and optionally A, coordinates.
+\param delim The delimiter used in `rgba`. Typically a comma: ",".
+
+\return An `ofColor`. If there was a problem reading `rgba`, the returned color will be uninitialized.
+*/
+template <typename T>
+T CX::Util::rgbStringToColor(std::string rgba, std::string delim) {
+
+	std::vector<std::string> colorParts = ofSplitString(rgba, delim, false, true);
+	std::vector<float> colorFloat;
+	for (auto cp : colorParts) {
+		colorFloat.push_back(ofFromString<float>(cp));
+	}
+
+	T col;
+	if (colorFloat.size() >= 3) {
+		col.set(colorFloat[0], colorFloat[1], colorFloat[2]);
+	}
+	if (colorFloat.size() == 4) {
+		col.a = colorFloat[3];
+	}
+
+	return col;
+
 }
 
 /*! Repeats value "times" times.
