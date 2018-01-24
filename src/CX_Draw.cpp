@@ -257,17 +257,23 @@ std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
 	std::vector<std::string> lines;
 	for (unsigned int i = 0; i < s.size(); i++) {
 
-		if (s[i] == ' ') {
+		if (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') {
 			lastWS = i;
 		}
 
 		std::string sub = s.substr(lineStart, i - lineStart);
 		float currentW = font.getStringBoundingBox(sub, 0, 0).width;
+
 		if (currentW >= width) {
+
 			if (lastWS > lineStart) {
+				// Whitespace can be found on this line, so split at the whitespace.
 				sub = s.substr(lineStart, lastWS - lineStart + 1);
-				lineStart = lastWS;
+				lineStart = lastWS + 1; // Skip the WS
+
 			} else {
+				//If no whitespace on this line, do the gross thing and split mid-word
+
 				int poppedChars = 0;
 				if (sub.length() >= 2) {
 					sub.pop_back(); //pop off two letters to 1) make the string shorter and 
@@ -275,27 +281,28 @@ std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
 					poppedChars = 2;
 				}
 
-				//If no whitespace on this line, do the gross thing and split mid-word
-				sub += '-'; //and stick in a lame hyphen
+				sub += '-'; // stick in a lame hyphen
 				lineStart = i - poppedChars;
 			}
 
-			i = lastWS;
+			i = lineStart;
 			lines.push_back(sub);
+
 		} else if (i == s.size() - 1) {
+			// At the end of s, just accept the last line.
 			sub = s.substr(lineStart);
 			lines.push_back(sub);
 		}
 	}
 
-	std::string rval;
-	for (std::string l : lines) {
-		while (l[0] == ' ') {
-			l = l.substr(1);
+	std::string rval = "";
+	if (lines.size() > 0) {
+		rval = lines.front();
+		for (unsigned int i = 1; i < lines.size(); i++) {
+			rval += "\n" + lines[i];
 		}
-		rval += l + "\n";
 	}
-
+	
 	return rval;
 }
 
