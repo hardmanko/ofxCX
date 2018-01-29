@@ -18,9 +18,9 @@ CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
 CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {
 	this->stop();
 	if (_soundStream != nullptr) {
-		_soundStream->closeStream();
 		_listenForEvents(false);
 		if (_soundStreamSelfAllocated) {
+			_soundStream->closeStream();
 			delete _soundStream;
 			_soundStreamSelfAllocated = false;
 		}
