@@ -208,8 +208,8 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, std::stri
 	_slides.back().name = slideName;
 
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Allocating framebuffer...";
-	_slides.back().framebuffer.allocate(_config.display->getResolution().x,
-										_config.display->getResolution().y,
+	ofRectangle resolution = _config.display->getResolution();
+	_slides.back().framebuffer.allocate(resolution.x, resolution.y,
 										GL_RGB, //Because we are always drawing over the whole display, there is no reason to have an alpha channel
 										CX::Util::getMsaaSampleCount());
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Finished allocating.";
@@ -252,7 +252,7 @@ drawing function is set or the framebuffer is allocated and an error is logged i
 
 \param slide The slide to append.
 */
-void CX_SlidePresenter::appendSlide (CX_SlidePresenter::Slide slide) {
+void CX_SlidePresenter::appendSlide(CX_SlidePresenter::Slide slide) {
 	if (slide.intended.duration <= CX_Millis(0)) {
 		CX::Instances::Log.warning("CX_SlidePresenter") << "appendSlide(): Slide named \"" << slide.name << "\" with duration <= 0 ignored.";
 		return;
@@ -431,7 +431,7 @@ CX_SlidePresenter::Slide& CX_SlidePresenter::getSlideByName(std::string name) {
 	throw(std::out_of_range(errorString.c_str()));
 }
 
-/*!
+/*! Get the name of the last slide to be presented.
 \return The name of the last slide to be presented. If no slides have been presented yet during
 the current slide presentation, returns "NO_SLIDE_PRESENTED".
 */
@@ -654,9 +654,12 @@ void CX_SlidePresenter::update(void) {
 	_waitSyncCheck();
 
 	switch (_config.swappingMode) {
-	case SwappingMode::MULTI_CORE: return _multiCoreUpdate();
-	case SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: return _singleCoreBlockingUpdate();
-		//case CX_SlidePresenter::Configuration::SwappingMode::SINGLE_CORE_THREADED_SWAPS: return _singleCoreThreadedUpdate();
+	case SwappingMode::MULTI_CORE: 
+		return _multiCoreUpdate();
+	case SwappingMode::SINGLE_CORE_BLOCKING_SWAPS: 
+		return _singleCoreBlockingUpdate();
+	//case SwappingMode::SINGLE_CORE_THREADED_SWAPS: 
+	//	return _singleCoreThreadedUpdate();
 	}
 }
 
@@ -1036,4 +1039,4 @@ bool CX_SlidePresenter::_hasSwappedSinceLastCheck(void) {
 	return false;
 }
 
-}
+} // namespace CX

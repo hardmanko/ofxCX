@@ -6,11 +6,8 @@
 #include "CX_Clock.h" //Includes CX::Instances::Clock
 #include "CX_TimeUtilities.h"
 
-#include "CX_DataFrame.h"
-
 #include "CX_Display.h" //Includes CX::Instances::Disp
 #include "CX_Draw.h"
-#include "CX_UnitConversion.h"
 #include "CX_SlidePresenter.h"
 
 #include "CX_InputManager.h" //Includes CX::Instances::Input
@@ -21,8 +18,10 @@
 #include "CX_SoundBufferRecorder.h"
 #include "CX_Synth.h"
 
+#include "CX_DataFrame.h"
 #include "CX_Algorithm.h"
 #include "CX_Utilities.h"
+#include "CX_UnitConversion.h"
 
 #include "CX_Private.h"
 

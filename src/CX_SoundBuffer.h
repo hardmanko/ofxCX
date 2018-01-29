@@ -31,7 +31,8 @@ namespace CX {
 
 		CX_SoundBuffer(void);
 
-		bool loadFile (std::string fileName);
+		bool loadFile(std::string fileName);
+
 		bool addSound(std::string fileName, CX_Millis timeOffset); //I'm really not sure I want to have this.
 		bool addSound(CX_SoundBuffer so, CX_Millis timeOffset);
 		bool setFromVector(const std::vector<float>& data, int channels, float sampleRate);

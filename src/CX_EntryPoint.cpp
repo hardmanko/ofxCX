@@ -137,7 +137,7 @@ bool exitCallbackHandler(ofEventArgs& args) {
 	//}
 
 	glfwTerminate(); //this also should not be called from callbacks...
-	//without calling this, the window hangs.
+	//but without calling this, the window hangs.
 
 	//Another option:
 	//CX::Private::appWindow->close();

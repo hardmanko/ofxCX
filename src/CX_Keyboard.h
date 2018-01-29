@@ -240,6 +240,7 @@ namespace CX {
 			Keycodes codes; //!< Alternative representations of the pressed key.
 		};
 
+		// Private constructor
 		~CX_Keyboard (void);
 
 		void enable(bool enable);
@@ -247,15 +248,15 @@ namespace CX {
 
 		int availableEvents (void) const;
 		CX_Keyboard::Event getNextEvent (void);
-		void clearEvents (void);
+		
 		std::vector<CX_Keyboard::Event> copyEvents(void);
+		void clearEvents(void);
 
 		bool isKeyHeld(int key) const;
+		bool isChordHeld(const std::vector<int>& chord) const;
 
 		CX_Keyboard::Event waitForKeypress(int key, bool clear = true, bool eraseEvent = false);
 		CX_Keyboard::Event waitForKeypress(std::vector<int> keys, bool clear = true, bool eraseEvent = false);
-
-		bool isChordHeld(const std::vector<int>& chord) const;
 
 		void appendEvent(CX_Keyboard::Event ev);
 

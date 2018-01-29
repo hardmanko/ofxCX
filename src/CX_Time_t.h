@@ -178,8 +178,7 @@ namespace CX {
 
 		/*! Get the numerical value of the time in units of the time type. For example, if
 		you are using an instance of CX_Seconds, this will return the time value in seconds,
-		including fractional seconds.
-		*/
+		including fractional seconds. */
 		double value(void) const {
 			return Private::convertTimeCount<TimeUnit, std::nano, double>(_nanos);
 		}
@@ -336,7 +335,7 @@ namespace CX {
 
 	};
 
-	/*! Stream instertion operator for CX_Time_t.
+	/*! Stream instertion operator for CX_Time_t. Stream insertion/extration may lose precision.
 	\note If operator<< and operator>> are used to convert to/from a stream representation, you MUST use the same
 	time units on both ends of the conversion.
 	

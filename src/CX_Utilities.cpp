@@ -70,7 +70,7 @@ namespace Util {
 	existing file will be overwritten and a warning will be logged (if `overwriteWarning` is `true`). 
 	If no file exists, a new one will be created.
 	\param overwriteWarning If `true`, a warning will be logged if a file will be overwritten.
-	\return True if an error was encountered while writing the file, true otherwise. If there was an error,
+	\return `true` if an error was encountered while writing the file, `false` otherwise. If there was an error,
 	an error message will be logged.
 	*/
 	bool writeToFile(std::string filename, std::string data, bool append, bool overwriteWarning) {

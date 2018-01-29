@@ -43,18 +43,20 @@ namespace CX {
 		CX_Joystick(void);
 		~CX_Joystick (void);
 
-		bool setup (int joystickIndex);
-		std::string getJoystickName (void);
+		bool setup(int joystickIndex);
+		std::string getJoystickName(void);
 		int getJoystickIndex(void);
 
-		bool pollEvents (void);
-		int availableEvents (void);
-		CX_Joystick::Event getNextEvent (void);
-		void clearEvents (void);
-		std::vector<CX_Joystick::Event> copyEvents(void);
+		bool pollEvents(void);
 
-		std::vector<float> getAxisPositions (void);
-		std::vector<unsigned char> getButtonStates (void);
+		int availableEvents(void);
+		CX_Joystick::Event getNextEvent(void);
+
+		std::vector<CX_Joystick::Event> copyEvents(void);
+		void clearEvents(void);
+
+		std::vector<float> getAxisPositions(void);
+		std::vector<unsigned char> getButtonStates(void);
 
 		void appendEvent(CX_Joystick::Event ev);
 

@@ -94,7 +94,7 @@ namespace CX {
 	    virtual ~CX_BaseClockInterface(void) {}
 
 		virtual cxTick_t nanos(void) = 0; //!< Returns the current time in nanoseconds.
-		virtual void resetStartTime(void) = 0; //!< Resets the start time, so that an immediate call to nanos() would return 0.
+		virtual void resetStartTime(void) = 0; //!< Resets the start time, so that an immediate call to nanos() would return 0 (on an infinitely fast computer).
 
 		/*! \brief Returns a helpful name describing the clock implementation. */
 		virtual std::string getName(void) {

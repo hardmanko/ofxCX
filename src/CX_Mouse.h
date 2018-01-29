@@ -62,6 +62,7 @@ namespace CX {
 			EventType type; //!< The type of the event.
 		};
 
+		// Private constructor
 		~CX_Mouse (void);
 
 		void enable(bool enable);
@@ -69,6 +70,7 @@ namespace CX {
 
 		int availableEvents(void);
 		CX_Mouse::Event getNextEvent(void);
+
 		std::vector<CX_Mouse::Event> copyEvents(void);
 		void clearEvents(void);
 

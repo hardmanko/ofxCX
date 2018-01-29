@@ -125,7 +125,7 @@ void CX_Clock::setImplementation(CX::CX_BaseClockInterface* impl) {
 /*! If for some reason you have a long setup period before the experiment proper
 starts, you could call this function so that the values returned by CX_Clock::now()
 will count up from 0 starting from when this function was called.
-This function also resets the experiment start date/time (see getExperimentStartDateTimeString()).
+This function also resets the experiment start date/time retrieved with getExperimentStartDateTimeString().
 */
 void CX_Clock::resetExperimentStartTime(void) {
 	*_pocoExperimentStart = Poco::LocalDateTime();
@@ -137,6 +137,9 @@ void CX_Clock::resetExperimentStartTime(void) {
 /*! This functions sleeps for the requested period of time. This can be somewhat
 imprecise because it requests a specific sleep duration from the operating system,
 but the operating system may not provide the exact sleep time.
+
+This function is effectively a static function of the CX_Clock class.
+
 \param t The requested sleep duration. If 0, the thread yields rather than sleeping.
 */
 void CX_Clock::sleep(CX_Millis t) {
@@ -150,7 +153,12 @@ void CX_Clock::sleep(CX_Millis t) {
 /*! This functions blocks for the requested period of time. This is likely more
 precise than CX_Clock::sleep() because it does not give up control to the operating
 system, but it wastes resources because it just sits in a spinloop for the requested
-duration. This is effectively a static function of the CX_Clock class. */
+duration. 
+
+This function is effectively a static function of the CX_Clock class.
+
+\param t The requested sleep duration. If 0, the thread yields rather than sleeping.
+*/
 void CX_Clock::delay(CX_Millis t) {
 	CX_Millis startTime = this->now();
 	while ((this->now() - startTime) < t)

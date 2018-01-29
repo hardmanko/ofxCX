@@ -16,7 +16,7 @@ If the file cannot be loaded, descriptive error messages will be logged.
 
 \return True if the sound given in the fileName was loaded succesffuly, false otherwise.
 */
-bool CX_SoundBuffer::loadFile (string fileName) {
+bool CX_SoundBuffer::loadFile(string fileName) {
 	_successfullyLoaded = true;
 
 	ofFmodSoundPlayer fmPlayer;
@@ -192,13 +192,13 @@ The data from `nsb` and this CX_SoundBuffer are merged by adding the amplitudes 
 \return True if nsb was successfully added to this CX_SoundBuffer, false otherwise.
 */
 bool CX_SoundBuffer::addSound(CX_SoundBuffer nsb, CX_Millis timeOffset) {
-	if (!nsb._successfullyLoaded) {
+	if (!nsb.isLoadedSuccessfully()) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "addSound: Added sound buffer not successfully loaded. It will not be added.";
 		return false;
 	}
 
 	//This condition really should have a warning message associated with it.
-	if (!this->_successfullyLoaded) {
+	if (!this->isLoadedSuccessfully()) {
 		*this = nsb;
 		this->addSilence(timeOffset, true);
 		return true;
@@ -253,7 +253,6 @@ bool CX_SoundBuffer::setFromVector(const std::vector<float>& data, int channels,
 		CX::Instances::Log.error("CX_SoundBuffer") << "setFromVector: The size of the sample data was not evenly divisible by the number of channels.";
 		return false;
 	}
-
 
 	_soundData = data;
 	_soundChannels = channels;
