@@ -10,6 +10,114 @@ typedef RtError RT_AUDIO_ERROR_TYPE;
 
 namespace CX {
 
+/*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
+due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
+they are running. This function takes the file name of a specially constructed configuration file and reads the
+key-value pairs in that file in order to fill a CX_SoundStream::Configuration struct. The format of the file is
+provided in the example code below. Note that there is a direct correspondence between the names of the
+keys in the file and the names of the members of a CX_SoundStream::Configuration struct.
+
+Sample configuration file:
+\code
+ss.api = WINDOWS_DS // See valid API names below.
+ss.sampleRate = 44100 // 44100 and 48000 are really common (ubiquitous?)
+ss.bufferSize = 512 // In samples
+ss.inputChannels = 0
+
+//ss.inputChannels = 0 // Use 0 input channels (default)
+//ss.inputDeviceId = 0 // This is not used in this example because no input channels are used.
+
+ss.outputChannels = 2
+ss.outputDeviceId = 0 // Selects device 0. Can be a negative value, in which case the default output is selected.
+ss.streamOptions.numberOfBuffers = 4
+ss.streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME | RTAUDIO_MINIMIZE_LATENCY //The | is not needed,
+//but it matches the way these flags are used in code. All flags are supported.
+
+//ss.streamOptions.priority is not used in this example. It would take a positive integer.
+\endcode
+All of the configuration keys are used in this example.
+Any values in the \ref CX_SoundStream::Configuration struct that do not have values provided in the configuration
+file will be left at default values. Note that the "ss" prefix allows this configuration to be embedded in
+a file that also performs other configuration functions. Note that the names of the data members match the names
+used in the \ref CX_SoundStream::Configuration struct and have a 1-to-1 relationship with those values.
+
+The valid API name strings are: `LINUX_ALSA`, `LINUX_PULSE`, `LINUX_OSS`, `UNIX_JACK`, `MACOSX_CORE`, `WINDOWS_ASIO`, `WINDOWS_DS`, `UNSPECIFIED`, and `RTAUDIO_DUMMY`.
+The last two are probably nonfunctional.
+
+Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
+\param filename The name of the file containing configuration data.
+\param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
+\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
+\param commentString If commentString is not the empty string (i.e. ""), everything on a line
+following the first instance of commentString will be ignored.
+*/
+bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::string delimiter,
+	bool trimWhitespace, std::string commentString, std::string keyPrefix)
+{
+	if (!ofFile::doesFileExist(filename)) {
+		return false;
+	}
+
+	const std::string& pre = keyPrefix; //alias
+
+	*this = CX_SoundStream::Configuration(); // Reset to defaults
+
+	std::map<std::string, std::string> kv = CX::Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
+
+	if (kv.find(pre + "api") != kv.end()) {
+		this->api = CX_SoundStream::convertStringToApi(kv[pre + "api"]);
+	}
+	if (kv.find(pre + "bufferSize") != kv.end()) {
+		this->bufferSize = ofFromString<unsigned int>(kv[pre + "bufferSize"]);
+	}
+	if (kv.find(pre + "inputDeviceId") != kv.end()) {
+		this->inputDeviceId = ofFromString<int>(kv[pre + "inputDeviceId"]);
+	}
+	if (kv.find(pre + "inputChannels") != kv.end()) {
+		this->inputChannels = ofFromString<int>(kv[pre + "inputChannels"]);
+	}
+	if (kv.find(pre + "outputDeviceId") != kv.end()) {
+		this->outputDeviceId = ofFromString<int>(kv[pre + "outputDeviceId"]);
+	}
+	if (kv.find(pre + "outputChannels") != kv.end()) {
+		this->outputChannels = ofFromString<int>(kv[pre + "outputChannels"]);
+	}
+	if (kv.find(pre + "sampleRate") != kv.end()) {
+		this->sampleRate = ofFromString<int>(kv[pre + "sampleRate"]);
+	}
+	if (kv.find(pre + "streamOptions.numberOfBuffers") != kv.end()) {
+		this->streamOptions.numberOfBuffers = ofFromString<unsigned int>(kv[pre + "streamOptions.numberOfBuffers"]);
+	}
+	if (kv.find(pre + "streamOptions.priority") != kv.end()) {
+		this->streamOptions.priority = ofFromString<int>(kv[pre + "streamOptions.priority"]);
+	}
+
+	if (kv.find(pre + "streamOptions.flags") != kv.end()) {
+		this->streamOptions.flags = 0;
+		string flags = kv[pre + "streamOptions.flags"];
+
+		if (flags.find("RTAUDIO_NONINTERLEAVED") != std::string::npos) {
+			this->streamOptions.flags |= RTAUDIO_NONINTERLEAVED; //emit warning. Don't use this flag!
+		}
+		if (flags.find("RTAUDIO_MINIMIZE_LATENCY") != std::string::npos) {
+			this->streamOptions.flags |= RTAUDIO_MINIMIZE_LATENCY;
+		}
+		if (flags.find("RTAUDIO_HOG_DEVICE") != std::string::npos) {
+			this->streamOptions.flags |= RTAUDIO_HOG_DEVICE;
+		}
+		if (flags.find("RTAUDIO_ALSA_USE_DEFAULT") != std::string::npos) {
+			this->streamOptions.flags |= RTAUDIO_ALSA_USE_DEFAULT;
+		}
+		if (flags.find("RTAUDIO_SCHEDULE_REALTIME") != std::string::npos) {
+			this->streamOptions.flags |= RTAUDIO_SCHEDULE_REALTIME;
+		}
+	}
+
+	return true;
+}
+
+
+
 CX_SoundStream::CX_SoundStream (void) :
 	_rtAudio(nullptr),
 	_lastSwapTime(0),
@@ -461,99 +569,6 @@ std::string CX_SoundStream::listDevices(RtAudio::Api api) {
 
 	}
 	return rval.str();
-}
-
-/*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
-due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
-they are running. This function takes the file name of a specially constructed configuration file and reads the
-key-value pairs in that file in order to fill a CX_SoundStream::Configuration struct. The format of the file is
-provided in the example code below. Note that there is a direct correspondence between the names of the
-keys in the file and the names of the members of a CX_SoundStream::Configuration struct.
-
-Sample configuration file:
-\code
-ss.api = WINDOWS_DS //See convertStringToApi() for valid API names.
-ss.sampleRate = 44100
-ss.bufferSize = 512
-ss.inputChannels = 0
-//ss.inputDeviceId //This is not used in this example because no input channels are used. It would take an integer.
-ss.outputChannels = 2
-ss.outputDeviceId = 0 //selects device 0. Can be a negative value, in which case the default output is selected.
-ss.streamOptions.numberOfBuffers = 4
-ss.streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME | RTAUDIO_MINIMIZE_LATENCY //The | is not needed,
-//but it matches the way these flags are used in code. All flags are supported.
-//ss.streamOptions.priority is not used in this example. It would take a positive integer.
-\endcode
-All of the configuration keys are used in this example.
-Any values in the \ref CX_SoundStream::Configuration struct that do not have values provided in the configuration
-file will be left at default values. Note that the "ss" prefix allows this configuration to be embedded in
-a file that also performs other configuration functions. Note that the names of the data members match the names
-used in the \ref CX_SoundStream::Configuration struct and have a 1-to-1 relationship with those values.
-
-Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
-\param filename The name of the file containing configuration data.
-\param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
-\param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
-\param commentString If commentString is not the empty string (i.e. ""), everything on a line
-following the first instance of commentString will be ignored.
-*/
-CX_SoundStream::Configuration CX_SoundStream::readConfigurationFromFile(std::string filename, std::string delimiter,
-																		bool trimWhitespace, std::string commentString)
-{
-	std::map<std::string, std::string> kv = CX::Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
-
-	CX_SoundStream::Configuration ssCon;
-
-	if (kv.find("ss.api") != kv.end()) {
-		ssCon.api = CX_SoundStream::convertStringToApi(kv["ss.api"]);
-	}
-	if (kv.find("ss.bufferSize") != kv.end()) {
-		ssCon.bufferSize = ofFromString<unsigned int>(kv["ss.bufferSize"]);
-	}
-	if (kv.find("ss.inputChannels") != kv.end()) {
-		ssCon.inputChannels = ofFromString<int>(kv["ss.inputChannels"]);
-	}
-	if (kv.find("ss.outputChannels") != kv.end()) {
-		ssCon.outputChannels = ofFromString<int>(kv["ss.outputChannels"]);
-	}
-	if (kv.find("ss.inputDeviceId") != kv.end()) {
-		ssCon.inputDeviceId = ofFromString<int>(kv["ss.inputDeviceId"]);
-	}
-	if (kv.find("ss.outputDeviceId") != kv.end()) {
-		ssCon.outputDeviceId = ofFromString<int>(kv["ss.outputDeviceId"]);
-	}
-	if (kv.find("ss.sampleRate") != kv.end()) {
-		ssCon.sampleRate = ofFromString<int>(kv["ss.sampleRate"]);
-	}
-	if (kv.find("ss.streamOptions.numberOfBuffers") != kv.end()) {
-		ssCon.streamOptions.numberOfBuffers = ofFromString<unsigned int>(kv["ss.streamOptions.numberOfBuffers"]);
-	}
-	if (kv.find("ss.streamOptions.priority") != kv.end()) {
-		ssCon.streamOptions.priority = ofFromString<int>(kv["ss.streamOptions.priority"]);
-	}
-
-	if (kv.find("ss.streamOptions.flags") != kv.end()) {
-		ssCon.streamOptions.flags = 0;
-		string flags = kv["ss.streamOptions.flags"];
-
-		if (flags.find("RTAUDIO_NONINTERLEAVED") != std::string::npos) {
-			ssCon.streamOptions.flags |= RTAUDIO_NONINTERLEAVED; //emit warning. Don't use this flag!
-		}
-		if (flags.find("RTAUDIO_MINIMIZE_LATENCY") != std::string::npos) {
-			ssCon.streamOptions.flags |= RTAUDIO_MINIMIZE_LATENCY;
-		}
-		if (flags.find("RTAUDIO_HOG_DEVICE") != std::string::npos) {
-			ssCon.streamOptions.flags |= RTAUDIO_HOG_DEVICE;
-		}
-		if (flags.find("RTAUDIO_ALSA_USE_DEFAULT") != std::string::npos) {
-			ssCon.streamOptions.flags |= RTAUDIO_ALSA_USE_DEFAULT;
-		}
-		if (flags.find("RTAUDIO_SCHEDULE_REALTIME") != std::string::npos) {
-			ssCon.streamOptions.flags |= RTAUDIO_SCHEDULE_REALTIME;
-		}
-	}
-
-	return ssCon;
 }
 
 

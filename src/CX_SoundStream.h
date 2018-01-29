@@ -79,6 +79,8 @@ public:
 		int inputDeviceId; //!< The ID of the desired input device. A value less than 0 will cause the system default input device to be used.
 		int outputDeviceId; //!< The ID of the desired output device. A value less than 0 will cause the system default output device to be used.
 
+		bool setFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//", std::string keyPrefix = "ss.");
+
 	};
 
 	/*! The audio output event of the CX_SoundStream sends a copy of this structure with
@@ -155,8 +157,6 @@ public:
 
 	static std::vector<RtAudio::DeviceInfo> getDeviceList(RtAudio::Api api);
 	static std::string listDevices(RtAudio::Api api);
-
-	static CX_SoundStream::Configuration readConfigurationFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentStr = "//");
 
 private:
 
