@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "RtAudio.h"
 
 #include "ofConstants.h"
@@ -166,8 +168,9 @@ private:
 
 	int _rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status);
 
-	RtAudio *_rtAudio;
-	CX_SoundStream::Configuration _config;
+	std::shared_ptr<RtAudio> _rtAudio;
+	//RtAudio *_rtAudio;
+	Configuration _config;
 
 	CX_Millis _lastSwapTime;
 	uint64_t _lastSampleNumber;

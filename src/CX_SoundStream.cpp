@@ -143,7 +143,7 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 	}
 
 	try {
-		_rtAudio = new RtAudio( config.api );
+		_rtAudio = std::make_shared<RtAudio>(config.api);
 	} catch (RT_AUDIO_ERROR_TYPE err) {
 		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
 		_rtAudio = nullptr;
@@ -284,7 +284,6 @@ bool CX_SoundStream::closeStream(void) {
 		rval = false;
  	}
 
-	delete _rtAudio;
 	_rtAudio = nullptr;
 	return rval;
 }
@@ -347,7 +346,7 @@ This should not be needed most of the time, but there may be cases in which you 
 access RtAudio. Here is the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
 */
 RtAudio* CX_SoundStream::getRtAudioInstance(void) const {
-	return _rtAudio;
+	return _rtAudio.get();
 }
 
 /*! Get a vector containing a list of all of the APIs for which the RtAudio driver
