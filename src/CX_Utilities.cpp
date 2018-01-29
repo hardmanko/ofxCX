@@ -203,6 +203,73 @@ namespace Util {
 		return Util::writeToFile(filename, ss.str(), false);
 	}
 
+	/*! Performs a word wrapping procedure, splitting `s` into multiple lines so
+	that each line is no more than `width` wide. The algorithm attempts to end lines
+	at whitespace, so as to avoid splitting up words. However, if there is no whitespace
+	on a line, the line will be broken just before it would exceed the width
+	and a hyphen is inserted. If the width is absurdly narrow (less than 2 characters),
+	the algorithm will break.
+	\param s The string to wrap.
+	\param width The maxmimum width of each line of `s`, in pixels.
+	\param font A configured ofTrueTypeFont.
+	\return A string with newlines inserted to keep lines to be less than `width` wide.
+	*/
+	std::string wordWrap(std::string s, float width, ofTrueTypeFont& font) {
+		unsigned int lineStart = 0;
+		unsigned int lastWS = 0;
+		std::vector<std::string> lines;
+		for (unsigned int i = 0; i < s.size(); i++) {
+
+			if (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') {
+				lastWS = i;
+			}
+
+			std::string sub = s.substr(lineStart, i - lineStart);
+			float currentW = font.getStringBoundingBox(sub, 0, 0).width;
+
+			if (currentW >= width) {
+
+				if (lastWS > lineStart) {
+					// Whitespace can be found on this line, so split at the whitespace.
+					sub = s.substr(lineStart, lastWS - lineStart + 1);
+					lineStart = lastWS + 1; // Skip the WS
+
+				} else {
+					//If no whitespace on this line, do the gross thing and split mid-word
+
+					int poppedChars = 0;
+					if (sub.length() >= 2) {
+						sub.pop_back(); //pop off two letters to 1) make the string shorter and 
+						sub.pop_back(); //2) make room for the hyphen.
+						poppedChars = 2;
+					}
+
+					sub += '-'; // stick in a lame hyphen
+					lineStart = i - poppedChars;
+				}
+
+				i = lineStart;
+				lines.push_back(sub);
+
+			} else if (i == s.size() - 1) {
+				// At the end of s, just accept the last line.
+				sub = s.substr(lineStart);
+				lines.push_back(sub);
+			}
+		}
+
+		std::string rval = "";
+		if (lines.size() > 0) {
+			rval = lines.front();
+			for (unsigned int i = 1; i < lines.size(); i++) {
+				rval += "\n" + lines[i];
+			}
+		}
+
+		return rval;
+	}
+
+
 
 	/*! Returns the angle in degrees "between" p1 and p2. If you take the difference between p2 and p1,
 	you get a resulting vector, V, that gives the displacement from p1 to p2. Imagine that you create a 

@@ -57,7 +57,6 @@ namespace Draw {
 
 	void centeredString(int x, int y, std::string s, ofTrueTypeFont &font);
 	void centeredString(ofPoint center, std::string s, ofTrueTypeFont &font);
-	std::string wordWrap(std::string s, float width, ofTrueTypeFont& font);
 
 	void saveFboToFile(ofFbo& fbo, std::string filename);
 

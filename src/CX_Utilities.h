@@ -48,6 +48,7 @@ namespace CX {
 
 		template <typename T> T rgbStringToColor(std::string rgba, std::string delim = ",");
 
+		std::string wordWrap(std::string s, float width, ofTrueTypeFont& font);
 
 		template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
 
