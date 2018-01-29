@@ -88,4 +88,6 @@ void runExperiment (void) {
 
 \ingroup entryPoint
 */
+#ifndef CX_NO_MAIN
 void runExperiment (void);
+#endif
