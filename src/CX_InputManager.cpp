@@ -26,7 +26,7 @@ namespace CX {
 	\param useKeyboard Enable or disable the keyboard.
 	\param useMouse Enable or disable the mouse.
 	\param joystickIndex Optional. If >= 0, an attempt will be made to set up the joystick at that index. If < 0, no attempt will
-	be made to set up the joystick.
+	be made to set up the joystick and the joystick will be disabled.
 	\return `false` if the requested joystick could not be set up correctly, `true` otherwise.
 	*/
 	bool CX_InputManager::setup(bool useKeyboard, bool useMouse, int joystickIndex) {
@@ -43,9 +43,9 @@ namespace CX {
 		if (joystickIndex >= 0) {
 			Joystick.clearEvents();
 			success = success && Joystick.setup(joystickIndex);
-			if (success) {
-				_usingJoystick = true;
-			}
+			_usingJoystick = success;
+		} else {
+			_usingJoystick = false;
 		}
 		return success;
 	}
@@ -59,6 +59,14 @@ namespace CX {
 	function was called, this function will return `true`. */
 	bool CX_InputManager::pollEvents(void) {
 
+		// Notice what happens here: It is the main reason for the InputManager class.
+		// Events are polled with glfwPollEvents(), which polls both keyboard and mouse events.
+		// Once polling is complete, a timestamp is taken immediately.
+		// That timestamp is then used to set the _lastEventPollTime private member of the Mouse
+		// and Keyboard members so that they can have the correct timestamp for the poll time, which
+		// they wouldn't have if they each took a poll time one after the other.
+		// The joystick works differently: the GLFW helper functions simply reads
+		// off the current axis and button values rather than creating events.
 		glfwPollEvents();
 		CX_Millis pollCompleteTime = CX::Instances::Clock.now();
 
