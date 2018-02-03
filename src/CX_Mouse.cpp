@@ -190,7 +190,7 @@ type.
 void CX_Mouse::appendEvent(CX_Mouse::Event ev) {
 	if (ev.type == CX_Mouse::PRESSED) {
 		_heldMouseButtons.insert(ev.button);
-	} else if (ev.type == CX_Mouse::PRESSED) {
+	} else if (ev.type == CX_Mouse::RELEASED) {
 		_heldMouseButtons.erase(ev.button);
 	}
 

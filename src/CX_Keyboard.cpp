@@ -176,7 +176,7 @@ type.
 void CX_Keyboard::appendEvent(CX_Keyboard::Event ev) {
 	if (ev.type == CX_Keyboard::PRESSED) {
 		_heldKeys.insert(ev.key);
-	} else if (ev.type == CX_Keyboard::PRESSED) {
+	} else if (ev.type == CX_Keyboard::RELEASED) {
 		_heldKeys.erase(ev.key);
 	}
 
