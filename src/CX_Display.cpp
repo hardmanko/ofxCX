@@ -419,6 +419,17 @@ bool CX_Display::isFullscreen(void) {
 	return (ofGetWindowMode() == OF_FULLSCREEN);
 }
 
+/*! Minimizes or restores the window, depending on the value of `minimize`. 
+\param minimize. If `true`, the window will be minimized. If `false`, the window will be restored.
+*/
+void CX_Display::setMinimized(bool minimize) {
+	if (minimize) {
+		glfwIconifyWindow(Private::glfwContext);
+	} else {
+		glfwRestoreWindow(Private::glfwContext);
+	}
+}
+
 /*! Sets whether the display is using hardware VSync to control frame presentation.
 Without some form of Vsync, vertical tearing may occur.
 \param b If `true`, hardware VSync will be enabled in the video card driver. If `false`, it will be disabled.

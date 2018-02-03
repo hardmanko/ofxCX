@@ -46,8 +46,12 @@ namespace CX {
 
 		void setFullscreen(bool fullscreen);
 		bool isFullscreen(void);
+		void setMinimized(bool minimize);
+
 		void useHardwareVSync(bool b);
 		void useSoftwareVSync(bool b);
+
+		
 
 		void beginDrawingToBackBuffer(void);
 		void endDrawingToBackBuffer(void);
