@@ -69,5 +69,23 @@ namespace Private {
 	}
 #endif
 
-}
-}
+	// For when you want to use a shared_ptr properly.
+	// Used like:
+	// shared_ptr<T> ptr = managePtr(new T());
+	template <typename T>
+	std::shared_ptr<T> managePtr(T* ptr) {
+		return std::shared_ptr<T>(ptr);
+	}
+
+	// For when you want to use a shared_ptr improperly.
+	// Used like:
+	// T t; // somewhere
+	// shared_ptr<T> ptr = wrapPtr<T>(&t);
+	template <typename T>
+	std::shared_ptr<T> wrapPtr(T* ptr) {
+		auto nopDeleter = [](T* x) { return; };
+		return std::shared_ptr<T>(ptr, nopDeleter);
+	}
+
+} // namespace Private
+} // namespace CX
