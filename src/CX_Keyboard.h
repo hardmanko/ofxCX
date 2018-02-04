@@ -260,6 +260,11 @@ namespace CX {
 
 		void appendEvent(CX_Keyboard::Event ev);
 
+		void addShortcut(std::string name, const std::vector<int>& chord, std::function<void(void)> callback);
+		void removeShortcut(std::string name);
+		void clearShortcuts(void);
+		std::vector<std::string> getShortcutNames(void) const;
+
 	private:
 		friend class CX_InputManager;
 
@@ -277,8 +282,16 @@ namespace CX {
 		void _keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a);
 		void _keyEventHandler(CX_Keyboard::Event &a);
 
-		void _listenForEvents (bool listen);
+		void _listenForEvents(bool listen);
 		bool _listeningForEvents;
+
+		struct KeyboardShortcut {
+			std::set<int> chord;
+			std::function<void(void)> callback;
+		};
+
+		std::map<std::string, KeyboardShortcut> _shortcuts;
+		void _checkForShortcuts(void);
 
 	};
 

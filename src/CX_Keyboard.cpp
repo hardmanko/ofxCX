@@ -269,9 +269,105 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 		break;
 	}
 
+	_checkForShortcuts();
+
 	_keyEvents.push_back(ev);
 }
 
+/*! Add a keyboard shortcut chord (1 or more keys held at once) and the function that will be called
+when the shortcut is held. The shortcuts require that exactly the desired keys are held. No other keys
+may be held.
+
+Keyboard shortcuts are checked for every time `CX_InputManager::pollEvents()` is called. This means
+that you can set up keyboard shortcuts that work the same way throughout the whole experiment once,
+and because the shortcuts are set up, you won't have to check for the shortcuts in each section of code
+in which input is awaited on. You just need to regularly call `Input.pollEvents()` in your code.
+Given that much of the duration of experiment code waits
+
+By default, CX is set up to use the shortcut left-alt + tab to toggle the fullscreen state of the display.
+This is because alt-tab doesn't automatically disable fullscreen windows in openFrameworks or GLFW right
+now (Feb 2018) for some reason (I think it used to).
+
+\param name The name of the shortcut. Each shortcut must have a unique name.
+\param chord A vector of keys that must be simultaneously held (and no other keys may be held) to trigger the shortcut.
+\param callback A function that takes and returns `void`.
+
+\note The keyboard is automatically enabled.
+
+\code{.cpp}
+
+void helloWorld(void) {
+	Log.notice() << "Hello, world!";
+	Log.flush();
+}
+
+void toggleFullscreen(void) {
+	Disp.setFullscreen(!Disp.isFullscreen());
+}
+
+void runExperiment(void) {
+	Input.Keyboard.enable(true);
+
+	Input.Keyboard.addShortcut("helloWorld", { CX::Keycode::LEFT_CTRL, 'H' }, helloWorld);
+
+	Input.Keyboard.addShortcut("toggleFullscreen", { CX::Keycode::LEFT_CTRL, 'T' }, toggleFullscreen);
+
+	
+	bool looping = true;
+	auto endLoop = [&]() {
+		looping = false;
+	};
+
+	Input.Keyboard.addShortcut("quit", { CX::Keycode::LEFT_CTRL, 'Q' }, endLoop);
+
+	while (looping) {
+		Input.pollEvents();
+	}
+
+}
+
+\endcode
+*/
+void CX_Keyboard::addShortcut(std::string name, const std::vector<int>& chord, std::function<void(void)> callback) {
+	this->enable(true); // Automatically enable keyboard
+
+	KeyboardShortcut ks;
+	ks.chord.insert(chord.begin(), chord.end());
+	ks.callback = callback;
+
+	_shortcuts[name] = ks;
+}
+
+/*! Removes a shortcut by name.
+\param name The name of the shortcut.
+*/
+void CX_Keyboard::removeShortcut(std::string name) {
+	_shortcuts.erase(name);
+}
+
+/*! Clears all stored keyboard shortcuts. */
+void CX_Keyboard::clearShortcuts(void) {
+	_shortcuts.clear();
+}
+
+/*! Get a vector of the names of shortcuts.
+\return A vector of shortcut names.
+*/
+std::vector<std::string> CX_Keyboard::getShortcutNames(void) const {
+	std::vector<std::string> names;
+	for (auto& it : _shortcuts) {
+		names.push_back(it.first);
+	}
+	return names;
+}
+
+void CX_Keyboard::_checkForShortcuts(void) {
+	for (const std::pair<std::string, KeyboardShortcut>& ks : _shortcuts) {
+		if (ks.second.chord == _heldKeys) {
+			ks.second.callback();
+		}
+	}
+}
 
 
 static const std::string dlm = ", ";
