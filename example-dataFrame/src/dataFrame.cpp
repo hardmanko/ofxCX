@@ -16,7 +16,7 @@ own types (classes, structs) with CX_DataFrame in a way that will allow you to e
 the data frame.
 */
 
-void runExperiment (void) {
+void runExperiment(void) {
 
 	//The CX_DataFrame that will be used for much of this example
 	CX_DataFrame df;
@@ -28,7 +28,7 @@ void runExperiment (void) {
 	df("double", 1) = 1.5; //Second row, same column...
 
 	//You don't have to start with the first (0th) row because CX_DataFrames are dynamically resized.
-	df("dwellings", 1) = "house"; 
+	df("dwellings", 1) = "house";
 
 	//You can easily store vectors of data.
 	df("vect", 0) = CX::Util::sequence<int>(1, 3, 1); //Store the vector {1, 2, 3}
@@ -42,20 +42,27 @@ void runExperiment (void) {
 
 	//Once stuff has been put into the data frame, you can extract it out again
 	double d = df("double", 0); //The type is implicitly converted during extraction as long as you are assigning the value to something.
-	
+
 	//In this case, a warning will be generated because the input data was a double, but the extracted value was an int.
 	int whoops = df("double", 1);
 
-	vector<int> intVector = df("vect", 1); //You can extract vectors easily.
+	//You can extract vectors easily.
+	vector<int> intVector = df("vect", 1);
 
 	//The one thing that is tricky to extract are strings, which require a function call to be extracted
 	string house = df("dwellings", 1).toString(); //which is ironic, given that the data is stored as a string internally...
-	
+
+	//To explicitly extract a particular type of data, use to<T>()
+	double explicitDouble = df("double", 2).to<double>();
+
+	//For vectors of data, use toVector<T>(). If the cell contains a scalar, toVector will return a 1-length vector.
+	vector<int> explicitVector = df("vect", 0).toVector<int>();
+
 	//You can see that what comes out looks like what went in (with the exception of the double that was converted to an int):
-	cout << endl << "Some selected data: " << endl << 
-		d << endl << 
-		whoops << endl << 
-		house << endl << 
+	cout << endl << "Some selected data: " << endl <<
+		d << endl <<
+		whoops << endl <<
+		house << endl <<
 		CX::Util::vectorToString(intVector, ";") << endl << endl;
 
 	Log.flush();
@@ -66,7 +73,7 @@ void runExperiment (void) {
 	CX_DataFrameRow newRow;
 	newRow["dwellings"] = "wigwam"; //With a CX_DataFrameRow, you access the columns with operator[].
 	newRow["double"] = -200;
-	//Notice that the "vect" column is missing. This is fine, it will just have an empty cell.
+	//Notice that the "vect" column is missing in this row. This is fine, it will just have an empty cell.
 	df.appendRow(newRow);
 
 	cout << endl << "With a row appended: " << endl << df.print("\t") << endl; //Print again, this time with a tab delimiter
@@ -77,7 +84,7 @@ void runExperiment (void) {
 	//If instead you would like to get an exception telling you that you are out of bounds and 
 	//no newly-created cell, use CX_DataFrame::at().
 	try {
-		double d = df.at("moo", 2);
+		double moo2 = df.at("moo", 2);
 	} catch (std::out_of_range& e) {
 		cout << "Exception caught: " << e.what() << endl;
 		Log.flush();
@@ -93,17 +100,24 @@ void runExperiment (void) {
 	oOpt.vectorEncloser = "\""; //This example uses double-quote around vector elements.
 
 	//Only print these two columns
-	oOpt.columnsToPrint.insert("dwellings");
-	oOpt.columnsToPrint.insert("vect");
+	oOpt.columnsToPrint.push_back("dwellings");
+	oOpt.columnsToPrint.push_back("vect");
 
 	//Only print rows 0 and 1.
-	oOpt.rowsToPrint = Util::intVector<CX_DataFrame::rowIndex_t>(0, 1);
+	oOpt.rowsToPrint = { 0, 1 };
 
-	cout << endl << "Only selected rows and columns: " << endl << df.print(oOpt); 
+	cout << endl << "Only selected rows and columns: " << endl << df.print(oOpt);
 
 
-	//If you want to iterate over the contents of the data frame, use df.getColumnNames() and df.getRowCount() to get the
+	//If you want to iterate over the contents of the data frame, use getColumnNames() and getRowCount() to get the
 	//the information needed. Rows in a CX_DataFrame are always numbered starting from 0.
+	for (std::string& col : df.getColumnNames()) {
+		for (unsigned int i = 0; i < df.getRowCount(); i++) {
+			// Do something...
+
+			//df(col, i).clear();
+		}
+	}
 
 
 	vector<double> dVect = df.copyColumn<double>("double"); //You can copy the data in a column out of the data frame, as long as you
@@ -135,7 +149,8 @@ void runExperiment (void) {
 	df = read.delim("[somewhere]/myDataFrame.txt", sep="\t")
 
 	You should have the same data in R that you had in CX. 
-	Note, however, that R data frames can't store vectors in a single cell like CX_DataFrame can. See CX_DataFrame::convertAllVectorColumnsToMultipleColumns().
+	Note, however, that R data frames can't store vectors in a single cell like CX_DataFrame can. 
+	See CX_DataFrame::convertAllVectorColumnsToMultipleColumns() to flatten the vectors into multiple columns.
 	You can read the data into Excel as well, by reading it in as a delimited file (or dragging and dropping).
 
 	Let's print to data frame to a file so that you can experiment with it.
@@ -151,18 +166,15 @@ void runExperiment (void) {
 
 	//You can copy rows from a data frame into a new data frame. You can specify which rows
 	//to copy and the order in which they are copied.
-	//Start by copying rows 2, 1, and 0.
-	vector<CX_DataFrame::rowIndex_t> copyOrder = CX::Util::intVector<CX_DataFrame::rowIndex_t>(2, 0);
-	copyOrder.push_back(1); //You can even copy the same row multiple times. Copy row 1 twice.
+	// Copy rows 2, 1, 0, and 1 (copying row 1 twice).
+	vector<CX_DataFrame::rowIndex_t> copyOrder = { 2, 1, 0, 1 };
 	CX_DataFrame copyDf = df.copyRows(copyOrder);
 
 	cout << endl << "Copy of the read in data frame: " << endl << copyDf.print() << endl;
 
 	//You can also copy columns out into a new data frame. Unlike rows, you cannot copy the same column multiple times
 	//because then more than one column would have the same name.
-	vector<string> columns;
-	columns.push_back("dwellings");
-	columns.push_back("double");
+	vector<string> columns = { "dwellings", "double" };
 	CX_DataFrame cols = df.copyColumns(columns);
 
 	Log.flush(); //Check to see if any errors occured during the running of this example.
