@@ -154,19 +154,18 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 
 
 /*! Checks whether the given key chord is held, i.e. all of the keys in `chord` are held simultaneously.
-\return `false` if `chord` is empty or if not all of the keys in `chord` are held. `true` if all of
-the keys in `chord` are held.
+This is an exact test: No extraneous keys may be held.
+\return Retruns `false` if `chord` is empty or if not all of the keys in `chord` are held. 
+Returns `true` if all of the keys in `chord` are held and no additional keys are held.
 */
 bool CX_Keyboard::isChordHeld(const std::vector<int>& chord) const {
 	if (chord.empty()) {
 		return false;
 	}
 
-	bool allHeld = true;
-	for (int key : chord) {
-		allHeld = allHeld && isKeyHeld(key);
-	}
-	return allHeld;
+	std::set<int> chordSet(chord.begin(), chord.end());
+
+	return chordSet == _heldKeys;
 }
 
 /*! Appends a keyboard event to the event queue without any modification
