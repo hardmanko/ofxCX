@@ -44,13 +44,13 @@ namespace CX {
 
 		std::string toString(void) const;
 
-		//! Returns a copy of the stored data converted to bool. Equivalent to to<bool>().
+		//! Returns a copy of the stored data converted to bool. Equivalent to `to<bool>()`.
 		bool toBool(void) const { return this->to<bool>(); };
 
-		//! Returns a copy of the stored data converted to int. Equivalent to to<int>().
+		//! Returns a copy of the stored data converted to int. Equivalent to `to<int>()`.
 		int toInt(void) const { return this->to<int>(); };
 
-		//! Returns a copy of the stored data converted to double. Equivalent to to<double>().
+		//! Returns a copy of the stored data converted to double. Equivalent to `to<double>()`.
 		double toDouble(void) const { return this->to<double>(); };
 
 		template <typename T> std::vector<T> toVector(bool log = true) const;
@@ -60,6 +60,7 @@ namespace CX {
 
 		void copyCellTo(CX_DataFrameCell* targetCell) const;
 
+		template <typename T> void setStoredType(void);
 		std::string getStoredType(void) const;
 		void deleteStoredType(void);
 
@@ -78,10 +79,8 @@ namespace CX {
 		std::shared_ptr<bool> _ignoreStoredType;
 		//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
 
-		template <typename T>
-		std::string _toString(const T& value) {
-			return ofToString<T>(value, CX_DataFrameCell::getFloatingPointPrecision());
-		}
+		template <typename T> static std::string _toString(const T& value);
+		template <typename T> static T _fromString(const std::string& str);
 
 		void _allocatePointers(void);
 
@@ -144,7 +143,8 @@ namespace CX {
 		}
 
 		if (log && (_data->size() > 1)) {
-			CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
+			CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. "
+				"Only the first value of the vector will be returned.";
 		}
 
 		std::string typeName = typeid(T).name();
@@ -153,7 +153,7 @@ namespace CX {
 				" Inserted type was \"" << *_type << "\" and extracted type was \"" << typeName << "\".";
 		}
 
-		return ofFromString<T>(_data->at(0));
+		return _fromString<T>(_data->at(0));
 	}
 
 	/*! Returns a copy of the contents of the cell converted to a vector of the given type. If the type
@@ -173,7 +173,7 @@ namespace CX {
 
 		std::vector<T> values;
 		for (unsigned int i = 0; i < _data->size(); i++) {
-			values.push_back(ofFromString<T>((*_data)[i]));
+			values.push_back(_fromString<T>((*_data)[i]));
 		}
 		return values;
 	}
@@ -188,8 +188,7 @@ namespace CX {
 		for (unsigned int i = 0; i < values.size(); i++) {
 			_data->push_back(_toString<T>(values[i]));
 		}
-
-		*_type = typeid(T).name();
+		this->setStoredType<T>();
 		*_ignoreStoredType = false;
 	}
 
@@ -198,10 +197,36 @@ namespace CX {
 	\tparam <T> The type to store the value as. If T is not specified, this function is essentially equivalent to using operator=.
 	\param value The value to store.
 	*/
-	template <typename T> void CX_DataFrameCell::store(const T& value) {
+	template <typename T> 
+	void CX_DataFrameCell::store(const T& value) {
 		_data->clear();
 		_data->push_back(_toString<T>(value));
 
+		this->setStoredType<T>();
+		*_ignoreStoredType = false;
+	}
+
+	/*! \brief Convert from T to string. */
+	template <typename T>
+	static std::string CX_DataFrameCell::_toString(const T& value) {
+		std::ostringstream os;
+		os << std::fixed << std::setprecision(CX_DataFrameCell::getFloatingPointPrecision()) << value;
+		return os.str();
+	}
+
+	/*! \brief Convert from string to T. */
+	template <typename T>
+	static T CX_DataFrameCell::_fromString(const std::string& str) {
+		std::stringstream is;
+		is << str;
+		T val;
+		is >> val;
+		return val;
+	}
+
+	/*! \brief Sets the type of data stored by the cell to T. This doesn't convert the contents, it just sets metadata. */
+	template <typename T> 
+	void CX_DataFrameCell::setStoredType(void) {
 		*_type = typeid(T).name();
 		*_ignoreStoredType = false;
 	}

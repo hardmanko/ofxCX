@@ -68,7 +68,7 @@ public:
 
 		bool printRowNumbers; //!< If `true`, a column of row numbers will be printed. The column will be named "rowNumber". Defaults to `true`.
 		std::vector<rowIndex_t> rowsToPrint; //!< The indices of the rows that should be printed. If the vector has size 0, all rows will be printed.
-		std::set<std::string> columnsToPrint; //!< The names of the columns that should be printed. If the set has size 0, all columns will be printed.
+		std::vector<std::string> columnsToPrint; //!< The names of the columns that should be printed. If the vector has size 0, all columns will be printed.
 	};
 
 	/*! Options for the format of data that are input to a CX_DataFrame. */
@@ -76,14 +76,13 @@ public:
 
 
 	CX_DataFrame(void);
+	CX_DataFrame(const CX_DataFrame& df);
+	CX_DataFrame(CX_DataFrame&& df);
 
 	CX_DataFrame& operator=(const CX_DataFrame& df);
+	CX_DataFrame& operator=(CX_DataFrame&& df);
 
 	void append(CX_DataFrame df);
-
-	CX_DataFrameRow copyRow(rowIndex_t row) const;
-	CX_DataFrame copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const;
-	CX_DataFrame copyColumns(std::vector<std::string> columns);
 
 	void clear(void);
 
@@ -105,6 +104,9 @@ public:
 	void setRowCount(rowIndex_t rowCount);
 	rowIndex_t getRowCount(void) const;
 
+	CX_DataFrameRow copyRow(rowIndex_t row) const;
+	CX_DataFrame copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const;
+
 	bool reorderRows(const vector<CX_DataFrame::rowIndex_t>& newOrder);
 
 	void shuffleRows(void);
@@ -112,11 +114,17 @@ public:
 
 
 	//Column operations
-	void addColumn(std::string columnName);
+	//template <typename T> bool addColumn(std::string columnName);
+
+	bool addColumn(std::string columnName);
 	bool deleteColumn(std::string columnName);
 
 	std::vector<std::string> getColumnNames(void) const;
 	bool columnExists(std::string columnName) const;
+
+	//std::vector<CX_DataFrameCell>& getColumnReference(std::string columnName);
+
+	CX_DataFrame copyColumns(std::vector<std::string> columns);
 	
 	CX_DataFrameColumn operator[] (std::string column);
 	template <typename T> std::vector<T> copyColumn(std::string column) const;
@@ -129,15 +137,15 @@ public:
 
 	//Data IO
 	std::string print(std::string delimiter = "\t", bool printRowNumbers = false) const;
-	std::string print(const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::vector<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	std::string print(const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::vector<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(OutputOptions oOpt) const;
 
 	bool printToFile(std::string filename, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	bool printToFile(std::string filename, const std::set<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::vector<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	bool printToFile(std::string filename, const std::set<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::vector<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	bool printToFile(std::string filename, OutputOptions oOpt) const;
 
 	bool readFromFile(std::string filename, InputOptions iOpt);
@@ -148,16 +156,39 @@ private:
 	friend class CX_DataFrameRow;
 	friend class CX_DataFrameColumn;
 
-	std::map <std::string, std::vector<CX_DataFrameCell>> _data;
+	std::map<std::string, std::vector<CX_DataFrameCell>> _data;
+	std::vector<std::string> _orderToName;
+
 	rowIndex_t _rowCount;
-	IoOptions _ioOptions;
 
 	void _resizeToFit(std::string column, rowIndex_t row);
 	void _resizeToFit(rowIndex_t row);
 	void _resizeToFit(std::string column);
 
-	void _equalizeRowLengths (void);
+	void _equalizeRowLengths(void);
+
+	bool _tryAddColumn(std::string column, bool setRowCount);
+
+	void _duplicate(CX_DataFrame* target) const;
+
+
+	static std::vector< std::vector<std::string> > _fileLineToVectors(std::string line, CX_DataFrame::InputOptions opt);
 };
+
+/*
+template <typename T> 
+bool CX_DataFrame::addColumn(std::string columnName) {
+	if (!addColumn(columnName)) {
+		return false;
+	}
+
+	for (rowIndex_t row = 0; row < getRowCount(); row++) {
+		_data.at(columnName).at(row).setStoredType<T>();
+	}
+	
+	return false;
+}
+*/
 
 /*! Makes a copy of the data contained in the named column, converting it to the specified type
 (such a conversion must be possible).
@@ -170,9 +201,9 @@ Use CX::CX_DataFrame::copyVectorColumn() to get all of the elements of each cell
 \return A vector containing the copied data. */
 template <typename T> 
 std::vector<T> CX_DataFrame::copyColumn(std::string column) const {
-	//_resizeToFit(column);
+
 	std::vector<T> rval;
-	if (_data.find(column) == _data.end()) {
+	if (!columnExists(column)) {
 		CX::Instances::Log.error("CX_DataFrame") << "copyColumn() given a nonexistent column name.";
 		return rval;
 	}
@@ -267,8 +298,11 @@ private:
 	CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::rowIndex_t rowNumber);
 
 	CX_DataFrame *_df;
-	std::map<std::string, CX_DataFrameCell> _data;
 	CX_DataFrame::rowIndex_t _rowNumber;
+
+	std::map<std::string, CX_DataFrameCell> _data;
+	std::vector<std::string> _orderToName;
+	
 };
 
 }

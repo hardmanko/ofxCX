@@ -8,7 +8,7 @@ unsigned int CX_DataFrameCell::_floatingPointPrecision = std::numeric_limits<dou
 This value will be used for all `CX_DataFrameCell`s. Changing this value after storing data will
 not change the precision of the stored data.
 
-Defaults to `std::numeric_limits<double>::max_digits10` significant digits. To quote cppreference.com,
+Defaults to std::numeric_limits<double>::max_digits10 significant digits. To quote cppreference.com,
 "The value of std::numeric_limits<T>::max_digits10 is the number of base-10 digits that are necessary to
 uniquely represent all distinct values of the type T, such as necessary for serialization/deserialization to text."
 That is to say, the default value is sufficient for lossless conversion between a double precision float
@@ -25,6 +25,8 @@ unsigned int CX_DataFrameCell::getFloatingPointPrecision(void) {
 	return _floatingPointPrecision;
 }
 
+
+
 CX_DataFrameCell::CX_DataFrameCell(void) {
 	_allocatePointers();
 	*_type = "NULL";
@@ -35,20 +37,19 @@ CX_DataFrameCell::CX_DataFrameCell(const char* c) {
 	_allocatePointers();
 
 	this->store<const char*>(c);
-	*_type = typeid(std::string).name(); //override the type information with the type of std::string.
+	this->setStoredType<std::string>(); //override the type information with the type of std::string.
 }
 
 void CX_DataFrameCell::_allocatePointers(void) {
-	_data = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>);
-	_type = std::shared_ptr<std::string>(new std::string);
-	_ignoreStoredType = std::shared_ptr<bool>(new bool);
+	_data = std::make_shared<std::vector<std::string>>();
+	_type = std::make_shared<std::string>();
+	_ignoreStoredType = std::make_shared<bool>(true);
 }
 
 /*! Assigns a string literal to the cell, treating it's type as the same as a `std::string`. */
-CX_DataFrameCell& CX_DataFrameCell::operator= (const char* c) {
-	//*_str = c;
+CX_DataFrameCell& CX_DataFrameCell::operator=(const char* c) {
 	this->store<const char*>(c);
-	*_type = typeid(std::string).name();
+	this->setStoredType<std::string>();
 	return *this;
 }
 
@@ -95,22 +96,6 @@ void CX_DataFrameCell::copyCellTo(CX_DataFrameCell* targetCell) const {
 	*targetCell->_ignoreStoredType = *this->_ignoreStoredType;
 }
 
-/*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
-\return A copy of the stored data encoded as a string. */
-template<> std::string CX_DataFrameCell::to(bool log) const {
-	if (_data->size() == 0) {
-		if (log) {
-			CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
-		}
-		return std::string();
-	}
-
-	if (log && (_data->size() > 1)) {
-		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
-	}
-
-	return _data->at(0);
-}
 
 /*! \brief Equivalent to a call to to<string>(). */
 std::string CX_DataFrameCell::toString(void) const {
@@ -133,8 +118,25 @@ void CX_DataFrameCell::clear(void) {
 	this->deleteStoredType();
 }
 
+/*! Equivalent to a call to toString(). This is specialized because it skips the type checks of to<T>.
+\return A copy of the stored data encoded as a string. */
+template<> std::string CX_DataFrameCell::to(bool log) const {
+	if (_data->size() == 0) {
+		if (log) {
+			CX::Instances::Log.error("CX_DataFrameCell") << "to(): No data to extract from cell.";
+		}
+		return std::string();
+	}
+
+	if (log && (_data->size() > 1)) {
+		CX::Instances::Log.warning("CX_DataFrameCell") << "to(): Attempt to extract a scalar when the stored data was a vector. Only the first value of the vector will be returned.";
+	}
+
+	return _data->at(0);
+}
+
 /*! Converts the contents of the CX_DataFrame cell to a vector of strings. */
-template<> std::vector< std::string > CX_DataFrameCell::toVector(bool log) const {
+template<> std::vector<std::string> CX_DataFrameCell::toVector(bool log) const {
 
 	//But why is an empty vector an error? An empty scalar can be thought of as an error, but an empty vector should be fine.
 	if (log && (_data->size() == 0)) {
