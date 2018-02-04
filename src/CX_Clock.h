@@ -5,9 +5,9 @@
 #include <chrono>
 #include <istream>
 #include <ostream>
-#include <sstream>
 #include <thread>
 #include <type_traits>
+#include <memory>
 
 #include "Poco/DateTimeFormatter.h"
 
@@ -43,9 +43,6 @@ namespace CX {
 		};
 
 		CX_Clock(void);
-		~CX_Clock(void);
-
-		void setImplementation(CX_BaseClockInterface* impl);
 
 		PrecisionTestResults precisionTest(unsigned int iterations);
 
@@ -59,11 +56,12 @@ namespace CX {
 		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 		static std::string getDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
 
-	private:
-		Poco::LocalDateTime* _pocoExperimentStart;
+		void setImplementation(CX_BaseClockInterface* impl);
 
-		CX_BaseClockInterface* _impl;
-		bool _implSelfAllocated;
+	private:
+		std::unique_ptr<Poco::LocalDateTime> _pocoExperimentStart;
+
+		std::shared_ptr<CX_BaseClockInterface> _impl;
 	};
 
 	namespace Instances {
@@ -121,9 +119,7 @@ namespace CX {
 		}
 
 		std::string getName(void) override {
-			std::stringstream s;
-			s << "CX_StdClockWrapper<" << typeid(stdClock).name() << ">";
-			return s.str();
+			return "CX_StdClockWrapper<" + (std::string)typeid(stdClock).name() + ">";
 		}
 
 	private:

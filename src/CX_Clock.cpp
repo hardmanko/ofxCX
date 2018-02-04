@@ -2,23 +2,17 @@
 
 #include "ofUtils.cpp" //for whatever reason, the function I need (ofGetMonotonicTime) is not in the header, only in the .cpp
 
+#include "CX_Private.h"
+
 #define CX_NANOS_PER_SECOND 1000000000LL
 
 namespace CX {
 
 CX_Clock CX::Instances::Clock;
 
-CX_Clock::CX_Clock (void) {
+CX_Clock::CX_Clock(void) {
 
-#if defined(TARGET_WIN32) && OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8
-	//On windows for oF 0.8.x, use the custom clock. Elsewhere, the precision is good enough with std::chrono::high_resolution_clock.
-	_impl = new CX::CX_WIN32_PerformanceCounterClock();
-#else
-	_impl = new CX::CX_StdClockWrapper<std::chrono::high_resolution_clock>();
-#endif
-	_implSelfAllocated = true;
-
-	_pocoExperimentStart = (Poco::LocalDateTime*)(::operator new(sizeof(Poco::LocalDateTime)));
+	_impl = std::make_shared<CX_StdClockWrapper<std::chrono::high_resolution_clock>>();
 
 #if defined(TARGET_OSX)
 	//You can't construct a Poco::LocalDateTime at construction time on OSX, so just reset the impl start time.
@@ -27,13 +21,6 @@ CX_Clock::CX_Clock (void) {
 	resetExperimentStartTime();
 #endif
 
-}
-
-CX_Clock::~CX_Clock(void) {
-	delete _pocoExperimentStart;
-	if (_implSelfAllocated) {
-		delete _impl;
-	}
 }
 
 /*! This function tests the precision of the clock used by CX. The results are computer-specific. 
@@ -81,7 +68,7 @@ CX_Clock::PrecisionTestResults CX_Clock::precisionTest(unsigned int iterations) 
 
 	PrecisionTestResults res;
 
-	std::stringstream ss;
+	std::ostringstream ss;
 	ss << iterations << " iterations of a clock precision test gave the following results: \n" <<
 		"Minimum nonzero time step: " << minNonzeroDuration << " ns" << endl <<
 		"Smallest time step: " << minDuration << " ns" << endl <<
@@ -114,11 +101,9 @@ You can also write your own low level clock that implements CX_BaseClockInterfac
 reset the experiment start time date/time string.
 */
 void CX_Clock::setImplementation(CX::CX_BaseClockInterface* impl) {
-	if (_implSelfAllocated) {
-		_implSelfAllocated = false;
-		delete _impl;
-	}
-	_impl = impl;
+
+	_impl = Private::wrapPtr(impl);
+
 	_impl->resetStartTime();
 }
 
@@ -128,7 +113,7 @@ will count up from 0 starting from when this function was called.
 This function also resets the experiment start date/time retrieved with getExperimentStartDateTimeString().
 */
 void CX_Clock::resetExperimentStartTime(void) {
-	*_pocoExperimentStart = Poco::LocalDateTime();
+	_pocoExperimentStart = std::make_unique<Poco::LocalDateTime>();
 	if (_impl) {
 		_impl->resetStartTime();
 	}
@@ -195,6 +180,7 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+
 cxTick_t CX_ofMonotonicTimeClock::nanos(void) {
 	uint64_t seconds;
 	uint64_t nanos;
