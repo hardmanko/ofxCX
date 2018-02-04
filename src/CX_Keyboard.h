@@ -184,7 +184,10 @@ namespace CX {
 
 			/*! The openFrameworks keycode.
 			The value of this can be compared with character literals for many of the standard keyboard keys.
-			The value depends on the modifier keys.
+			Use uppercase letters; i.e. for the A key, use `'A'`.
+
+			The value depends on the modifier keys. This means that, for example, the number row keys
+			produce different values depending on whether shift is held.
 
 			For special keys, this can be compared with the key constant values defined in ofConstants.h (e.g. `OF_KEY_ESC`).
 
@@ -198,8 +201,8 @@ namespace CX {
 			This works the same way for all of the modifier keys. */
 			int oF;
 
-			/*! The GLFW keycode. These can be compared to the constants defined here:
-			http://www.glfw.org/docs/latest/group__keys.html. This value does not depend on modifier keys.
+			/*! The GLFW keycode. These can be compared to the constants found in the CX::Keycode namespace.
+			See also: http://www.glfw.org/docs/latest/group__keys.html. This value does not depend on modifier keys.
 			Like \ref oF, the value of this can be compared	with character literals for	a lot of the standard 
 			keys (letters are uppercase). */
 			int glfw;
@@ -226,6 +229,8 @@ namespace CX {
 			shift is held.
 
 			For special keys, this value can be compared to the values in the CX::Keycode enum.
+
+			This is currently set to the same value as `codes.glfw` (see \ref CX_Keyboard::Keycodes::glfw).
 			*/
 			int key;
 
@@ -241,7 +246,7 @@ namespace CX {
 		};
 
 		// Private constructor
-		~CX_Keyboard (void);
+		~CX_Keyboard(void);
 
 		void enable(bool enable);
 		bool enabled(void);

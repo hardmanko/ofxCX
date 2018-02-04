@@ -247,6 +247,9 @@ void reopenWindow084(CX_WindowConfiguration config) {
 	}
 	glfwWindowHint(GLFW_VISIBLE, GL_TRUE);
 
+	// shouldn't there be
+	//delete windowP;
+	// here?
 	windowP = new(windowP) CX::Private::CX_AppWindow;
 	////////////////////
 	// End nasty hack //
@@ -323,6 +326,8 @@ bool reopenWindow(CX_WindowConfiguration config) {
 
 /*!
 \def CX_NO_MAIN
+For advanced users who want the customize how CX starts up.
+
 If this preprocessor macro is defined, CX will not produce a `main` function, leaving it up to the user to produce such a function.
 In addition, if `CX_NO_MAIN` is defined, `runExperiment()` will not be declared. This means that you will not need to define
 a `runExperiment()` function.
@@ -333,7 +338,7 @@ A `main` function can be as simple as:
 void main (void) {
 	CX::initializeCX(CX_InitConfiguation());
 
-	runExperiment(); // Or whatever function you use.
+	// Your experiment goes here...
 }
 \endcode
 

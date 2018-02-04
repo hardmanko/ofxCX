@@ -90,8 +90,9 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(int key, bool clear, bool eraseE
 already held at the time this function was called and then released, it will have to be pressed again before this
 function will return. Returns a CX_Keyboard::Event for the key that was waited on, optionally removing that event 
 that caused this function to return from the queue of stored events if `eraseEvent` is `true`.
+
 \param keys A vector of key codes for the keys that will be waited on. If any of the codes are -1, any keypress will
-cause this function to return. Should be character literals or from CX::Keycode.
+cause this function to return. Should be character literals (e.g. 'A', with the single quotes, for the A key) or from CX::Keycode.
 \param clear If `true`, all waiting events will be flushed with CX_InputManager::pollEvents() and then all keyboard events
 will be cleared both before and after waiting for the keypress. If `false` and `this->availableEvents() > 0`, it
 is possible that one of the available events will include a keypress for one of the keys to be waited on, in which 
@@ -101,6 +102,7 @@ The implication of this removal is that the return value of this function is the
 that caused this function to return. The advantage of this approach is that if, after some given key is pressed, all events 
 in the queue are processed, you are guaranteed to not hit the same event twice (once from the return value of this function, 
 once from processing the queue).
+
 \return A CX_Keyboard::Event with information about the keypress that caused this function to return.
 \note If the keyboard is not enabled at the time this function is called, it will be enabled for the
 duration of the function and then disabled at the end of the function.

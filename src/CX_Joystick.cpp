@@ -20,28 +20,36 @@ by calling getJoystickName().
 
 If the set up is successful (i.e. if the selected joystick is present on the system), this
 function will return true. If the joystick is not present, it will return false.
+
+\param joystickIndex The index of the joystick to set up. 
+If `joystickIndex >= 0`, an attempt will be made to set up the joystick at that index. 
+If `joystickIndex < 0`, no attempt will be made to set up the joystick and the joystick will be disabled.
+
+\return `true` if a joystick at the selected index is present, `false` otherwise.
 */
-bool CX_Joystick::setup (int joystickIndex) {
-	if (glfwJoystickPresent(joystickIndex) == GL_TRUE) {
-		_joystickIndex = joystickIndex;
-
-		const char *name = glfwGetJoystickName(_joystickIndex);
-		if (name != NULL) {
-			string s(name);
-			_joystickName = s;
-		}
-
-		int axisCount = 0;
-		glfwGetJoystickAxes(_joystickIndex, &axisCount);
-		_axisPositions.resize(axisCount);
-
-		int buttonCount = 0;
-		glfwGetJoystickButtons(_joystickIndex, &buttonCount);
-		_buttonStates.resize(buttonCount);
-
-		return true;
+bool CX_Joystick::setup(int joystickIndex) {
+	if (glfwJoystickPresent(joystickIndex) == GL_FALSE) {
+		return false;
 	}
-	return false;
+
+	_joystickIndex = joystickIndex;
+
+	const char *name = glfwGetJoystickName(_joystickIndex);
+	if (name != NULL) {
+		std::string s(name);
+		_joystickName = s;
+	}
+
+	int axisCount = 0;
+	glfwGetJoystickAxes(_joystickIndex, &axisCount);
+	_axisPositions.resize(axisCount);
+
+	int buttonCount = 0;
+	glfwGetJoystickButtons(_joystickIndex, &buttonCount);
+	_buttonStates.resize(buttonCount);
+
+	return true;
+
 }
 
 /*! Get the name of the joystick, presumably as set by the joystick driver.

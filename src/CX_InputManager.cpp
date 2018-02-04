@@ -25,7 +25,7 @@ namespace CX {
 	events are cleared.
 	\param useKeyboard Enable or disable the keyboard.
 	\param useMouse Enable or disable the mouse.
-	\param joystickIndex Optional. If >= 0, an attempt will be made to set up the joystick at that index. If < 0, no attempt will
+	\param joystickIndex Optional. If `joystickIndex >= 0`, an attempt will be made to set up the joystick at that index. If `joystickIndex < 0`, no attempt will
 	be made to set up the joystick and the joystick will be disabled.
 	\return `false` if the requested joystick could not be set up correctly, `true` otherwise.
 	*/

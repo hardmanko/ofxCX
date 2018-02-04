@@ -420,7 +420,7 @@ bool CX_Display::isFullscreen(void) {
 }
 
 /*! Minimizes or restores the window, depending on the value of `minimize`. 
-\param minimize. If `true`, the window will be minimized. If `false`, the window will be restored.
+\param minimize If `true`, the window will be minimized. If `false`, the window will be restored.
 */
 void CX_Display::setMinimized(bool minimize) {
 	if (minimize) {
