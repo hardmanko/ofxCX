@@ -15,16 +15,21 @@ CX_Keyboard::~CX_Keyboard(void) {
 	_listenForEvents(false);
 }
 
-/*! Enable or disable the keyboard.
+/*! Enable or disable the keyboard. When enabled or disabled, all stored events will
+be cleared.
 \param enable If `true`, the keyboard will be enabled; if `false` it will be disabled.
 */
 void CX_Keyboard::enable(bool enable) {
+	if (_enabled == enable) {
+		return;
+	}
+
 	_listenForEvents(enable);
 
 	_enabled = enable;
-	if (!enable) {
-		clearEvents();
-	}
+	
+	clearEvents();
+	_heldKeys.clear();
 }
 
 /*! \brief Returns `true` if the keyboard is enabled. */

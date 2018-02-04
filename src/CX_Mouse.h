@@ -92,7 +92,7 @@ namespace CX {
 		bool _enabled;
 		CX_Millis _lastEventPollTime;
 
-		std::set<int> _heldMouseButtons;
+		std::set<int> _heldButtons;
 		std::deque<CX_Mouse::Event> _mouseEvents;
 
 		void _mouseButtonPressedEventHandler (ofMouseEventArgs &a);

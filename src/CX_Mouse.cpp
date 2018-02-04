@@ -20,16 +20,22 @@ CX_Mouse::~CX_Mouse(void) {
 	_listenForEvents(false);
 }
 
-/*! Enable or disable the mouse.
+/*! Enable or disable the mouse. When enabled or disabled, all stored events will
+be cleared.
 \param enable If `true`, the mouse will be enabled; if `false` it will be disabled.
 */
 void CX_Mouse::enable(bool enable) {
+	if (_enabled == enable) {
+		return;
+	}
+
 	_listenForEvents(enable);
 
 	_enabled = enable;
-	if (!enable) {
-		clearEvents();
-	}
+	
+	clearEvents();
+	_heldButtons.clear();
+	
 }
 
 /*! \brief Returns `true` if the mouse is enabled. */
@@ -99,7 +105,7 @@ void CX_Mouse::showCursor(bool show) {
 \param button The index of a button to check for. For the most common named buttons, see the CX_Mouse::Buttons enum.
 \return `true` if the given key is held, `false` otherwise. */
 bool CX_Mouse::isButtonHeld(int button) const {
-	return _heldMouseButtons.find(button) != _heldMouseButtons.end();
+	return _heldButtons.find(button) != _heldButtons.end();
 }
 
 
@@ -189,9 +195,9 @@ type.
 */
 void CX_Mouse::appendEvent(CX_Mouse::Event ev) {
 	if (ev.type == CX_Mouse::PRESSED) {
-		_heldMouseButtons.insert(ev.button);
+		_heldButtons.insert(ev.button);
 	} else if (ev.type == CX_Mouse::RELEASED) {
-		_heldMouseButtons.erase(ev.button);
+		_heldButtons.erase(ev.button);
 	}
 
 	_mouseEvents.push_back(ev);
@@ -267,11 +273,11 @@ void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &ofEvent) {
 	switch (ofEvent.type) {
 	case ofMouseEventArgs::Pressed:
 		ev.type = CX_Mouse::PRESSED;
-		_heldMouseButtons.insert(ofEvent.button);
+		_heldButtons.insert(ofEvent.button);
 		break;
 	case ofMouseEventArgs::Released:
 		ev.type = CX_Mouse::RELEASED;
-		_heldMouseButtons.erase(ofEvent.button);
+		_heldButtons.erase(ofEvent.button);
 		break;
 	case ofMouseEventArgs::Moved:
 		ev.type = CX_Mouse::MOVED;
