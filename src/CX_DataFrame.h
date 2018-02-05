@@ -115,6 +115,7 @@ public:
 
 	//Column operations
 	//template <typename T> bool addColumn(std::string columnName);
+	//template <typename T> bool setColumn(std::string column, const std::vector<CX_DataFrame::rowIndex_t>& rows, const std::vector<T>& vals);
 
 	bool addColumn(std::string columnName);
 	bool deleteColumn(std::string columnName);
@@ -171,8 +172,11 @@ private:
 
 	void _duplicate(CX_DataFrame* target) const;
 
+	static std::vector< std::vector<std::string> > _fileLineToVectors(std::string line, const CX_DataFrame::InputOptions& opt);
+	bool _readFromString(const std::string& dfStr, const CX_DataFrame::InputOptions& opt, std::string callingFunction, std::string filename);
 
-	static std::vector< std::vector<std::string> > _fileLineToVectors(std::string line, CX_DataFrame::InputOptions opt);
+	friend std::ostream& operator<< (std::ostream& os, const CX_DataFrame& df);
+	friend std::istream& operator >> (std::istream& is, CX_DataFrame& df);
 };
 
 /*

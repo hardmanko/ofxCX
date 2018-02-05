@@ -206,7 +206,7 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 			continue;
 		}
 
-		output << endl;
+		output << std::endl; // Headers on first line
 		if (oOpt.printRowNumbers) {
 			output << oOpt.rowsToPrint[i] << oOpt.cellDelimiter;
 		}
@@ -229,7 +229,7 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 			}
 		}
 	}
-	output << endl;
+	output << std::endl;
 
 	return output.str();
 }
@@ -318,102 +318,8 @@ bool CX_DataFrame::readFromFile(std::string filename, std::string cellDelimiter,
 	return readFromFile(filename, iOpt);
 }
 
-/*
-bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
-	filename = ofToDataPath(filename);
-
-	if (!ofFile::doesFileExist(filename)) {
-		Instances::Log.error("CX_DataFrame") << "Attempt to read from file " << filename << " failed: File not found.";
-		return false;
-	}
-
-	ofBuffer file = ofBufferFromFile(filename, false);
-	ofBuffer::Lines ofbLines = file.getLines();
-	std::vector<std::string> lines(ofbLines.begin(), ofbLines.end());
-
-	this->clear();
-
-	std::vector<std::string> headers = ofSplitString(lines.front(), iOpt.cellDelimiter, false, false);
-
-	rowIndex_t rowNumber = 0;
-
-	for (unsigned int lineIndex = 1; lineIndex < lines.size(); lineIndex++) {
-	
-		const std::string& line = lines[lineIndex];
-
-		std::vector<std::string> rowCells;
-		std::vector<bool> isVector;
-		unsigned int cellStart = 0;
-
-		for (size_t i = 0; i < line.size(); i++) {
-
-			bool enclosed = false;
-
-			if ((iOpt.vectorEncloser != "") && (line.substr(i, iOpt.vectorEncloser.size()) == iOpt.vectorEncloser)) {
-				i += iOpt.vectorEncloser.size();
-				for (        ; i < line.size(); i++) {
-					if (line.substr(i, iOpt.vectorEncloser.size()) == iOpt.vectorEncloser) {
-						enclosed = true;
-						break;
-					}
-				}
-			}
-
-			if (line.substr(i, iOpt.cellDelimiter.size()) == iOpt.cellDelimiter) {
-				rowCells.push_back(line.substr(cellStart, i - cellStart));
-				isVector.push_back(enclosed);
-				i += iOpt.cellDelimiter.size() - 1;
-				cellStart = i + 1;
-			}
-
-			if (i == (line.size() - 1)) {
-				rowCells.push_back(line.substr(cellStart, i + 1 - cellStart));
-				isVector.push_back(enclosed);
-			}
-		}
-
-		if (line == "") {
-			Instances::Log.warning("CX_DataFrame") << "readFromFile(): Blank line skipped on line " << (lineIndex + 1) << ".";
-		} else if (rowCells.size() != headers.size()) {
-			Instances::Log.error("CX_DataFrame") << "readFromFile(): Error while loading " << filename <<
-				": The number of columns (" << headers.size() << ") on line " << (lineIndex + 1) << " does not match the number of headers (" << headers.size() << ").";
-
-			this->clear();
-			return false;
-		} else {
-			for (unsigned int i = 0; i < headers.size(); i++) {
-
-				if (isVector[i]) {
-					std::string s = rowCells[i];
-					std::string::size_type first = s.find_first_of(iOpt.vectorEncloser);
-					std::string::size_type last = s.find_last_of(iOpt.vectorEncloser);
-
-					std::vector<std::string> parts;
-					if (first != std::string::npos && last != std::string::npos) {
-						s = s.substr(first + iOpt.vectorEncloser.size(), last - first + iOpt.vectorEncloser.size() - 2);
-						parts = ofSplitString(s, iOpt.vectorElementDelimiter, true, true);
-					} else {
-						//Error: Marked as vector but not within enclosers
-					}
-
-					this->operator()(headers[i], rowNumber) = parts;
-				} else {
-					this->operator()(headers[i], rowNumber) = rowCells[i];
-				}
-				this->operator()(headers[i], rowNumber).deleteStoredType();
-			}
-			rowNumber++;
-		}
-
-	}
-
-	Instances::Log.notice("CX_DataFrame") << "File " << filename << " loaded successfully.";
-	return true;
-}
-*/
-
 /*! Equivalent to a call to readFromFile(string, string, string, string), except that the last three arguments are
-taken from iOpt.
+taken from `iOpt`.
 \param filename The name of the file to read data from. If it is a relative path, the file will be read relative to the data directory.
 \param iOpt Input options, such as the delimiter between cells in the input file.
 */
@@ -428,10 +334,22 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 	this->clear();
 
 	ofBuffer fileBuf = ofBufferFromFile(filename, false);
-	ofBuffer::Lines bufLines = fileBuf.getLines();
-	std::vector<std::string> lines(bufLines.begin(), bufLines.end());
 
-	std::vector<std::string> headers = ofSplitString(lines.front(), iOpt.cellDelimiter, true, true);
+	bool loadSuccess = this->_readFromString(fileBuf.getText(), iOpt, "readFromFile(): ", filename);
+
+	if (loadSuccess) {
+		Instances::Log.notice("CX_DataFrame") << "readFromFile(): File " << filename << " loaded successfully.";
+	}
+	return loadSuccess;
+}
+
+bool CX_DataFrame::_readFromString(const std::string& dfStr, const CX_DataFrame::InputOptions& opt, std::string callingFunction, std::string filename) {
+
+	std::ostringstream endlOss;
+	endlOss << std::endl;
+	std::vector<std::string> lines = ofSplitString(dfStr, endlOss.str(), false, false);
+
+	std::vector<std::string> headers = ofSplitString(lines.front(), opt.cellDelimiter, true, true);
 
 	rowIndex_t rowNumber = 0;
 
@@ -440,36 +358,33 @@ bool CX_DataFrame::readFromFile(std::string filename, InputOptions iOpt) {
 		const std::string& line = lines[lineIndex];
 
 		if (line == "") {
-			Instances::Log.warning("CX_DataFrame") << "readFromFile(): Blank line skipped on line " << (lineIndex + 1) << ".";
+			Instances::Log.warning("CX_DataFrame") << callingFunction << "Blank line skipped on line " << (lineIndex + 1) << ".";
 			continue;
 		}
 
-		std::vector<std::vector<std::string>> cells = CX_DataFrame::_fileLineToVectors(line, iOpt);
+		std::vector<std::vector<std::string>> cells = CX_DataFrame::_fileLineToVectors(line, opt);
 
 		if (cells.size() != headers.size()) {
-			Instances::Log.error("CX_DataFrame") << "readFromFile(): Error while loading " << filename <<
-				": The number of columns (" << cells.size() << ") on line " << (lineIndex + 1) << " does not match the number of headers (" << headers.size() << ").";
+			Instances::Log.error("CX_DataFrame") << callingFunction << "Error while loading " << filename <<
+				": The number of columns (" << cells.size() << ") on line " << (lineIndex + 1) << 
+				" does not match the number of headers (" << headers.size() << ").";
 
 			this->clear();
 			return false;
 		}
 
 		for (unsigned int i = 0; i < cells.size(); i++) {
-
 			this->operator()(rowNumber, headers[i]).storeVector(cells[i]);
 			this->operator()(rowNumber, headers[i]).deleteStoredType();
-
 		}
 
 		rowNumber++;
-
 	}
 
-	Instances::Log.notice("CX_DataFrame") << "File " << filename << " loaded successfully.";
 	return true;
 }
 
-std::vector< std::vector<std::string> > CX_DataFrame::_fileLineToVectors(std::string line, CX_DataFrame::InputOptions opt) {
+std::vector< std::vector<std::string> > CX_DataFrame::_fileLineToVectors(std::string line, const CX_DataFrame::InputOptions& opt) {
 
 	std::vector<std::vector<std::string>> lineParts;
 
@@ -1013,6 +928,23 @@ void CX_DataFrame::_duplicate(CX_DataFrame* target) const {
 			this->_data.at(col)[row].copyCellTo(&target->_data.at(col)[row]);
 		}
 	}
+}
+
+
+std::ostream& operator<< (std::ostream& os, const CX_DataFrame& df) {
+	CX_DataFrame::OutputOptions opt;
+	//os << opt.vectorEncloser;
+	os << df.print(opt);
+	//os << opt.vectorEncloser;
+	return os;
+}
+
+std::istream& operator >> (std::istream& is, CX_DataFrame& df) {
+	// See https://stackoverflow.com/a/3203502
+	std::istreambuf_iterator<char> eoi; // default-constructed istreambuf_iterator is end-of-file (or end of input).
+	std::string dfStr(std::istreambuf_iterator<char>(is), eoi);
+	df._readFromString(dfStr, CX_DataFrame::InputOptions(), "operator>>(): ", "from input stream");
+	return is;
 }
 
 
