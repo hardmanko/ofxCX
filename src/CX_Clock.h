@@ -29,34 +29,51 @@ namespace CX {
 	get timing information is the function now(). It returns the current time relative to the start
 	of the experiment in microseconds.
 
-	An instance of this class is preinstantiated for you. See CX::Instances::Clock.
+	An instance of this class is created for you to use. See CX::Instances::Clock.
 	\ingroup timing
 	*/
 	class CX_Clock {
 	public:
 
-		struct PrecisionTestResults {
-			std::string summaryString;
-			CX_Millis minNonzeroDuration;
-			CX_Millis minDuration;
-			CX_Millis maxDuration;
-		};
-
-		CX_Clock(void);
-
-		PrecisionTestResults precisionTest(unsigned int iterations);
+		bool setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStartTime = true, unsigned int samples = 100000);
 
 		CX_Millis now(void) const;
 
-		void sleep(CX_Millis t);
-		void delay(CX_Millis t);
+		void sleep(CX_Millis t) const;
+		void delay(CX_Millis t) const;
 
 		void resetExperimentStartTime(void);
 
-		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
 		std::string getDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
+		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
 
-		void setImplementation(CX_BaseClockInterface* impl);
+		void setImplementation(std::shared_ptr<CX_BaseClockInterface> impl);
+		std::shared_ptr<CX_BaseClockInterface> getImplementation(void) const;
+
+		/*! Struct containing results for a given clock implementation obtained from `precisionTest()`. */
+		struct PrecisionTestResults {
+			std::string summaryString; //<! A printable summary of the results.
+
+			bool isMonotonic; //!< Whether the clock is monotonic/stable (only moves forward in time at a fixed rate).
+			bool precisionWorseThanMs; //!< Whether the precision of the clock is worse than 1 millisecond.
+
+			std::vector<double> percentiles; //<! The percentiles that were used to get the quantiles.
+
+			struct {
+				CX_Millis mean; //!< The mean intervals.
+				std::vector<CX_Millis> quantiles; //<! Quantiles of the intervals, based on the `percentiles`.
+			} withZeros; //!< Results when intervals of length 0 are included.
+
+			struct {
+				CX_Millis mean; 
+				std::vector<CX_Millis> quantiles; //<! Quantiles of the intervals, based on the `percentiles`.
+			} withoutZeros; //!< Results when intervals of length 0 are excluded.
+
+		};
+
+		static PrecisionTestResults testPrecision(std::shared_ptr<CX_BaseClockInterface> impl, unsigned int samples = 100000, std::vector<double> percentiles = std::vector<double>());
+		static std::pair<std::shared_ptr<CX_BaseClockInterface>, PrecisionTestResults> 
+			chooseBestClockImplementation(unsigned int iterationsPerClock, bool excludeUnstable = true, bool excludeWorseThanMs = true, bool log = true);
 
 	private:
 		std::unique_ptr<Poco::LocalDateTime> _pocoExperimentStart;

@@ -4,107 +4,115 @@
 
 #include "CX_Private.h"
 
-#define CX_NANOS_PER_SECOND 1000000000LL
-
 namespace CX {
 
 CX_Clock CX::Instances::Clock;
 
-CX_Clock::CX_Clock(void) {
+/*! Set up the CX_Clock with the given clock implementation or choose the best available implementation.
 
-	_impl = std::make_shared<CX_StdClockWrapper<std::chrono::high_resolution_clock>>();
+Instances of CX_Clock are not constructed in a usable state. This function must be called before using a
+CX_Clock instance.
 
-#if defined(TARGET_OSX)
-	//You can't construct a Poco::LocalDateTime at construction time on OSX, so just reset the impl start time.
-	_impl->resetStartTime();
-#else
-	resetExperimentStartTime();
-#endif
+\param impl A `shared_ptr` to the clock implementation to use. If `nullptr`, the clock implementation will
+be chosen using `chooseBestClockImplementation()` with various values for `excludeUnstable` and `excludeWorseThanMs`
+until an implementation is chosen.
+\param resetStartTime If `true`, the experiment start time will be reset.
+\param samples Only used if `impl == nullptr`. Passed to the `samples` argument of `chooseBestClockImplementation()`.
 
-}
+\return `true` if setup was successful, `false` otherwise.
 
-/*! This function tests the precision of the clock used by CX. The results are computer-specific. 
-If the precision of the clock is worse than microsecond accuracy, a warning is logged including 
-information about the actual precision of the clock.
-
-Depending on the number of iterations, this function may be blocking. See \ref blockingCode.
-
-\param iterations Number of time duration samples to take. More iterations should give a better
-estimate. 
-\return A CX_Clock::PrecisionTestResults struct containing some information about the precision of the clock.
+\note This function is called for `CX::Instances::Clock` with `impl = nullptr` during CX initialization.
 */
-CX_Clock::PrecisionTestResults CX_Clock::precisionTest(unsigned int iterations) {
-	std::vector<cxTick_t> durations(iterations);
+bool CX_Clock::setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStartTime, unsigned int samples) {
 
-	for (unsigned int i = 0; i < durations.size(); i++) {
-		//Get two timestamps with as little code in between as possible.
-		cxTick_t t1 = _impl->nanos();
-		cxTick_t t2 = _impl->nanos();
+	if (impl == nullptr) {
 
-		durations[i] = t2 - t1;
-	}
+		std::string warning = "";
+		std::string bools = "The chosen clock implementation ";
+		std::string monotonicWF = "is non-monotonic/not steady (may jump forward or back in time)";
+		std::string worseMsWF = "may have precision worse than 1 ms";
 
-	cxTick_t maxDuration = 0;
-	cxTick_t minDuration = std::numeric_limits<cxTick_t>::max();
-	cxTick_t minNonzeroDuration = std::numeric_limits<cxTick_t>::max();
+		auto clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, true, true, false);
 
-	for (unsigned int i = 0; i < durations.size(); i++) {
-
-		cxTick_t duration = durations[i];
-		durations[i] = duration;
-
-		if (duration > maxDuration) {
-			maxDuration = duration;
+		if (clockImpl.first == nullptr) {
+			clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, false, true, false); // drop steady
+			warning = bools + monotonicWF + ". ";
+		}
+		if (clockImpl.first == nullptr) {
+			clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, true, false, false); // drop steady, but keep sub ms
+			warning = bools + worseMsWF + ". ";;
+		}
+		if (clockImpl.first == nullptr) {
+			clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, false, false, false); // exclude nothing
+			warning = bools + monotonicWF + " and " + worseMsWF + ". ";
 		}
 
-		if (duration < minDuration) {
-			minDuration = duration;
+		impl = clockImpl.first;
+
+		CX::Instances::Log.notice("CX_Clock") << "setup(): The argument impl was nullptr, " <<
+			"so the best clock implementation will be chosen from the built-in clock implementations.";
+
+		if (impl == nullptr) {
+			CX::Instances::Log.error("CX_Clock") << "setup(): No clock implementation could be chosen.";
+			return false;
 		}
 
-		if (duration != 0 && duration < minNonzeroDuration) {
-			minNonzeroDuration = duration;
+		CX::Instances::Log.notice("CX_Clock") << "setup(): The chosen implementation is " << impl->getName() << ".";
+
+		if (warning != "") {
+			CX::Instances::Log.warning("CX_Clock") << "setup(): " << warning;
 		}
+
 	}
 
-	PrecisionTestResults res;
+	setImplementation(impl);
 
-	std::ostringstream ss;
-	ss << iterations << " iterations of a clock precision test gave the following results: \n" <<
-		"Minimum nonzero time step: " << minNonzeroDuration << " ns" << endl <<
-		"Smallest time step: " << minDuration << " ns" << endl <<
-		"Largest time step: " << maxDuration << " ns" << endl;
-
-	res.summaryString = ss.str();
-
-	res.minNonzeroDuration = CX_Nanos(minNonzeroDuration);
-	res.minDuration = CX_Nanos(minDuration);
-	res.maxDuration = CX_Nanos(maxDuration);
-
-	if (res.minNonzeroDuration > CX_Millis(1)) {
-		CX::Instances::Log.warning("CX_Clock") << "The precision of the system clock used by CX_Clock appears to be worse than "
-			"millisecond precision. Observed tick period of the system clock is " << res.minNonzeroDuration.millis() << " milliseconds. "
-			"See CX_Clock::setImplementation() for information about using a different clock source than the default one." << std::endl << res.summaryString;
-	} else {
-		CX::Instances::Log.notice("CX_Clock") << "Clock precision test passed: Precision is better than 1 ms.";
+	if (resetStartTime) {
+		resetExperimentStartTime();
 	}
 
-	return res;
+	return true;
 }
 
-/*! Set the underlying clock implementation used by this instance of CX_Clock. You would
-use this function if the default clock implementation used by CX_Clock has insufficient 
-precision on your system. You can use CX::CX_StdClockWrapper to wrap any of the clocks
-from the std::chrono namespace or any clock that conforms to the standard of those clocks.
-You can also write your own low level clock that implements CX_BaseClockInterface.
-\param impl A pointer to an instance of a class implementing CX::CX_BaseClockInterface.
+
+
+/*! Set the underlying clock implementation used by this instance of CX_Clock. 
+
+You would use this function if the clock implementation chosen during setup has insufficient 
+precision on your system. This is unlikely because several clock implementations are checked
+during setup and the best one chosen.
+
+The clock implementations built into CX are `CX_ofMonotonicTimeClock`, 
+`CX_WIN32_PerformanceCounterClock` (Windows only), and `CX_StdClockWrapper`, which wraps
+clocks from the `std::chrono` namespace, including `steady_clock`, `high_resolution_clock`, 
+and `system_clock`.
+You can use any clock that implements CX_BaseClockInterface, including implementing your own 
+clock. 
+
 \note This function resets the experiment start time of `impl`, but does not
 reset the experiment start time date/time string.
+
+\param impl A shared_ptr to a clock implementing `CX_BaseClockInterface` (see example).
+
+\code{.cpp}
+
+// Example with CX_ofMonotonicTimeClock
+auto implA = std::make_shared< CX_ofMonotonicTimeClock >();
+Clock.setImplementation(implA);
+
+// Example using CX_StdClockWrapper with steady_clock as the wrapped standard clock
+auto implB = std::make_shared< CX_StdClockWrapper<std::chrono::steady_clock> >();
+Clock.setImplementation(implB);
+
+\endcode
 */
-void CX_Clock::setImplementation(CX::CX_BaseClockInterface* impl) {
-
-	_impl = Private::wrapPtr(impl);
-
+void CX_Clock::setImplementation(std::shared_ptr<CX_BaseClockInterface> impl) {
+	_impl = impl;
 	_impl->resetStartTime();
+}
+
+std::shared_ptr<CX_BaseClockInterface> CX_Clock::getImplementation(void) const {
+	return _impl;
 }
 
 /*! If for some reason you have a long setup period before the experiment proper
@@ -119,7 +127,18 @@ void CX_Clock::resetExperimentStartTime(void) {
 	}
 }
 
-/*! This functions sleeps for the requested period of time. This can be somewhat
+/*! Returns the current time relative to the start of the experiment in milliseconds.
+The start of the experiment is defined by default as when the CX_Clock instance named `CX::Instances::Clock`
+is set up during the beginning of program execution. See also `resetExperimentStartTime()`.
+
+\return A `CX_Millis` object containing the time.
+
+\note This cannot be converted to current date/time in any meaningful way. Use getDateTimeString() for that.*/
+CX_Millis CX_Clock::now(void) const {
+	return CX_Nanos(_impl->nanos());
+}
+
+/*! Sleeps for the requested period of time. This can be somewhat
 imprecise because it requests a specific sleep duration from the operating system,
 but the operating system may not provide the exact sleep time.
 
@@ -127,7 +146,7 @@ This function is effectively a static function of the CX_Clock class.
 
 \param t The requested sleep duration. If 0, the thread yields rather than sleeping.
 */
-void CX_Clock::sleep(CX_Millis t) {
+void CX_Clock::sleep(CX_Millis t) const {
 	if (t.nanos() == 0) {
 		std::this_thread::yield();
 	} else {
@@ -135,29 +154,19 @@ void CX_Clock::sleep(CX_Millis t) {
 	}
 }
 
-/*! This functions blocks for the requested period of time. This is likely more
+/*! Blocks in a tight spinloop for the requested period of time. This is likely more
 precise than CX_Clock::sleep() because it does not give up control to the operating
 system, but it wastes resources because it just sits in a spinloop for the requested
 duration. 
 
 This function is effectively a static function of the CX_Clock class.
 
-\param t The requested sleep duration. If 0, the thread yields rather than sleeping.
+\param t The requested delay duration.
 */
-void CX_Clock::delay(CX_Millis t) {
+void CX_Clock::delay(CX_Millis t) const {
 	CX_Millis startTime = this->now();
 	while ((this->now() - startTime) < t)
 		;
-}
-
-/*! This function returns the current time relative to the start of the experiment in milliseconds.
-The start of the experiment is defined by default as when the CX_Clock instance named Clock
-(instantiated in this file) is constructed (typically the beginning of program execution).
-\return A CX_Millis object containing the time.
-
-\note This cannot be converted to current date/time in any meaningful way. Use getDateTimeString() for that.*/
-CX_Millis CX_Clock::now(void) const {
-	return CX_Nanos(_impl->nanos());
 }
 
 
@@ -178,6 +187,292 @@ std::string CX_Clock::getDateTimeString(const std::string& format) const {
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
 
+/*! Tests the precision, with `testPrecision()`, of all of the clock implementations that are built-in to CX and chooses the 
+best one on the basis of the following criteria:
+
+1. If `excludeUnstable == true`, clock implementations that are unstable/not monotonic are excluded.
+2. If `excludeWorseThanMs == true`, clock implmentations with precision worse than 1 ms are excluded.
+3. Of the remaining clock implementations, the one with the lowest mean precision for non-zero length
+time intervals.
+
+\note This function is used during CX initialization to select the best clock implementation to use
+for the given session. This means that different sessions on the same computer may use different
+clock implementations, although there can't be much difference between those implementations if
+different implementations are chosen for different sessions.
+
+\param samples Number of time intervals samples to take per clock implementation. 
+More samples should give better estimates of precision. 
+\param excludeUnstable If `true`, clock implementations that are unstable/non-monotonic are excluded
+from consideration. Unstable clocks may go back in time or jump forward.
+\param excludeWorseThanMs If `true`, clock implementations that have worse than 1 millisecond precision 
+are excluded.
+\param log If `true`, results from all tested implementations are logged.
+
+\return A pair where the first value is a `shared_ptr` to the chosen clock implementation (may be 
+`nullptr` if no implementation is chosen) and the second value is the precision test results for 
+the chosen implementation. See example.
+
+\code{.cpp}
+
+// Choose the best built-in clock impl.
+auto bestClockImpl = CX_Clock::chooseBestClockImplementation(100000, true, true, true);
+
+// Set the selected implementation as the one used by Clock.
+Clock.setImplementation(bestClockImpl.first);
+
+// Examine precision results
+CX_Clock::PrecisionTestResults precRes = bestClockImpl.second;
+Log.notice() << precRes.summaryString;
+Log.flush();
+
+\endcode
+
+*/
+std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults> 
+	CX_Clock::chooseBestClockImplementation(unsigned int samples, bool excludeUnstable, bool excludeWorseThanMs, bool log) {
+
+	typedef std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults> TestRes;
+
+	std::map<std::string, TestRes> results;
+
+	{
+		TestRes res;
+
+		res.first = std::make_shared<CX_StdClockWrapper<std::chrono::high_resolution_clock>>();
+		res.second = CX_Clock::testPrecision(res.first, samples);
+
+		results["high_resolution_clock (" + res.first->getName() + ")"] = res;
+	}
+
+	{
+		TestRes res;
+
+		res.first = std::make_shared<CX_StdClockWrapper<std::chrono::system_clock>>();
+		res.second = CX_Clock::testPrecision(res.first, samples);
+
+		results["system_clock (" + res.first->getName() + ")"] = res;
+	}
+
+	{
+		TestRes res;
+
+		res.first = std::make_shared<CX_StdClockWrapper<std::chrono::steady_clock>>();
+		res.second = CX_Clock::testPrecision(res.first, samples);
+
+		results["steady_clock (" + res.first->getName() + ")"] = res;
+	}
+
+#ifdef TARGET_WIN32
+	{
+		TestRes res;
+
+		res.first = std::make_shared<CX_WIN32_PerformanceCounterClock>();
+		res.second = CX_Clock::testPrecision(res.first, samples);
+
+		results[res.first->getName()] = res;
+	}
+#endif
+
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+	{
+		TestRes res;
+
+		res.first = std::make_shared<CX_ofMonotonicTimeClock>();
+		res.second = CX_Clock::testPrecision(res.first, samples);
+
+		results[res.first->getName()] = res;
+	}
+#endif
+
+	// Select best based on 1) monotonicity and 2) mean nonnzero latency
+	TestRes bestImpl;
+	bestImpl.first = nullptr; // Explicitly nullptr unless updated
+	bestImpl.second.withoutZeros.mean = CX_Millis::max();
+
+	for (const auto& res : results) {
+		if (excludeUnstable && !res.second.second.isMonotonic) {
+			continue; // ignore unstable clocks
+		}
+
+		if (excludeWorseThanMs && res.second.second.precisionWorseThanMs) {
+			continue;
+		}
+
+		if (res.second.second.withoutZeros.mean < bestImpl.second.withoutZeros.mean) {
+			bestImpl = res.second;
+		}
+	}
+
+
+	// Print all results
+	if (log) {
+		std::ostringstream oss;
+		oss << std::endl << std::endl << "Results for all built-in clock implementations." << std::endl  << std::endl;
+
+		for (auto& res : results) {
+			oss << std::string(20, '#') << std::endl << std::endl;
+			oss << res.second.second.summaryString << std::endl;
+		}
+
+		oss << std::string(20, '#') << std::endl << std::endl;
+		oss << "Chosen implementation: " << bestImpl.first->getName() << std::endl;
+
+		Instances::Log.notice("CX_Clock") << "chooseBestClockImplementation(): " << oss.str();
+	}
+
+	return bestImpl;
+}
+
+/*! This function tests the precision of the clock implementation used by this instance of CX_Clock.
+The results are computer-specific.
+If the precision of the clock is worse than millisecond accuracy, a warning is logged including
+information about the actual precision of the clock.
+
+The precision is estimated by sampling `samples` pairs of time points sampled immediately adjacent
+to one another. The difference between each pair of time points is calculated, giving `samples`
+time differences. Depending on the clock implementation that is in use, the counter for the implementation
+will tick forward at a certain rate. This testing code can check the current time more quickly than
+the clock implementation's counter moves forward. This means that many of the time intervals that are
+sampled have the value 0 because the clock implementation did not tick forward between the first and
+second time points at which the time was sampled.
+
+The non-zero time intervals can be used to learn about the precision of the clock. Specifically,
+the lowest non-zero interval is a reasonable estimate of the minimum time step that can be taken
+by the clock implementation.
+
+If the clock implementation has low precision (long intervals between updating its internal counter),
+this will be manifested as a large proportion of zero-length intervals and a smaller proportion of 
+longer intervals. For reference, even for fairly precise clocks (e.g. the internal counter ticks 
+every 1/3 of a microsecond), the proportion of zero-length intervals can be on the order of 80%. 
+
+Depending on the number of samples, this function may be blocking. See \ref blockingCode.
+
+\note See `setImplementation()` for a way to set the clock implementation used by the `CX_Clock`.
+
+\note Do not perform precision tests if using builds compiled for debugging; make sure you build
+for release when performing precision tests.
+
+\param impl A `shared_ptr` to the clock implementation to test. See `setImplementation()` for an 
+example of how to create a shared pointer.
+\param samples Number of time intervals samples to take. More samples should give better estimates of precision.
+\param percentiles A vector of percentiles (as proportions between 0 and 1) at which to find
+quantiles of the time samples. If an empty vector is provided, defaults will be used.
+
+\return A CX_Clock::PrecisionTestResults struct containing some information about the precision of the clock.
+*/
+CX_Clock::PrecisionTestResults CX_Clock::testPrecision(std::shared_ptr<CX_BaseClockInterface> impl, unsigned int samples, std::vector<double> percentiles) {
+
+	std::vector<cxTick_t> intervals(samples);
+
+	for (unsigned int i = 0; i < intervals.size(); i++) {
+		//Get two timestamps with as little code in between as possible.
+		cxTick_t t1 = impl->nanos();
+		cxTick_t t2 = impl->nanos();
+
+		intervals[i] = t2 - t1;
+	}
+
+	PrecisionTestResults rval;
+
+	rval.isMonotonic = impl->isMonotonic();
+	
+	
+	if (percentiles.empty()) {
+		percentiles = { 0, 0.25, 0.5, 0.95, 0.99, 0.999, 0.9999, 0.99999, 1 };
+	}
+	rval.percentiles = Util::clamp<double>(percentiles, 0, 1);
+
+	rval.withZeros.mean = CX_Nanos(Util::mean(intervals));
+	std::vector<cxTick_t> qs = Util::quantile(intervals, rval.percentiles, true);
+	for (cxTick_t q : qs) {
+		rval.withZeros.quantiles.push_back(CX_Nanos(q));
+	}
+
+	std::vector<cxTick_t> nonZeroIntervals;
+	for (unsigned int i = 0; i < intervals.size(); i++) {
+		if (intervals[i] > 0) {
+			nonZeroIntervals.push_back(intervals[i]);
+		}
+	}
+
+	rval.withoutZeros.mean = CX_Nanos(Util::mean(nonZeroIntervals));
+	qs = Util::quantile(nonZeroIntervals, rval.percentiles, true);
+	for (cxTick_t q : qs) {
+		rval.withoutZeros.quantiles.push_back(CX_Nanos(q));
+	}
+
+
+	// Summary string section
+	unsigned int colw = 16;
+	char fillc = ' ';
+	unsigned int dprec = 3;
+	auto pads = [&](std::string s) -> std::string {
+		std::ostringstream os;
+		os << std::setfill(fillc) << std::setw(colw) << s;
+		return os.str();
+	};
+
+	auto padd = [&](double d) -> std::string {
+		std::ostringstream os;
+		os << std::fixed << std::setprecision(dprec) << std::setfill(fillc) << std::setw(colw) << d;
+		return os.str();
+	};
+
+	std::ostringstream oss;
+
+	oss << "Results for clock implementation: " << impl->getName() << std::endl;
+
+	oss << "Stable/monotonic: " << (impl->isMonotonic() == false ? "false" : "true") << 
+		(!impl->isMonotonic() ? " <<< Warning: Implementation is not monotonic >>>" : "") << std::endl;
+
+	CX_Nanos minNonzero(Util::min(nonZeroIntervals));
+	rval.precisionWorseThanMs = minNonzero > CX_Millis(1);
+	
+	oss << "Clock precision (minimum nonzero step size): " << minNonzero.micros() << " microseconds. ";
+
+	if (rval.precisionWorseThanMs) {
+		std::ostringstream wss;
+
+		wss << "The precision of the clock implementation \"" << impl->getName() << "\" appears to be worse than "
+			"millisecond precision. Observed tick period of the clock implmentation is " << minNonzero.millis() << " milliseconds. "
+			"See CX_Clock::setImplementation() for information about choosing a clock implementation." << std::endl << rval.summaryString;
+
+		oss << "Warning: " << wss.str();
+
+		CX::Instances::Log.warning("CX_Clock") << wss.str();
+	}
+
+	oss << std::endl;
+
+	oss << "Times in the table are in microseconds." << std::endl << std::endl;
+
+	oss << pads("Statistic") << pads("With 0s") << pads("Without 0s") << std::endl;
+	oss << std::string(colw * 3, '-') << std::endl;
+
+	unsigned int zeroCount = std::count(intervals.begin(), intervals.end(), 0);
+	double zeroPercent = (double)zeroCount * 100.0 / (double)samples;
+	oss << pads("Percent == 0:") << ofToString(zeroPercent, 1, colw - 1, fillc) + "%" << pads("0%") << std::endl;
+
+	oss << pads("Mean:") << padd(rval.withZeros.mean.micros()) << padd(rval.withoutZeros.mean.micros()) << std::endl;
+
+	unsigned int baseRows = 2;
+	for (unsigned int i = 0; i < rval.percentiles.size(); i++) {
+		oss << ofToString(rval.percentiles[i] * 100, dprec, colw - 2, fillc) << "%:" <<
+			padd(rval.withZeros.quantiles[i].micros()) <<
+			padd(rval.withoutZeros.quantiles[i].micros()) << std::endl;
+	}
+
+	rval.summaryString = oss.str();
+
+	return rval;
+}
+
+
+///////////////////////////
+// Clock implementations //
+///////////////////////////
+
+#define CX_NANOS_PER_SECOND 1000000000LL
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 
