@@ -638,6 +638,60 @@ namespace Util {
 		return kept;
 	}
 
+	/*! Calculates a quantile for some data set `x`.
+	\tparam T An arithmetic type, probably float or double most of the time.
+	\param x The data for which to find percentiles.
+	\param percentile The percentile at which to find the quantile.
+	\param sort If `true`, the data are sorted for you. The data must be sorted.
+	\return The quantile.
+	*/
+	template <typename T>
+	T quantile(std::vector<T> x, double percentile, bool sort = true) {
+		
+		if (sort) {
+			std::sort(x.begin(), x.end());
+		}
+
+		percentile = Util::clamp<double>(percentile, 0, 1);
+
+		std::vector<T>::size_type maxInd = x.size() - 1;
+		double dIdx = maxInd * percentile;
+		std::vector<T>::size_type lower = floor(dIdx);
+		std::vector<T>::size_type upper = lower + 1;
+		double rem = dIdx - floor(dIdx);
+
+		if (lower >= maxInd) {
+			return x.back();
+		}
+		
+		T v1 = x[lower];
+		T v2 = x[upper];
+
+		return v1 + (v2 - v1) * rem; // lerp
+
+	}
+
+	/*! Calculates quantiles for some data set `x`. Calls the single-percentile version of `quantile()` for each percentile.
+	\tparam T An arithmetic type, probably float or double most of the time.
+	\param x The data for which to find percentiles.
+	\param percentiles The percentiles at which to find the quantiles.
+	\param sort If `true`, the data are sorted for you. The data must be sorted.
+	\return A vector of quantiles.
+	*/
+	template <typename T>
+	std::vector<T> quantile(std::vector<T> x, std::vector<double> percentiles, bool sort = true) {
+		if (sort) {
+			std::sort(x.begin(), x.end());
+		}
+
+		std::vector<T> rval(percentiles.size());
+		for (unsigned int i = 0; i < percentiles.size(); i++) {
+			rval[i] = quantile<T>(x, percentiles[i], false);
+		}
+
+		return rval;
+	}
+
 	/*! Test whether a vector of `values` contains the `target` values. 
 	\param values The vector to search.
 	\param target The value to search for.
