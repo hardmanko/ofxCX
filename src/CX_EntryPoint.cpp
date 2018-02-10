@@ -18,6 +18,10 @@ namespace CX {
 */
 bool initializeCX(CX_InitConfiguation config) {
 
+	if (config.clockPrecisionTestIterations < 10000) {
+		config.clockPrecisionTestIterations = 10000;
+	}
+
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 	ofInit();
 #else //Older versions...
@@ -34,7 +38,9 @@ bool initializeCX(CX_InitConfiguation config) {
 
 	bool openedSucessfully = reopenWindow(config.windowConfig); //or for the first time.
 
-	if (openedSucessfully) {
+	if (!openedSucessfully) {
+		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
+	} else {
 		CX::Instances::Input.pollEvents(); //Do this so that the window is at least minimally responding and doesn't get killed by the OS.
 			//This must happen after the window is configured because it relies on GLFW.
 
@@ -43,17 +49,14 @@ bool initializeCX(CX_InitConfiguation config) {
 			CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period: " << CX::Instances::Disp.getFramePeriod() << " ms.";
 		}
 
-		if (config.clockPrecisionTestIterations != 0) {
-			CX::Instances::Clock.precisionTest(100000);
-		}
-		
-		CX::Instances::Clock.resetExperimentStartTime();
+		// Set up the clock
+		CX::Instances::Clock.setup(nullptr, true, config.clockPrecisionTestIterations);
 		
 		//This is temporary: I think there's an oF bug about it
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8
 		glfwSetWindowPos(CX::Private::glfwContext, 200, 200);
+#endif
 		
-	} else {
-		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
 	}
 
 	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;

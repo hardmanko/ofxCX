@@ -45,7 +45,7 @@ namespace CX {
 
 		CX_InitConfiguation(void) :
 			captureOFLogMessages(true),
-			framePeriodEstimationInterval(500),
+			framePeriodEstimationInterval(CX_Seconds(1)),
 			clockPrecisionTestIterations(100000)
 		{}
 
@@ -57,7 +57,9 @@ namespace CX {
 		CX_Millis framePeriodEstimationInterval;
 
 		/*! The number of samples of clock timing data to use to test the clock precision.
-		Passed directly to CX::CX_Clock::precisionTest() */
+		Precision testing is very fast, so this can be in the range of 100,000 without problem.
+		Forced to be at least 10,000.
+		Passed to CX_Clock::chooseBestClockImplementation(). */
 		unsigned int clockPrecisionTestIterations;
 	};
 
