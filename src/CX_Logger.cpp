@@ -127,9 +127,9 @@ namespace Private {
 	CX_LogMessageSink::CX_LogMessageSink(CX::CX_Logger* logger, CX::CX_Logger::Level level, std::string module) :
 		_logger(logger),
 		_level(level),
-		_module(std::move(module))
+		_module(module)
 	{
-		_message = std::shared_ptr<std::ostringstream>(new std::ostringstream);
+		_message = std::make_shared<std::ostringstream>();
 	}
 
 	/* This destructor is marked noexcept(false) because it sometimes throws exceptions
@@ -164,7 +164,7 @@ CX_Logger::CX_Logger(void) :
 	levelForAllExceptions(Level::LOG_NONE);
 	levelForConsole(Level::LOG_ALL);
 
-	_ofLoggerChannel = ofPtr<CX::Private::CX_LoggerChannel>(new CX::Private::CX_LoggerChannel);
+	_ofLoggerChannel = std::make_shared<CX::Private::CX_LoggerChannel>();
 
 	ofAddListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
 
@@ -436,7 +436,8 @@ CX::Private::CX_LogMessageSink CX_Logger::fatalError(std::string module) {
 }
 
 /*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions.
-This function is called during CX setup for CX::Instances::Log. You do not need to call it yourself. 
+
+This function is called during CX setup for CX::Instances::Log, so you do not need to call it yourself for that instance. 
 
 \param capture If `true`, capture oF log messages. If `false`, oF log messages go to the console.
 */

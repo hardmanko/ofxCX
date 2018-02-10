@@ -165,7 +165,7 @@ namespace CX {
 		std::map<std::string, Level> _exceptionLevels;
 		Level _defaultExceptionLevel;
 
-		ofPtr<CX::Private::CX_LoggerChannel> _ofLoggerChannel;
+		std::shared_ptr<CX::Private::CX_LoggerChannel> _ofLoggerChannel;
 		void _loggerChannelEventHandler(CX::Private::CX_ofLogMessageEventData_t& md);
 
 		static std::string _getLogLevelString(Level level);
