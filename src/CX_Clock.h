@@ -46,15 +46,15 @@ namespace CX {
 
 		PrecisionTestResults precisionTest(unsigned int iterations);
 
-		CX_Millis now(void);
+		CX_Millis now(void) const;
 
 		void sleep(CX_Millis t);
 		void delay(CX_Millis t);
 
 		void resetExperimentStartTime(void);
 
-		std::string getExperimentStartDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
-		static std::string getDateTimeString(std::string format = "%Y-%b-%e %h-%M-%S %a");
+		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
+		std::string getDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
 
 		void setImplementation(CX_BaseClockInterface* impl);
 
@@ -91,13 +91,11 @@ namespace CX {
 	public:
 	    virtual ~CX_BaseClockInterface(void) {}
 
-		virtual cxTick_t nanos(void) = 0; //!< Returns the current time in nanoseconds.
+		virtual cxTick_t nanos(void) const = 0; //!< Returns the current time in nanoseconds.
 		virtual void resetStartTime(void) = 0; //!< Resets the start time, so that an immediate call to nanos() would return 0 (on an infinitely fast computer).
 
-		/*! \brief Returns a helpful name describing the clock implementation. */
-		virtual std::string getName(void) {
-			return "CX_BaseClockInterface";
-		}
+		virtual std::string getName(void) const = 0; //!< Returns a helpful name describing the clock implementation.
+		virtual bool isMonotonic(void) const = 0; //!< Returns `true` if the clock implementation is monotonic/stable (only moves forward at a fixed rate).
 	};
 
 	/* A generic wrapper for clocks meeting the standard library clock interface standards. 
@@ -110,7 +108,7 @@ namespace CX {
 			resetStartTime();
 		}
 
-		cxTick_t nanos(void) override {
+		cxTick_t nanos(void) const override {
 			return std::chrono::duration_cast<std::chrono::nanoseconds>(stdClock::now() - _startTime).count();
 		}
 
@@ -118,8 +116,12 @@ namespace CX {
 			_startTime = stdClock::now();
 		}
 
-		std::string getName(void) override {
-			return "CX_StdClockWrapper<" + (std::string)typeid(stdClock).name() + ">";
+		std::string getName(void) const override {
+			return "CX_StdClockWrapper<" + std::string(typeid(stdClock).name()) + ">";
+		}
+
+		bool isMonotonic(void) const override {
+			return stdClock::is_steady;
 		}
 
 	private:
@@ -133,11 +135,19 @@ namespace CX {
 	class CX_ofMonotonicTimeClock : public CX_BaseClockInterface {
 	public:
 
-		cxTick_t nanos(void) override;
-		void resetStartTime(void) override;
+		CX_ofMonotonicTimeClock(void) {
+			resetStartTime();
+		}
 
-		std::string getName(void) override {
+		cxTick_t nanos(void) const override;
+		void resetStartTime(void) override;
+		
+		std::string getName(void) const override {
 			return "CX_ofMonotonicTimeClock";
+		}
+
+		bool isMonotonic(void) const override {
+			return true;
 		}
 
 	private:
@@ -154,11 +164,17 @@ namespace CX {
 	public:
 		CX_WIN32_PerformanceCounterClock(void);
 
-		cxTick_t nanos(void) override;
+		cxTick_t nanos(void) const override;
 		void resetStartTime(void) override;
-		void setStartTime(cxTick_t ticks);
+		void setStartTime(cxTick_t ticks); // Bonus function for this implementation
 
-		std::string getName(void) override;
+		std::string getName(void) const override {
+			return "CX_WIN32_PerformanceCounterClock";
+		}
+
+		bool isMonotonic(void) const override {
+			return true;
+		}
 
 	private:
 		void _resetFrequency(void);

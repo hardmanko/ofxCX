@@ -156,24 +156,24 @@ The start of the experiment is defined by default as when the CX_Clock instance 
 \return A CX_Millis object containing the time.
 
 \note This cannot be converted to current date/time in any meaningful way. Use getDateTimeString() for that.*/
-CX_Millis CX_Clock::now(void) {
+CX_Millis CX_Clock::now(void) const {
 	return CX_Nanos(_impl->nanos());
 }
 
 
 /*! Get a string representing the date/time of the start of the experiment encoded according to a format.
 \param format See getDateTimeString() for the definition of the format. */
-std::string CX_Clock::getExperimentStartDateTimeString(std::string format) {
+std::string CX_Clock::getExperimentStartDateTimeString(const std::string& format) const {
 	return Poco::DateTimeFormatter::format(*_pocoExperimentStart, format);
 }
 
 
-/*! This function returns a string containing the local time encoded according to some format.
+/*! Returns a string containing the local time encoded according to some format.
 \param format See http://pocoproject.org/docs/Poco.DateTimeFormatter.html#4684 for documentation of the format.
 E.g. "%Y/%m/%d %H:%M:%S" gives "year/month/day 24HourClock:minute:second" with some zero-padding for most things.
 The default "%Y-%b-%e %h-%M-%S %a" is "yearWithCentury-abbreviatedMonthName-nonZeroPaddedDay 12HourClock-minuteZeroPadded-secondZeroPadded am/pm".
 */
-std::string CX_Clock::getDateTimeString (std::string format) {
+std::string CX_Clock::getDateTimeString(const std::string& format) const {
 	Poco::LocalDateTime localTime;
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
@@ -181,7 +181,7 @@ std::string CX_Clock::getDateTimeString (std::string format) {
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 
-cxTick_t CX_ofMonotonicTimeClock::nanos(void) {
+cxTick_t CX_ofMonotonicTimeClock::nanos(void) const {
 	uint64_t seconds;
 	uint64_t nanos;
 	ofGetMonotonicTime(seconds, nanos);
@@ -207,7 +207,7 @@ CX_WIN32_PerformanceCounterClock::CX_WIN32_PerformanceCounterClock(void) {
 }
 
 //This only has at best 1 microsecond precision.
-cxTick_t CX_WIN32_PerformanceCounterClock::nanos(void) {
+cxTick_t CX_WIN32_PerformanceCounterClock::nanos(void) const {
 	LARGE_INTEGER count;
 	QueryPerformanceCounter(&count);
 
@@ -229,10 +229,6 @@ void CX_WIN32_PerformanceCounterClock::resetStartTime(void) {
 
 void CX_WIN32_PerformanceCounterClock::setStartTime(cxTick_t ticks) {
 	_startTime = ticks;
-}
-
-std::string CX_WIN32_PerformanceCounterClock::getName(void) {
-	return "CX_WIN32_PerformanceCounterClock";
 }
 
 void CX_WIN32_PerformanceCounterClock::_resetFrequency(void) {
