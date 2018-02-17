@@ -29,31 +29,59 @@ namespace Synth {
 
 	double sinc(double x);
 	double relativeFrequency(double f, double semitoneDifference);
+	
 
-	struct ModuleControlData_t {
-		ModuleControlData_t(void) :
-			initialized(false),
-			sampleRate(666),
-			oversampling(1)
-		{}
+	class ModuleControlData {
+	public:
 
-		ModuleControlData_t(float sampleRate_) :
-			initialized(true),
-			sampleRate(sampleRate_),
-			oversampling(1)
-		{}
+		// No basic constructor or copier
+		ModuleControlData(void) = delete;
+		ModuleControlData& operator=(const ModuleControlData& rhs) = delete;
 
-		bool initialized;
-		float sampleRate;
-		unsigned int oversampling;
+		ModuleControlData(float sampleRate, unsigned int oversampling) :
+			_sampleRate(sampleRate),
+			_oversampling(oversampling)
+		{
+			_id = _nextId++;
 
-		bool operator==(const ModuleControlData_t& right) {
-			return ((this->initialized == right.initialized) && (this->sampleRate == right.sampleRate) && (this->oversampling == right.oversampling));
+			_oversamplingSampleRate = sampleRate * oversampling;
 		}
 
-		bool operator!=(const ModuleControlData_t& right) {
-			return !(this->operator==(right));
+		static std::shared_ptr<ModuleControlData> construct(float sampleRate, unsigned int oversampling = 1) {
+			return std::make_shared<ModuleControlData>(sampleRate, oversampling);
 		}
+
+		inline float getSampleRate(void) const {
+			return _sampleRate;
+		}
+
+		inline unsigned int getOversampling(void) const {
+			return _oversampling;
+		}
+
+		inline float getOversamplingSampleRate(void) const {
+			return _oversamplingSampleRate;
+		}
+
+		//inline uint64_t getId(void) const {
+		//	return _id;
+		//}
+
+		inline bool isNewerThan(const ModuleControlData& other) const {
+			int64_t difference = this->_id - other._id;
+			return difference > 0;
+		}
+
+	private:
+
+		static uint64_t _nextId;
+
+		uint64_t _id;
+		
+		float _sampleRate;
+		unsigned int _oversampling;
+		float _oversamplingSampleRate; //calculated
+
 	};
 
 	class ModuleParameter;
@@ -63,13 +91,10 @@ namespace Synth {
 	class ModuleBase {
 	public:
 
-		ModuleBase(void);
-		~ModuleBase(void);
-
 		virtual double getNextSample(void);
 
-		void setData(ModuleControlData_t d);
-		ModuleControlData_t getData(void);
+		void setData(std::shared_ptr<ModuleControlData> mcd);
+		std::shared_ptr<ModuleControlData> getData(void);
 
 		void disconnectInput(ModuleBase* in);
 		void disconnectOutput(ModuleBase* out);
@@ -81,17 +106,17 @@ namespace Synth {
 		friend ModuleBase& operator>>(ModuleBase& l, ModuleBase& r);
 		friend void operator>>(ModuleBase& l, ModuleParameter& r);
 
+		std::shared_ptr<ModuleControlData> _mcd;
+
 		std::vector<ModuleBase*> _inputs; //!< The inputs to this module.
 		std::vector<ModuleBase*> _outputs; //!< The outputs from this module.
 		std::vector<ModuleParameter*> _parameters; //!< The ModuleParameters of this module.
-		ModuleControlData_t *_data; //!< The data for this module.
-
-		void _dataSet(ModuleBase* caller);
-		void _setDataIfNotSet(ModuleBase* target);
-		void _registerParameter(ModuleParameter* p);
 
 		void _assignInput(ModuleBase* in);
 		void _assignOutput(ModuleBase* out);
+		void _registerParameter(ModuleParameter* p);
+
+		
 
 		//Feel free to overload any of the virtual functions in dervied modules.
 
@@ -106,6 +131,12 @@ namespace Synth {
 		//These functions are called whenever an input or output has been assigned to this module.
 		virtual void _inputAssignedEvent(ModuleBase* in);
 		virtual void _outputAssignedEvent(ModuleBase* out);
+
+	private:
+
+		void _dataSet(ModuleBase* caller);
+		void _setDataIfNotSet(ModuleBase* target);
+
 	};
 
 	/*! This class is used to provide modules with the ability to have their control parameters change as a
@@ -165,9 +196,6 @@ namespace Synth {
 	class AdditiveSynth : public ModuleBase {
 	public:
 
-		typedef double amplitude_t; //!< A floating-point type used for the waveform amplitudes.
-		typedef double frequency_t; //!< A floating-point type used for the frequencies of the waves.
-
 		/*! The type of function that will be used to create the harmonic series for the additive synth. */
 		enum class HarmonicSeriesType {
 			MULTIPLE, //Includes the standard harmonic series as a special case
@@ -190,12 +218,12 @@ namespace Synth {
 
 		void setStandardHarmonicSeries(unsigned int harmonicCount);
 		void setHarmonicSeries (unsigned int harmonicCount, HarmonicSeriesType type, double controlParameter);
-		void setHarmonicSeries(std::vector<frequency_t> harmonicSeries);
+		void setHarmonicSeries(std::vector<double> harmonicSeries);
 
 		void setAmplitudes(AmplitudePresets a);
 		void setAmplitudes(AmplitudePresets a1, AmplitudePresets a2, double mixture);
-		void setAmplitudes(std::vector<amplitude_t> amps);
-		std::vector<amplitude_t> calculateAmplitudes(AmplitudePresets a, unsigned int count);
+		void setAmplitudes(std::vector<double> amps);
+		std::vector<double> calculateAmplitudes(AmplitudePresets a, unsigned int count);
 
 		void pruneLowAmplitudeHarmonics(double tol);
 
@@ -210,8 +238,8 @@ namespace Synth {
 			{}
 
 			//set
-			frequency_t relativeFrequency;
-			amplitude_t amplitude;
+			double relativeFrequency;
+			double amplitude;
 
 			//calculated
 			double positionChangePerSample;
@@ -236,6 +264,8 @@ namespace Synth {
 	class Adder : public ModuleBase {
 	public:
 		Adder(void);
+		Adder(double amount);
+
 		double getNextSample(void) override;
 
 		ModuleParameter amount; //!< The amount that will be added to the input signal.
@@ -247,6 +277,7 @@ namespace Synth {
 	class Clamper : public ModuleBase {
 	public:
 		Clamper(void);
+		Clamper(double low, double high);
 
 		double getNextSample(void) override;
 
@@ -268,6 +299,7 @@ namespace Synth {
 	public:
 
 		Envelope(void);
+		Envelope(double a, double d, double s, double r);
 
 		double getNextSample(void) override;
 
@@ -320,6 +352,7 @@ namespace Synth {
 		};
 
 		Filter(void);
+		Filter(FilterType type, double cutoff, double bandwidth = -1);
 
 		void setType(FilterType type);
 
@@ -364,6 +397,15 @@ namespace Synth {
 	*/
 	class FunctionModule : public ModuleBase {
 	public:
+
+		FunctionModule(void) {
+			f = [](double x) -> double { return x; };
+		}
+
+		FunctionModule(std::function<double(double)> f_) {
+			f = f_;
+		}
+
 		double getNextSample(void) override {
 			double v = 0;
 			if (_inputs.size() >= 1) {
@@ -388,13 +430,16 @@ namespace Synth {
 				return 0;
 			}
 			double sum = 0;
-			for (unsigned int i = 0; i < _data->oversampling; i++) {
+			for (unsigned int i = 0; i < _mcd->getOversampling(); i++) {
 				sum += _inputs.front()->getNextSample();
 			}
-			return sum / _data->oversampling;
+			return sum / _mcd->getOversampling();
 		}
 	private:
-		unsigned int _maxOutputs(void) override { return 0; };
+		unsigned int _maxOutputs(void) override { 
+			return 0;
+		}
+
 		void _inputAssignedEvent(ModuleBase* in) override {
 			in->setData(this->getData());
 		}
@@ -448,6 +493,7 @@ namespace Synth {
 	public:
 
 		Oscillator(void);
+		Oscillator(std::function<double(double)> generatorFunction, double frequency);
 
 		double getNextSample(void) override;
 
@@ -463,11 +509,8 @@ namespace Synth {
 
 	private:
 		std::function<double(double)> _generatorFunction;
-		float _frequencyDivisor;
-		//float _sampleRate; //This is a slight optimization. This just needs to refer to a data member, rather than _data->sampleRate.
-		double _waveformPos;
 
-		void _dataSetEvent(void);
+		double _waveformPos;
 
 		unsigned int _maxInputs(void) override { return 0; };
 	};
@@ -545,29 +588,6 @@ namespace Synth {
 		unsigned int _fedOutputs;
 	};
 
-	/*! This class allows you to use a CX_SoundBuffer as the input for the modular synth.
-	It is strictly monophonic, so when you associate a CX_SoundBuffer with this class,
-	you must pick one channel of the sound to use. You can use multiple SoundBufferInputs
-	to play multiple channels from the same CX_SoundBuffer.
-	\ingroup modSynth
-	*/
-	class SoundBufferInput : public ModuleBase {
-	public:
-		SoundBufferInput(void);
-
-		double getNextSample(void) override;
-
-		void setSoundBuffer(CX::CX_SoundBuffer *sb, unsigned int channel = 0);
-		void setTime(CX_Millis t);
-		bool canPlay(void);
-
-	private:
-		CX::CX_SoundBuffer *_sb;
-		unsigned int _channel;
-		unsigned int _currentSample;
-
-	};
-
 
 	/*! This class is a module that takes input from a CX_SoundStream configured for input, so
 	it is good for getting sounds from a microphone or line in. This class is strictly monophonic.
@@ -583,6 +603,8 @@ namespace Synth {
 	class StreamInput : public ModuleBase {
 	public:
 		StreamInput(void);
+		StreamInput(CX_SoundStream* ss);
+
 		~StreamInput(void);
 
 		void setup(CX::CX_SoundStream* stream);
@@ -627,8 +649,12 @@ namespace Synth {
 	*/
 	class StreamOutput : public ModuleBase {
 	public:
+
+		StreamOutput(CX_SoundStream* stream, unsigned int oversampling = 1);
+
 		~StreamOutput(void);
-		void setup(CX::CX_SoundStream* stream);
+
+		void setup(CX_SoundStream* stream, unsigned int oversampling = 1);
 
 	private:
 		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
@@ -651,19 +677,52 @@ namespace Synth {
 	class StereoStreamOutput {
 	public:
 
+		StereoStreamOutput(CX_SoundStream* stream, unsigned int oversampling = 1);
+
 		~StereoStreamOutput(void);
 
-		void setup(CX::CX_SoundStream* stream);
+		void setup(CX_SoundStream* stream, unsigned int oversampling = 1);
 
 		GenericOutput left; //!< The left channel of the stream.
 		GenericOutput right; //!< The right channel of the stream.
 
 	private:
-		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
+		void _callback(CX_SoundStream::OutputEventArgs& d);
 
 		CX_SoundStream* _soundStream;
 		bool _listeningForEvents;
 		void _listenForEvents(bool listen);
+	};
+
+
+	// TODO: MultichannelSoundBufferInput with a vector of GenericInputs.
+
+	/*! This class allows you to use a CX_SoundBuffer as the input for the modular synth.
+	It is strictly monophonic, so when you associate a CX_SoundBuffer with this class,
+	you must pick one channel of the sound to use. You can use multiple SoundBufferInputs
+	to play multiple channels from the same CX_SoundBuffer.
+	\ingroup modSynth
+	*/
+	class SoundBufferInput : public ModuleBase {
+	public:
+		SoundBufferInput(void);
+		SoundBufferInput(CX::CX_SoundBuffer *sb, unsigned int channel = 0);
+
+		void setup(CX::CX_SoundBuffer *sb, unsigned int channel = 0);
+		void setTime(CX_Millis t);
+		bool canPlay(void);
+
+		double getNextSample(void) override;
+
+	protected:
+
+		void _dataSetEvent(void) override;
+
+	private:
+		CX::CX_SoundBuffer *_sb;
+		unsigned int _channel;
+		unsigned int _currentSample;
+
 	};
 
 	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer
@@ -672,14 +731,15 @@ namespace Synth {
 	*/
 	class SoundBufferOutput : public ModuleBase {
 	public:
-		void setup(float sampleRate);
-		void sampleData(CX_Millis t);
+		SoundBufferOutput(float sampleRate, unsigned int oversampling = 1);
 
-		CX::CX_SoundBuffer sb; //!< The sound buffer that will be filled with samples with sampleData() is called.
+		void setup(float sampleRate, unsigned int oversampling = 1);
+		void sampleData(CX_Millis t, bool clear = false);
+
+		CX::CX_SoundBuffer sb; //!< The sound buffer that will be filled with samples when sampleData() is called.
 	private:
 		unsigned int _maxOutputs(void) override { return 0; };
 	};
-
 
 	/*! This class provides a method of capturing the output of a modular synth and storing it in a CX_SoundBuffer
 	for later use. This captures stereo audio by taking the output of different streams of data into either the
@@ -715,8 +775,11 @@ namespace Synth {
 	\ingroup modSynth */
 	class StereoSoundBufferOutput {
 	public:
-		void setup(float sampleRate);
-		void sampleData(CX_Millis t);
+		StereoSoundBufferOutput(float sampleRate, unsigned int oversampling = 1);
+
+		void setup(float sampleRate, unsigned int oversampling = 1);
+
+		void sampleData(CX_Millis t, bool clear = false);
 
 		GenericOutput left; //!< The left channel of the buffer.
 		GenericOutput right; //!< The right channel of the buffer.
@@ -731,6 +794,7 @@ namespace Synth {
 	public:
 
 		TrivialGenerator(void);
+		TrivialGenerator(double value, double step);
 
 		ModuleParameter value; //!< The start value.
 		ModuleParameter step; //!< The amount to change on each step.
@@ -764,9 +828,11 @@ namespace Synth {
 		};
 
 		FIRFilter(void);
+		FIRFilter(FilterType filterType, unsigned int coefficientCount);
+		FIRFilter(const std::vector<double>& coefficients);
 
 		void setup(FilterType filterType, unsigned int coefficientCount);
-		void setup(std::vector<double> coefficients);
+		void setup(const std::vector<double>& coefficients);
 
 		void setCutoff(double cutoff);
 		void setBandCutoffs(double lower, double upper);

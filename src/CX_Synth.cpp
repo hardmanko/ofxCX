@@ -3,6 +3,9 @@
 namespace CX {
 namespace Synth {
 
+// Initial id is 0.
+uint64_t ModuleControlData::_nextId = 1;
+
 /*! The sinc function, defined as `sin(x)/x`. */
 double sinc(double x) {
 	return sin(x) / x;
@@ -50,14 +53,6 @@ void operator>>(ModuleBase& l, ModuleParameter& r) {
 // ModuleBase //
 ////////////////
 
-ModuleBase::ModuleBase(void) {
-	_data = new ModuleControlData_t;
-}
-
-ModuleBase::~ModuleBase(void) {
-	delete _data;
-}
-
 /*! This function should be overloaded for any derived class that can be used as the input for another module. 
 \return The value of the next sample from the module. */
 double ModuleBase::getNextSample(void) {
@@ -75,15 +70,14 @@ a problem with seeing the correct sample rate after reconnecting some modules, t
 
 \param d The data to set.
 */
-void ModuleBase::setData(ModuleControlData_t d) {
-	*_data = d;
-	_data->initialized = true;
-	this->_dataSet(nullptr);
+void ModuleBase::setData(std::shared_ptr<ModuleControlData> mcd) {
+	_mcd = mcd;
+	_dataSet(nullptr);
 }
 
 /*! Gets the data used by the module. */
-ModuleControlData_t ModuleBase::getData(void) {
-	return *_data;
+std::shared_ptr<ModuleControlData> ModuleBase::getData(void) {
+	return _mcd;
 }
 
 /*! Disconnect a module that is an input to this module. This is a reciprocal operation: 
@@ -181,28 +175,39 @@ void ModuleBase::_dataSet(ModuleBase* caller) {
 	}
 }
 
+
+/*! This function sets the data for a target module if the data for that module has not been set.
+\param target The target module to set the data for. */
+void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
+
+	// this is uninitialized: Do nothing
+	if (this->_mcd == nullptr) {
+		return;
+	}
+
+	// target is uninitialized: Set it to this
+	if (target->_mcd == nullptr) {
+		target->_mcd = this->_mcd; // copy pointer
+		target->_dataSet(this);
+		return;
+	}
+
+	if (this->_mcd->isNewerThan(*target->_mcd)) {
+		// target is older; update it
+		target->_mcd = this->_mcd; // copy pointer
+		target->_dataSet(this);
+		return;
+	}
+
+}
+
+
 /*! This function is a sort of callback that is called whenever _dataSet is called. Within this 
 function, you should do things for your module that depend on the new data values. You should 
 not attempt to propagate the data values to inputs, outputs, or parameters: that is all done 
 for you. */
 void ModuleBase::_dataSetEvent(void) {
 	return;
-}
-
-/*! This function sets the data for a target module if the data for that module has not been set.
-\param target The target module to set the data for. */
-void ModuleBase::_setDataIfNotSet(ModuleBase* target) {
-
-	//If this is not initialized, don't set data for the target.
-	if (!this->_data->initialized) {
-		return;
-	}
-
-	if (*target->_data != *this->_data) {
-		*target->_data = *this->_data;
-		target->_dataSet(this);
-	}
-
 }
 
 /*! If you are using a CX::Synth::ModuleParameter in your module, you must register that ModuleParameter
@@ -332,6 +337,12 @@ amount(0)
 	this->_registerParameter(&amount);
 }
 
+Adder::Adder(double amount_) :
+	Adder()
+{
+	amount = amount_;
+}
+
 double Adder::getNextSample(void) {
 	amount.updateValue();
 	if (_inputs.size() > 0) {
@@ -375,7 +386,7 @@ will only be correct if the harmonic series is the standard harmonic series (see
 \param a The type of wave calculate amplitudes for.
 */
 void AdditiveSynth::setAmplitudes(AmplitudePresets a) {
-	vector<AdditiveSynth::amplitude_t> amps = calculateAmplitudes(a, _harmonics.size());
+	vector<double> amps = calculateAmplitudes(a, _harmonics.size());
 
 	for (unsigned int i = 0; i < _harmonics.size(); i++) {
 		_harmonics[i].amplitude = amps[i];
@@ -390,8 +401,8 @@ This is a convenient way to morph between waveforms.
 \param mixture Should be in the interval [0,1]. The proportion of `a1` that will be used, with the remainder (`1 - mixture`) used from `a2`.
 */
 void AdditiveSynth::setAmplitudes(AmplitudePresets a1, AmplitudePresets a2, double mixture) {
-	vector<AdditiveSynth::amplitude_t> amps1 = calculateAmplitudes(a1, _harmonics.size());
-	vector<AdditiveSynth::amplitude_t> amps2 = calculateAmplitudes(a2, _harmonics.size());
+	vector<double> amps1 = calculateAmplitudes(a1, _harmonics.size());
+	vector<double> amps2 = calculateAmplitudes(a2, _harmonics.size());
 
 	mixture = CX::Util::clamp<double>(mixture, 0, 1);
 
@@ -404,7 +415,7 @@ void AdditiveSynth::setAmplitudes(AmplitudePresets a1, AmplitudePresets a2, doub
 \param amps The amplitudes of the harmonics. If this vector does not contain as many values as
 there are harmonics, the unspecified amplitudes will be set to 0.
 */
-void AdditiveSynth::setAmplitudes(std::vector<amplitude_t> amps) {
+void AdditiveSynth::setAmplitudes(std::vector<double> amps) {
 	while (amps.size() < _harmonics.size()) {
 		amps.push_back(0.0);
 	}
@@ -420,8 +431,8 @@ it calculates the amplitudes needed for the hamonics so as to produce the specif
 \param count The number of harmonics.
 \return A vector of amplitudes.
 */
-std::vector<AdditiveSynth::amplitude_t> AdditiveSynth::calculateAmplitudes(AmplitudePresets a, unsigned int count) {
-	std::vector<amplitude_t> rval(count, 0.0);
+std::vector<double> AdditiveSynth::calculateAmplitudes(AmplitudePresets a, unsigned int count) {
+	std::vector<double> rval(count, 0.0);
 
 	if (a == AmplitudePresets::SAW) {
 		for (unsigned int i = 0; i < count; i++) {
@@ -541,7 +552,7 @@ new harmonics will have an amplitude of 0. If `harmonicSeries.size()` is less th
 current number of harmonics, the number of harmonics will be reduced to the size of
 `harmonicSeries`.
 */
-void AdditiveSynth::setHarmonicSeries(std::vector<frequency_t> harmonicSeries) {
+void AdditiveSynth::setHarmonicSeries(std::vector<double> harmonicSeries) {
 	_harmonics.resize(harmonicSeries.size());
 
 	for (unsigned int i = 0; i < _harmonics.size(); i++) {
@@ -554,8 +565,8 @@ void AdditiveSynth::setHarmonicSeries(std::vector<frequency_t> harmonicSeries) {
 
 void AdditiveSynth::_recalculateWaveformPositions(void) {
 	double firstHarmonicPos = _harmonics[0].waveformPosition;
-
-	double normalizedFrequency = fundamental.getValue() / (_data->sampleRate * _data->oversampling);
+	
+	double normalizedFrequency = fundamental.getValue() / _mcd->getOversamplingSampleRate();
 
 	for (unsigned int i = 0; i < _harmonics.size(); ++i) {
 		double relativeFrequency = _harmonics[i].relativeFrequency;
@@ -583,6 +594,13 @@ high(1)
 	this->_registerParameter(&high);
 }
 
+Clamper::Clamper(double low_, double high_) :
+	Clamper()
+{
+	low = low_;
+	high = high_;
+}
+
 double Clamper::getNextSample(void) {
 	if (_inputs.size() == 0) {
 		return 0;
@@ -590,12 +608,10 @@ double Clamper::getNextSample(void) {
 
 	double temp = this->_inputs.front()->getNextSample();
 
-	high.updateValue();
 	low.updateValue();
+	high.updateValue();
 
-	temp = std::min(temp, high.getValue());
-	temp = std::max(temp, low.getValue());
-	return temp;
+	return Util::clamp<double>(temp, low.getValue(), high.getValue());
 }
 
 
@@ -613,6 +629,15 @@ _stage(4)
 	this->_registerParameter(&d);
 	this->_registerParameter(&s);
 	this->_registerParameter(&r);
+}
+
+Envelope::Envelope(double a_, double d_, double s_, double r_) :
+	Envelope()
+{
+	a = a_;
+	d = d_;
+	s = s_;
+	r = r_;
 }
 
 double Envelope::getNextSample(void) {
@@ -718,7 +743,7 @@ void Envelope::release(void) {
 }
 
 void Envelope::_dataSetEvent(void) {
-	_timePerSample = 1 / (_data->sampleRate * _data->oversampling);
+	_timePerSample = 1.0 / _mcd->getOversamplingSampleRate();
 }
 
 
@@ -728,16 +753,29 @@ void Envelope::_dataSetEvent(void) {
 ////////////
 
 Filter::Filter(void) :
-cutoff(1000),
-bandwidth(50),
-_filterType(FilterType::LOW_PASS),
-x1(0),
-x2(0),
-y1(0),
-y2(0)
+	cutoff(1000),
+	bandwidth(50),
+	_filterType(FilterType::LOW_PASS),
+	x1(0),
+	x2(0),
+	y1(0),
+	y2(0)
 {
 	this->_registerParameter(&cutoff);
 	this->_registerParameter(&bandwidth);
+}
+
+Filter::Filter(Filter::FilterType type, double cutoff_, double bandwidth_) :
+	Filter()
+{
+	cutoff = cutoff_;
+	if (bandwidth_ < 0) {
+		bandwidth = cutoff_ / 10;
+	} else {
+		bandwidth = bandwidth_;
+	}
+
+	setType(type);
 }
 
 /*! \brief Set the type of filter to use, from the Filter::FilterType enum. */
@@ -775,11 +813,11 @@ double Filter::getNextSample(void) {
 }
 
 void Filter::_recalculateCoefficients(void) {
-	if (!_data->initialized) {
+	if (_mcd == nullptr) {
 		return;
 	}
 
-	double frequencyDivisor = _data->sampleRate * _data->oversampling;
+	double frequencyDivisor = _mcd->getOversamplingSampleRate();
 
 	double f_angular = 2 * PI * cutoff.getValue() / frequencyDivisor; //Normalized angular frequency
 
@@ -881,9 +919,16 @@ Oscillator::Oscillator(void) :
 	setGeneratorFunction(Oscillator::sine);
 }
 
+Oscillator::Oscillator(std::function<double(double)> generatorFunction, double frequency_) :
+	Oscillator()
+{
+	setGeneratorFunction(generatorFunction);
+	frequency = frequency_;
+}
+
 double Oscillator::getNextSample(void) {
 	frequency.updateValue();
-	double addAmount = frequency.getValue() / _frequencyDivisor;
+	double addAmount = frequency.getValue() / _mcd->getOversamplingSampleRate();
 
 	_waveformPos = fmod(_waveformPos + addAmount, 1);
 
@@ -906,10 +951,6 @@ double sineWaveGeneratorFunction(double waveformPosition) {
 */
 void Oscillator::setGeneratorFunction(std::function<double(double)> f) {
 	_generatorFunction = f;
-}
-
-void Oscillator::_dataSetEvent(void) {
-	_frequencyDivisor = _data->sampleRate * _data->oversampling;
 }
 
 /*! Produces a sawtooth wave.
@@ -1006,7 +1047,7 @@ double Splitter::getNextSample(void) {
 		_currentSample = _inputs.front()->getNextSample();
 		_fedOutputs = 0;
 	}
-	++_fedOutputs;
+	_fedOutputs++;
 	return _currentSample;
 }
 
@@ -1023,19 +1064,23 @@ SoundBufferInput::SoundBufferInput(void) :
 	_currentSample(0)
 {}
 
+SoundBufferInput::SoundBufferInput(CX::CX_SoundBuffer *sb, unsigned int channel) :
+	SoundBufferInput()
+{
+	setup(sb, channel);
+}
+
 /*! This function sets the CX_SoundBuffer from which data will be drawn. Because the SoundBufferInput is monophonic,
 you must pick one channel of the CX_SoundBuffer to use.
 \param sb The CX_SoundBuffer to use. Because this CX_SoundBuffer is taken as a pointer and is not copied,
 you should make sure that `sb` remains in existence and unmodified while the SoundBufferInput is in use.
 \param channel The channel of the CX_SoundBuffer to use.
 */
-void SoundBufferInput::setSoundBuffer(CX::CX_SoundBuffer *sb, unsigned int channel) {
+void SoundBufferInput::setup(CX::CX_SoundBuffer *sb, unsigned int channel) {
 	_sb = sb;
 	_channel = channel;
 
-	_data->sampleRate = _sb->getSampleRate();
-	_data->initialized = true;
-	_dataSet(nullptr);
+	this->setData(ModuleControlData::construct(_sb->getSampleRate(), 1));
 }
 
 /*! Set the playback time of the current CX_SoundBuffer. When playback starts, it will start from this time.
@@ -1065,136 +1110,158 @@ bool SoundBufferInput::canPlay(void) {
 	return (_sb != nullptr) && (_sb->isReadyToPlay()) && (_currentSample < _sb->getTotalSampleCount());
 }
 
+void SoundBufferInput::_dataSetEvent(void) {
+
+	if (_mcd->getSampleRate() != _sb->getSampleRate()) {
+		_sb->resample(_mcd->getSampleRate());
+	}
+
+	if (_mcd->getOversampling() > 1) {
+		this->setData(ModuleControlData::construct(_mcd->getSampleRate(), 1));
+	}
+
+}
 
 ///////////////////////
 // SoundBufferOutput //
 ///////////////////////
 
+SoundBufferOutput::SoundBufferOutput(float sampleRate, unsigned int oversampling) {
+	setup(sampleRate, oversampling);
+}
+
 /*! Configure the output to use a particular sample rate. If this function is not called, the sample rate
 of the modular synth may be undefined.
 \param sampleRate The sample rate in Hz. */
-void SoundBufferOutput::setup(float sampleRate) {
-	_data->sampleRate = sampleRate;
-	_data->initialized = true;
-	_dataSet(nullptr);
+void SoundBufferOutput::setup(float sampleRate, unsigned int oversampling) {
+
+	this->setData(ModuleControlData::construct(sampleRate, oversampling));
+
+	sb.clear();
+	sb.setFromVector(std::vector<float>(), 1, sampleRate);
 }
 
 /*! This function samples `t` milliseconds of data at the sample rate given in setup().
 The result is stored in the `sb` member of this class. If `sb` is not empty when this function
 is called, the data is appended to `sb`. */
-void SoundBufferOutput::sampleData(CX::CX_Millis t) {
+void SoundBufferOutput::sampleData(CX::CX_Millis t, bool clear) {
 
 	if (_inputs.size() == 0) {
 		CX::Instances::Log.warning("SoundBufferOutput") << "sampleData(): Attempted to sample data when no inputs were connected.";
 		return;
 	}
 
-	unsigned int samplesToTake = ceil(_data->sampleRate * t.seconds());
+	if (clear) {
+		sb.clear();
+	}
 
-	vector<float> tempData(samplesToTake);
+	unsigned int samplesToTake = ceil(_mcd->getSampleRate() * t.seconds());
+
+	std::vector<float> tempData(samplesToTake);
 
 	ModuleBase* input = _inputs.front();
 
+	unsigned int oversampling = _mcd->getOversampling();
 	for (unsigned int i = 0; i < samplesToTake; i++) {
-		tempData[i] = CX::Util::clamp<float>((float)input->getNextSample(), -1, 1);
+		double sum = 0;
+		for (unsigned int ovs = 0; ovs < oversampling; ovs++) {
+			sum += input->getNextSample();
+		}
+		tempData[i] = CX::Util::clamp<float>(sum / oversampling, -1, 1);
 	}
 
+	//for (unsigned int i = 0; i < samplesToTake; i++) {
+	//	tempData[i] = CX::Util::clamp<float>((float)input->getNextSample(), -1, 1);
+	//}
+
 	if (sb.getTotalSampleCount() == 0) {
-		sb.setFromVector(tempData, 1, _data->sampleRate);
+		sb.setFromVector(tempData, 1, _mcd->getSampleRate());
 	} else {
-		for (unsigned int i = 0; i < tempData.size(); i++) {
-			sb.getRawDataReference().push_back(tempData[i]);
-		}
+		std::vector<float>& bufData = sb.getRawDataReference();
+		bufData.insert(bufData.end(), tempData.begin(), tempData.end());
 	}
 }
 
 /////////////////////////////
 // StereoSoundBufferOutput //
 /////////////////////////////
+
+StereoSoundBufferOutput::StereoSoundBufferOutput(float sampleRate, unsigned int oversampling) {
+	setup(sampleRate, oversampling);
+}
+
 /*! Configure the output to use a particular sample rate. If this function is not called, the sample rate
 of the modular synth may be undefined.
 \param sampleRate The sample rate in Hz. */
-void StereoSoundBufferOutput::setup(float sampleRate) {
-	ModuleControlData_t data;
-	data.sampleRate = sampleRate;
-	data.initialized = true;
-	left.setData(data);
-	right.setData(data);
+void StereoSoundBufferOutput::setup(float sampleRate, unsigned int oversampling) {
+
+	std::shared_ptr<ModuleControlData> mcd = ModuleControlData::construct(sampleRate, oversampling);
+
+	left.setData(mcd);
+	right.setData(mcd);
+
+	sb.clear();
+	sb.setFromVector(std::vector<float>(), 2, sampleRate);
 }
 
 /*! This function samples `t` milliseconds of data at the sample rate given in setup().
 The result is stored in the `sb` member of this class. If `sb` is not empty when this function
 is called, the data is appended to `sb`. */
-void StereoSoundBufferOutput::sampleData(CX::CX_Millis t) {
+void StereoSoundBufferOutput::sampleData(CX::CX_Millis t, bool clear) {
 	
-	unsigned int samplesToTake = ceil(left.getData().sampleRate * t.seconds());
+	if (clear) {
+		sb.clear();
+	}
+
+	unsigned int samplesToTake = ceil(left.getData()->getSampleRate() * t.seconds());
 
 	unsigned int channels = 2; //Stereo
 
-	vector<float> tempData(samplesToTake * channels);
+	std::vector<float> tempData(samplesToTake * channels);
+
+	unsigned int oversampling = left.getData()->getOversampling();
 
 	for (unsigned int i = 0; i < samplesToTake; i++) {
-		tempData[(i * channels) + 0] = CX::Util::clamp<float>((float)left.getNextSample(), -1, 1);
-		tempData[(i * channels) + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
+
+		double rightSum = 0;
+		double leftSum = 0;
+		for (unsigned int ovs = 0; ovs < oversampling; ovs++) {
+			rightSum += right.getNextSample();
+			leftSum += left.getNextSample();
+		}
+		tempData[(i * channels) + 0] = Util::clamp<float>(rightSum / oversampling, -1, 1);
+		tempData[(i * channels) + 1] = Util::clamp<float>(leftSum / oversampling, -1, 1);
 	}
+
+	//for (unsigned int i = 0; i < samplesToTake; i++) {
+	//	tempData[(i * channels) + 0] = CX::Util::clamp<float>((float)left.getNextSample(), -1, 1);
+	//	tempData[(i * channels) + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
+	//}
 
 	if (sb.getTotalSampleCount() == 0) {
-		sb.setFromVector(tempData, channels, left.getData().sampleRate);
+		sb.setFromVector(tempData, channels, left.getData()->getSampleRate());
 	} else {
-		for (unsigned int i = 0; i < tempData.size(); i++) {
-			sb.getRawDataReference().push_back(tempData[i]);
-		}
+		std::vector<float>& bufData = sb.getRawDataReference();
+		bufData.insert(bufData.end(), tempData.begin(), tempData.end());
 	}
 }
 
-////////////////////////
-// StereoStreamOutput //
-////////////////////////
-StereoStreamOutput::~StereoStreamOutput(void) {
-	_listenForEvents(false);
-}
-
-/*! Set up the StereoStreamOutput with the given CX_SoundStream.
-\param stream A CX_SoundStream that is configured for stereo output. */
-void StereoStreamOutput::setup(CX::CX_SoundStream* stream) {
-	_soundStream = stream;
-	_listenForEvents(true);
-
-	ModuleControlData_t data;
-	data.sampleRate = _soundStream->getConfiguration().sampleRate;
-	left.setData(data);
-	right.setData(data);
-}
-
-void StereoStreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
-	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
-		unsigned int index = sample * d.outputChannels;
-		d.outputBuffer[index + 0] += CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
-		d.outputBuffer[index + 1] += CX::Util::clamp<float>(left.getNextSample(), -1, 1);
-	}
-}
-
-void StereoStreamOutput::_listenForEvents(bool listen) {
-	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
-		return;
-	}
-
-	if (listen) {
-		ofAddListener(_soundStream->outputEvent, this, &StereoStreamOutput::_callback);
-	} else {
-		ofRemoveListener(_soundStream->outputEvent, this, &StereoStreamOutput::_callback);
-	}
-	_listeningForEvents = listen;
-}
 
 /////////////////
 // StreamInput //
 /////////////////
+
 StreamInput::StreamInput(void) :
 _maxBufferSize(4096),
 _soundStream(nullptr),
 _listeningForEvents(false)
 {}
+
+StreamInput::StreamInput(CX::CX_SoundStream* ss) :
+	StreamInput()
+{
+	setup(ss);
+}
 
 StreamInput::~StreamInput(void) {
 	_listenForEvents(false);
@@ -1266,19 +1333,22 @@ unsigned int StreamInput::_maxInputs(void) {
 // StreamOutput //
 //////////////////
 
+StreamOutput::StreamOutput(CX::CX_SoundStream* stream, unsigned int oversampling) {
+	setup(stream, oversampling);
+}
+
 StreamOutput::~StreamOutput(void) {
 	_listenForEvents(false);
 }
 
 /*! Set up the StereoStreamOutput with the given CX_SoundStream.
 \param stream A CX_SoundStream that is configured for output to any number of channels. */
-void StreamOutput::setup(CX::CX_SoundStream* stream) {
+void StreamOutput::setup(CX::CX_SoundStream* stream, unsigned int oversampling) {
 	_soundStream = stream;
 	_listenForEvents(true);
 
-	ModuleControlData_t data;
-	data.sampleRate = _soundStream->getConfiguration().sampleRate;
-	this->setData(data);
+	std::shared_ptr<ModuleControlData> mcd = ModuleControlData::construct(_soundStream->getConfiguration().sampleRate, oversampling);
+	this->setData(mcd);
 }
 
 void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
@@ -1288,15 +1358,30 @@ void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 
 	ModuleBase* input = _inputs.front();
 
+	unsigned int oversampling = _mcd->getOversampling();
+
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
+		double sum = 0;
+		for (unsigned int ovs = 0; ovs < oversampling; ovs++) {
+			sum += input->getNextSample();
+		}
+		double mean = CX::Util::clamp<float>(sum / oversampling, -1, 1);
 		
+		for (int ch = 0; ch < d.outputChannels; ch++) {
+			d.outputBuffer[(sample * d.outputChannels) + ch] += mean;
+		}
+	}
+
+	/*
+	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
+
 		float value;
-		if (this->_data->oversampling > 1) {
-			float sum = 0;
-			for (unsigned int oversamp = 0; oversamp < this->_data->oversampling; oversamp++) {
+		if (_data->oversampling > 1) {
+			double sum = 0;
+			for (unsigned int oversamp = 0; oversamp < _data->oversampling; oversamp++) {
 				sum += input->getNextSample();
 			}
-			float mean = sum / this->_data->oversampling;
+			double mean = sum / _data->oversampling;
 			value = CX::Util::clamp<float>(mean, -1, 1);
 		} else {
 			value = CX::Util::clamp<float>(input->getNextSample(), -1, 1);
@@ -1306,6 +1391,7 @@ void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
 			d.outputBuffer[(sample * d.outputChannels) + ch] += value;
 		}
 	}
+	*/
 }
 
 void StreamOutput::_listenForEvents(bool listen) {
@@ -1321,6 +1407,64 @@ void StreamOutput::_listenForEvents(bool listen) {
 	_listeningForEvents = listen;
 }
 
+////////////////////////
+// StereoStreamOutput //
+////////////////////////
+
+StereoStreamOutput::StereoStreamOutput(CX::CX_SoundStream* stream, unsigned int oversampling) {
+	setup(stream, oversampling);
+}
+
+StereoStreamOutput::~StereoStreamOutput(void) {
+	_listenForEvents(false);
+}
+
+/*! Set up the StereoStreamOutput with the given CX_SoundStream.
+\param stream A CX_SoundStream that is configured for stereo output. */
+void StereoStreamOutput::setup(CX::CX_SoundStream* stream, unsigned int oversampling) {
+	_soundStream = stream;
+	_listenForEvents(true);
+
+	std::shared_ptr<ModuleControlData> mcd = ModuleControlData::construct(_soundStream->getConfiguration().sampleRate, oversampling);
+
+	left.setData(mcd);
+	right.setData(mcd);
+}
+
+void StereoStreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
+
+	unsigned int oversampling = left.getData()->getOversampling();
+
+	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
+		unsigned int index = sample * d.outputChannels;
+		//d.outputBuffer[index + 0] += CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
+		//d.outputBuffer[index + 1] += CX::Util::clamp<float>(left.getNextSample(), -1, 1);
+
+		double rightSum = 0;
+		double leftSum = 0;
+		for (unsigned int ovs = 0; ovs < oversampling; ovs++) {
+			rightSum += right.getNextSample();
+			leftSum += left.getNextSample();
+		}
+		d.outputBuffer[index + 0] = Util::clamp<float>(rightSum / oversampling, -1, 1);
+		d.outputBuffer[index + 1] = Util::clamp<float>(leftSum / oversampling, -1, 1);
+	}
+}
+
+void StereoStreamOutput::_listenForEvents(bool listen) {
+	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
+		return;
+	}
+
+	if (listen) {
+		ofAddListener(_soundStream->outputEvent, this, &StereoStreamOutput::_callback);
+	} else {
+		ofRemoveListener(_soundStream->outputEvent, this, &StereoStreamOutput::_callback);
+	}
+	_listeningForEvents = listen;
+}
+
+
 //////////////////////
 // TrivialGenerator //
 //////////////////////
@@ -1333,14 +1477,18 @@ step(0)
 	this->_registerParameter(&step);
 }
 
+TrivialGenerator::TrivialGenerator(double value_, double step_) :
+	TrivialGenerator()
+{
+	value = value_;
+	step = step_;
+}
 
 double TrivialGenerator::getNextSample(void) {
 	value.updateValue();
 	value.getValue() += step;
 	return value.getValue() - step;
 }
-
-
 
 
 ///////////////
@@ -1351,6 +1499,18 @@ FIRFilter::FIRFilter(void) :
 _filterType(FilterType::LOW_PASS),
 _coefCount(-1)
 {}
+
+FIRFilter::FIRFilter(FilterType filterType, unsigned int coefficientCount) :
+	FIRFilter()
+{
+	setup(filterType, coefficientCount);
+}
+
+FIRFilter::FIRFilter(const std::vector<double>& coefficients) :
+	FIRFilter()
+{
+	setup(coefficients);
+}
 
 /*! Set up the FIRFilter with the given filter type and number of coefficients to use.
 \param filterType Should be a type of filter other than FIRFilter::FilterType::FIR_USER_DEFINED. If you want
@@ -1381,7 +1541,7 @@ deal of flexibility in the use of the FIRFilter.  See the fir1 and fir2 function
 //"signal" package for R for a way to design your own filter. 
 \param coefficients The filter coefficients to use.
 */
-void FIRFilter::setup(std::vector<double> coefficients) {
+void FIRFilter::setup(const std::vector<double>& coefficients) {
 	_filterType = FilterType::USER_DEFINED;
 
 	_coefficients = coefficients;
@@ -1399,15 +1559,16 @@ void FIRFilter::setCutoff(double cutoff) {
 		return;
 	}
 
-	//See http://www.mikroe.com/chapters/view/72/chapter-2-fir-filters/ (fairly far down the page, table 2-2-1.)
-
-	double omega = 2 * PI * cutoff / (_data->sampleRate);
+	//See https://www.mikroe.com/ebooks/digital-filter-design/finite-impulse-response-fir-filter-design-methods (fairly far down the page, table 2-2-1.)
+	
+	// TODO: Test the difference (also in setBandCutoffs)
+	double omega = 2 * PI * cutoff / _mcd->getSampleRate();
+	//double omega = 2 * PI * cutoff / _mcd->getOversampledSampleRate();
 
 	int N = _coefCount - 1; //N is the order of the filter
 	float M = (float)N / 2;
 
 	for (int n = 0; n < _coefCount; n++) {
-	//for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
 
 		double hn = 0;
 		if (n == M) {
@@ -1428,25 +1589,6 @@ void FIRFilter::setCutoff(double cutoff) {
 		_coefficients[n] = hn;
 	}
 
-	/* Old version. I don't really know if this was working correctly...
-	double omega = PI * cutoff / ((_data->sampleRate * _data->oversampling) / 2); //This is pi * normalized cutoff frequency, where normalization is based on the nyquist frequency.
-
-	_coefficients.clear();
-
-	//Set up LPF coefficients by default
-	for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
-		_coefficients.push_back(_calcH(i, omega));
-	}
-
-	//For HPF, modify the LPF coefs
-	if (_filterType == FilterType::HIGH_PASS) {
-		for (int i = -_coefCount / 2; i <= _coefCount / 2; i++) {
-			_coefficients[i] *= pow(-1, i);
-		}
-	}
-	*/
-
-
 	_applyWindowToCoefs();
 }
 
@@ -1465,10 +1607,10 @@ void FIRFilter::setBandCutoffs(double lower, double upper) {
 	};
 
 	//Super useful page:
-	//See http://www.mikroe.com/chapters/view/72/chapter-2-fir-filters/ (fairly far down the page, table 2-2-1.)
-
-	double oc2 = 2 * PI * lower / (_data->sampleRate);
-	double oc1 = 2 * PI * upper / (_data->sampleRate);
+	//See https://www.mikroe.com/ebooks/digital-filter-design/finite-impulse-response-fir-filter-design-methods (fairly far down the page, table 2-2-1.)
+	
+	double oc2 = 2 * PI * lower / _mcd->getSampleRate(); // oversampling?
+	double oc1 = 2 * PI * upper / _mcd->getSampleRate();
 
 	int N = _coefCount - 1; //N is the order of the filter
 	float M = (float)N / 2;
