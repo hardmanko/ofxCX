@@ -12,9 +12,11 @@
 #include "CX_DataFrame.h"
 
 namespace CX {
-	/*! This namespace contains a few complex algorithms that can be difficult to properly implement
-	or are very psychology-experiment-specific. */
+
+	/*! The `Algo` namespace contains a few complex algorithms that can be difficult to properly implement
+	or are psychology-experiment-specific. */
 	namespace Algo {
+
 		template <typename dataT, typename distT>
 		std::vector<dataT> generateSeparatedValues(int count, distT minDistance, std::function<distT(dataT, dataT)> distanceFunction,
 												std::function<dataT(void)> randomDeviate, unsigned int maxSequentialFailures, int maxRestarts);
@@ -96,6 +98,85 @@ namespace CX {
 			
 		private:
 			size_t _columns;
+		};
+
+		/*! This class implements a simple linear regression model that 
+		1. Collects samples of data over time using the store() function.
+		2. Calculates new parameter values when updateModel() is called.
+		3. The availability of valid parameter values can be checked with modelValid().
+		4. With valid parameter values, calculates predicted x and y values with getX() and getY().
+		5. Does all of this in a thread-safe way.
+
+		This class is semi-internal to CX and is not well-documented, but is publicly available.
+
+		\code{.cpp}
+		Algo::RollingLinearModel rlm;
+
+		rlm.setup(false, 10, 3);
+
+		vector<double> x = { 0, 2, 4, 6, 9 };
+		vector<double> y = { 15, 6, 8, 3, 0 };
+
+		for (unsigned int i = 0; i < x.size(); i++) {
+			rlm.store(x[i], y[i]);
+		}
+
+		if (rlm.modelReady()) {
+			double predY = rlm.getY(5);
+			double predX = rlm.getX(10);
+		}
+		\endcode
+		*/
+		class RollingLinearModel {
+		public:
+
+			RollingLinearModel(void);
+
+			void setup(bool autoUpdate, unsigned int maxSamples, unsigned int minSamples = 3);
+
+			void store(double x, double y);
+			unsigned int storedSamples(void);
+			void clear(void);
+
+			bool updateModel(void);
+			bool updateModelOnSubset(unsigned int start, unsigned int end);
+
+			bool modelReady(void);
+
+			double getY(double x);
+			double getX(double y);
+
+			double getSlope(void);
+			double getIntercept(void);
+
+			struct Datum {
+
+				Datum(double x_, double y_) :
+					x(x_),
+					y(y_)
+				{}
+
+				double x;
+				double y;
+			};
+
+			std::deque<Datum>& getData(void);
+
+		private:
+
+			std::recursive_mutex _mutex;
+
+			bool _autoUpdate;
+			bool _modelNeedsUpdate;
+
+			unsigned int _minSamples;
+			unsigned int _maxSamples;
+
+			double _slope;
+			double _intercept;
+
+			std::deque<Datum> _data;
+
 		};
 
 

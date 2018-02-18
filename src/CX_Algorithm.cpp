@@ -3,6 +3,10 @@
 namespace CX {
 namespace Algo {
 
+/////////////////
+// LatinSquare //
+/////////////////
+
 /*! \brief Construct a LatinSquare with no contents. */
 LatinSquare::LatinSquare(void) :
 	_columns(0)
@@ -278,6 +282,161 @@ std::vector<unsigned int> LatinSquare::getRow(unsigned int row) const {
 	}
 
 	return square[row];
+}
+
+///////////////////////////
+// RollingLinearModel //
+///////////////////////////
+
+RollingLinearModel::RollingLinearModel(void) :
+	_autoUpdate(false),
+	_modelNeedsUpdate(true),
+	_maxSamples(100),
+	_minSamples(3)
+{}
+
+void RollingLinearModel::setup(bool autoUpdate, unsigned int maxSamples, unsigned int minSamples) {
+
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	clear();
+
+	_autoUpdate = autoUpdate;
+	_minSamples = std::max<unsigned int>(minSamples, 2);
+	_maxSamples = std::max(maxSamples, _minSamples);
+
+}
+
+void RollingLinearModel::store(double x, double y) {
+
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	_data.push_back(Datum(x, y));
+
+	_modelNeedsUpdate = true;
+
+	while (_data.size() > _maxSamples) {
+		_data.pop_front();
+	}
+
+	if (_autoUpdate) {
+		updateModel();
+	}
+}
+
+unsigned int RollingLinearModel::storedSamples(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _data.size();
+}
+
+void RollingLinearModel::clear(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	_modelNeedsUpdate = true;
+
+	_data.clear();
+}
+
+// Returns true if model is ready, false otherwise.
+// Only updates model if it needs it
+bool RollingLinearModel::updateModel(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (!_modelNeedsUpdate) {
+		return true;
+	}
+
+	return updateModelOnSubset(0, _data.size());
+}
+
+// Always updates model, regardless of state
+bool RollingLinearModel::updateModelOnSubset(unsigned int start_inclusive, unsigned int end_exclusive) {
+
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (start_inclusive >= end_exclusive || end_exclusive >= _data.size()) {
+		return false;
+	}
+
+	if (_data.size() < _minSamples) {
+		return false;
+	}
+
+	unsigned int sampleSize = end_exclusive - start_inclusive;
+
+	double xBar = 0;
+	double yBar = 0;
+	for (unsigned int i = start_inclusive; i < end_exclusive; i++) {
+		xBar += _data[i].x;
+		yBar += _data[i].y;
+	}
+	xBar /= sampleSize;
+	yBar /= sampleSize;
+
+
+	double numSum = 0;
+	double denSum = 0;
+
+	for (unsigned int i = start_inclusive; i < end_exclusive; i++) {
+
+		double xDif = (_data[i].x - xBar);
+
+		numSum += xDif * (_data[i].y - yBar);
+
+		denSum += xDif * xDif;
+	}
+
+	_slope = numSum / denSum;
+	_intercept = yBar - _slope * xBar;
+
+	_modelNeedsUpdate = false;
+
+	return true;
+
+}
+
+double RollingLinearModel::getY(double x) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	if (!updateModel()) {
+		return 0;
+	}
+	return _slope * x + _intercept;
+}
+
+double RollingLinearModel::getX(double y) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	if (!updateModel()) {
+		return 0;
+	}
+	return (y - _intercept) / _slope;
+}
+
+double RollingLinearModel::getSlope(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	if (!updateModel()) {
+		return 0;
+	}
+	return _slope;
+}
+
+double RollingLinearModel::getIntercept(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	if (!updateModel()) {
+		return 0;
+	}
+	return _intercept;
+}
+
+bool RollingLinearModel::modelReady(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return updateModel();
+	//return _modelNeedsUpdate == false;
+}
+
+std::deque<RollingLinearModel::Datum>& RollingLinearModel::getData(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return _data;
 }
 
 } //namespace Algo
