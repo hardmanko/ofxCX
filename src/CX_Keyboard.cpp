@@ -288,11 +288,12 @@ Keyboard shortcuts are checked for every time `CX_InputManager::pollEvents()` is
 that you can set up keyboard shortcuts that work the same way throughout the whole experiment once,
 and because the shortcuts are set up, you won't have to check for the shortcuts in each section of code
 in which input is awaited on. You just need to regularly call `Input.pollEvents()` in your code.
-Given that much of the duration of experiment code waits
+Given that most experiment code spends a lot of time waiting on input, using keyboard shortcuts should
+be easy.
 
-By default, CX is set up to use the shortcut left-alt + tab to toggle the fullscreen state of the display.
-This is because alt-tab doesn't automatically disable fullscreen windows in openFrameworks or GLFW right
-now (Feb 2018) for some reason (I think it used to).
+By default, CX is set up to use the shortcut `LEFT_ALT + F1` to toggle the fullscreen state of the display.
+Windows 10 appears to intercept alt-tab so that it never reaches the program, otherwise that would be
+the best choice. The shortcut is named "Toggle fullscreen: LEFT_ALT + F1".
 
 \param name The name of the shortcut. Each shortcut must have a unique name.
 \param chord A vector of keys that must be simultaneously held (and no other keys may be held) to trigger the shortcut.
@@ -314,9 +315,9 @@ void toggleFullscreen(void) {
 void runExperiment(void) {
 	Input.Keyboard.enable(true);
 
-	Input.Keyboard.addShortcut("helloWorld", { CX::Keycode::LEFT_CTRL, 'H' }, helloWorld);
+	Input.Keyboard.addShortcut("helloWorld", { Keycode::LEFT_CTRL, 'H' }, helloWorld);
 
-	Input.Keyboard.addShortcut("toggleFullscreen", { CX::Keycode::LEFT_CTRL, 'T' }, toggleFullscreen);
+	Input.Keyboard.addShortcut("toggleFullscreen", { Keycode::LEFT_CTRL, 'T' }, toggleFullscreen);
 
 	
 	bool looping = true;
@@ -324,7 +325,7 @@ void runExperiment(void) {
 		looping = false;
 	};
 
-	Input.Keyboard.addShortcut("quit", { CX::Keycode::LEFT_CTRL, 'Q' }, endLoop);
+	Input.Keyboard.addShortcut("endLoop", { Keycode::LEFT_CTRL, 'Q' }, endLoop);
 
 	while (looping) {
 		Input.pollEvents();

@@ -234,18 +234,18 @@ namespace CX {
 			*/
 			int key;
 
+			EventType type; //!< The type of the event: press, release, or key repeat.
+
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 
 			/*! \brief The uncertainty in `time`, which represents the difference between the time at which this
 			event was timestamped by CX and the last time that events were checked for. */
 			CX_Millis uncertainty;
 
-			EventType type; //!< The type of the event: press, release, or key repeat.
-
 			Keycodes codes; //!< Alternative representations of the pressed key.
 		};
 
-		// Private constructor
+		CX_Keyboard(void) = delete; // Private constructor
 		~CX_Keyboard(void);
 
 		void enable(bool enable);

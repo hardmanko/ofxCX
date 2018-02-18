@@ -53,16 +53,17 @@ namespace CX {
 			the y-axis scroll if the `type` is EventType::SCROLLED. */
 			float y;
 
+			EventType type; //!< The type of the event.
+
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::Clock::now().
 
 			/*! \brief The uncertainty in `time`, which represents the difference between the time at which this
 			event was timestamped by CX and the last time that events were checked for. */
 			CX_Millis uncertainty;
 
-			EventType type; //!< The type of the event.
 		};
 
-		// Private constructor
+		CX_Mouse(void) = delete; // Private constructor
 		~CX_Mouse (void);
 
 		void enable(bool enable);

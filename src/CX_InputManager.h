@@ -92,7 +92,7 @@ namespace CX {
 			}
 		}
 		// Look at individual events (not that you would normally need to do this)
-		CX_Keyboard::Event firstEvent = events[0];
+		CX_Keyboard::Event firstEvent = events[3];
 	}
 	\endcode
 
@@ -105,9 +105,11 @@ namespace CX {
 	class CX_InputManager {
 	public:
 
-		bool setup (bool useKeyboard, bool useMouse, int joystickIndex = -1);
+		bool setup(bool useKeyboard, bool useMouse, int joystickIndex = -1);
 
-		bool pollEvents (void);
+		
+		bool pollEvents(void);
+
 		void clearAllEvents(bool poll = false);
 
 		CX_Keyboard Keyboard; //!< An instance of CX::CX_Keyboard. Enabled or disabled with CX::CX_InputManager::setup().
