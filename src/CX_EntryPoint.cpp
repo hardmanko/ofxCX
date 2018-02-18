@@ -12,6 +12,19 @@
 
 namespace CX {
 
+void setupKeyboardShortcuts(void) {
+
+	auto toggleFullscreen = [](void) {
+		Instances::Disp.setFullscreen(!Instances::Disp.isFullscreen());
+	};
+
+	Instances::Input.Keyboard.addShortcut("Toggle fullscreen: LEFT_ALT + F1",
+		{ Keycode::LEFT_ALT, Keycode::F1 },
+		toggleFullscreen
+	);
+
+}
+
 /*! This function initializes CX functionality. It should probably only be called once, at program start.
 \param config The intial CX configuration.
 \return `true` if intialization was successful, `false` if there was an error. If there was an error, it should be logged.
@@ -52,6 +65,7 @@ bool initializeCX(CX_InitConfiguation config) {
 		// Set up the clock
 		CX::Instances::Clock.setup(nullptr, true, config.clockPrecisionTestIterations);
 		
+		setupKeyboardShortcuts();
 		//This is temporary: I think there's an oF bug about it
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8
 		glfwSetWindowPos(CX::Private::glfwContext, 200, 200);
