@@ -57,15 +57,17 @@ namespace CX {
 		void endDrawingToBackBuffer(void);
 
 		void swapBuffers(void);
-		void swapBuffersInThread(void);
+		void swapBuffersInThread(unsigned int count = 1);
 		void setAutomaticSwapping(bool autoSwap);
-		bool isAutomaticallySwapping(void) const;
+		bool isAutomaticallySwapping(void);
 
-		bool hasSwappedSinceLastCheck(void);
+		bool hasSwappedSinceLastCheck(bool reset = true);
 		void waitForBufferSwap(void);
-		CX_Millis getLastSwapTime(void) const;
-		CX_Millis estimateNextSwapTime(void) const;
-		uint64_t getFrameNumber(void) const;
+		void waitForOpenGL(void);
+
+		CX_Millis getLastSwapTime(void);
+		CX_Millis estimateNextSwapTime(void);
+		uint64_t getFrameNumber(void);
 
 		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 40, float maxRefreshRate = 160);
 		CX_Millis getFramePeriod(void) const;
@@ -76,7 +78,8 @@ namespace CX {
 		ofRectangle getResolution(void) const;
 		ofPoint getCenter(void) const;
 
-		void waitForOpenGL(void);
+		//bool synchronizeFrameSwapping(unsigned int requiredSwaps, CX_Millis timeout, CX_Millis periodTolerance, CX_Millis framePeriod = 0);
+		std::shared_ptr<Private::CX_VideoBufferThread> getSwapThread(void);
 
 		std::map<std::string, CX_DataFrame> testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
@@ -102,10 +105,12 @@ namespace CX {
 		ofPtr<ofGLProgrammableRenderer> _renderer;
 #endif
 
-		std::unique_ptr<Private::CX_VideoBufferSwappingThread> _swapThread;
+		std::shared_ptr<Private::CX_VideoBufferThread> _swapThread;
 
 		CX_Millis _framePeriod;
 		CX_Millis _framePeriodStandardDeviation;
+
+		CX_Millis _lastMainThreadSwapTime;
 
 		uint64_t _manualBufferSwaps;
 		uint64_t _frameNumberOnLastSwapCheck;
