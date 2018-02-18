@@ -81,6 +81,7 @@ namespace Private {
 	// Used like:
 	// T t; // somewhere
 	// shared_ptr<T> ptr = wrapPtr<T>(&t);
+	// It turns something that is called std::shared_ptr<T> into something that acts like a bare pointer, T*.
 	template <typename T>
 	std::shared_ptr<T> wrapPtr(T* ptr) {
 		auto nopDeleter = [](T* x) { return; };

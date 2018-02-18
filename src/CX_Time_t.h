@@ -4,7 +4,7 @@
 
 namespace CX {
 
-	typedef int64_t cxTick_t;
+	typedef int64_t cxTick_t; //!< The underlying time store (in nanoseconds). Time differences can be negative, so this must be a signed int.
 
 	template <typename T> class CX_Time_t;
 
@@ -314,7 +314,7 @@ namespace CX {
 			return t;
 		}
 
-		/*! This function calculates the sample standard deviation for a vector of time values. */
+		/*! Calculates the sample standard deviation for a vector of time values. */
 		static CX_Time_t<TimeUnit> standardDeviation(std::vector<CX_Time_t<TimeUnit>> vals) {
 
 			//Implementation of single-pass variance: http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Incremental_Algorithm
