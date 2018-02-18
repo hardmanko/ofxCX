@@ -28,7 +28,7 @@ bool CX_Clock::setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStar
 	if (impl == nullptr) {
 
 		std::string warning = "";
-		std::string bools = "The chosen clock implementation ";
+		std::string baseStr = "The chosen clock implementation ";
 		std::string monotonicWF = "is non-monotonic/not steady (may jump forward or back in time)";
 		std::string worseMsWF = "may have precision worse than 1 ms";
 
@@ -36,28 +36,28 @@ bool CX_Clock::setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStar
 
 		if (clockImpl.first == nullptr) {
 			clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, false, true, false); // drop steady
-			warning = bools + monotonicWF + ". ";
+			warning = baseStr + monotonicWF + ". ";
 		}
 		if (clockImpl.first == nullptr) {
 			clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, true, false, false); // drop steady, but keep sub ms
-			warning = bools + worseMsWF + ". ";;
+			warning = baseStr + worseMsWF + ". ";;
 		}
 		if (clockImpl.first == nullptr) {
 			clockImpl = CX::CX_Clock::chooseBestClockImplementation(samples, false, false, false); // exclude nothing
-			warning = bools + monotonicWF + " and " + worseMsWF + ". ";
+			warning = baseStr + monotonicWF + " and " + worseMsWF + ". ";
 		}
 
 		impl = clockImpl.first;
 
-		CX::Instances::Log.notice("CX_Clock") << "setup(): The argument impl was nullptr, " <<
-			"so the best clock implementation will be chosen from the built-in clock implementations.";
+		//CX::Instances::Log.notice("CX_Clock") << "setup(): The argument impl was nullptr, " <<
+		//	"so the best clock implementation will be chosen from the built-in clock implementations.";
 
 		if (impl == nullptr) {
 			CX::Instances::Log.error("CX_Clock") << "setup(): No clock implementation could be chosen.";
 			return false;
 		}
 
-		CX::Instances::Log.notice("CX_Clock") << "setup(): The chosen implementation is " << impl->getName() << ".";
+		CX::Instances::Log.notice("CX_Clock") << "setup(): The chosen clock implementation is " << impl->getName() << ".";
 
 		if (warning != "") {
 			CX::Instances::Log.warning("CX_Clock") << "setup(): " << warning;
@@ -143,6 +143,12 @@ imprecise because it requests a specific sleep duration from the operating syste
 but the operating system may not provide the exact sleep time.
 
 This function is effectively a static function of the CX_Clock class.
+
+If CX is running on a single-core computer, it is a good idea to call `Clock.sleep(0)`
+in wait loops when waiting on input or other slow response. Giving the argument of 0
+causes the CX experiment to yield, which allows CPU time to be used for other programs 
+running on the computer. It is not neccessary or even a good idea to call `sleep(0)`
+in tight wait loops that are expected to wait only a few milliseconds total.
 
 \param t The requested sleep duration. If 0, the thread yields rather than sleeping.
 */
