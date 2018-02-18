@@ -49,11 +49,14 @@ bool initializeCX(CX_InitConfiguation config) {
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
 
-	bool openedSucessfully = reopenWindow(config.windowConfig); //or for the first time.
+	bool openedSucessfully = CX::reopenWindow(config.windowConfig); //or for the first time.
 
 	if (!openedSucessfully) {
 		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
 	} else {
+		// Set up the clock
+		CX::Instances::Clock.setup(nullptr, true, config.clockPrecisionTestIterations);
+
 		CX::Instances::Input.pollEvents(); //Do this so that the window is at least minimally responding and doesn't get killed by the OS.
 			//This must happen after the window is configured because it relies on GLFW.
 
@@ -62,10 +65,14 @@ bool initializeCX(CX_InitConfiguation config) {
 			CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period: " << CX::Instances::Disp.getFramePeriod() << " ms.";
 		}
 
-		// Set up the clock
-		CX::Instances::Clock.setup(nullptr, true, config.clockPrecisionTestIterations);
-		
 		setupKeyboardShortcuts();
+
+
+		// Set up sound
+		CX::Instances::SoundPlayer.setup(&CX::Instances::SoundStream);
+		CX::Instances::SoundRecorder.setup(&CX::Instances::SoundStream);
+
+
 		//This is temporary: I think there's an oF bug about it
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8
 		glfwSetWindowPos(CX::Private::glfwContext, 200, 200);
