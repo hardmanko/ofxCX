@@ -11,6 +11,7 @@
 
 #include "CX_Clock.h"
 #include "CX_Logger.h"
+#include "CX_Algorithm.h"
 
 namespace CX {
 
@@ -25,6 +26,7 @@ amount of sound data has been recorded.
 
 CX_SoundStream uses RtAudio internally, so you are having problems, you might be able to figure out what is
 going wrong by checking out the page for RtAudio: http://www.music.mcgill.ca/~gary/rtaudio/index.html
+
 \ingroup sound
 */
 class CX_SoundStream {
@@ -45,7 +47,7 @@ public:
 			outputDeviceId(-1)
 		{
 			//streamOptions.streamName = "CX_SoundStream";
-			streamOptions.numberOfBuffers = 2; //More buffers means higher latency but fewer glitches. Same applies to bufferSize.
+			streamOptions.numberOfBuffers = 2; // More buffers means higher latency but fewer glitches. Same applies to bufferSize.
 			streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME; // | RTAUDIO_HOG_DEVICE | RTAUDIO_MINIMIZE_LATENCY;
 			streamOptions.priority = 1;
 		}
@@ -74,7 +76,11 @@ public:
 
 		/*! See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1StreamOptions.html for more information.
 
-		`flags` must not include RTAUDIO_NONINTERLEAVED: The audio data used by CX is interleaved.
+		It is recommended that `numberOfBuffers` should be 2, which is the default.
+
+		`flags` must not include `RTAUDIO_NONINTERLEAVED`: The audio data used by CX is interleaved.
+
+		`flags` may include `RTAUDIO_HOG_DEVICE` and `RTAUDIO_MINIMIZE_LATENCY`.
 		*/
 		RtAudio::StreamOptions streamOptions;
 
@@ -96,6 +102,7 @@ public:
 		float *outputBuffer; //!< A pointer to an array that should be filled with sound data.
 		unsigned int bufferSize; //!< The number of sample frames that are in `outputBuffer`. The total number of samples is `bufferSize * outputChannels`.
 		int outputChannels; //!< The number of channels worth of data in `outputBuffer`.
+		uint64_t bufferStartSampleFrame;
 
 		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that notified this output event.
 	};
@@ -111,15 +118,16 @@ public:
 		float *inputBuffer; //!< A pointer to an array of sound data that should be processed by the event handler function.
 		unsigned int bufferSize; //!< The number of sample frames that are in `inputBuffer`. The total number of samples is `bufferSize * inputChannels`.
 		int inputChannels; //!< The number of channels worth of data in `inputBuffer`.
+		uint64_t bufferStartSampleFrame;
 
 		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that notified this input event.
 	};
 
 
-	CX_SoundStream (void);
-	~CX_SoundStream (void);
+	CX_SoundStream(void);
+	~CX_SoundStream(void);
 
-	bool setup(CX_SoundStream::Configuration &config);
+	bool setup(Configuration &config, bool startStream = true);
 	bool closeStream(void);
 
 	bool start(void);
@@ -127,38 +135,62 @@ public:
 
 	bool isStreamRunning(void) const;
 	
-	/*! Gets the configuration that was used on the last call to setup(). Because some of the configuration
-	options are only suggestions, this function allows you to check what the actual used configuration was.
-	\return A const reference to the configuration struct. */
-	const CX_SoundStream::Configuration& getConfiguration (void) const { return _config; };
+	const Configuration& getConfiguration(void) const;
 	
-	/*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
-	uint64_t getSampleFrameNumber (void) const { return _lastSampleNumber; };
-
 	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
 
-	CX_Millis estimateTotalLatency(void) const;
+	//CX_Millis estimateTotalLatency(void) const;
 	CX_Millis estimateLatencyPerBuffer(void) const;
+
+	
 
 	bool hasSwappedSinceLastCheck(void);
 	void waitForBufferSwap(void);
-	CX_Millis getLastSwapTime(void) const;
-	CX_Millis estimateNextSwapTime(void) const;
 
-	RtAudio* getRtAudioInstance(void) const;
+	uint64_t getSampleFrameNumber(void);
+	CX_Millis getLastSwapTime(void);
 
+	CX_Millis estimateLastSwapTime(void);
+	CX_Millis estimateNextSwapTime(void);
+
+	uint64_t estimateSampleFrameAtTime(CX_Millis time, CX_Millis latencyOffset = 0);
+	CX_Millis estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset = 0);
+
+	//CX_Millis estimateEarliestPossibleStartTime(void);
+
+	//uint64_t getSampleFrameAtTime(CX_Millis startTime, CX_Millis latencyOffset = 0);
+	//CX_Millis getTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset = 0);
+
+	std::shared_ptr<RtAudio> getRtAudioPointer(void) const;
+
+	// Static helper functions to configuration
 	static std::vector<RtAudio::Api> getCompiledApis(void);
-	static std::vector<std::string> convertApisToStrings(vector<RtAudio::Api> apis);
-	static std::string convertApisToString(std::vector<RtAudio::Api> apis, std::string delim = "\r\n");
+
 	static std::string convertApiToString(RtAudio::Api api);
 	static RtAudio::Api convertStringToApi(std::string apiString);
 
+	static std::string convertApisToString(std::vector<RtAudio::Api> apis, std::string delim = "\n");
+
 	static std::vector<std::string> formatsToStrings(RtAudioFormat formats);
-	static std::string formatsToString(RtAudioFormat formats, std::string delim = "\r\n");
+	static std::string formatsToString(RtAudioFormat formats, std::string delim = "\n");
 
 	static std::vector<RtAudio::DeviceInfo> getDeviceList(RtAudio::Api api);
 	static std::string listDevices(RtAudio::Api api);
+
+	/*
+	struct SoundBufferSwap {
+		unsigned int buffer;
+		CX_Millis time;
+		CX_Millis difference;
+	};
+	std::vector<SoundBufferSwap> copyStoredSwaps(void) {
+		std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+		std::vector<SoundBufferSwap> swaps(_storedSwaps.begin(), _storedSwaps.end());
+		_storedSwaps.clear();
+		return swaps;
+	}
+	*/
 
 private:
 
@@ -166,15 +198,35 @@ private:
 
 	static int _rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data);
 
-	int _rtAudioCallbackHandler (void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status);
+	int _rtAudioCallbackHandler(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status);
 
 	std::shared_ptr<RtAudio> _rtAudio;
-	//RtAudio *_rtAudio;
+	
 	Configuration _config;
 
+	std::recursive_mutex _callbackMutex;
 	CX_Millis _lastSwapTime;
-	uint64_t _lastSampleNumber;
+	uint64_t _lastSwapSampleFrame;
 	uint64_t _sampleNumberAtLastCheck;
+
+	// Testing
+	//unsigned int _currentBufferIndex;
+	//std::vector<SoundBufferSwap> _storedSwaps;
+
+	Algo::RollingLinearModel _swapLM;
+	CX_Millis _lmTimeAtSF(uint64_t sf);
+	uint64_t _lmSFAtTime(CX_Millis t);
+
+
 };
+
+namespace Instances {
+	/*! During CX initialization, `CX::Instances::SoundPlayer` and `CX::Instances::SoundRecorder`
+	are configured to use `SoundStream`. As a result, in order to use `SoundPlayer` and `SoundRecorder`,
+	the user is only required to set up `SoundStream`.
+	
+	\ingroup sound */
+	CX_SoundStream SoundStream;
+}
 
 } //namespace CX

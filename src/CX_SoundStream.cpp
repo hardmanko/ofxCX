@@ -35,21 +35,30 @@ ss.streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME | RTAUDIO_MINIMIZE_LATENCY //
 
 //ss.streamOptions.priority is not used in this example. It would take a positive integer.
 \endcode
-All of the configuration keys are used in this example.
+
+All of the configuration keys are shown in this example.
+
+Each configuration key begins with "ss." in this example, but that can be changed by using
+a different value for the `keyPrefix` argument. Note that the "ss." prefix allows this 
+configuration to be embedded in a file that is used for configuring other settings.
+
 Any values in the \ref CX_SoundStream::Configuration struct that do not have values provided in the configuration
-file will be left at default values. Note that the "ss" prefix allows this configuration to be embedded in
-a file that also performs other configuration functions. Note that the names of the data members match the names
+file will be left at default values. Note that the names of the data members match the names
 used in the \ref CX_SoundStream::Configuration struct and have a 1-to-1 relationship with those values.
 
-The valid API name strings are: `LINUX_ALSA`, `LINUX_PULSE`, `LINUX_OSS`, `UNIX_JACK`, `MACOSX_CORE`, `WINDOWS_ASIO`, `WINDOWS_DS`, `UNSPECIFIED`, and `RTAUDIO_DUMMY`.
+The valid API name strings are: 
+`LINUX_ALSA`, `LINUX_PULSE`, `LINUX_OSS`, `UNIX_JACK`, `MACOSX_CORE`, `WINDOWS_ASIO`, `WINDOWS_DS`, `UNSPECIFIED`, and `RTAUDIO_DUMMY`.
 The last two are probably nonfunctional.
 
-Because this function uses CX::Util::readKeyValueFile() internally, it has the same arguments.
+Because this function uses CX::Util::readKeyValueFile() internally, it has many of the same arguments.
 \param filename The name of the file containing configuration data.
 \param delimiter The string that separates the key from the value. In the example, it is "=", but can be other values.
 \param trimWhitespace If true, whitespace characters surrounding both the key and value will be removed. This is a good idea to do.
 \param commentString If commentString is not the empty string (i.e. ""), everything on a line
 following the first instance of commentString will be ignored.
+\param keyPrefix The names of the keys in the example are "ss.", which is the default `keyPrefix`. You can use a different prefix.
+
+\return `false` if the file is not found, `true` otherwise.
 */
 bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::string delimiter,
 	bool trimWhitespace, std::string commentString, std::string keyPrefix)
@@ -94,10 +103,10 @@ bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::strin
 
 	if (kv.find(pre + "streamOptions.flags") != kv.end()) {
 		this->streamOptions.flags = 0;
-		string flags = kv[pre + "streamOptions.flags"];
+		std::string flags = kv[pre + "streamOptions.flags"];
 
 		if (flags.find("RTAUDIO_NONINTERLEAVED") != std::string::npos) {
-			this->streamOptions.flags |= RTAUDIO_NONINTERLEAVED; //emit warning. Don't use this flag!
+			this->streamOptions.flags |= RTAUDIO_NONINTERLEAVED;
 		}
 		if (flags.find("RTAUDIO_MINIMIZE_LATENCY") != std::string::npos) {
 			this->streamOptions.flags |= RTAUDIO_MINIMIZE_LATENCY;
@@ -118,26 +127,31 @@ bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::strin
 
 
 
-CX_SoundStream::CX_SoundStream (void) :
+CX_SoundStream::CX_SoundStream(void) :
 	_rtAudio(nullptr),
 	_lastSwapTime(0),
-	_lastSampleNumber(0),
+	_lastSwapSampleFrame(0),
 	_sampleNumberAtLastCheck(0)
+	//_currentBufferIndex(0)
 {}
 
-CX_SoundStream::~CX_SoundStream (void) {
+CX_SoundStream::~CX_SoundStream(void) {
 	closeStream();
 }
 
 /*! Opens the sound stream with the specified configuration. See CX::CX_SoundStream::Configuration for the configuration options.
 If there were errors during configuration, error messages will be logged. If the configuration was successful, the sound stream
 will be started automatically.
+
 \param config The configuration settings that are desired. Some of the configuration options are only suggestions,
 so some of the values that are used may differ from the values that are chosen. In those cases, `config`, which is passed by reference,
-is updated based on the actually used settings. You can alternately check the configuration later using CX::CX_SoundStream::getConfiguration().
-\return `true` if configuration appeared to be successful, `false` otherwise.
+is updated based on the settings that were actually used. You can alternately check the configuration later using CX::CX_SoundStream::getConfiguration().
+\param startStream If `true`, the stream will be started.
+
+\return If configuration appeared to be successful and, if `startStream == true`, if the 
+stream was started successfully, `true` is returned. Otherwise, `false` is returned.
 */
-bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
+bool CX_SoundStream::setup(CX_SoundStream::Configuration &config, bool startStream) {
 	if (_rtAudio != nullptr) {
 		closeStream();
 	}
@@ -145,7 +159,7 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 	try {
 		_rtAudio = std::make_shared<RtAudio>(config.api);
 	} catch (RT_AUDIO_ERROR_TYPE err) {
-		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "setup(): RtAudio threw an exception: " << err.getMessage();
 		_rtAudio = nullptr;
 		return false;
 	}
@@ -172,6 +186,12 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 
 	config.bufferSize = ofNextPow2(config.bufferSize);
 
+	if (config.streamOptions.flags & RTAUDIO_NONINTERLEAVED) {
+		config.streamOptions.flags = (config.streamOptions.flags & ~RTAUDIO_NONINTERLEAVED);
+		CX::Instances::Log.warning("CX_SoundStream") << "setup(): The flag RTAUDIO_NONINTERLEAVED was found, "
+			"but should not be used (CX_SoundStream uses interleaved data). That flag has been ignored.";
+	}
+
 	//Pick a sample rate.
 	int searchDeviceId = (config.outputDeviceId >= 0) ? config.outputDeviceId : config.inputDeviceId;
 	config.sampleRate = _getBestSampleRate(config.sampleRate, config.api, searchDeviceId);
@@ -192,13 +212,17 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 		config.sampleRate = _rtAudio->getStreamSampleRate(); //Check that the desired sample rate was used.
 
 	} catch (RT_AUDIO_ERROR_TYPE err) {
-		CX::Instances::Log.error("CX_SoundStream") << "In setup(), RtAudio threw an exception: " << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "setup(): RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
 
 	_config = config; //Store the updated settings.
 
-	return this->start();
+	bool success = true;
+	if (startStream) {
+		success = start();
+	}
+	return success;
 }
 
 /*! Starts the sound stream. The stream must already be have been set up (see setup()).
@@ -206,29 +230,31 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config) {
 bool CX_SoundStream::start(void) {
 
 	if(_rtAudio == nullptr) {
-		CX::Instances::Log.error("CX_SoundStream") << "start: Stream not started because instance pointer was NULL. Have you remembered to call setup()?";
+		CX::Instances::Log.error("CX_SoundStream") << "start(): Stream not started because the RtAudio instance pointer was nullptr. Have you remembered to call setup()?";
 		return false;
 	}
 
 	if (!_rtAudio->isStreamOpen()) {
-		CX::Instances::Log.error("CX_SoundStream") << "start: Stream not started because the stream was not set up. Have you remembered to call setup()?";
+		CX::Instances::Log.error("CX_SoundStream") << "start(): Stream not started because the stream was not open. Have you remembered to call setup()?";
 		return false;
 	}
 
 	if (_rtAudio->isStreamRunning()) {
-		CX::Instances::Log.notice("CX_SoundStream") << "start: Stream was already running.";
+		CX::Instances::Log.verbose("CX_SoundStream") << "start(): Stream was not started because it was already running.";
 		return true;
 	}
+
+	_lastSwapSampleFrame = 0;
+	_sampleNumberAtLastCheck = 0;
+
+	_swapLM.setup(false, 10, 3);
 
 	try {
 		_rtAudio->startStream();
 	} catch (RT_AUDIO_ERROR_TYPE &err) {
-		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "start(): RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
-
-	_lastSampleNumber = 0;
-	_sampleNumberAtLastCheck = 0;
 
 	return true;
 }
@@ -242,12 +268,105 @@ bool CX_SoundStream::isStreamRunning(void) const {
 	return _rtAudio->isStreamRunning();
 }
 
+/*! Gets the configuration that was used on the last call to setup(). Because some of the configuration
+options are only suggestions, this function allows you to check what the actual used configuration was.
+\return A const reference to the configuration struct. */
+const CX_SoundStream::Configuration& CX_SoundStream::getConfiguration(void) const {
+	return _config; 
+}
+
+/*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
+uint64_t CX_SoundStream::getSampleFrameNumber(void) {
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+	return _lastSwapSampleFrame;
+}
+
+
+
+
+
+// Incomplete
+/*
+CX_Millis CX_SoundStream::estimateEarliestPossibleStartTime(void) {
+	// looking forward, if a sample were to be put into the output buffer at
+	// the next swap, when would that sample be played?
+
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	uint64_t sampleFrameOnNextSwap = _lastSwapSampleFrame + _config.bufferSize;
+
+	return CX_Millis(0);
+}
+*/
+
+CX_Millis CX_SoundStream::estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset) {
+
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	//CX_Millis intermediateBufferLatency = (_config.streamOptions.numberOfBuffers - 1) * estimateLatencyPerBuffer();
+	CX_Millis intermediateBufferLatency = 0;
+
+
+	int64_t sfFromLastSwap = sampleFrame - _lastSwapSampleFrame;
+
+	CX_Millis timeFromLastSwap = CX_Seconds( (double)sfFromLastSwap / _config.sampleRate );
+
+	CX_Millis time = timeFromLastSwap + _lastSwapTime; // -latencyOffset;
+
+	time = time + latencyOffset - intermediateBufferLatency;
+
+	return time;
+
+}
+
+uint64_t CX_SoundStream::estimateSampleFrameAtTime(CX_Millis time, CX_Millis latencyOffset) {
+
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	//CX_Millis intermediateBufferLatency = (_config.streamOptions.numberOfBuffers - 1) * estimateLatencyPerBuffer();
+	CX_Millis intermediateBufferLatency = 0;
+
+
+	time = time + latencyOffset - intermediateBufferLatency;
+
+	CX_Millis timeFromLastSwap = time - _lastSwapTime; // +latencyOffset;
+
+	int64_t sfFromLastSwap = timeFromLastSwap.seconds() * _config.sampleRate;
+
+	uint64_t sampleFrame = sfFromLastSwap + _lastSwapSampleFrame;
+
+	return sampleFrame;
+}
+
+
+
+CX_Millis CX_SoundStream::_lmTimeAtSF(uint64_t sf) {
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	if (!_swapLM.modelReady()) {
+		return CX_Millis(0);
+	}
+
+	return CX_Seconds(_swapLM.getY(sf));
+}
+
+uint64_t CX_SoundStream::_lmSFAtTime(CX_Millis t) {
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	if (!_swapLM.modelReady()) {
+		return 0;
+	}
+
+	return uint64_t(_swapLM.getX(t.seconds()));
+}
+
+
 /*! Stops the stream. In order to restart the stream, CX::CX_SoundStream::start() must be called.
 If there is an error, a message will be logged.
 \return `false` if there was an error, `true` otherwise. */
 bool CX_SoundStream::stop (void) {
 	if(_rtAudio == nullptr) {
-		CX::Instances::Log.error("CX_SoundStream") << "stop: Stream not stopped because instance pointer was NULL. Have you remembered to call setup()?";
+		CX::Instances::Log.error("CX_SoundStream") << "stop(): Stream not stopped because instance pointer was NULL. Have you remembered to call setup()?";
 		return false;
 	}
 
@@ -255,10 +374,10 @@ bool CX_SoundStream::stop (void) {
 		if (_rtAudio->isStreamRunning()) {
     		_rtAudio->stopStream();
 		} else {
-			CX::Instances::Log.notice("CX_SoundStream") << "stop: Stream was already stopped.";
+			CX::Instances::Log.notice("CX_SoundStream") << "stop(): Stream was already stopped.";
 		}
   	} catch (RT_AUDIO_ERROR_TYPE &err) {
-   		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
+   		CX::Instances::Log.error("CX_SoundStream") << "stop(): RtAudio threw an exception: " << err.getMessage();
 		return false;
  	}
 	return true;
@@ -277,10 +396,10 @@ bool CX_SoundStream::closeStream(void) {
 		if(_rtAudio->isStreamOpen()) {
     		_rtAudio->closeStream();
 		} else {
-			CX::Instances::Log.notice("CX_SoundStream") << "closeStream: Stream was already closed.";
+			CX::Instances::Log.notice("CX_SoundStream") << "closeStream(): Stream was already closed.";
 		}
   	} catch (RT_AUDIO_ERROR_TYPE &err) {
-   		CX::Instances::Log.error("CX_SoundStream") << err.getMessage();
+   		CX::Instances::Log.error("CX_SoundStream") << "closeStream(): RtAudio threw an exception: " << err.getMessage();
 		rval = false;
  	}
 
@@ -293,9 +412,11 @@ The calculation is N_b * S_b / SR, where N_b is the number of buffers, S_b is th
 SR is the sample rate, in sample frames per second. This is a conservative upper bound on latency. Note that latency is not
 constant, but it depends on where in the buffer swapping process you start playing a sound. See \ref audioIO for more information.
 \return An estimate of the stream latency. */
+/*
 CX_Millis CX_SoundStream::estimateTotalLatency(void) const {
 	return _config.streamOptions.numberOfBuffers * estimateLatencyPerBuffer();
 }
+*/
 
 /*! This function calculates an estimate of the amount of latency per buffer full of data. It is calculated by
 S_b / SR, where S_b is the size of each buffer in sample frames and SR is the sample rate in samples per second.
@@ -308,9 +429,12 @@ CX_Millis CX_SoundStream::estimateLatencyPerBuffer(void) const {
 /*! This function checks to see if the audio buffers have been swapped since the last time
 this function was called.
 \return `true` if at least one audio buffer has been swapped out, `false` if no buffers have been swapped. */
-bool CX_SoundStream::hasSwappedSinceLastCheck (void) {
-	if (_sampleNumberAtLastCheck != _lastSampleNumber) {
-		_sampleNumberAtLastCheck = _lastSampleNumber;
+bool CX_SoundStream::hasSwappedSinceLastCheck(void) {
+
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	if (_sampleNumberAtLastCheck != _lastSwapSampleFrame) {
+		_sampleNumberAtLastCheck = _lastSwapSampleFrame;
 		return true;
 	}
 	return false;
@@ -329,24 +453,34 @@ void CX_SoundStream::waitForBufferSwap(void) {
 		;
 }
 
-/*! Gets the time at which the last buffer swap occurred. \return This time value can be compared with the result of CX::CX_Clock::now(). */
-CX_Millis CX_SoundStream::getLastSwapTime(void) const {
+/*! Gets the time at which the last buffer swap occurred. 
+\return This time value can be compared with the result of CX::CX_Clock::now(). 
+\note `estimateLastSwapTime()` may be more accurate.
+*/
+CX_Millis CX_SoundStream::getLastSwapTime(void) {
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 	return _lastSwapTime;
+}
+
+CX_Millis CX_SoundStream::estimateLastSwapTime(void) {
+	return _lmTimeAtSF(_lastSwapSampleFrame);
 }
 
 /*! Estimate the time at which the next buffer swap will occur. The estimate is based on the buffer size
 and sample rate, not empirical measurement.
 \return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.now(). */
-CX_Millis CX_SoundStream::estimateNextSwapTime(void) const {
-	return _lastSwapTime + this->estimateLatencyPerBuffer();
+CX_Millis CX_SoundStream::estimateNextSwapTime(void) {
+	return _lmTimeAtSF(_lastSwapSampleFrame + _config.bufferSize);
+
+	//return getLastSwapTime() + this->estimateLatencyPerBuffer();
 }
 
 /*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using.
 This should not be needed most of the time, but there may be cases in which you need to directly
-access RtAudio. Here is the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
+access RtAudio. Link to the documentation for RtAudio: https://www.music.mcgill.ca/~gary/rtaudio/
 */
-RtAudio* CX_SoundStream::getRtAudioInstance(void) const {
-	return _rtAudio.get();
+std::shared_ptr<RtAudio> CX_SoundStream::getRtAudioPointer(void) const {
+	return _rtAudio;
 }
 
 /*! Get a vector containing a list of all of the APIs for which the RtAudio driver
@@ -355,20 +489,6 @@ to get it by using a different version of RtAudio. */
 std::vector<RtAudio::Api> CX_SoundStream::getCompiledApis (void) {
 	std::vector<RtAudio::Api> rval;
 	RtAudio::getCompiledApi( rval );
-	return rval;
-}
-
-/*! This helper function converts a vector of RtAudio::Api to a vector of strings, using
-convertApiToString() for the conversion.
-\param apis A vector of apis to convert to strings.
-\return A vector of string names of the apis. */
-std::vector<std::string> CX_SoundStream::convertApisToStrings (vector<RtAudio::Api> apis) {
-	std::vector<std::string> rval;
-
-	for (unsigned int i = 0; i < apis.size(); i++) {
-		rval.push_back( convertApiToString(apis.at(i)) );
-	}
-
 	return rval;
 }
 
@@ -436,13 +556,13 @@ the specified delimiter between API names.
 \return A string containing the names of the APIs.
 */
 std::string CX_SoundStream::convertApisToString (std::vector<RtAudio::Api> apis, std::string delim) {
-	std::vector<std::string> sApis = convertApisToStrings(apis);
+
 	std::string rval;
 
-	for (unsigned int i = 0; i < sApis.size(); i++) {
-		rval.append( sApis[i] );
-		if (i < sApis.size() - 1) {
-			rval.append( delim );
+	for (unsigned int i = 0; i < apis.size(); i++) {
+		rval += convertApiToString(apis[i]);
+		if (i < apis.size() - 1) {
+			rval += delim;
 		}
 	}
 
@@ -460,17 +580,23 @@ std::vector<std::string> CX_SoundStream::formatsToStrings(RtAudioFormat formats)
 	for (unsigned int i = 0; i < sizeof(RtAudioFormat) * 8; i++) {
 		switch (formats & (1 << i)) {
 		case RTAUDIO_SINT8:
-			rval.push_back( "SINT8" ); break;
+			rval.push_back( "SINT8" ); 
+			break;
 		case RTAUDIO_SINT16:
-			rval.push_back( "SINT16" ); break;
+			rval.push_back( "SINT16" ); 
+			break;
 		case RTAUDIO_SINT24:
-			rval.push_back( "SINT24" ); break;
+			rval.push_back( "SINT24" ); 
+			break;
 		case RTAUDIO_SINT32:
-			rval.push_back( "SINT32" ); break;
+			rval.push_back( "SINT32" ); 
+			break;
 		case RTAUDIO_FLOAT32:
-			rval.push_back( "FLOAT32" ); break;
+			rval.push_back( "FLOAT32" ); 
+			break;
 		case RTAUDIO_FLOAT64:
-			rval.push_back( "FLOAT64" ); break;
+			rval.push_back( "FLOAT64" ); 
+			break;
 		//default:
 		};
 	}
@@ -506,7 +632,7 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api)
 	try {
 		tempRt = new RtAudio(api);
 	} catch (RT_AUDIO_ERROR_TYPE err) {
-		CX::Instances::Log.error("CX_SoundStream") << "Exception while getting device list: " << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "getDeviceList(): Exception while getting device list: " << err.getMessage();
 		return devices;
 	}
 
@@ -515,7 +641,7 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api)
 		try {
 			devices.push_back( tempRt->getDeviceInfo(i) );
 		} catch (RT_AUDIO_ERROR_TYPE err) {
-			CX::Instances::Log.error("CX_SoundStream") << "Exception while getting device " << i << ": " << err.getMessage();
+			CX::Instances::Log.error("CX_SoundStream") << "getDeviceList(): Exception while getting device " << i << ": " << err.getMessage();
 			return devices;
 		}
 	}
@@ -573,52 +699,66 @@ std::string CX_SoundStream::listDevices(RtAudio::Api api) {
 
 int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
 
-	_lastSwapTime = CX::Instances::Clock.now();
+	CX_Millis swapTime = CX::Instances::Clock.now();
 
-	if (status != 0) {
+	// Enforce const configuration in callback
+	_callbackMutex.lock();
+		int inputChannels = _config.inputChannels;
+		int outputChannels = _config.outputChannels;
+	_callbackMutex.unlock();
+
+	bool usingInput  =  inputEvent.size() > 0 &&  inputChannels > 0;
+	bool usingOutput = outputEvent.size() > 0 && outputChannels > 0;
+
+	if ((usingInput || usingOutput) && status != 0) {
 		CX::Instances::Log.error("CX_SoundStream") << "Buffer underflow/overflow detected.";
 	}
 
-	//I don't think that I really need to check for this error. I will check for a while and if it never happens, I might remove the check.
-	if (_config.bufferSize != bufferSize) {
-		CX::Instances::Log.error("CX_SoundStream") << "The configuration's buffer size does not agree with the callback's buffer size. The stream is broken.";
-	}
+	if (usingInput) {
 
-	if (_config.inputChannels > 0) {
 		CX_SoundStream::InputEventArgs callbackData;
 		callbackData.inputBuffer = (float*)inputBuffer;
 		callbackData.bufferSize = bufferSize;
-		callbackData.inputChannels = _config.inputChannels;
+		callbackData.inputChannels = inputChannels;
+		callbackData.bufferStartSampleFrame = _lastSwapSampleFrame;
 		callbackData.instance = this;
+		callbackData.bufferOverflow = (status & RTAUDIO_INPUT_OVERFLOW) == RTAUDIO_INPUT_OVERFLOW;
 
-		//Does this data need to be passed on to the listener?
-		if (status & RTAUDIO_INPUT_OVERFLOW) {
-			callbackData.bufferOverflow = true;
-		}
-
-		ofNotifyEvent( this->inputEvent, callbackData );
+		ofNotifyEvent(inputEvent, callbackData);
 	}
 
-	if (_config.outputChannels > 0) {
+	if (usingOutput) {
 
-		//Set the output to 0 so that if the event listener(s) do(es) nothing, this passes silence. This is wasteful if the event listeners do stuff.
-		memset(outputBuffer, 0, bufferSize * _config.outputChannels * sizeof(float));
+		// Set the output to 0 so that if the event listener(s) do(es) nothing, this passes silence. 
+		// This is wasteful if the event listeners do stuff, but is safe.
+		memset(outputBuffer, 0, bufferSize * outputChannels * sizeof(float));
 
 		CX_SoundStream::OutputEventArgs callbackData;
 		callbackData.outputBuffer = (float*)outputBuffer;
 		callbackData.bufferSize = bufferSize;
-		callbackData.outputChannels = _config.outputChannels;
+		callbackData.outputChannels = outputChannels;
+		callbackData.bufferStartSampleFrame = _lastSwapSampleFrame;
 		callbackData.instance = this;
+		callbackData.bufferUnderflow = (status & RTAUDIO_OUTPUT_UNDERFLOW) == RTAUDIO_OUTPUT_UNDERFLOW;
 
-		//Does this data need to be passed on to the listener?
-		if (status & RTAUDIO_OUTPUT_UNDERFLOW) {
-			callbackData.bufferUnderflow = true;
+		ofNotifyEvent(outputEvent, callbackData);
+
+		// Clamp the output to be a good samaritan
+		for (unsigned int i = 0; i < bufferSize; i++) {
+			callbackData.outputBuffer[i] = Util::clamp<float>(callbackData.outputBuffer[i], -1, 1);
 		}
-
-		ofNotifyEvent(this->outputEvent, callbackData);
 	}
 
-	_lastSampleNumber += bufferSize;
+	// Update variables once the swap is complete
+	_callbackMutex.lock();
+
+		_lastSwapTime = swapTime;
+		_lastSwapSampleFrame += bufferSize;
+
+		// testing
+		_swapLM.store(_lastSwapSampleFrame, _lastSwapTime.seconds()); // store seconds
+
+	_callbackMutex.unlock();
 
 	return 0; //Return 0 to keep the stream going.
 }
@@ -651,10 +791,12 @@ unsigned int CX_SoundStream::_getBestSampleRate(unsigned int requestedSampleRate
 
 	//If not at max, the desired sample rate must not have been possible and there was a greater sample rate available, so pick that sample rate.
 	if (closestGreaterSampleRate != numeric_limits<unsigned int>::max()) {
-		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << ") not available. " << closestGreaterSampleRate << " chosen instead.";
+		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << 
+			") not available. " << closestGreaterSampleRate << " chosen instead.";
 		return closestGreaterSampleRate;
 	} else if (closestLesserSampleRate != 0) {
-		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << ") not available. " << closestLesserSampleRate << " chosen instead.";
+		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << 
+			") not available. " << closestLesserSampleRate << " chosen instead.";
 		return closestLesserSampleRate;
 	}
 

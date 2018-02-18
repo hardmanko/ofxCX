@@ -2,22 +2,34 @@
 
 namespace CX {
 
+/*! Default constructor. */
 CX_SoundBuffer::CX_SoundBuffer(void) :
-	_successfullyLoaded(false),
-	_soundChannels(0)
+	//_successfullyLoaded(false),
+	_channels(0),
+	_sampleRate(0)
 {}
 
+/*! Constructs the CX_SoundBuffer, calling `loadFile(fileName)`.
+
+\param fileName Name of the sound file to load.
+
+*/
+CX_SoundBuffer::CX_SoundBuffer(std::string fileName) {
+	loadFile(fileName);
+}
+
 /*!
-Loads a sound file with the given file name into the CX_SoundBuffer. Any pre-existing data in the CX_SoundBuffer is deleted.
+Loads a sound file with the given file name into the `CX_SoundBuffer`. 
+Any pre-existing data in the `CX_SoundBuffer` is deleted.
 Some sound file types are supported. Others are not. In the limited testing, mp3 and wav files seem to work well.
 If the file cannot be loaded, descriptive error messages will be logged.
 
 \param fileName Name of the sound file to load.
 
-\return True if the sound given in the fileName was loaded succesffuly, false otherwise.
+\return `true` if the sound given in the `fileName` was loaded succesffuly, `false` otherwise.
 */
 bool CX_SoundBuffer::loadFile(string fileName) {
-	_successfullyLoaded = true;
+	
 
 	ofFmodSoundPlayer fmPlayer;
 #if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
@@ -27,14 +39,16 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 #endif
 	if (!loadSuccessful) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "Error loading " << fileName;
+
 #if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
-		fmPlayer.unload(); //Just in case.
+		fmPlayer.unload(); //Just in case. This safety is probably unneccessary.
 #else
 		fmPlayer.unloadSound();
 #endif
-		_successfullyLoaded = false;
-		return _successfullyLoaded;
+		return false;
 	}
+
+	bool copySuccess = false;
 
 	FMOD_SOUND *fmSound = fmPlayer.sound;
 
@@ -51,16 +65,15 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 #else
 		fmPlayer.unloadSound();
 #endif
-		_successfullyLoaded = false;
-		return _successfullyLoaded;
+		return false;
 	}
 
-	_soundChannels = channels;
-	_soundFormat = soundFormat;
+	_channels = channels;
+	//_soundFormat = soundFormat;
 
 	//Find out the sample rate of the sound. To be used if it needs to be resampled.
 	//At least, I think this gets the sample rate of the sound. The documentation isn't clear.
-	FMOD_Sound_GetDefaults( fmSound, &_soundSampleRate, NULL, NULL, NULL );
+	FMOD_Sound_GetDefaults( fmSound, &_sampleRate, NULL, NULL, NULL );
 
 	void *ptr1;
 	void *ptr2;
@@ -70,7 +83,6 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 	switch (soundFormat) {
 	case FMOD_SOUND_FORMAT_PCM8:
 		CX::Instances::Log.error("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (8-bit PCM). FMOD_SOUND_FORMAT_PCM8 not yet supported.";
-		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_PCM16:
 		{
@@ -80,15 +92,15 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 
 			if (lockResult == FMOD_OK) {
 				unsigned int totalSamples = length1 * channels; //The documentation says that length1 is in bytes, but it seems to be wrong.
-				//It is in samples for everything I've found (which have been entirely 16-bit PCM).
-				_soundData.resize( totalSamples );
+					//It is in samples for everything I've found (which have been entirely 16-bit PCM).
+				_data.resize( totalSamples );
 
 				for (unsigned int i = 0; i < totalSamples; i++) {
-					_soundData[i] = ((float)(((int16_t*)ptr1)[i]))/32768;
+					_data[i] = ((float)(((int16_t*)ptr1)[i]))/32768;
 				}
+				copySuccess = true;
 			} else {
 				CX::Instances::Log.error("CX_SoundOutput") << "Error locking sound data";
-				_successfullyLoaded = false;
 			}
 
 			FMOD_RESULT unlockResult = FMOD_Sound_Unlock( fmSound, ptr1, ptr2, length1, length2 );
@@ -97,12 +109,10 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 	case FMOD_SOUND_FORMAT_PCM24:
 		//This is annoying because the sign must be extended. Maybe should also be processed as 64-bit float.
 		CX::Instances::Log.error("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (24-bit PCM). FMOD_SOUND_FORMAT_PCM24 not yet supported.";
-		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_PCM32:
 		//This is annoying because it must be processed as 64-bit float before being converted back to 32-bit float.
 		CX::Instances::Log.error("CX_SoundOutput") << "File " << fileName << " is in an unsupported format (32-bit PCM). FMOD_SOUND_FORMAT_PCM32 not yet supported.";
-		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_PCMFLOAT:
 		//This is awesome because I don't have to do anything at all with it!
@@ -113,11 +123,11 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 
 			if (lockResult == FMOD_OK) {
 				unsigned int totalSamples = length1 * channels;
-				_soundData.resize( totalSamples );
-				memcpy(_soundData.data(), ptr1, totalSamples * sizeof(float));
+				_data.resize( totalSamples );
+				memcpy(_data.data(), ptr1, totalSamples * sizeof(float));
+				copySuccess = true;
 			} else {
 				CX::Instances::Log.error("CX_SoundOutput") << "Error locking sound data";
-				_successfullyLoaded = false;
 			}
 
 			FMOD_RESULT unlockResult = FMOD_Sound_Unlock( fmSound, ptr1, ptr2, length1, length2 );
@@ -125,7 +135,6 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 		break;
 	case FMOD_SOUND_FORMAT_NONE:
 		CX::Instances::Log.error("CX_SoundOutput") << "File " << fileName << " of unknown format.";
-		_successfullyLoaded = false;
 		break;
 	case FMOD_SOUND_FORMAT_GCADPCM:
 	case FMOD_SOUND_FORMAT_IMAADPCM:
@@ -135,35 +144,38 @@ bool CX_SoundBuffer::loadFile(string fileName) {
 	case FMOD_SOUND_FORMAT_MAX:
 	case FMOD_SOUND_FORMAT_FORCEINT:
 		CX::Instances::Log.error("CX_SoundOutput") << "File " << fileName << " is of unsupported file format (compressed/video game console). There are no plans to ever support these formats.";
-		_successfullyLoaded = false;
 		break;
 	};
 
-	//Clean up by unloading this sound.
+	//Clean up by unloading this sound. Again, probably unneccessary. ofFmodPlayer unloads itself during destruction.
 #if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 	fmPlayer.unload();
 #else
 	fmPlayer.unloadSound();
 #endif
 
-	if (_successfullyLoaded) {
+	if (copySuccess) {
 		name = fileName;
+		//_successfullyLoaded = true;
+	} else {
+		this->clear();
 	}
 
-	return _successfullyLoaded;
+	return copySuccess;
 }
 
 /*!
-Uses loadFile(string) and addSound(CX_SoundBuffer, uint64_t) to add the given file to the current CX_SoundBuffer at the given time offset (in microseconds).
+Uses loadFile(string) and addSound(CX_SoundBuffer, uint64_t) to add the 
+given file to the current CX_SoundBuffer at the given time offset.
 See those functions for more information.
 
 \param fileName Name of the sound file to load.
 \param timeOffset Time at which to add the new sound.
 
-\return Returns true if the new sound was added sucessfully, false otherwise.
+\return Returns `true` if the new sound was added sucessfully, `false` otherwise.
 */
 bool CX_SoundBuffer::addSound(std::string fileName, CX_Millis timeOffset) {
-	if (_soundData.size() == 0 || !this->_successfullyLoaded) {
+	if (!this->isReadyToPlay()) {
 		bool loadSuccess = this->loadFile(fileName);
 		if (loadSuccess) {
 			this->addSilence(timeOffset, true);
@@ -174,68 +186,116 @@ bool CX_SoundBuffer::addSound(std::string fileName, CX_Millis timeOffset) {
 		if (!temp.loadFile(fileName)) {
 			return false;
 		}
-		addSound(temp, timeOffset);
-		this->_successfullyLoaded = true; //What is this doing here?
+		this->addSound(temp, timeOffset);
+		//this->_successfullyLoaded = true; //What is this doing here?
 		return true;
 	}
 }
 
 /*!
-Adds the sound data in `nsb` at the time offset. If the sample rates of the sounds differ, nsb will be resampled to the sample rate of this CX_SoundBuffer.
-If the number of channels of nsb does not equal the number of channels of this, an attempt will be made to set the number of channels of
-nsb equal to the number of channels of this CX_SoundBuffer.
-The data from `nsb` and this CX_SoundBuffer are merged by adding the amplitudes of the sounds. The result of the addition is clamped between -1 and 1.
+Adds the sound data in `sb` at the time offset. 
 
-\param nsb A CX_SoundBuffer. Must be successfully loaded.
-\param timeOffset Time at which to add the new sound data in microseconds. Dependent on sample rate.
+If the sample rates of the sounds differ, `sb` will be resampled to the sample rate of this `CX_SoundBuffer`.
 
-\return True if nsb was successfully added to this CX_SoundBuffer, false otherwise.
+If the number of channels of `sb` does not equal the number of channels of this `CX_SoundBuffer`, an attempt will be made to set the number of channels of
+`sb` equal to the number of channels of this.
+
+The data from `sb` and this `CX_SoundBuffer` are merged by adding the amplitudes of the sounds. The result of the addition is clamped between -1 and 1.
+
+\param sb A `CX_SoundBuffer`. Must be successfully loaded.
+\param timeOffset Time at which to add the new sound data.
+
+\return `true` if `sb` was successfully added to this `CX_SoundBuffer`, `false` otherwise.
 */
-bool CX_SoundBuffer::addSound(CX_SoundBuffer nsb, CX_Millis timeOffset) {
-	if (!nsb.isLoadedSuccessfully()) {
-		CX::Instances::Log.error("CX_SoundBuffer") << "addSound: Added sound buffer not successfully loaded. It will not be added.";
+bool CX_SoundBuffer::addSound(CX_SoundBuffer sb, CX_Millis timeOffset) {
+	if (!sb.isReadyToPlay()) {
+		CX::Instances::Log.error("CX_SoundBuffer") << "addSound(): Added sound buffer not ready to play. It will not be added.";
 		return false;
 	}
 
-	//This condition really should have a warning message associated with it.
-	if (!this->isLoadedSuccessfully()) {
-		*this = nsb;
+	//This condition really should have a warning/notice message associated with it.
+	if (!this->isReadyToPlay()) {
+		*this = sb;
 		this->addSilence(timeOffset, true);
 		return true;
 	}
 
-	if (nsb.getSampleRate() != this->getSampleRate()) {
-		nsb.resample( this->getSampleRate() );
+	if (sb.getSampleRate() != this->getSampleRate()) {
+		sb.resample( this->getSampleRate() );
 	}
 
-	if (nsb.getChannelCount() != this->getChannelCount()) {
-		if (!nsb.setChannelCount( this->getChannelCount() )) {
+	if (sb.getChannelCount() != this->getChannelCount()) {
+		if (!sb.setChannelCount( this->getChannelCount() )) {
 			CX::Instances::Log.error("CX_SoundBuffer") << "addSound: Failed to match the number of channels of added sound to existing sound. The new sound will not be added.";
 			return false;
 		}
 	}
 
-	//Time is in microseconds, so do samples/second * seconds * channels to get the (absolute) sample at which the new sound starts.
-	unsigned int insertionSample = _soundChannels * (unsigned int)(this->getSampleRate() * timeOffset.seconds());
+	unsigned int insertionSample = _timeToSample(timeOffset);
 
 	//Get the new data that will be merged.
-	vector<float> &newData = nsb.getRawDataReference();
+	vector<float> &newData = sb.getRawDataReference();
 
 	//If this sound isn't long enough to hold the new data, resize it to fit.
-	if (insertionSample + newData.size() > this->_soundData.size()) {
-		_soundData.resize( insertionSample + newData.size(), 0 ); //When resizing, set any new elements to silence (i.e. 0).
+	if (insertionSample + newData.size() > this->_data.size()) {
+		_data.resize( insertionSample + newData.size(), 0 ); //When resizing, set any new elements to silence (i.e. 0).
 	}
 
 	//Copy over the new data, clamping as needed.
 	for (unsigned int i = 0; i < newData.size(); i++) {
-		float newVal = _soundData[insertionSample + i] + newData[i];
+		float newVal = _data[insertionSample + i] + newData[i];
 		newVal = std::max(newVal, -1.0f);
 		newVal = std::min(newVal, 1.0f);
-		_soundData[insertionSample + i] = newVal;
+		_data[insertionSample + i] = newVal;
 	}
 
 	return true;
 }
+
+/*! Inserts a sound into the sound buffer. Any sound data past the insertion point
+given by `timeOffset` will be moved to be after the content of `sb`.
+
+*/
+bool CX_SoundBuffer::insertSound(CX_SoundBuffer sb, CX_Millis insertionTime) {
+
+	if (!sb.isReadyToPlay()) {
+		CX::Instances::Log.error("CX_SoundBuffer") << "insertSound(): Added sound buffer was not ready to play. It will not be added.";
+		return false;
+	}
+
+	//This condition really should have a warning/notice message associated with it.
+	if (!this->isReadyToPlay()) {
+		*this = sb;
+		this->addSilence(insertionTime, true);
+		return true;
+	}
+
+	if (sb.getSampleRate() != this->getSampleRate()) {
+		sb.resample(this->getSampleRate());
+	}
+
+	if (sb.getChannelCount() != this->getChannelCount()) {
+		if (!sb.setChannelCount(this->getChannelCount())) {
+			CX::Instances::Log.error("CX_SoundBuffer") << "insertSound(): Failed to match the number of channels of added sound to existing sound. The new sound will not be added.";
+			return false;
+		}
+	}
+
+	unsigned int insertionSample = _timeToSample(insertionTime);
+	
+	// If the new end is past the end of this sound, pad this with silence.
+	if (insertionSample + sb.getTotalSampleCount() > this->getTotalSampleCount()) {
+		unsigned int sampleDifference = (insertionSample + sb.getTotalSampleCount()) - this->getTotalSampleCount();
+		_data.insert(_data.end(), sampleDifference, 0);
+	}
+
+	//Insert the data
+	_data.insert(_data.begin() + insertionSample, sb._data.begin(), sb._data.end());
+
+	return true;
+}
+
+
 
 /*! Set the contents of the sound buffer from a vector of float data.
 \param data A vector of sound samples. These values should go from -1 to 1. This requirement is not checked for.
@@ -250,14 +310,14 @@ return True in all cases. No checking is done on any of the arguments.
 */
 bool CX_SoundBuffer::setFromVector(const std::vector<float>& data, int channels, float sampleRate) {
 	if ((data.size() % channels) != 0) {
-		CX::Instances::Log.error("CX_SoundBuffer") << "setFromVector: The size of the sample data was not evenly divisible by the number of channels.";
+		CX::Instances::Log.error("CX_SoundBuffer") << "setFromVector(): The size of the sample data was not evenly divisible by the number of channels.";
 		return false;
 	}
 
-	_soundData = data;
-	_soundChannels = channels;
-	_soundSampleRate = sampleRate;
-	_successfullyLoaded = true; //Do no checking of the values.
+	_data = data;
+	_channels = channels;
+	_sampleRate = sampleRate;
+	//_successfullyLoaded = true; //Do no checking of the values.
 	return true;
 }
 
@@ -273,50 +333,65 @@ If the other channels in the CX_SoundBuffer are shorter than `data`, those chann
 */
 void CX_SoundBuffer::setChannelData(unsigned int channel, const std::vector<float>& data) {
 
-	if (channel >= _soundChannels) {
+	if (channel >= _channels) {
 		this->setChannelCount(channel + 1, false); //average = false?
 	}
 
 	for (unsigned int sampleFrame = 0; sampleFrame < data.size(); sampleFrame++) {
-		unsigned int index = (sampleFrame * _soundChannels) + channel;
-		_soundData[index] = data[sampleFrame];
+		unsigned int index = (sampleFrame * _channels) + channel;
+		_data[index] = data[sampleFrame];
 	}
+}
 
+/*! Clears all data stored in the sound buffer and returns it to an uninitialized state. */
+void CX_SoundBuffer::clear(void) {
+	_data.clear();
+	//_successfullyLoaded = false;
+	_channels = 0;
+	_sampleRate = 0;
+	name = "";
 }
 
 /*! Checks to see if the CX_SoundBuffer is ready to play. It basically just checks if there is sound data
 available and that the number of channels is set to a sane value. */
-bool CX_SoundBuffer::isReadyToPlay (void) {
-	return ((_soundChannels > 0) && (_soundData.size() != 0)); //_successfullyLoaded? _soundSampleRate? Remove _soundChannels?
+bool CX_SoundBuffer::isReadyToPlay(void) const {
+
+	bool hasSoundData = _data.size() > 0;
+	bool hasSoundChannels = _channels > 0;
+	bool acceptableSampleCount = false;
+	if (_channels > 0) {
+		acceptableSampleCount = (_data.size() % _channels) == 0;
+	}
+	bool validSampleRate = _sampleRate > 0;
+
+	return hasSoundData && hasSoundChannels && acceptableSampleCount && validSampleRate;
 }
 
-/*! Set the length of the sound to the specified length in microseconds. If the new length is longer than the old length,
+/*! Set the length of the sound to the specified length. If the new length is longer than the old length,
 the new data is zeroed (i.e. set to silence). */
 void CX_SoundBuffer::setLength(CX_Millis length) {
-	unsigned int endOfDurationSample = _soundChannels * (unsigned int)(getSampleRate() * length.seconds());
-
-	_soundData.resize( endOfDurationSample, 0 );
+	_data.resize( _timeToSample(length), 0 );
 }
 
 /*! Gets the length, in time, of the data stored in the sound buffer. This depends on the sample rate of the sound.
 \return The length. */
 CX_Millis CX_SoundBuffer::getLength(void) {
-	return CX_Seconds((double)_soundData.size() / (getChannelCount() * (double)getSampleRate()));
+	return CX_Seconds((double)_data.size() / (getChannelCount() * (double)getSampleRate()));
 }
 
 
 /*! Finds the maximum amplitude in the sound buffer.
 \return The maximum amplitude.
 \note Amplitudes are between -1 and 1, inclusive. */
-float CX_SoundBuffer::getPositivePeak (void) {
-	return Util::max(_soundData);
+float CX_SoundBuffer::getPositivePeak(void) {
+	return Util::max(_data);
 }
 
 /*! Finds the minimum amplitude in the sound buffer.
 \return The minimum amplitude.
 \note Amplitudes are between -1 and 1, inclusive. */
-float CX_SoundBuffer::getNegativePeak (void) {
-	return Util::min(_soundData);
+float CX_SoundBuffer::getNegativePeak(void) {
+	return Util::min(_data);
 }
 
 /*! Normalizes the contents of the sound buffer.
@@ -329,8 +404,8 @@ void CX_SoundBuffer::normalize(float amount) {
 	float peak = std::max(abs(getPositivePeak()), abs(getNegativePeak()));
 	float multiplier = amount / peak;
 
-	for (unsigned int i = 0; i < _soundData.size(); i++) {
-		_soundData[i] *= multiplier;
+	for (unsigned int i = 0; i < _data.size(); i++) {
+		_data[i] *= multiplier;
 	}
 }
 
@@ -345,11 +420,11 @@ with an absolute value greater than or equal to tolerance is removed from the so
 */
 void CX_SoundBuffer::stripLeadingSilence (float tolerance) {
 	for (unsigned int sampleFrame = 0; sampleFrame < this->getSampleFrameCount(); sampleFrame++) {
-		for (unsigned int channel = 0; channel < _soundChannels; channel++) {
-			unsigned int index = (sampleFrame * _soundChannels) + channel;
+		for (unsigned int channel = 0; channel < _channels; channel++) {
+			unsigned int index = (sampleFrame * _channels) + channel;
 
-			if (abs(_soundData.at(index)) >= tolerance) {
-				_soundData.erase(_soundData.begin(), _soundData.begin() + (sampleFrame * _soundChannels));
+			if (abs(_data.at(index)) >= tolerance) {
+				_data.erase(_data.begin(), _data.begin() + (sampleFrame * _channels));
 				return;
 			}
 		}
@@ -358,40 +433,59 @@ void CX_SoundBuffer::stripLeadingSilence (float tolerance) {
 
 /*! Adds the specified amount of silence to the CX_SoundBuffer at either the beginning or end.
 
-\param duration Duration of added silence in microseconds. Dependent on the sample rate of the sound. If the sample rate changes,
+\param duration Duration of added silence. Dependent on the sample rate of the sound. If the sample rate changes,
 so does the duration of silence.
 \param atBeginning If true, silence is added at the beginning of the CX_SoundBuffer. If false, the silence is added at the end.
 */
 void CX_SoundBuffer::addSilence(CX_Millis duration, bool atBeginning) {
-	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count for the new silence.
-	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * duration.seconds());
+
+	unsigned int absoluteSampleCount = _timeToSample(duration);
 
 	if (atBeginning) {
-		_soundData.insert( _soundData.begin(), absoluteSampleCount, 0 );
+		_data.insert( _data.begin(), absoluteSampleCount, 0 );
 	} else {
-		_soundData.insert( _soundData.end(), absoluteSampleCount, 0 );
+		_data.insert( _data.end(), absoluteSampleCount, 0 );
 	}
 }
 
 /*! Deletes the specified amount of sound from the CX_SoundBuffer from either the beginning or end.
 
-\param duration Duration of removed sound in microseconds. If this is greater than the duration of the sound, the whole sound is deleted.
+\param duration Duration of removed sound. If this is greater than the duration of the sound, the whole sound is deleted.
 \param fromBeginning If true, sound is deleted from the beginning of the CX_SoundBuffer's buffer.
 If false, the sound is deleted from the end, toward the beginning.
 */
 void CX_SoundBuffer::deleteAmount(CX_Millis duration, bool fromBeginning) {
-	//Time is in microseconds, so do samples/second * seconds * channels to get the absolute sample count to delete.
-	unsigned int absoluteSampleCount = _soundChannels * (unsigned int)(getSampleRate() * duration.seconds());
 
-	if (absoluteSampleCount >= _soundData.size()) {
-		_soundData.clear();
+	unsigned int absoluteSampleCount = _timeToSample(duration);
+
+	if (absoluteSampleCount >= _data.size()) {
+		_data.clear();
 	} else {
 		if (fromBeginning) {
-			_soundData.erase( _soundData.begin(), _soundData.begin() + absoluteSampleCount );
+			_data.erase( _data.begin(), _data.begin() + absoluteSampleCount );
 		} else {
-			_soundData.erase( _soundData.end() - absoluteSampleCount, _soundData.end() );
+			_data.erase( _data.end() - absoluteSampleCount, _data.end() );
 		}
 	}
+}
+
+void CX_SoundBuffer::deleteSection(CX_Millis start, CX_Millis end) {
+
+	auto startIt = _data.begin() + _timeToSample(start);
+	auto endIt = _data.begin() + _timeToSample(end);
+
+	_data.erase(startIt, endIt);
+}
+
+CX_SoundBuffer CX_SoundBuffer::copySection(CX_Millis start, CX_Millis end) const {
+
+	auto startIt = _data.begin() + _timeToSample(start);
+	auto endIt = _data.begin() + _timeToSample(end);
+	
+	CX_SoundBuffer copy = *this;
+	copy._data.assign(startIt, endIt);
+
+	return copy;
 }
 
 /*! Delete the specified channel from the data.
@@ -410,13 +504,13 @@ bool CX_SoundBuffer::deleteChannel(unsigned int channel) {
 		for (unsigned int ch = 0; ch < this->getChannelCount(); ch++) {
 			if (ch != channel) {
 				unsigned int index = (sampleFrame * this->getChannelCount()) + ch;
-				dataCopy.push_back( this->_soundData[index] );
+				dataCopy.push_back( this->_data[index] );
 			}
 		}
 	}
 
-	_soundChannels -= 1;
-	_soundData = dataCopy;
+	_channels--;
+	_data = dataCopy;
 	return true;
 }
 
@@ -424,13 +518,15 @@ bool CX_SoundBuffer::deleteChannel(unsigned int channel) {
 Sets the number of channels of the sound. Depending on the old number of channels (O) and the new number of channels (N),
 the conversion is performed in different ways. The cases in this list are evaluated in order an only 1 is executed, so a
 later case cannot be reached if an earlier case has already evaluated to true. When a case says anything about the average
-of existing data, it of course means the average on a sample-by-sample basis, not the average of all the samples.
+of existing data, it means the average on a sample-by-sample basis, not the average of all the samples.
 
 + If `O == N`, nothing happens.
-+ If `O == 0`, the number of channels is just set to N. However, `O == 0`, that usually means that there is no sound data available, so changing the number of channels is kind of meaningless.
++ If `O == 0`, the number of channels is just set to N. However, `O == 0`, that usually means that there is no sound data 
+available, so changing the number of channels is kind of meaningless.
 + If `N == 0`, the CX_SoundBuffer is cleared: all data is deleted. If you have no channels, you cannot have data in those channels.
 + If `O == 1`, each of the `N` new channels is set equal to the value of the single old channel.
-+ If `N == 1`, and `average == true` the new channel is set equal to the average of the `O` old channels. If `average == false`, all but the first channel are removed.
++ If `N == 1`, and `average == true` the new channel is set equal to the average of the `O` old channels. If `average == false`, 
+all but the first channel are removed.
 + If `N > O`, the first `O` channels are preserved unchanged. If `average == true`, the `N - O` new channels are set to the average of the `O` old channels.
 If `average == false`, the `N - O` new channels are set to 0.
 + If `N < O`, and `average == false`, the data from the `O - N` to-be-removed channels is discarded.
@@ -446,7 +542,7 @@ Now, (a + c/2) + (b + c/2) = a + b + c.
 However, there is another problem, which is that abs(a + c/2) can be greater than 1 even if the absolute value of both is no greater than 1.
 Now we need to scale each sample so that it is constrained to the proper range.
 We do that by taking the ratio of the new and old channels and multiplying the samples by that ratio. `N/O = 2/3` in the example.
-Now we have 2/3 * (a + c/2) = 2a/3 + c/3, which is bounded between -1 and 1, as long as a and c are both bounded.
+Now we have 2/3 * (a + c/2) = 2/3 * a + 1/3 * c, which is bounded between -1 and 1, as long as a and c are both bounded.
 Also, 2/3 * [(a + c/2) + (b + c/2)] = 2a/3 + 2b/3 + 2c/3, so the ratios of the components of the original sound are constant in the final sound.
 
 \param newChannelCount The number of channels the CX_SoundBuffer will have after the conversion.
@@ -457,7 +553,7 @@ average will be added back into the `N` remaining channels. If `false` (the defa
 */
 bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average) {
 
-	unsigned int O = _soundChannels; //Old number of channels
+	unsigned int O = _channels; //Old number of channels
 	unsigned int N = newChannelCount; //New number of channels
 
 	if (O == N) {
@@ -467,7 +563,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 	if (O == 0) {
 		//If there are no old channels, just set the channel count to the new value. There can be no data to copy to new channels,
 		//because there were no channels to contain the data.
-		_soundChannels = newChannelCount;
+		_channels = newChannelCount;
 		return true;
 	}
 
@@ -480,18 +576,18 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 	if (O == 1) {
 		//Mono to anything is easy: Just copy the data to new channels.
 
-		unsigned int originalSize = _soundData.size();
-		_soundData.resize( _soundData.size() * newChannelCount );
+		unsigned int originalSize = _data.size();
+		_data.resize( _data.size() * newChannelCount );
 
 		for (unsigned int samp = 0; samp < originalSize; samp++) {
 			for (unsigned int ch = 0; ch < newChannelCount; ch++) {
-				unsigned int destIndex = _soundData.size() - 1 - (samp * newChannelCount) - ch;
+				unsigned int destIndex = _data.size() - 1 - (samp * newChannelCount) - ch;
 				unsigned int sourceIndex = originalSize - samp - 1;
-				_soundData[destIndex]  = _soundData[sourceIndex];
+				_data[destIndex]  = _data[sourceIndex];
 			}
 		}
 
-		_soundChannels = newChannelCount;
+		_channels = newChannelCount;
 		return true;
 	}
 
@@ -502,23 +598,23 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 		if (average) {
 			for (unsigned int outputSamp = 0; outputSamp < newSoundData.size(); outputSamp++) {
 				float avg = 0;
-				for (unsigned int ch = 0; ch < _soundChannels; ch++) {
-					avg += _soundData[(outputSamp * _soundChannels) + ch];
+				for (unsigned int ch = 0; ch < _channels; ch++) {
+					avg += _data[(outputSamp * _channels) + ch];
 				}
-				avg /= (float)_soundChannels;
+				avg /= (float)_channels;
 
 				newSoundData[outputSamp] = avg;
 			}
 		} else {
 			//Remove all but the first channel
 			for (unsigned int outputSamp = 0; outputSamp < newSoundData.size(); outputSamp++) {
-				newSoundData[outputSamp] = _soundData[(outputSamp * _soundChannels) + 0];
+				newSoundData[outputSamp] = _data[(outputSamp * _channels) + 0];
 			}
 
 		}
 
-		_soundChannels = newChannelCount;
-		_soundData = newSoundData;
+		_channels = newChannelCount;
+		_data = newSoundData;
 		return true;
 	}
 
@@ -530,14 +626,14 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 			//New channels set to average of existing channels
 			for (unsigned int sample = 0; sample < getSampleFrameCount(); sample++) {
 				float average = 0;
-				for (unsigned int oldChannel = 0; oldChannel < _soundChannels; oldChannel++) {
-					float samp = _soundData[ (sample * _soundChannels) + oldChannel ];
+				for (unsigned int oldChannel = 0; oldChannel < _channels; oldChannel++) {
+					float samp = _data[ (sample * _channels) + oldChannel ];
 					average += samp;
 					newSoundData[ (sample * newChannelCount) + oldChannel ] = samp;
 				}
-				average /= _soundChannels;
+				average /= _channels;
 
-				for (unsigned int newChannel = _soundChannels; newChannel < newChannelCount; newChannel++) {
+				for (unsigned int newChannel = _channels; newChannel < newChannelCount; newChannel++) {
 					newSoundData[ (sample * newChannelCount) + newChannel ] = average;
 				}
 			}
@@ -545,17 +641,17 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 			//Silence new channels
 			vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
 			for (unsigned int sample = 0; sample < getSampleFrameCount(); sample++) {
-				for (unsigned int oldChannel = 0; oldChannel < _soundChannels; oldChannel++) {
-					newSoundData[ (sample * newChannelCount) + oldChannel ] = _soundData[ (sample * _soundChannels) + oldChannel ];
+				for (unsigned int oldChannel = 0; oldChannel < _channels; oldChannel++) {
+					newSoundData[ (sample * newChannelCount) + oldChannel ] = _data[ (sample * _channels) + oldChannel ];
 				}
-				for (unsigned int newChannel = _soundChannels; newChannel < newChannelCount; newChannel++) {
+				for (unsigned int newChannel = _channels; newChannel < newChannelCount; newChannel++) {
 					newSoundData[ (sample * newChannelCount) + newChannel ] = 0;
 				}
 			}
 		}
 
-		_soundChannels = newChannelCount;
-		_soundData = newSoundData;
+		_channels = newChannelCount;
+		_data = newSoundData;
 
 		return true;
 	}
@@ -575,12 +671,12 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 				//Get the sum based on the to be removed channels
 				float sum = 0;
 				for (unsigned int oldChannel = O - 1; oldChannel >= N; oldChannel--) {
-					sum += _soundData[ (sampleFrame * _soundChannels) + oldChannel ];
+					sum += _data[ (sampleFrame * _channels) + oldChannel ];
 				}
 
 				//Add the average of the old data to the remaining channels, maintaining equal ratios
 				for (unsigned int keptChannel = 0; keptChannel < N; keptChannel++) {
-					float samp = _soundData[ (sampleFrame * _soundChannels) + keptChannel ];
+					float samp = _data[ (sampleFrame * _channels) + keptChannel ];
 					newSoundData[ (sampleFrame * N) + keptChannel ] = (samp + (sum * gamma)) * sigma;
 				}
 			}
@@ -589,24 +685,29 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 			//the data from the `O - N` to-be-removed channels is discarded.
 			for (unsigned int sampleFrame = 0; sampleFrame < this->getSampleFrameCount(); sampleFrame++) {
 				for (unsigned int retainedChannel = 0; retainedChannel < N; retainedChannel++) {
-					newSoundData[ (sampleFrame * N) + retainedChannel ] = _soundData[ (sampleFrame * _soundChannels) + retainedChannel ];
+					newSoundData[ (sampleFrame * N) + retainedChannel ] = _data[ (sampleFrame * _channels) + retainedChannel ];
 				}
 			}
 		}
 
-		_soundChannels = newChannelCount;
-		_soundData = newSoundData;
+		_channels = newChannelCount;
+		_data = newSoundData;
 
 		return true;
 	}
 	/*
 	CX::Instances::Log.error("CX_SoundBuffer") << "Sound cannot be set to the given number of channels. There is no known conversion from " <<
-						_soundChannels << " channels to " << newChannelCount <<
+						_channels << " channels to " << newChannelCount <<
 						" channels. You will have to do it manually. Use getRawDataReference() to access the sound data." << endl;
 
 	return false;
 	*/
 	return false;
+}
+
+/*! \brief Returns the number of channels in the sound data stored in this CX_SoundBuffer. */
+int CX_SoundBuffer::getChannelCount(void) const {
+	return _channels; 
 }
 
 /*!
@@ -618,16 +719,22 @@ at least when the new sample rate is similar to the old sample rate.
 \param newSampleRate The requested sample rate.
 */
 void CX_SoundBuffer::resample(float newSampleRate) {
-	if (newSampleRate == _soundSampleRate) {
+	if (newSampleRate == _sampleRate) {
+		return;
+	}
+
+	if (_sampleRate == 0) {
+		_sampleRate = newSampleRate;
+		Instances::Log.notice("CX_SoundBuffer") << "resample(): The previous sample rate was 0, which is invalid. No resampling was performed, but the new sample rate was set.";
 		return;
 	}
 
 	uint64_t oldSampleCount = getSampleFrameCount();
-	uint64_t newSampleCount = (uint64_t)(getSampleFrameCount() * ((double)newSampleRate / _soundSampleRate));
+	uint64_t newSampleCount = (uint64_t)(getSampleFrameCount() * ((double)newSampleRate / _sampleRate));
 
-	vector<float> completeNewData((unsigned int)newSampleCount * _soundChannels);
+	vector<float> completeNewData((unsigned int)newSampleCount * _channels);
 
-	for (unsigned int channel = 0; channel < _soundChannels; channel++) {
+	for (unsigned int channel = 0; channel < _channels; channel++) {
 
 		for (unsigned int sample = 0; sample < newSampleCount; sample++) {
 			double time = ((double)sample)/newSampleCount;
@@ -644,40 +751,40 @@ void CX_SoundBuffer::resample(float newSampleRate) {
 				i2 = i1;
 			}
 
-			float s1 = _soundData[ (i1 * _soundChannels) + channel ];
-			float s2 = _soundData[ (i2 * _soundChannels) + channel ];
+			float s1 = _data[ (i1 * _channels) + channel ];
+			float s2 = _data[ (i2 * _channels) + channel ];
 			float linInt = s1 + (s2 - s1)*(float)oldIndexOffset;
 
-			completeNewData[(sample * _soundChannels) + channel] = linInt;
+			completeNewData[(sample * _channels) + channel] = linInt;
 		}
 	}
 
-	_soundData = completeNewData;
+	_data = completeNewData;
 
-	_soundSampleRate = newSampleRate;
+	_sampleRate = newSampleRate;
 
 }
 
 /*! This function returns the number of sample frames in the sound data held by the CX_SoundBuffer,
 which is equal to the total number of samples divided by the number of channels. */
 uint64_t CX_SoundBuffer::getSampleFrameCount(void) const {
-	if (_soundChannels == 0) {
+	if (_channels == 0) {
 		return 0;
 	}
-	return _soundData.size() / _soundChannels; 
+	return _data.size() / _channels; 
 }
 
 /*! This function reverses the sound data stored in the CX_SoundBuffer so that if it is played, it will
 play in reverse. */
 void CX_SoundBuffer::reverse(void) {
-	vector<float> copy = _soundData;
+	vector<float> copy = _data;
 	unsigned int sampleFrameCount = getSampleFrameCount();
 	for (unsigned int sf = 0; sf < sampleFrameCount; sf++) {
-		unsigned int targetSampleFrame = sf*_soundChannels;
-		unsigned int sourceSampleFrame = (sampleFrameCount - 1 - sf) * _soundChannels;
+		unsigned int targetSampleFrame = sf*_channels;
+		unsigned int sourceSampleFrame = (sampleFrameCount - 1 - sf) * _channels;
 
-		for (unsigned int ch = 0; ch < _soundChannels; ch++) {
-			_soundData[targetSampleFrame + ch] = copy[sourceSampleFrame + ch];
+		for (unsigned int ch = 0; ch < _channels; ch++) {
+			_data[targetSampleFrame + ch] = copy[sourceSampleFrame + ch];
 		}
 	}
 }
@@ -691,9 +798,9 @@ void CX_SoundBuffer::multiplySpeed(float speedMultiplier) {
 		return;
 	}
 
-	float sampleRate = this->_soundSampleRate;
+	float sampleRate = this->_sampleRate;
 	this->resample( this->getSampleRate() / speedMultiplier );
-	this->_soundSampleRate = sampleRate;
+	this->_sampleRate = sampleRate;
 }
 
 /*!
@@ -717,36 +824,35 @@ is less than 0, the amplitude multiplier is applied to all channels.
 */
 bool CX_SoundBuffer::multiplyAmplitudeBy(float amount, int channel) {
 
-	if (channel >= (int)_soundChannels) {
+	if (channel >= (int)_channels) {
 		return false;
 	}
 
 	if (channel < 0) {
 		//Apply to all channels
-		for (unsigned int i = 0; i < _soundData.size(); i++) {
-			_soundData[i] = Util::clamp<float>(_soundData[i] * amount, -1, 1);
+		for (unsigned int i = 0; i < _data.size(); i++) {
+			_data[i] = Util::clamp<float>(_data[i] * amount, -1, 1);
 		}
 
 	} else {
 		//Apply gain to the given channel
 		for (unsigned int sf = 0; sf < (unsigned int)getSampleFrameCount(); sf++) {
-			unsigned int index = (sf * _soundChannels) + channel;
-			_soundData[index] = Util::clamp<float>(_soundData[index] * amount, -1, 1);
+			unsigned int index = (sf * _channels) + channel;
+			_data[index] = Util::clamp<float>(_data[index] * amount, -1, 1);
 		}
 
 	}
 	return true;
 }
 
-/*! Clears all data stored in the sound buffer and returns it to an uninitialized state. */
-void CX_SoundBuffer::clear(void) {
-	_soundData.clear();
-	_successfullyLoaded = false;
-	_soundChannels = 0;
-	_soundSampleRate = 0;
-	name = "";
+// If channels is not provided (default -1), then the current channel count will be used.
+unsigned int CX_SoundBuffer::_timeToSample(CX_Millis time, int channels) const {
+	unsigned int channelCount = _channels;
+	if (channels > 0) {
+		channelCount = channels;
+	}
+	return channelCount * getSampleRate() * time.seconds();
 }
-
 
 /*! Writes the contents of the sound buffer to a file with the given file name. The data will
 be encoded as 16-bit PCM. The sample rate is determined by the sample rate of the sound buffer.
@@ -810,7 +916,7 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 	while (pos < bufferSize) {
 		int len = MIN(WRITE_BUFF_SIZE, bufferSize - pos);
 		for (int i = 0; i < len; i++) {
-			writeBuff[i] = (int)(this->_soundData[pos] * 32767.f);
+			writeBuff[i] = (int)(this->_data[pos] * 32767.f);
 			pos++;
 		}
 		file.write((char*)writeBuff, len*bitsPerSample / 8);
@@ -819,5 +925,13 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 	file.close();
 	return true;
 }
+
+/*
+void CX_SoundBuffer::setMetadata(unsigned int channels, float sampleRate, bool isSuccessfullyLoaded) {
+	_channels = channels;
+	_sampleRate = sampleRate;
+	_successfullyLoaded = isSuccessfullyLoaded;
+}
+*/
 
 } //namespace CX
