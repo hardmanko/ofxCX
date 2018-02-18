@@ -101,7 +101,7 @@ bool CX_SlidePresenter::startSlidePresentation (void) {
 	}
 
 	if (_renderingToFramebuffer) {
-		CX::Instances::Log.warning("CX_SlidePresenter") << "startSlidePresentation was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
+		CX::Instances::Log.warning("CX_SlidePresenter") << "startSlidePresentation() was called before last slide was finished. Call endDrawingCurrentSlide() before starting slide presentation.";
 		endDrawingCurrentSlide();
 	}
 
@@ -139,8 +139,8 @@ bool CX_SlidePresenter::isPresentingSlides (void) const {
 }
 
 /*! Performs a "standard" slide presentation in a single function call as a convenience.
-This function calls startSlidePresentation() to begin the presentation and then calls update() and
-CX::Instances::Input.pollEvents() continuously as long as isPresentingSlides() returns true.
+This function calls startSlidePresentation() to begin the presentation and then calls `CX_SlidePresenter::update()` and
+CX::Instances::Input.pollEvents() continuously as long as `CX_SlidePresenter::isPresentingSlides()` returns true.
 \return `true` if the slide presentation completed successfully or `false` if the slide presentation
 could not be started. */
 bool CX_SlidePresenter::presentSlides(void) {
@@ -152,6 +152,48 @@ bool CX_SlidePresenter::presentSlides(void) {
 		this->update();
 		CX::Instances::Input.pollEvents();
 	}
+
+	return true;
+}
+
+/*! This version of presentSlides() is a simple way to check for input/do other tasks, during slide
+presentation. The user provides a function that will be called after, both optionally, input is polled for
+and the slide presenter is updated. This means that you can write an input testing function as below:
+
+\code{.cpp}
+// This assumes that input has been polled for, so pollInput must be set to true in the call the presentSlides below.
+void checkInput(CX_SlidePresenter& sp) {
+	while (Input.Keyboard.availableEvents()) {
+		CX_Keyboard::Event ev = Input.Keyboard.getNextEvent();
+		// Process events
+	}
+}
+
+// Elsewhere, use it in slide presentation.
+slidePresenter.presentSlides(checkInput, true, true);
+\endcode
+
+*/
+bool CX_SlidePresenter::presentSlides(std::function<void(CX_SlidePresenter&)> userFunction, bool pollInput, bool updateSlidePresenter) {
+
+	if (!this->startSlidePresentation()) {
+		return false;
+	}
+
+	while (this->isPresentingSlides()) {
+		if (updateSlidePresenter) {
+			this->update();
+		}
+		if (pollInput) {
+			CX::Instances::Input.pollEvents();
+		}
+		if (userFunction != nullptr) {
+			userFunction(*this);
+		}
+	}
+
+	//TODO: Await certain input? Wait on certain keys or buttons?
+	// Return the associated event. mouse/key?
 
 	return true;
 }
@@ -646,6 +688,12 @@ CX_DataFrame CX_SlidePresenter::getLastPresentationInformation(void) const {
 
 	return df;
 }
+
+/*! \brief Get the configuration of the slide presenter. */
+const CX_SlidePresenter::Configuration& CX_SlidePresenter::getConfiguration(void) {
+	return _config;
+}
+
 
 /*! Updates the state of the slide presenter. If the slide presenter is presenting stimuli,
 update() must be called very regularly (at least once per millisecond) in order for the slide

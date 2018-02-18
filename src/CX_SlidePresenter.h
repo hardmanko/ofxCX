@@ -197,10 +197,10 @@ namespace CX {
 			\ref waitUntilFenceSyncComplete. */
 			bool useFenceSync;
 
-			/*! \brief If \ref useFenceSync is false, this is also forced to false. If this is true, new slides will not
-			be swapped in until there is confirmation that the slide has been fully rendered into the back buffer.
-			This prevents vertical tearing, but may cause slides to be swapped in late if the confirmation that
-			rendering has completed is delayed but the rendering has actually occurred on time.
+			/*! \brief If \ref `useFenceSync` is `false`, this is also forced to `false`. If this is `true`, new 
+			slides will not be swapped in until there is confirmation that the slide has been fully rendered into 
+			the back buffer. This prevents vertical tearing, but may cause slides to be swapped in late if the 
+			confirmation that rendering has completed is delayed but the rendering has actually occurred on time.
 			Does nothing if `swappingMode` is `MULTI_CORE`. */
 			bool waitUntilFenceSyncComplete;
 		};
@@ -268,7 +268,7 @@ namespace CX {
 
 		bool setup(CX_Display *display = &CX::Instances::Disp);
 		bool setup(const CX_SlidePresenter::Configuration &config);
-		void update(void);
+		
 
 		void appendSlide(CX_SlidePresenter::Slide slide);
 		void appendSlideFunction(std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
@@ -276,9 +276,13 @@ namespace CX {
 		void endDrawingCurrentSlide(void);
 
 		bool startSlidePresentation(void);
+		void update(void);
 		void stopSlidePresentation(void);
 		bool isPresentingSlides(void) const;
+
 		bool presentSlides(void);
+		bool presentSlides(std::function<void(CX_SlidePresenter&)> userFunction, bool pollInput = false, bool updateSlidePresenter = true);
+
 
 		void clearSlides(void);
 
@@ -292,6 +296,8 @@ namespace CX {
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
 		std::string printLastPresentationInformation(void) const;
 		CX_DataFrame getLastPresentationInformation(void) const;
+
+		const Configuration& getConfiguration(void);
 
 	private:
 
