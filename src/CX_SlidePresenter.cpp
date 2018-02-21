@@ -70,7 +70,7 @@ If you do not call update(), nothing will be presented.
 \return False if an error was encountered while starting presentation, in which case messages will
 be logged, true otherwise.
 */
-bool CX_SlidePresenter::startSlidePresentation (void) {
+bool CX_SlidePresenter::startSlidePresentation(void) {
 	if (_config.display == nullptr) {
 		CX::Instances::Log.error("CX_SlidePresenter") << "Cannot start slide presentation without a valid CX_Display attached. "
 			"Use setup() to attach a CX_Display to the slide presenter.";
@@ -747,6 +747,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 		}
 	} else if (_synchronizing) {
 		_config.display->swapBuffers();
+
 		_currentSlide = 0;
 		_renderCurrentSlide();
 		_synchronizing = false;
@@ -963,8 +964,8 @@ void CX_SlidePresenter::_handleFinalSlide(void) {
 }
 
 void CX_SlidePresenter::_prepareNextSlide(void) {
-	CX_SlidePresenter::Slide &currentSlide = _slides.at(_currentSlide);
-	CX_SlidePresenter::Slide &nextSlide = _slides.at(_currentSlide + 1);
+	const CX_SlidePresenter::Slide& currentSlide = _slides.at(_currentSlide);
+	CX_SlidePresenter::Slide& nextSlide = _slides.at(_currentSlide + 1);
 
 	if (_config.errorMode == ErrorMode::PROPAGATE_DELAYS) {
 		if (currentSlide.actual.startTime > currentSlide.intended.startTime) {
