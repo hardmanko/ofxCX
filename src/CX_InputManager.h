@@ -107,10 +107,9 @@ namespace CX {
 
 		bool setup(bool useKeyboard, bool useMouse, int joystickIndex = -1);
 
-		
 		bool pollEvents(void);
 
-		void clearAllEvents(bool poll = false);
+		void clearAllEvents(bool pollFirst = true);
 
 		CX_Keyboard Keyboard; //!< An instance of CX::CX_Keyboard. Enabled or disabled with CX::CX_InputManager::setup().
 		CX_Mouse Mouse; //!< An instance of CX::CX_Mouse. Enabled or disabled with CX::CX_InputManager::setup().

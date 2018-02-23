@@ -3,7 +3,6 @@
 #include "ofPoint.h"
 
 #include "CX_Utilities.h"
-#include "CX_Private.h"
 
 namespace CX {
 namespace Util {

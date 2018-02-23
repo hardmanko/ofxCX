@@ -1,10 +1,19 @@
 #pragma once
 
 #include <chrono>
+#include <vector>
 
 namespace CX {
 
-	typedef int64_t cxTick_t; //!< The underlying time store (in nanoseconds). Time differences can be negative, so this must be a signed int.
+	/*! The underlying time store for CX_Time_t (e.g. CX_Millis), which stores time in nanoseconds. 
+	CX_Time_t can store time differences, which can be negative, so cxTick_t must be a signed int.
+	
+	cxTick_t is defined as a signed 64 bit integer (int64_t), which can store 2^63 nanoseconds before
+	rolling over to a negative value. How long is that? 
+	2^63 nanoseconds * 1 second / 10^9 nanoseconds = 9.2 * 10^9 (9.2 billion) seconds 
+	9.2 * 10^9 seconds / 60 (secs/min) / 60 (mins/hr) / 24 (hrs / day) / 365 (days/year) = 292.47 years
+	*/
+	typedef int64_t cxTick_t;
 
 	template <typename T> class CX_Time_t;
 
@@ -18,7 +27,8 @@ namespace CX {
 	namespace Private {
 		template<typename tOut, typename tIn, typename resultT>
 		inline resultT convertTimeCount(resultT countIn) {
-			return countIn * (((double)tIn::num * tOut::den) / ((double)tIn::den * tOut::num));
+			double multiplier = ((double)tIn::num * tOut::den) / ((double)tIn::den * tOut::num);
+			return resultT(countIn * multiplier);
 		}
 
 		template<>
@@ -37,7 +47,32 @@ namespace CX {
 		}
 	}
 
-	/*! This class provides a convenient way to deal with time in various units. The upside of this
+	/*! The `CX_Time_t` class provides a convenient way to deal with time in different units, 
+	mostly seconds and milliseconds for psychology experiments. Different time units are represented
+	with different templated versions of the class, such as CX_Seconds and CX_Millis.
+	
+	For example, CX_Millis and CX_Seconds are two templated variations on the CX_Time_t class.
+	This allows you to express that you want time in different units.
+	\code{.cpp}
+	CX_Millis hundredMillis = 100;
+	CX_Seconds twoSecs = 2;
+	\endcode
+	Even though the times are expressed in different units, you can compare them in various ways.
+	\code{.cpp}
+	if (twoSecs > hundredMillis) {
+		cout << "Two seconds is greater than 100 milliseconds" << endl;
+	}
+	CX_Seconds onePointNineSecs     = twoSecs - hundredMillis;
+	CX_Millis nineteenHundredMillis = twoSecs - hundredMillis;
+	if (onePointNineSecs == nineteenHundredMillis) {
+		cout << "Units don't matter, only the underlying time representation." << endl;
+	}
+
+	// Get the underlying nanoseconds representation
+	cxTick_t hundredMillionNanos = hundredMillis.nanos();
+	\endcode
+	
+	The upside of this
 	system is that although all functions in CX that take time can take time values in a variety of
 	units. For example, CX_Clock::wait() takes CX_Millis as the time type so if you were to do
 	\code{.cpp}
@@ -45,12 +80,15 @@ namespace CX {
 	\endcode
 	it would attempt to wait for 20 milliseconds. However, you could do
 	\code{.cpp}
-	Clock.wait(CX_Seconds(.5));
+	Clock.wait(CX_Seconds(2));
 	\endcode
-	to wait for half of a second, if units of seconds are easier to think in for the given situation.
+	to wait for 2 seconds, if units of seconds are easier to think in for the given situation.
 	
-	CX_Time_t has at most nanosecond accuracy. The contents of any of the templated 
-	versions of CX_Time_t are all stored in nanoseconds, so conversion between time types is lossless.
+	CX_Time_t has at most nanosecond accuracy.
+	See \ref CX::cxTick_t for calculations showing the amount of time that can be stored
+	by a `CX_Time_t` object.
+	The contents of any of the templated versions of CX_Time_t are all stored in nanoseconds, 
+	so conversion between time types is lossless.
 
 	See this example for a varity of things you can do with this class.
 	\code{.cpp}
@@ -213,6 +251,15 @@ namespace CX {
 			return _nanos;
 		}
 
+		/*! Converts the time to one of the standard library types, such as `std::chrono::milliseconds`.
+		\tparam STT The return type you want, such as `std::chrono::milliseconds`.
+		*/
+		template <typename STT>
+		STT getStdTimeType(void) const {
+			std::chrono::nanoseconds nanos(this->_nanos);
+			return std::chrono::duration_cast<STT>(nanos);
+		}
+
 		/*! \brief Adds together two times. */
 		template<typename RT>
 		CX_Time_t<TimeUnit> operator+(const CX_Time_t<RT>& rhs) const {
@@ -238,7 +285,7 @@ namespace CX {
 
 		/*! \brief Divides a CX_Time_t by a unitless value, resulting in a CX_Time_t of the same type. */
 		CX_Time_t<TimeUnit> operator/(double rhs) const {
-			return CX_Nanos(_nanos / rhs);
+			return CX_Nanos(this->_nanos / rhs);
 		}
 
 		/*! \brief Multiplies a CX_Time_t by a unitless value, storing the result in the CX_Time_t.

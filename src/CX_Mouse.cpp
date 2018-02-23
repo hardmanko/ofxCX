@@ -68,11 +68,7 @@ void CX_Mouse::clearEvents(void) {
 /*! \brief Return a vector containing a copy of the currently stored events. The events stored by
 the input device are unchanged. The first element of the vector is the oldest event. */
 std::vector<CX_Mouse::Event> CX_Mouse::copyEvents(void) {
-	std::vector<CX_Mouse::Event> copy(_mouseEvents.size());
-	for (unsigned int i = 0; i < _mouseEvents.size(); i++) {
-		copy[i] = _mouseEvents.at(i);
-	}
-	return copy;
+	return std::vector<CX_Mouse::Event>(_mouseEvents.begin(), _mouseEvents.end());
 }
 
 /*!
@@ -81,6 +77,8 @@ Sets the position of the cursor, relative to the program the window. The window 
 */
 void CX_Mouse::setCursorPosition(ofPoint pos) {
 	_cursorPos = pos;
+
+	// This use of the glfwContext does not appear to require the context to be current on the calling thread.
 	glfwSetCursorPos(CX::Private::glfwContext, pos.x, pos.y);
 }
 

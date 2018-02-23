@@ -1,5 +1,7 @@
 #include "CX_UnitConversion.h"
 
+#include "CX_Private.h"
+
 namespace CX {
 namespace Util {
 

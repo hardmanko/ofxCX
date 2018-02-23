@@ -93,10 +93,10 @@ namespace CX {
 	}
 
 	/*! This function clears all events on all input devices.
-	\param poll If `true`, events are polled before they are cleared, so that events that hadn't yet
+	\param pollFirst If `true`, events are polled before they are cleared, so that events that hadn't yet
 	made it into the device specific queues (e.g. the Keyboard queue) are cleared as well. */
-	void CX_InputManager::clearAllEvents(bool poll) {
-		if (poll) {
+	void CX_InputManager::clearAllEvents(bool pollFirst) {
+		if (pollFirst) {
 			pollEvents();
 		}
 		Keyboard.clearEvents();
