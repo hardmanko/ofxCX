@@ -11,7 +11,8 @@
 
 #include "CX_Clock.h"
 #include "CX_Logger.h"
-#include "CX_Algorithm.h"
+//#include "CX_Algorithm.h"
+#include "CX_SwapSynchronizer.h"
 
 namespace CX {
 
@@ -148,11 +149,15 @@ public:
 	bool hasSwappedSinceLastCheck(void);
 	void waitForBufferSwap(void);
 
-	uint64_t getSampleFrameNumber(void);
-	CX_Millis getLastSwapTime(void);
+	//uint64_t getSampleFrameNumber(void);
+	CX_Millis getLastBufferSwapTime(void);
+
+	uint64_t getLastBufferStartSampleFrame(void);
+	uint64_t getNextBufferStartSampleFrame(void);
 
 	CX_Millis estimateLastSwapTime(void);
 	CX_Millis estimateNextSwapTime(void);
+	CX_Millis estimateSwapTime(uint64_t sampleFrame);
 
 	uint64_t estimateSampleFrameAtTime(CX_Millis time, CX_Millis latencyOffset = 0);
 	CX_Millis estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset = 0);
@@ -178,19 +183,12 @@ public:
 	static std::vector<RtAudio::DeviceInfo> getDeviceList(RtAudio::Api api);
 	static std::string listDevices(RtAudio::Api api);
 
-	/*
-	struct SoundBufferSwap {
-		unsigned int buffer;
-		CX_Millis time;
-		CX_Millis difference;
+	struct SwapEventData {
+		CX_Millis thisBufferStartTime;
+		uint64_t thisBufferStartSampleFrame;
+		uint64_t nextBufferStartSampleFrame;
 	};
-	std::vector<SoundBufferSwap> copyStoredSwaps(void) {
-		std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-		std::vector<SoundBufferSwap> swaps(_storedSwaps.begin(), _storedSwaps.end());
-		_storedSwaps.clear();
-		return swaps;
-	}
-	*/
+	ofEvent<const SwapEventData&> swapEvent;
 
 private:
 
@@ -206,17 +204,13 @@ private:
 
 	std::recursive_mutex _callbackMutex;
 	CX_Millis _lastSwapTime;
-	uint64_t _lastSwapSampleFrame;
-	uint64_t _sampleNumberAtLastCheck;
 
-	// Testing
-	//unsigned int _currentBufferIndex;
-	//std::vector<SoundBufferSwap> _storedSwaps;
+	uint64_t _lastBufferStartSampleFrame;
+	uint64_t _nextBufferStartSampleFrame;
 
-	Algo::RollingLinearModel _swapLM;
-	CX_Millis _lmTimeAtSF(uint64_t sf);
-	uint64_t _lmSFAtTime(CX_Millis t);
+	uint64_t _lastBufferStartSampleFrameAtLastCheck;
 
+	Private::CX_SwapLinearModel _swapLM;
 
 };
 
@@ -226,7 +220,7 @@ namespace Instances {
 	the user is only required to set up `SoundStream`.
 	
 	\ingroup sound */
-	CX_SoundStream SoundStream;
+	extern CX_SoundStream SoundStream;
 }
 
 } //namespace CX

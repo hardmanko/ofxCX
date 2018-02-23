@@ -10,6 +10,10 @@ typedef RtError RT_AUDIO_ERROR_TYPE;
 
 namespace CX {
 
+namespace Instances {
+	CX_SoundStream SoundStream;
+}
+
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
 due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
 they are running. This function takes the file name of a specially constructed configuration file and reads the
@@ -130,8 +134,10 @@ bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::strin
 CX_SoundStream::CX_SoundStream(void) :
 	_rtAudio(nullptr),
 	_lastSwapTime(0),
-	_lastSwapSampleFrame(0),
-	_sampleNumberAtLastCheck(0)
+	_lastBufferStartSampleFrame(0),
+	_nextBufferStartSampleFrame(0),
+	//_lastSwapSampleFrame(0),
+	_lastBufferStartSampleFrameAtLastCheck(0)
 	//_currentBufferIndex(0)
 {}
 
@@ -244,10 +250,16 @@ bool CX_SoundStream::start(void) {
 		return true;
 	}
 
-	_lastSwapSampleFrame = 0;
-	_sampleNumberAtLastCheck = 0;
+	_lastSwapTime = CX_Millis(0);
 
-	_swapLM.setup(false, 10, 3);
+	_lastBufferStartSampleFrame = 0;
+	_nextBufferStartSampleFrame = 0;
+
+	//_lastSwapSampleFrame = 0;
+	_lastBufferStartSampleFrameAtLastCheck = 0;
+
+	//TODO: Where is this configured?
+	_swapLM.setup(10);
 
 	try {
 		_rtAudio->startStream();
@@ -276,13 +288,23 @@ const CX_SoundStream::Configuration& CX_SoundStream::getConfiguration(void) cons
 }
 
 /*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
+/*
 uint64_t CX_SoundStream::getSampleFrameNumber(void) {
 	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 	return _lastSwapSampleFrame;
 }
+*/
 
+/*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
+uint64_t CX_SoundStream::getNextBufferStartSampleFrame(void) {
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+	return _nextBufferStartSampleFrame;
+}
 
-
+uint64_t CX_SoundStream::getLastBufferStartSampleFrame(void) {
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+	return _lastBufferStartSampleFrame;
+}
 
 
 // Incomplete
@@ -307,11 +329,12 @@ CX_Millis CX_SoundStream::estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Mil
 	CX_Millis intermediateBufferLatency = 0;
 
 
-	int64_t sfFromLastSwap = sampleFrame - _lastSwapSampleFrame;
+	int64_t sfFromLastSwap = sampleFrame - getLastBufferStartSampleFrame();
 
 	CX_Millis timeFromLastSwap = CX_Seconds( (double)sfFromLastSwap / _config.sampleRate );
 
-	CX_Millis time = timeFromLastSwap + _lastSwapTime; // -latencyOffset;
+	CX_Millis lastSwapTime = estimateLastSwapTime(); // or _lastSwapTime
+	CX_Millis time = timeFromLastSwap + lastSwapTime;
 
 	time = time + latencyOffset - intermediateBufferLatency;
 
@@ -329,37 +352,15 @@ uint64_t CX_SoundStream::estimateSampleFrameAtTime(CX_Millis time, CX_Millis lat
 
 	time = time + latencyOffset - intermediateBufferLatency;
 
-	CX_Millis timeFromLastSwap = time - _lastSwapTime; // +latencyOffset;
+	CX_Millis lastSwapTime = estimateLastSwapTime(); // or _lastSwapTime
+	CX_Millis timeFromLastSwap = time - lastSwapTime;
 
 	int64_t sfFromLastSwap = timeFromLastSwap.seconds() * _config.sampleRate;
 
-	uint64_t sampleFrame = sfFromLastSwap + _lastSwapSampleFrame;
+	uint64_t sampleFrame = sfFromLastSwap + getLastBufferStartSampleFrame();
 
 	return sampleFrame;
 }
-
-
-
-CX_Millis CX_SoundStream::_lmTimeAtSF(uint64_t sf) {
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-
-	if (!_swapLM.modelReady()) {
-		return CX_Millis(0);
-	}
-
-	return CX_Seconds(_swapLM.getY(sf));
-}
-
-uint64_t CX_SoundStream::_lmSFAtTime(CX_Millis t) {
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-
-	if (!_swapLM.modelReady()) {
-		return 0;
-	}
-
-	return uint64_t(_swapLM.getX(t.seconds()));
-}
-
 
 /*! Stops the stream. In order to restart the stream, CX::CX_SoundStream::start() must be called.
 If there is an error, a message will be logged.
@@ -433,8 +434,8 @@ bool CX_SoundStream::hasSwappedSinceLastCheck(void) {
 
 	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 
-	if (_sampleNumberAtLastCheck != _lastSwapSampleFrame) {
-		_sampleNumberAtLastCheck = _lastSwapSampleFrame;
+	if (_lastBufferStartSampleFrameAtLastCheck != _lastBufferStartSampleFrame) {
+		_lastBufferStartSampleFrameAtLastCheck = _lastBufferStartSampleFrame;
 		return true;
 	}
 	return false;
@@ -457,22 +458,43 @@ void CX_SoundStream::waitForBufferSwap(void) {
 \return This time value can be compared with the result of CX::CX_Clock::now(). 
 \note `estimateLastSwapTime()` may be more accurate.
 */
-CX_Millis CX_SoundStream::getLastSwapTime(void) {
+CX_Millis CX_SoundStream::getLastBufferSwapTime(void) {
 	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 	return _lastSwapTime;
 }
 
 CX_Millis CX_SoundStream::estimateLastSwapTime(void) {
-	return _lmTimeAtSF(_lastSwapSampleFrame);
+	return estimateSwapTime(getLastBufferStartSampleFrame());
+	//return _lmTimeAtSF(getLastBufferStartSampleFrame());
 }
 
-/*! Estimate the time at which the next buffer swap will occur. The estimate is based on the buffer size
-and sample rate, not empirical measurement.
+/*! Estimate the time at which the next buffer swap will occur.
 \return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.now(). */
 CX_Millis CX_SoundStream::estimateNextSwapTime(void) {
-	return _lmTimeAtSF(_lastSwapSampleFrame + _config.bufferSize);
+	return estimateSwapTime(getNextBufferStartSampleFrame());
+	//return _lmTimeAtSF(getNextBufferStartSampleFrame());
+}
 
-	//return getLastSwapTime() + this->estimateLatencyPerBuffer();
+CX_Millis CX_SoundStream::estimateSwapTime(uint64_t sampleFrame) {
+
+	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+
+	if (!_swapLM.ready()) {
+		return 0;
+	}
+
+	unsigned int sampleSize = _swapLM.storedSamples();
+
+	uint64_t dataEndSF = getLastBufferStartSampleFrame();
+	uint64_t dataStartSF = dataEndSF - sampleSize;
+
+	if (sampleFrame < dataStartSF - sampleSize || sampleFrame > dataEndSF + sampleSize) {
+		// warning: SF too far for accurate prediction
+		Instances::Log.warning("CX_SoundStream") << "estimateSwapTime(): Sample frame " << sampleFrame << " is far from recorded data, which limits the accuracy of the estimate.";
+	}
+
+	return _swapLM.getY(sampleFrame);
+
 }
 
 /*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using.
@@ -705,6 +727,7 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 	_callbackMutex.lock();
 		int inputChannels = _config.inputChannels;
 		int outputChannels = _config.outputChannels;
+		uint64_t thisBufferStartSampleFrame = _lastBufferStartSampleFrame + bufferSize;
 	_callbackMutex.unlock();
 
 	bool usingInput  =  inputEvent.size() > 0 &&  inputChannels > 0;
@@ -720,7 +743,7 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 		callbackData.inputBuffer = (float*)inputBuffer;
 		callbackData.bufferSize = bufferSize;
 		callbackData.inputChannels = inputChannels;
-		callbackData.bufferStartSampleFrame = _lastSwapSampleFrame;
+		callbackData.bufferStartSampleFrame = thisBufferStartSampleFrame;
 		callbackData.instance = this;
 		callbackData.bufferOverflow = (status & RTAUDIO_INPUT_OVERFLOW) == RTAUDIO_INPUT_OVERFLOW;
 
@@ -737,7 +760,7 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 		callbackData.outputBuffer = (float*)outputBuffer;
 		callbackData.bufferSize = bufferSize;
 		callbackData.outputChannels = outputChannels;
-		callbackData.bufferStartSampleFrame = _lastSwapSampleFrame;
+		callbackData.bufferStartSampleFrame = thisBufferStartSampleFrame;
 		callbackData.instance = this;
 		callbackData.bufferUnderflow = (status & RTAUDIO_OUTPUT_UNDERFLOW) == RTAUDIO_OUTPUT_UNDERFLOW;
 
@@ -753,10 +776,16 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 	_callbackMutex.lock();
 
 		_lastSwapTime = swapTime;
-		_lastSwapSampleFrame += bufferSize;
 
-		// testing
-		_swapLM.store(_lastSwapSampleFrame, _lastSwapTime.seconds()); // store seconds
+		_lastBufferStartSampleFrame = thisBufferStartSampleFrame;
+		_nextBufferStartSampleFrame = thisBufferStartSampleFrame + bufferSize;
+
+		if (swapEvent.size() > 0) {
+			SwapEventData sssd{ swapTime, thisBufferStartSampleFrame, _nextBufferStartSampleFrame };
+			ofNotifyEvent(swapEvent, sssd);
+		}
+
+		_swapLM.store(thisBufferStartSampleFrame, swapTime);
 
 	_callbackMutex.unlock();
 

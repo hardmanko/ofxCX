@@ -119,7 +119,7 @@ namespace CX {
 		`SoundRecorder` does not need to have `setup()` called.
 
 		\ingroup sound */
-		CX_SoundBufferRecorder SoundRecorder;
+		extern CX_SoundBufferRecorder SoundRecorder;
 	}
 
 }

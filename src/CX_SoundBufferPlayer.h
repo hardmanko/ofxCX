@@ -111,7 +111,7 @@ namespace CX  {
 		`SoundPlayer` does not need to have `setup()` called.
 		
 		\ingroup sound */
-		CX_SoundBufferPlayer SoundPlayer;
+		extern CX_SoundBufferPlayer SoundPlayer;
 	}
 
 }

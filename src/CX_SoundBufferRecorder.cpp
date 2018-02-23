@@ -4,6 +4,10 @@
 
 namespace CX {
 
+namespace Instances {
+	CX_SoundBufferRecorder SoundRecorder;
+}
+
 CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
 	_soundStream(nullptr),
 	_listeningForEvents(false)
@@ -183,7 +187,7 @@ bool CX_SoundBufferRecorder::queueRecording(bool clear, CX_Millis startTime, CX_
 
 	uint64_t startSampleFrame = _soundStream->estimateSampleFrameAtTime(startTime, latencyOffset);
 
-	if (startSampleFrame < _soundStream->getSampleFrameNumber()) {
+	if (startSampleFrame < _soundStream->getNextBufferStartSampleFrame()) {
 		CX::Instances::Log.warning("CX_SoundBufferRecorder") << "queueRecording(): Desired start time has already passed. Starting immediately.";
 		record(clear);
 		return false;

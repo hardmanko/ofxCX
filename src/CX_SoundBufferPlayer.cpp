@@ -4,6 +4,10 @@
 
 namespace CX {
 
+namespace Instances {
+	CX_SoundBufferPlayer SoundPlayer;
+}
+
 CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
 	_soundStream(nullptr),
 	_listeningForEvents(false)
@@ -166,7 +170,7 @@ bool CX_SoundBufferPlayer::queuePlayback(CX_Millis startTime, CX_Millis latencyO
 
 	uint64_t startSF = _soundStream->estimateSampleFrameAtTime(startTime, latencyOffset);
 
-	if (startSF < _soundStream->getSampleFrameNumber()) {
+	if (startSF < _soundStream->getNextBufferStartSampleFrame()) {
 		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "queuePlayback(): Desired start time has already passed. Starting immediately.";
 		play(restart);
 		return false;
