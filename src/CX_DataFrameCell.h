@@ -58,6 +58,7 @@ namespace CX {
 		bool isVector(void) const;
 		unsigned int size(void) const;
 
+		CX_DataFrameCell clone(void) const;
 		void copyCellTo(CX_DataFrameCell* targetCell) const;
 
 		template <typename T> void setStoredType(void);
@@ -71,18 +72,16 @@ namespace CX {
 
 	private:
 
-		static unsigned int _floatingPointPrecision;
-
 		std::shared_ptr<std::vector<std::string>> _data;
-
 		std::shared_ptr<std::string> _type;
 		std::shared_ptr<bool> _ignoreStoredType;
-		//std::shared_ptr<std::size_t> _typeHash; //Could make type comparison go much faster
+
+		void _allocatePointers(void);
+
+		static unsigned int _floatingPointPrecision;
 
 		template <typename T> static std::string _toString(const T& value);
 		template <typename T> static T _fromString(const std::string& str);
-
-		void _allocatePointers(void);
 
 	};
 

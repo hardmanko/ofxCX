@@ -154,7 +154,7 @@ CX_Mouse::Event CX_Mouse::waitForButtonPress(std::vector<int> buttons, bool clea
 		}
 
 		for (auto it = _mouseEvents.begin(); it != _mouseEvents.end(); it++) {
-			if (it->type == CX_Mouse::PRESSED) {
+			if (it->type == CX_Mouse::Pressed) {
 
 				bool buttonFound = std::find(buttons.begin(), buttons.end(), it->button) != buttons.end();
 
@@ -186,15 +186,15 @@ CX_Mouse::Event CX_Mouse::waitForButtonPress(std::vector<int> buttons, bool clea
 (e.g. the timestamp is not set to the current time, it is left as-is).
 This can be useful if you want to have a simulated participant perform the
 task for debugging purposes.
-If the event type is CX_Mouse::PRESSED or CX_Mouse::RELEASED, the button of the
+If the event type is CX_Mouse::Pressed or CX_Mouse::Released, the button of the
 event will be added to or removed from the list of held buttons, depending on event
 type.
 \param ev The event to append.
 */
 void CX_Mouse::appendEvent(CX_Mouse::Event ev) {
-	if (ev.type == CX_Mouse::PRESSED) {
+	if (ev.type == CX_Mouse::Pressed) {
 		_heldButtons.insert(ev.button);
-	} else if (ev.type == CX_Mouse::RELEASED) {
+	} else if (ev.type == CX_Mouse::Released) {
 		_heldButtons.erase(ev.button);
 	}
 
@@ -229,7 +229,7 @@ void CX_Mouse::_mouseWheelScrollHandler(ofMouseEventArgs &a) {
 	ev.time = CX::Instances::Clock.now();
 	ev.uncertainty = ev.time - _lastEventPollTime;
 
-	ev.type = CX_Mouse::SCROLLED;
+	ev.type = CX_Mouse::Scrolled;
 
 	ev.button = -1;
 	ev.x = a.scrollX;
@@ -244,7 +244,7 @@ void CX_Mouse::_mouseWheelScrollHandler(Private::CX_MouseScrollEventArgs_t &a) {
 	ev.time = CX::Instances::Clock.now();
 	ev.uncertainty = ev.time - _lastEventPollTime;
 
-	ev.type = CX_Mouse::SCROLLED;
+	ev.type = CX_Mouse::Scrolled;
 
 	ev.button = -1;
 	ev.x = a.x;
@@ -262,27 +262,27 @@ void CX_Mouse::_mouseEventHandler(ofMouseEventArgs &ofEvent) {
 	ev.button = ofEvent.button;
 	ev.x = ofEvent.x;
 	ev.y = ofEvent.y;
-	if (CX::Instances::Disp.getYIncreasesUpwards()) {
-		ev.y = CX::Instances::Disp.getResolution().y - ev.y; //Not good if multiple displays are possible
-	}
+	//if (CX::Instances::Disp.getYIncreasesUpwards()) {
+	//	ev.y = CX::Instances::Disp.getResolution().y - ev.y; //Not good if multiple displays are possible
+	//}
 
 	_cursorPos = ofPoint(ev.x, ev.y);
 
 	switch (ofEvent.type) {
 	case ofMouseEventArgs::Pressed:
-		ev.type = CX_Mouse::PRESSED;
+		ev.type = CX_Mouse::Pressed;
 		_heldButtons.insert(ofEvent.button);
 		break;
 	case ofMouseEventArgs::Released:
-		ev.type = CX_Mouse::RELEASED;
+		ev.type = CX_Mouse::Released;
 		_heldButtons.erase(ofEvent.button);
 		break;
 	case ofMouseEventArgs::Moved:
-		ev.type = CX_Mouse::MOVED;
+		ev.type = CX_Mouse::Moved;
 		ev.button = -1; //To be obvious that the button data is garbage.
 		break;
 	case ofMouseEventArgs::Dragged:
-		ev.type = CX_Mouse::DRAGGED;
+		ev.type = CX_Mouse::Dragged;
 		//It isn't clear what the button data should be set to in this case. The last mouse button pressed?
 		//The last mouse button pressed before the drag started? User code just needs to check which mouse buttons are held, I guess.
 		//GLFW sets it to something called "buttonInUse", which is the last mouse button pressed. This means that drags can start with one
@@ -352,11 +352,11 @@ std::istream& operator>> (std::istream& is, CX_Mouse::Event& ev) {
 	int eventType;
 	is >> eventType;
 	switch (eventType) {
-	case CX_Mouse::MOVED: ev.type = CX_Mouse::MOVED; break;
-	case CX_Mouse::DRAGGED: ev.type = CX_Mouse::DRAGGED; break;
-	case CX_Mouse::PRESSED: ev.type = CX_Mouse::PRESSED; break;
-	case CX_Mouse::RELEASED: ev.type = CX_Mouse::RELEASED; break;
-	case CX_Mouse::SCROLLED: ev.type = CX_Mouse::SCROLLED; break;
+	case CX_Mouse::Moved: ev.type = CX_Mouse::Moved; break;
+	case CX_Mouse::Dragged: ev.type = CX_Mouse::Dragged; break;
+	case CX_Mouse::Pressed: ev.type = CX_Mouse::Pressed; break;
+	case CX_Mouse::Released: ev.type = CX_Mouse::Released; break;
+	case CX_Mouse::Scrolled: ev.type = CX_Mouse::Scrolled; break;
 	}
 
 	return is;

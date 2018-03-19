@@ -9,14 +9,14 @@ namespace Instances {
 }
 
 CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
-	_soundStream(nullptr),
-	_listeningForEvents(false)
+	_soundStream(nullptr) //,
+	//_listeningForEvents(false)
 {}
 
 CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {
 	stop();
 
-	_listenForEvents(false);
+	//_listenForEvents(false);
 
 	getUnderflowsSinceLastCheck(true);
 }
@@ -34,7 +34,7 @@ bool CX_SoundBufferPlayer::setup(Configuration config) {
 	_soundStream = std::make_shared<CX_SoundStream>();
 
 	bool setupSuccessfully = _soundStream->setup((CX_SoundStream::Configuration&)config);
-	bool startedSuccessfully = _soundStream->start();
+	bool startedSuccessfully = _soundStream->startStream();
 
 	if (setupSuccessfully && startedSuccessfully) {
 		_listenForEvents(true);
@@ -57,11 +57,16 @@ bool CX_SoundBufferPlayer::setup(CX_SoundStream *ss) {
 }
 
 bool CX_SoundBufferPlayer::setup(std::shared_ptr<CX_SoundStream> ss) {
+	if (!ss) {
+		return false;
+	}
+
 	_cleanUpOldSoundStream();
 
 	_soundStream = ss;
 
-	_listenForEvents(true);
+	//_listenForEvents(true);
+	_outputEventHelper.setup<CX_SoundBufferPlayer>(&ss->outputEvent, this, &CX_SoundBufferPlayer::_outputEventHandler);
 
 	setSoundBuffer(_outData.soundBuffer);
 
@@ -79,29 +84,106 @@ If `false`, playback will continue from where it was last stopped.
 
 \return `true` if the sound buffer associated with the player is ready to play (see `CX_SoundBuffer::isReadyToPlay()`), `false` otherwise. */
 bool CX_SoundBufferPlayer::play(bool restart) {
-	if (_soundStream == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferPlayer") << "play(): Could not start sound playback, the sound stream was nonexistent. Have you forgotten to call setup()?";
-		return false;
-	}
 
-	if (!_soundStream->isStreamRunning()) {
-		CX::Instances::Log.error("CX_SoundBufferPlayer") << "play(): Could not start sound playback. The sound stream was not running.";
+	if (!_checkPlaybackRequirements("play")) {
 		return false;
 	}
 
 	std::lock_guard<std::recursive_mutex> outputLock(_outData);
-	if (_outData.soundBuffer->isReadyToPlay()) {
-		_outData.playing = true;
-		if (restart) {
-			_outData.soundPlaybackSampleFrame = 0;
-		}
-		return true;
+
+	_outData.playing = true;
+
+	if (restart) {
+		_outData.soundPlaybackSampleFrame = 0;
 	}
 
-	CX::Instances::Log.error("CX_SoundBufferPlayer") << "Could not start sound playback. There was a problem with the sound "
-		"buffer associated with the player. Have you remembered to call setSoundBuffer()?";
+	return true;
+	
+}
 
+/*! Queue the start time of the sound in experiment time with an offset to account for latency.
+
+The start time is adjusted by an estimate of the latency of the sound stream. This is calculated
+as (N_b - 1) * S_b / SR, where N_b is the number of buffers, S_b is the size of the buffers (in sample
+frames), and SR is the sample rate, in sample frames per second.
+
+In order for this function to have any meaningful effect, the request start time, plus any latency
+adjustments, must be in the future. If `startTime` minus the estimated stream
+latency is not in the future, the sound will start playing immediately and a warning will be logged.
+
+\param startTime The desired experiment time at which the sound should start playing.
+\param timeout The longest amount of time to wait until a prediction for the future swap unit is ready.
+\param restart If `true`, playback will be restarted from the beginning of the sound.
+If `false`, playback will continue from where it was last stopped.
+
+\return `false` if the start time plus the latency offset is in the past. `true` otherwise.
+
+\note See CX_SoundBufferPlayer::seek() for a way to choose the current time point within the sound.
+*/
+bool CX_SoundBufferPlayer::queuePlayback(CX_Millis startTime, CX_Millis timeout, bool restart) {
+
+	Sync::DataClient& cl = _soundStream->swapClient;
+
+	if (!cl.waitUntilAllReady(timeout)) {
+		return false;
+	}
+
+	Sync::SwapUnitPrediction sp = cl.predictSwapUnitAtTime(startTime);
+	if (sp.usable) {
+		return queuePlayback(sp.prediction(), restart);
+	}
 	return false;
+
+	//CX_SoundStream::SampleFrame startSF = _soundStream->estimateSampleFrameAtTime(startTime, latencyOffset);
+	//return queuePlayback(startSF, restart);
+}
+
+bool CX_SoundBufferPlayer::queuePlayback(CX_SoundStream::SampleFrame sampleFrame, bool restart) {
+
+	if (!_checkPlaybackRequirements("queuePlayback")) {
+		return false;
+	}
+
+	if (sampleFrame < _soundStream->swapData.getSwapUnitForNextSwap()) {
+		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "queuePlayback(): Desired start sample frame has already passed. Starting immediately. "
+			"Desired start SF: " <<	sampleFrame << ", next swap SF: " << _soundStream->swapData.getSwapUnitForNextSwap() << ".";
+		play(restart);
+		return false;
+	}
+
+	std::lock_guard<std::recursive_mutex> outputLock(_outData);
+
+	_outData.playbackStartSampleFrame = sampleFrame;
+	_outData.playbackQueued = true;
+
+	if (restart) {
+		_outData.soundPlaybackSampleFrame = 0;
+	}
+
+	return true;
+}
+
+bool CX_SoundBufferPlayer::_checkPlaybackRequirements(std::string callerName) {
+
+	if (_soundStream == nullptr) {
+		CX::Instances::Log.error("CX_SoundBufferPlayer") << callerName << "(): Could not start sound playback because the sound stream was nullptr. Have you forgotten to call setup()?";
+		return false;
+	}
+
+	if (!_soundStream->isStreamRunning()) {
+		CX::Instances::Log.error("CX_SoundBufferPlayer") << callerName << "(): Could not start sound playback. The sound stream was not running.";
+		return false;
+	}
+
+	std::lock_guard<std::recursive_mutex> outputLock(_outData);
+
+	if (_outData.soundBuffer == nullptr || !_outData.soundBuffer->isReadyToPlay()) {
+		CX::Instances::Log.error("CX_SoundBufferPlayer") << callerName << "(): Could not start sound playback. There was a problem with the sound "
+			"buffer associated with the player. Have you remembered to call setSoundBuffer()?";
+		return false;
+	}
+
+	return true;
 }
 
 /*! Stop the currently playing sound buffer, or, if a playback start was cued, cancel the cued playback. */
@@ -133,58 +215,7 @@ bool CX_SoundBufferPlayer::isPlayingOrQueued(void) {
 	return isPlaying() || isPlaybackQueued();
 }
 
-/*! Queue the start time of the sound in experiment time with an offset to account for latency. 
 
-The start time is adjusted by an estimate of the latency of the sound stream. This is calculated
-as (N_b - 1) * S_b / SR, where N_b is the number of buffers, S_b is the size of the buffers (in sample 
-frames), and SR is the sample rate, in sample frames per second.
-
-In order for this function to have any meaningful effect, the request start time, plus any latency 
-adjustments, must be in the future. If `startTime` plus `latencyOffset` minus the estimated stream 
-latency is not in the future, the sound will start playing immediately and a warning will be logged.
-
-\param startTime The desired experiment time at which the sound should start playing.
-\param latencyOffset An offset that accounts for latency. If, for example, you called this function with
-an offset of 0 and discovered that the sound played 200 ms later than you were expecting it to,
-you would set `latencyOffset` to -200 in order to queue the start time 200 ms earlier than the
-nominal desired start time.
-\param restart If `true`, playback will be restarted from the beginning of the sound.
-If `false`, playback will continue from where it was last stopped.
-
-\return `false` if the start time plus the latency offset is in the past. `true` otherwise.
-
-\note See CX_SoundBufferPlayer::seek() for a way to choose the current time point within the sound.
-*/
-bool CX_SoundBufferPlayer::queuePlayback(CX_Millis startTime, CX_Millis latencyOffset, bool restart) {
-	if (_soundStream == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferPlayer") << "queuePlayback(): Could not queue playback because the sound stream was nullptr. Have you forgotten to call setup()?";
-		return false;
-	}
-
-	if (!_soundStream->isStreamRunning()) {
-		CX::Instances::Log.error("CX_SoundBufferPlayer") << "queuePlayback(): Could not queue sound playback. The sound stream was not running.";
-		return false;
-	}
-
-	std::lock_guard<std::recursive_mutex> outputLock(_outData);
-
-	uint64_t startSF = _soundStream->estimateSampleFrameAtTime(startTime, latencyOffset);
-
-	if (startSF < _soundStream->getNextBufferStartSampleFrame()) {
-		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "queuePlayback(): Desired start time has already passed. Starting immediately.";
-		play(restart);
-		return false;
-	}
-
-	_outData.playbackStartSampleFrame = startSF;
-	_outData.playbackQueued = true;
-
-	if (restart) {
-		_outData.soundPlaybackSampleFrame = 0;
-	}
-
-	return true;
-}
 
 /*! Set the current time in the active sound. When playback starts, it will begin from that
 time in the sound. If the sound buffer is currently playing, this will jump to that point
@@ -379,7 +410,7 @@ std::shared_ptr<CX_SoundBuffer> CX_SoundBufferPlayer::getSoundBuffer(void) {
 
 }
 
-void CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &outputData) {
+void CX_SoundBufferPlayer::_outputEventHandler(const CX_SoundStream::OutputEventArgs& outputData) {
 	
 	std::lock_guard<std::recursive_mutex> outputLock(_outData);
 
@@ -441,6 +472,7 @@ void CX_SoundBufferPlayer::_outputEventHandler(CX_SoundStream::OutputEventArgs &
 
 }
 
+/*
 void CX_SoundBufferPlayer::_listenForEvents(bool listen) {
 	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
 		return;
@@ -455,10 +487,11 @@ void CX_SoundBufferPlayer::_listenForEvents(bool listen) {
 
 	_listeningForEvents = listen;
 }
+*/
 
 void CX_SoundBufferPlayer::_cleanUpOldSoundStream(void) {
 	stop();
-	_listenForEvents(false);
+	//_listenForEvents(false);
 	_soundStream = nullptr;
 }
 

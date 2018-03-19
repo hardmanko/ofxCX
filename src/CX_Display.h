@@ -18,11 +18,15 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 #include "ofAppRunner.h"
 #include "ofGLProgrammableRenderer.h"
 
-#include "CX_Private.h"
+#include "CX_DisplayThread.h"
+
 #include "CX_Clock.h"
 #include "CX_Logger.h"
-#include "CX_VideoBufferSwappingThread.h"
+//#include "CX_SwapSynchronizer.h"
+//#include "CX_SynchronizationUtils.h"
 #include "CX_DataFrame.h"
+//#include "CX_ThreadUtils.h"
+
 
 namespace CX {
 
@@ -38,6 +42,9 @@ namespace CX {
 	*/
 	class CX_Display {
 	public:
+
+		typedef Sync::SwapUnit FrameNumber;
+
 		CX_Display(void);
 		~CX_Display(void);
 
@@ -48,78 +55,198 @@ namespace CX {
 		bool isFullscreen(void);
 		void setMinimized(bool minimize);
 
+		// rename these?
 		void useHardwareVSync(bool b);
 		void useSoftwareVSync(bool b);
+		//bool usingHardwareVSync(void);
+		bool usingSoftwareVSync(void);
 
+		void waitForOpenGL(void);
 		
 
 		void beginDrawingToBackBuffer(void);
 		void endDrawingToBackBuffer(void);
 
 		void swapBuffers(void);
-		void swapBuffersInThread(unsigned int count = 1);
-		void setAutomaticSwapping(bool autoSwap);
-		bool isAutomaticallySwapping(void);
+		//void swapAt(CX_Millis time); // blocking function for really basic synchronization?
 
-		bool hasSwappedSinceLastCheck(bool reset = true);
-		void waitForBufferSwap(void);
-		void waitForOpenGL(void);
-
-		CX_Millis getLastSwapTime(void);
-		CX_Millis estimateNextSwapTime(void);
-		uint64_t getFrameNumber(void);
-
+		// main class
 		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 40, float maxRefreshRate = 160);
+		void setFramePeriod(CX_Millis knownPeriod);
 		CX_Millis getFramePeriod(void) const;
 		CX_Millis getFramePeriodStandardDeviation(void) const;
-		void setFramePeriod(CX_Millis knownPeriod);
+
 
 		void setWindowResolution(int width, int height);
 		ofRectangle getResolution(void) const;
 		ofPoint getCenter(void) const;
 
-		//bool synchronizeFrameSwapping(unsigned int requiredSwaps, CX_Millis timeout, CX_Millis periodTolerance, CX_Millis framePeriod = 0);
-		std::shared_ptr<Private::CX_VideoBufferThread> getSwapThread(void);
 
+		// move to DisplayThread? I mean, they really only make sense in automatic swapping mode
+		FrameNumber getLastFrameNumber(void);
+		CX_Millis getLastSwapTime(void);
+		CX_Millis getNextSwapTime(void);	
+
+
+		// swapping in display thread, rendering in main thread
+		bool hasSwappedSinceLastCheck(void);
+		bool waitForBufferSwap(CX_Millis timeout, bool reset = true);
+
+		
+		// strange function. maybe non-member function?
 		std::map<std::string, CX_DataFrame> testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
 		ofFbo makeFbo(void);
+
 		void copyFboToBackBuffer(ofFbo &fbo);
 		void copyFboToBackBuffer(ofFbo &fbo, ofPoint destination);
 		void copyFboToBackBuffer(ofFbo &fbo, ofRectangle source, ofPoint destination);
 
-		void setYIncreasesUpwards(bool upwards);
-		bool getYIncreasesUpwards(void) const;
+		//void setYIncreasesUpwards(bool upwards);
+		//bool getYIncreasesUpwards(void) const;
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		std::shared_ptr<ofBaseRenderer> getRenderer(void);
-#else
-		ofPtr<ofGLProgrammableRenderer> getRenderer(void);
-#endif
+		
+		Sync::DataContainer swapData;
+		Sync::DataClient swapClient;
+
+		////////////////////
+		// Display Thread //
+		////////////////////
+
+		CX_DisplayThread* getDisplayThread(void);
+
+		// helpers
+		bool renderingOnThisThread(void);
+		bool renderingOnMainThread(void);
+
+		// legacy interface. keep option to not swap in thread but keep thread running?
+		bool setAutomaticSwapping(bool autoSwap);
+		bool isAutomaticallySwapping(void);
+
 
 	private:
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+		void _blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates);
+		
 		std::shared_ptr<ofBaseRenderer> _renderer; 
-#else
-		ofPtr<ofGLProgrammableRenderer> _renderer;
-#endif
 
-		std::shared_ptr<Private::CX_VideoBufferThread> _swapThread;
-
+		// From estimateFramePeriod()
 		CX_Millis _framePeriod;
 		CX_Millis _framePeriodStandardDeviation;
 
-		CX_Millis _lastMainThreadSwapTime;
-
-		uint64_t _manualBufferSwaps;
-		uint64_t _frameNumberOnLastSwapCheck;
-
 		bool _softVSyncWithGLFinish;
 
-		void _blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates);
+
+		// display thread stuff
+		CX_DisplayThread _dispThread;
+		void _dispThreadSwapCallback(CX_Millis swapTime);
+
+		std::unique_ptr<Sync::DataContainer::PolledSwapListener> _polledSwapListener;
+
+		//Util::ofEventHelper<const Sync::DataContainer::NewData&> _displayThreadSwapHelper;
+		//void _threadedSwapEventCallback(const Sync::DataContainer::NewData& nd);
+
+		//void _handleSwap(FrameNumber frameNumber, CX_Millis time);
+
+		void _setUpSyncs(void);
 
 	};
+
+	class CX_DisplayBufferSwapper {
+	public:
+		enum class Mode {
+			NominalPeriod,
+			Prediction
+		};
+
+		struct Configuration {
+			CX_Display* display;
+
+			CX_Millis preSwapSafePeriod;
+
+			Mode mode;
+		};
+
+		void setup(const Configuration& config, bool enable = true) {
+			_config = config;
+			this->enable(enable);
+		}
+		const Configuration& getConfiguration(void) const {
+			return _config;
+		}
+
+		void enable(bool enable) {
+			_enabled = enable;
+		}
+		bool isEnabled(void) const {
+			return _enabled;
+		}
+
+		// true if swap happened
+		bool trySwap(void) {
+			if (!_enabled) {
+				return false;
+			}
+
+			switch (_config.mode) {
+			case Mode::NominalPeriod:
+				return NominalPeriod_trySwap();
+			case Mode::Prediction:
+				return Prediction_trySwap();
+			}
+
+			return false;
+		}
+
+		CX_Millis getLastSwapTime(void) {
+			return _lastSwapTime;
+		}
+
+		// isn't this redundant with swapData.swapEvent ?
+		//struct SwapEventData {
+		//	CX_Millis time;
+		//};
+		//ofEvent<const SwapEventData&> swapEvent;
+
+	private:
+		Configuration _config;
+		bool _enabled;
+		CX_Millis _lastSwapTime;
+
+		bool NominalPeriod_trySwap(void) {
+			CX_Millis timeToSwap = _lastSwapTime + _config.display->getFramePeriod() - Instances::Clock.now();
+			if (timeToSwap < _config.preSwapSafePeriod) {
+				Private::swapVideoBuffers(_config.display->usingSoftwareVSync()); // no, no
+				_lastSwapTime = Instances::Clock.now();
+				return true;
+			}
+			return false;
+		}
+
+		bool Prediction_trySwap(void) {
+			Sync::TimePrediction tp = _config.display->swapClient.predictNextSwapTime();
+			if (tp.usable) {
+
+				tp.pred -= Instances::Clock.now();
+
+				CX_Millis minTimeToSwap = tp.lowerBound();
+
+				if (minTimeToSwap < _config.preSwapSafePeriod) {
+					Private::swapVideoBuffers(_config.display->usingSoftwareVSync());
+					_lastSwapTime = Instances::Clock.now();
+					return true;
+				}
+
+			} else {
+				return NominalPeriod_trySwap();
+			}
+			return false;
+		}
+
+	};
+
+
 
     namespace Instances {
 		extern CX_Display Disp;

@@ -621,7 +621,7 @@ namespace Synth {
 		CX::CX_SoundStream* _soundStream;
 		bool _listeningForEvents;
 
-		void _callback(CX::CX_SoundStream::InputEventArgs& in);
+		void _callback(const CX::CX_SoundStream::InputEventArgs& in);
 		void _listenForEvents(bool listen);
 		unsigned int _maxInputs(void) override;
 	};
@@ -657,7 +657,7 @@ namespace Synth {
 		void setup(CX_SoundStream* stream, unsigned int oversampling = 1);
 
 	private:
-		void _callback(CX::CX_SoundStream::OutputEventArgs& d);
+		void _callback(const CX::CX_SoundStream::OutputEventArgs& d);
 		unsigned int _maxOutputs(void) override { return 0; };
 		void _inputAssignedEvent(ModuleBase* in) override {
 			in->setData(this->getData());
@@ -687,7 +687,7 @@ namespace Synth {
 		GenericOutput right; //!< The right channel of the stream.
 
 	private:
-		void _callback(CX_SoundStream::OutputEventArgs& d);
+		void _callback(const CX_SoundStream::OutputEventArgs& d);
 
 		CX_SoundStream* _soundStream;
 		bool _listeningForEvents;

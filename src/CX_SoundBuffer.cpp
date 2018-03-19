@@ -401,7 +401,7 @@ Should be in the interval [0,1], unless clipping is desired. Should be positive 
 the waveform.
 */
 void CX_SoundBuffer::normalize(float amount) {
-	float peak = std::max(abs(getPositivePeak()), abs(getNegativePeak()));
+	float peak = std::max(std::abs(getPositivePeak()), std::abs(getNegativePeak()));
 	float multiplier = amount / peak;
 
 	for (unsigned int i = 0; i < _data.size(); i++) {
@@ -423,7 +423,7 @@ void CX_SoundBuffer::stripLeadingSilence (float tolerance) {
 		for (unsigned int channel = 0; channel < _channels; channel++) {
 			unsigned int index = (sampleFrame * _channels) + channel;
 
-			if (abs(_data.at(index)) >= tolerance) {
+			if (std::abs(_data.at(index)) >= tolerance) {
 				_data.erase(_data.begin(), _data.begin() + (sampleFrame * _channels));
 				return;
 			}

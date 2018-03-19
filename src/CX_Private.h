@@ -29,7 +29,84 @@ namespace CX {
 /*! This namespace contains symbols that may be visible in user code but which should not be used by user code.
 */
 namespace Private {
+
+	class CX_GLFenceSync {
+	public:
+
+		CX_GLFenceSync(void);
+
+		void startSync(void);
+		void updateSync(void);
+		void stopSyncing(void);
+
+		void clear(void);
+
+		bool isSyncing(void) const;
+		bool syncComplete(void) const;
+		bool syncSuccess(void) const;
+
+		CX_Millis getStartTime(void) const;
+		CX_Millis getSyncTime(void) const;
+
+	private:
+
+		enum class SyncStatus {
+			NotStarted,
+			Syncing,
+			SyncComplete
+		};
+
+		SyncStatus _status;
+
+		bool _syncSuccess;
+
+		GLsync _fenceSyncObject;
+
+		CX_Millis _syncStart;
+		CX_Millis _syncCompleteTime;
+
+	};
+
+
+
+	// Maybe CX_RenderingContextManager
+	class CX_GlfwContextManager {
+	public:
+
+		void setup(GLFWwindow* context, std::thread::id mainThreadId); // Do not call: Only called in CX_EntryPoint
+
+		bool trylock(void);
+		void lock(void); // if isLockedByAnyThread() == true, it is a programming error to call lock()
+		void unlock(void); // if isLockedByThisThread() == false, it is a programming error to call unlock()
+
+		//bool isCurrentOnThisThread(void); // If the rendering context is current on the calling thread, returns true
+
+		bool isUnlocked(void);
+
+		bool isLockedByThisThread(void);
+		bool isLockedByMainThread(void);
+		bool isLockedByAnyThread(void);
+
+		std::thread::id getLockingThreadId(void);
+
+		GLFWwindow* get(void);
+
+		bool isMainThread(void); // true if function is called in main thread. This doesn't really belong in this class
+
+	private:
+
+		std::recursive_mutex _mutex; // mutex for accessing data of this class
+
+		std::thread::id _lockingThreadId;
+		std::thread::id _mainThreadId;
+
+		GLFWwindow* _glfwContext;
+	};
+
+	extern CX_GlfwContextManager glfwContextManager;
+
 	extern GLFWwindow* glfwContext;
+
 
 	extern ofPtr<ofAppBaseWindow> appWindow;
 
@@ -69,14 +146,6 @@ namespace Private {
 	}
 #endif
 
-	// For when you want to use a shared_ptr properly.
-	// Used like:
-	// shared_ptr<T> ptr = managePtr(new T());
-	template <typename T>
-	std::shared_ptr<T> managePtr(T* ptr) {
-		return std::shared_ptr<T>(ptr);
-	}
-
 	// For when you want to use a shared_ptr improperly.
 	// Used like:
 	// T t; // somewhere
@@ -86,6 +155,11 @@ namespace Private {
 	std::shared_ptr<T> wrapPtr(T* ptr) {
 		auto nopDeleter = [](T* x) { return; };
 		return std::shared_ptr<T>(ptr, nopDeleter);
+	}
+
+	template <typename T>
+	std::shared_ptr<T> moveIntoPtr(T&& t) {
+		return std::make_shared<T>(std::move(t));
 	}
 
 } // namespace Private

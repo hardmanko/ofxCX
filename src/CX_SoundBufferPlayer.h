@@ -13,12 +13,13 @@ tutorial.
 Finally, if you want to have direct control of the data going to and from a sound device, see CX_SoundStream.
 */
 
+#include "ofEvents.h"
+
 #include "CX_SoundBuffer.h"
 #include "CX_SoundStream.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
-
-#include "ofEvents.h"
+#include "CX_ThreadUtils.h"
 
 namespace CX  {
 
@@ -48,7 +49,8 @@ namespace CX  {
 		
 		// 3. Play or queue the sound
 		bool play(bool restart = true);
-		bool queuePlayback(CX_Millis startTime, CX_Millis latencyOffset = CX_Millis(0), bool restart = true);
+		bool queuePlayback(CX_Millis startTime, CX_Millis timeout, bool restart = true);
+		bool queuePlayback(CX_SoundStream::SampleFrame sampleFrame, bool restart = true);
 
 		// 4. (Optional) Check playback status or stop the sound before it finishes
 		bool isPlaying(void);
@@ -93,15 +95,15 @@ namespace CX  {
 
 		} _outData;
 
-		void _outputEventHandler(CX_SoundStream::OutputEventArgs &outputData);
+		//bool _listeningForEvents;
+		//void _listenForEvents(bool listen);
+		void _outputEventHandler(const CX_SoundStream::OutputEventArgs& outputData);
+		CX::Util::ofEventHelper<const CX_SoundStream::OutputEventArgs&> _outputEventHelper;
 
 		std::shared_ptr<CX_SoundStream> _soundStream;
 		void _cleanUpOldSoundStream(void);
 		
-		bool _listeningForEvents;
-		void _listenForEvents(bool listen);
-
-		//Configuration _defaultConfigReference;
+		bool _checkPlaybackRequirements(std::string callerName);
 	};
 
 	namespace Instances {

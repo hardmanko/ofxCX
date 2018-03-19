@@ -87,6 +87,19 @@ void CX_DataFrameCell::deleteStoredType(void) {
 	*_ignoreStoredType = true;
 }
 
+/*! Copies the contents of this cell and returns the copy.
+\return A copy of the cell.
+*/
+CX_DataFrameCell CX_DataFrameCell::clone(void) const {
+	CX_DataFrameCell copy;
+
+	*copy._data = *this->_data;
+	*copy._type = *this->_type;
+	*copy._ignoreStoredType = *this->_ignoreStoredType;
+
+	return copy;
+}
+
 /*! Copies the contents of this cell to targetCell, including type information.
 \param targetCell A pointer to the cell to copy data to.
 */

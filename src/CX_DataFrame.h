@@ -294,8 +294,12 @@ class CX_DataFrameRow {
 public:
 	CX_DataFrameRow (void);
 	CX_DataFrameCell operator[] (std::string column);
-	std::vector<std::string> names (void);
+	
 	void clear (void);
+
+	std::vector<std::string> names(void);
+	bool columnExists(const std::string& column);
+	bool deleteColumn(const std::string& column);
 
 private:
 	friend class CX_DataFrame;

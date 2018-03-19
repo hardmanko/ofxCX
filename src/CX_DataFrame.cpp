@@ -74,10 +74,13 @@ CX_DataFrameCell CX_DataFrame::at(std::string column, rowIndex_t row) {
 		return _data.at(column).at(row);
 	} catch (...) {
 		//This just assumes that an exception here is out of bounds access...
-		std::stringstream s;
-		s << "CX_DataFrame: Out of bounds access at(" << column << ", " << row << ")";
-		Instances::Log.error("CX_DataFrame") << s.str();
-		throw std::out_of_range(s.str().c_str());
+		std::ostringstream e1;
+		e1 << "at(): Out of bounds access at(" << column << ", " << row << ")";
+		CX::Instances::Log.error("CX_DataFrame") << e1.str();
+
+		std::ostringstream e2;
+		e2 << "CX_DataFrame::" << e1;
+		throw std::out_of_range(e2.str().c_str());
 	}
 }
 
@@ -500,7 +503,8 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 		_tryAddColumn(name, false); // Don't size new columns
 		_data.at(name).resize(_rowCount); // But resize all columns (that are in row)
 
-		row[name].copyCellTo( &_data.at(name).back() ); //Copy the cell in the row into the data frame.
+		_data.at(name).back() = row[name].clone();
+		//row[name].copyCellTo( &_data.at(name).back() ); //Copy the cell in the row into the data frame.
 	}
 
 	// Columns not in row must now be lengthened with empty cells.
@@ -510,6 +514,7 @@ void CX_DataFrame::appendRow(CX_DataFrameRow row) {
 	//or be about twice as slow with:
 	//insertRow(row, _rowCount);
 }
+
 
 /*! Inserts a row into the data frame.
 \param row The row of data to insert.
@@ -547,7 +552,10 @@ void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
 
 		//If this the row had data for this column, copy it over.
 		if (Util::contains(rowNames, existingColumn->first)) {
-			row[existingColumn->first].copyCellTo(&(existingColumn->second[insertIndex]));
+
+			existingColumn->second[insertIndex] = row[existingColumn->first].clone();
+
+			//row[existingColumn->first].copyCellTo(&(existingColumn->second[insertIndex]));
 		}
 	}
 
@@ -631,7 +639,9 @@ CX_DataFrameRow CX_DataFrame::copyRow(rowIndex_t row) const {
 	}
 
 	for (const std::string& col : getColumnNames()) {
-		this->_data.at(col).at(row).copyCellTo(&(r[col]));
+		//this->_data.at(col).at(row).copyCellTo(&(r[col]));
+
+		r[col] = _data.at(col).at(row).clone();
 	}
 
 	return r;
@@ -664,7 +674,9 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 	for (const std::string& col : getColumnNames()) {
         copyDf._resizeToFit(col, rowOrder.size() - 1);
         for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
-            this->_data.at(col)[rowOrder[row]].copyCellTo( &copyDf._data.at(col)[row] );
+            //this->_data.at(col)[rowOrder[row]].copyCellTo( &copyDf._data.at(col)[row] );
+
+			copyDf._data.at(col)[row] = _data.at(col)[rowOrder[row]].clone();
         }
 	}
 
@@ -680,8 +692,8 @@ but the function will otherwise complete successfully.
 */
 CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 
+	/*
 	std::vector<std::string> validColumns;
-
 	for (const std::string& col : columns) {
 		if (columnExists(col)) {
 			validColumns.push_back(col);
@@ -689,12 +701,26 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 			Instances::Log.warning("CX_DataFrame") << "copyColumns(): Requested column not found in data frame: " << col;
 		}
 	}
+	*/
+
+	std::vector<std::string> validColumns = Util::intersectionV(columns, this->getColumnNames());
+	std::vector<std::string> invalidColumns = Util::exclude(columns, validColumns);
+	if (invalidColumns.size() > 0) {
+		Instances::Log.warning("CX_DataFrame") << "copyColumns(): Requested columns not found in data frame: " << Util::vectorToString(invalidColumns, ", ");
+	}
+
+
 
 	CX_DataFrame copyDf;
 	for (const std::string& col : validColumns) {
+
 		copyDf._resizeToFit(col, this->getRowCount() - 1);
+
 		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
-			this->operator()(col, row).copyCellTo( &copyDf._data.at(col)[row] );
+
+			//this->operator()(col, row).copyCellTo( &copyDf._data.at(col)[row] );
+
+			copyDf._data.at(col)[row] = _data.at(col)[row].clone();
 		}
 	}
 
@@ -925,7 +951,9 @@ void CX_DataFrame::_duplicate(CX_DataFrame* target) const {
 		target->_resizeToFit(col, this->_rowCount - 1);
 
 		for (rowIndex_t row = 0; row < this->_rowCount; row++) {
-			this->_data.at(col)[row].copyCellTo(&target->_data.at(col)[row]);
+			//this->_data.at(col)[row].copyCellTo(&target->_data.at(col)[row]);
+
+			target->_data.at(col)[row] = this->_data.at(col)[row].clone();
 		}
 	}
 }
@@ -1019,6 +1047,34 @@ std::vector<std::string> CX_DataFrameRow::names(void) {
 	} else {
 		return _orderToName;
 	}
+}
+
+bool CX_DataFrameRow::columnExists(const std::string& column) {
+	if (_df) {
+		return _df->columnExists(column);
+	} else {
+		return _data.find(column) != _data.end();
+	}
+}
+
+bool CX_DataFrameRow::deleteColumn(const std::string& column) {
+
+	if (_df) {
+		CX::Instances::Log.error("CX_DataFrameRow") << "deleteColumn(): Cannot delete a column of a CX_DataFrame through a CX_DataFrameRow. See CX_DataFrame::deleteColumn().";
+		return false;
+	}
+
+	if (!this->columnExists(column)) {
+		Instances::Log.warning("CX_DataFrameRow") << "deleteColumn(): Failed to delete column \"" << column << "\". It was not found in the CX_DataFrameRow.";
+		return false;
+	}
+
+	_data.erase(_data.find(column));
+
+	std::vector<std::string>::iterator orderIt = std::find(_orderToName.begin(), _orderToName.end(), column);
+	_orderToName.erase(orderIt);
+
+	return true;
 }
 
 /*! \brief Clears the contents of the row. Does not delete the row. */

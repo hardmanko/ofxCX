@@ -17,19 +17,19 @@ namespace CX {
 
 		/*! The type of the joystick event. */
 		enum EventType {
-			BUTTON_PRESS, //!< A button on the joystick has been pressed. See \ref Event::buttonIndex and \ref Event::buttonState for the event data.
-			BUTTON_RELEASE, //!< A button on the joystick has been released. See \ref Event::buttonIndex and \ref Event::buttonState for the event data.
-			AXIS_POSITION_CHANGE //!< The joystick has been moved in one of its axes. See \ref Event::axisIndex and \ref Event::axisPosition for the event data.
+			ButtonPress, //!< A button on the joystick has been pressed. See \ref Event::buttonIndex and \ref Event::buttonState for the event data.
+			ButtonRelease, //!< A button on the joystick has been released. See \ref Event::buttonIndex and \ref Event::buttonState for the event data.
+			AxisPositionChange //!< The joystick has been moved in one of its axes. See \ref Event::axisIndex and \ref Event::axisPosition for the event data.
 		};
 
 		/*! This struct contains information about joystick events. Joystick events are either a button
 		press or release or a change in the axes of the joystick. */
 		struct Event {
-			int buttonIndex; //!< If `type` is BUTTON_PRESS or BUTTON_RELEASE, this contains the index of the button that was changed.
-			unsigned char buttonState; //!< If `type` is BUTTON_PRESS or BUTTON_RELEASE, this contains the current state of the button.
+			int buttonIndex; //!< If `type` is ButtonPress or ButtonRelease, this contains the index of the button that was changed.
+			unsigned char buttonState; //!< If `type` is ButtonPress or ButtonRelease, this contains the current state of the button.
 
-			int axisIndex; //!< If `type` is AXIS_POSITION_CHANGE, this contains the index of the axis which changed.
-			float axisPosition; //!< If `type` is AXIS_POSITION_CHANGE, this contains the amount by which the axis changed.
+			int axisIndex; //!< If `type` is AxisPositionChange, this contains the index of the axis which changed.
+			float axisPosition; //!< If `type` is AxisPositionChange, this contains the amount by which the axis changed.
 
 			CX_Millis time; //!< The time at which the event was registered. Can be compared to the result of CX::CX_Clock::now().
 

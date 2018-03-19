@@ -11,15 +11,14 @@
 
 #include "CX_Clock.h"
 #include "CX_Logger.h"
-//#include "CX_Algorithm.h"
-#include "CX_SwapSynchronizer.h"
+#include "CX_SynchronizationUtils.h"
 
 namespace CX {
 
 /*! \class CX::CX_SoundStream
 This class provides a method for directly accessing and manipulating sound data that is sent/received from
 sound hardware. To use this class, you should set up the stream (see setup()), set a user function that will
-be called when either the outputEvent or inputEvent is triggered, and start the stream with start().
+be called when either the outputEvent or inputEvent is triggered, and start the stream with startStream().
 
 If the stream in configured for output, the output event will be triggered whenever the sound card needs 
 more sound data. If the stream is configured for input, the input event will be triggered whenever some
@@ -33,6 +32,8 @@ going wrong by checking out the page for RtAudio: http://www.music.mcgill.ca/~ga
 class CX_SoundStream {
 public:
 
+	typedef Sync::SwapUnit SampleFrame;
+
 	/*! This struct controls the configuration of the CX_SoundStream. */
 	struct Configuration {
 
@@ -40,7 +41,7 @@ public:
 			inputChannels(0),
 			outputChannels(0),
 			sampleRate(44100),
-			bufferSize(4096),
+			bufferSize(2048),
 
 			api(RtAudio::Api::UNSPECIFIED),
 
@@ -103,7 +104,7 @@ public:
 		float *outputBuffer; //!< A pointer to an array that should be filled with sound data.
 		unsigned int bufferSize; //!< The number of sample frames that are in `outputBuffer`. The total number of samples is `bufferSize * outputChannels`.
 		int outputChannels; //!< The number of channels worth of data in `outputBuffer`.
-		uint64_t bufferStartSampleFrame;
+		SampleFrame bufferStartSampleFrame;
 
 		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that notified this output event.
 	};
@@ -119,7 +120,7 @@ public:
 		float *inputBuffer; //!< A pointer to an array of sound data that should be processed by the event handler function.
 		unsigned int bufferSize; //!< The number of sample frames that are in `inputBuffer`. The total number of samples is `bufferSize * inputChannels`.
 		int inputChannels; //!< The number of channels worth of data in `inputBuffer`.
-		uint64_t bufferStartSampleFrame;
+		SampleFrame bufferStartSampleFrame;
 
 		CX_SoundStream *instance; //!< A pointer to the CX_SoundStream instance that notified this input event.
 	};
@@ -129,47 +130,33 @@ public:
 	~CX_SoundStream(void);
 
 	bool setup(Configuration &config, bool startStream = true);
+	const Configuration& getConfiguration(void) const;
+
 	bool closeStream(void);
 
-	bool start(void);
-	bool stop(void);
-
+	bool startStream(void);
 	bool isStreamRunning(void) const;
-	
-	const Configuration& getConfiguration(void) const;
-	
-	ofEvent<CX_SoundStream::OutputEventArgs> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
-	ofEvent<CX_SoundStream::InputEventArgs> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
+	bool stopStream(void);
 
+	
 	//CX_Millis estimateTotalLatency(void) const;
-	CX_Millis estimateLatencyPerBuffer(void) const;
+	CX_Millis getLatencyPerBuffer(void) const;
 
-	
+	// Buffer swapping
+
+	ofEvent<const CX_SoundStream::OutputEventArgs&> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
+	ofEvent<const CX_SoundStream::InputEventArgs&> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
 
 	bool hasSwappedSinceLastCheck(void);
-	void waitForBufferSwap(void);
+	void waitForSwap(CX_Millis timeout, bool reset = true);
 
-	//uint64_t getSampleFrameNumber(void);
-	CX_Millis getLastBufferSwapTime(void);
+	Sync::DataContainer swapData;
+	Sync::DataClient swapClient;
 
-	uint64_t getLastBufferStartSampleFrame(void);
-	uint64_t getNextBufferStartSampleFrame(void);
-
-	CX_Millis estimateLastSwapTime(void);
-	CX_Millis estimateNextSwapTime(void);
-	CX_Millis estimateSwapTime(uint64_t sampleFrame);
-
-	uint64_t estimateSampleFrameAtTime(CX_Millis time, CX_Millis latencyOffset = 0);
-	CX_Millis estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset = 0);
-
-	//CX_Millis estimateEarliestPossibleStartTime(void);
-
-	//uint64_t getSampleFrameAtTime(CX_Millis startTime, CX_Millis latencyOffset = 0);
-	//CX_Millis getTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset = 0);
 
 	std::shared_ptr<RtAudio> getRtAudioPointer(void) const;
 
-	// Static helper functions to configuration
+	// Static helper functions
 	static std::vector<RtAudio::Api> getCompiledApis(void);
 
 	static std::string convertApiToString(RtAudio::Api api);
@@ -183,12 +170,7 @@ public:
 	static std::vector<RtAudio::DeviceInfo> getDeviceList(RtAudio::Api api);
 	static std::string listDevices(RtAudio::Api api);
 
-	struct SwapEventData {
-		CX_Millis thisBufferStartTime;
-		uint64_t thisBufferStartSampleFrame;
-		uint64_t nextBufferStartSampleFrame;
-	};
-	ofEvent<const SwapEventData&> swapEvent;
+
 
 private:
 
@@ -202,15 +184,11 @@ private:
 	
 	Configuration _config;
 
+	std::unique_ptr<Sync::DataContainer::PolledSwapListener> _polledSwapListener;
+
 	std::recursive_mutex _callbackMutex;
-	CX_Millis _lastSwapTime;
 
-	uint64_t _lastBufferStartSampleFrame;
-	uint64_t _nextBufferStartSampleFrame;
-
-	uint64_t _lastBufferStartSampleFrameAtLastCheck;
-
-	Private::CX_SwapLinearModel _swapLM;
+	//SampleFrame _lastBufferStartSampleFrame;
 
 };
 

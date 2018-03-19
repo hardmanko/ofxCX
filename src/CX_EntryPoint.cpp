@@ -45,7 +45,7 @@ bool initializeCX(CX_InitConfiguation config) {
 
 	CX::Instances::Log.captureOFLogMessages(config.captureOFLogMessages);
 	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
-	CX::Instances::Log.level(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the verbose shader gobbeldygook.
+	CX::Instances::Log.levelForModule(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the verbose shader gobbeldygook.
 
 	CX::Private::learnOpenGLVersion(); //Should come before reopenWindow.
 
@@ -62,7 +62,7 @@ bool initializeCX(CX_InitConfiguation config) {
 
 		if (config.framePeriodEstimationInterval != CX_Millis(0)) {
 			CX::Instances::Disp.estimateFramePeriod(config.framePeriodEstimationInterval);
-			CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period: " << CX::Instances::Disp.getFramePeriod() << " ms.";
+			CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period for display: " << CX::Instances::Disp.getFramePeriod().millis() << " ms.";
 		}
 
 		setupKeyboardShortcuts();
@@ -84,7 +84,7 @@ bool initializeCX(CX_InitConfiguation config) {
 	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
 
 	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_NOTICE);
-	CX::Instances::Log.level(CX_Logger::Level::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
+	CX::Instances::Log.levelForModule(CX_Logger::Level::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
 		//are really verbose when allocated and it is a lot of gibberish.
 
 	return openedSucessfully;
@@ -154,6 +154,8 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 //The window doesn't close automatically, so kill the window.
 bool exitCallbackHandler(ofEventArgs& args) {
+
+	ofNotifyEvent(Private::getEvents().exitEvent);
 
 	//glfwDestroyWindow is not supposed to be called from callbacks...
 	//if (glfwGetCurrentContext() != nullptr) {
@@ -316,25 +318,26 @@ bool reopenWindow(CX_WindowConfiguration config) {
 		CX::Private::reopenWindow080(config);
 #else
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX. "
-			"Version 0.8.4 of openFrameworks is recommended.";
+			"Version 0.9.8 of openFrameworks is recommended.";
 		return false;
 #endif
 
-		CX::Private::glfwContext = glfwGetCurrentContext();
-
-		//Setup the display for the new window
-		CX::Instances::Disp.setup();
-		CX::Instances::Disp.useHardwareVSync(true);
 	} catch (std::exception& e) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Exception caught while setting up window: " << e.what();
 	} catch (...) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): Unknown exception caught while setting up window.";
 	}
 
-	if (CX::Private::glfwContext == nullptr) {
+	if (glfwGetCurrentContext() == nullptr) {
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): There was an error setting up the window.";
 		return false;
 	}
+
+	Private::glfwContext = glfwGetCurrentContext();
+	Private::glfwContextManager.setup(glfwGetCurrentContext(), std::this_thread::get_id());
+
+	//Setup the display for the new window
+	CX::Instances::Disp.setup();
 
 #if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0)
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
@@ -379,6 +382,9 @@ int main (void) {
 	runExperiment();
 
 	CX::Instances::Log.flush();
+
+	//glfwTerminate();
+
 	return 0;
 }
 #endif

@@ -2,6 +2,10 @@
 
 #include <chrono>
 #include <vector>
+#include <ostream>
+#include <istream>
+#include <sstream>
+#include <iomanip>
 
 namespace CX {
 
@@ -15,7 +19,7 @@ namespace CX {
 	*/
 	typedef int64_t cxTick_t;
 
-	template <typename T> class CX_Time_t;
+	template <typename TimeUnit> class CX_Time_t;
 
 	typedef CX_Time_t<std::ratio<3600, 1> > CX_Hours; //!< Hours.
 	typedef CX_Time_t<std::ratio<60, 1> > CX_Minutes; //!< Minutes.
@@ -24,6 +28,7 @@ namespace CX {
 	typedef CX_Time_t<std::ratio<1, 1000000> > CX_Micros; //!< Microseconds.
 	typedef CX_Time_t<std::ratio<1, 1000000000> > CX_Nanos; //!< Nanoseconds.
 
+	// why aren't these static member functions?
 	namespace Private {
 		template<typename tOut, typename tIn, typename resultT>
 		inline resultT convertTimeCount(resultT countIn) {
@@ -46,6 +51,86 @@ namespace CX {
 			return countIn;
 		}
 	}
+
+	/*! Contains the time value stored within a `CX_Time_t<T>` as individual components of the time: hours, minutes, etc. 
+	See  CX_Time_t::getPartitionedTime() for a way to get a filled instance of PartitionedTime from a CX_Time_t. 
+	*/
+	struct PartitionedTime {
+
+		PartitionedTime(void);
+
+		template <typename TimeUnit> 
+		PartitionedTime(CX_Time_t<TimeUnit> time) {
+			setTime(time);
+		}
+
+		template <typename TimeUnit>
+		void setTime(CX_Time_t<TimeUnit> time) {
+
+			if (time.nanos() < 0) {
+				time = -time;
+				this->sign = -1;
+			} else {
+				this->sign = 1;
+			}
+
+			this->hours = floor(time.hours());
+			time -= CX_Hours(this->hours);
+
+			this->minutes = floor(time.minutes());
+			time -= CX_Minutes(this->minutes);
+
+			this->seconds = floor(time.seconds());
+			time -= CX_Seconds(this->seconds);
+
+			this->milliseconds = floor(time.millis());
+			time -= CX_Millis(this->milliseconds);
+
+			this->microseconds = floor(time.micros());
+			time -= CX_Micros(this->microseconds);
+
+			nanoseconds = time.nanos();
+		}
+
+		template <typename TimeUnit>
+		CX_Time_t<TimeUnit> getTime(void) const {
+			CX_Time_t<TimeUnit> time = CX_Hours(this->hours) + CX_Minutes(this->minutes) + CX_Seconds(this->seconds) +
+				CX_Millis(this->milliseconds) + CX_Micros(this->microseconds) + CX_Nanos(this->nanoseconds);
+			if (this->sign == -1) {
+				time = -time;
+			}
+			return time;
+		}
+
+		template <typename TimeUnit>
+		PartitionedTime& operator=(CX_Time_t<TimeUnit> time) {
+			this->setTime<TimeUnit>(time);
+			return *this;
+		}
+
+		template <typename TimeUnit>
+		operator CX_Time_t<TimeUnit>(void) {
+			return this->getTime<TimeUnit>();
+		}
+
+		int sign; //!< The sign of the time (+1 or -1).
+		int hours; //!< The hours component of the time.
+		int minutes; //!< The minutes component of the time.
+		int seconds; //!< The seconds component of the time.
+		int milliseconds; //!< The milliseconds component of the time.
+		int microseconds; //!< The microseconds component of the time.
+		int nanoseconds; //!< The nanoseconds component of the time.
+
+		std::string getString(void) const;
+		void setFromString(const std::string& str);
+		void setFromIstream(std::istream& is);
+
+	private:
+		static std::string _zps(int i, int digits);
+	};
+
+	std::ostream& operator<<(std::ostream& os, const PartitionedTime& pt);
+	std::istream& operator>>(std::istream& is, PartitionedTime& pt);
 
 	/*! The `CX_Time_t` class provides a convenient way to deal with time in different units, 
 	mostly seconds and milliseconds for psychology experiments. Different time units are represented
@@ -137,15 +222,6 @@ namespace CX {
 	class CX_Time_t {
 	public:
 
-		/*! This struct contains the result of CX_Time_t::getPartitionedTime(). */
-		struct PartitionedTime {
-			int hours; //!< The hours component of the time.
-			int minutes; //!< The minutes component of the time.
-			int seconds; //!< The seconds component of the time.
-			int milliseconds; //!< The milliseconds component of the time.
-			int microseconds; //!< The microseconds component of the time.
-			int nanoseconds; //!< The nanoseconds component of the time.
-		};
 
 		/*! Partitions a CX_Time_t into component parts containing the number of whole time units
 		that are stored in the CX_Time_t. This is different from seconds(), millis(), etc., because
@@ -154,25 +230,7 @@ namespace CX {
 		\return A PartitionedTime struct containing whole number amounts of the components of the time.
 		*/
 		PartitionedTime getPartitionedTime(void) const {
-			CX_Time_t<TimeUnit> t = *this; //Make a copy which is then modified.
-			PartitionedTime rval;
-			rval.hours = floor(t.hours());
-			t -= CX_Hours(rval.hours);
-
-			rval.minutes = floor(t.minutes());
-			t -= CX_Minutes(rval.minutes);
-
-			rval.seconds = floor(t.seconds());
-			t -= CX_Seconds(rval.seconds);
-
-			rval.milliseconds = floor(t.millis());
-			t -= CX_Millis(rval.milliseconds);
-
-			rval.microseconds = floor(t.micros());
-			t -= CX_Micros(rval.microseconds);
-
-			rval.nanoseconds = t.nanos();
-			return rval;
+			return PartitionedTime(*this);
 		}
 
 		/*! Default constructor for CX_Time_t. */
@@ -347,6 +405,12 @@ namespace CX {
 			return this->_nanos != rhs.nanos();
 		}
 
+		CX_Time_t<TimeUnit> operator-(void) const {
+			CX_Time_t<TimeUnit> t;
+			t._nanos = -this->_nanos;
+			return t;
+		}
+
 		/*! \brief Get the minimum time value that can be represented with this class. */
 		static CX_Time_t<TimeUnit> min(void) {
 			CX_Time_t<TimeUnit> t(0);
@@ -375,6 +439,12 @@ namespace CX {
 				M2 = M2 + delta*(timeValue - mean);
 			}
 			return sqrt(M2 / (vals.size() - 1));
+		}
+
+		/*! \brief Absolute value. */
+		static CX_Time_t<TimeUnit> abs(CX_Time_t<TimeUnit> t) {
+			t._nanos = std::abs(t._nanos);
+			return t;
 		}
 
 	private:
@@ -406,19 +476,25 @@ namespace CX {
 	\endcode
 	*/
 	template <typename TimeUnit>
-	std::ostream& operator<< (std::ostream& os, const CX_Time_t<TimeUnit>& t) {
-		os << t.value(); //Assume sufficient precision to encode without losing nanos? Or set the pecision?
+	std::ostream& operator<<(std::ostream& os, const CX_Time_t<TimeUnit>& t) {
+
+		os << PartitionedTime(t);
+
 		return os;
 	}
 
 	/*! Stream extraction operator for CX_Time_t. */
 	template <typename TimeUnit>
-	std::istream& operator>> (std::istream& is, CX_Time_t<TimeUnit>& t) {
-		double value;
-		is >> value;
-		t = CX_Time_t<TimeUnit>(value);
+	std::istream& operator>>(std::istream& is, CX_Time_t<TimeUnit>& t) {
+
+		PartitionedTime pt;
+		pt.setFromIstream(is);
+		t = pt.getTime<TimeUnit>();
+
 		return is;
 	}
+
+	// Non-class members that take two arguments:
 
 	/*! \brief Multiplies a CX_Time_t with a numeric value, resulting in a CX_Time_t in the same units as `lhs`. */
 	template<typename T>
@@ -433,4 +509,5 @@ namespace CX {
 		double n = rhs.nanos() * lhs;
 		return CX_Nanos(n);
 	}
+
 }

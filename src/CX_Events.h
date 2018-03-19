@@ -30,6 +30,8 @@ namespace Private {
 	public:
 		ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
 		ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
+
+		ofEvent<void> exitEvent;
 	};
 
 	CX_Events& getEvents(void);

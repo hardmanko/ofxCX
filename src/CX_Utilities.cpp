@@ -95,14 +95,14 @@ namespace Util {
 	Rounds the given double to the given power of 10.
 	\param d The number to be rounded.
 	\param roundingPower The power of 10 to round `d` to. For the value 34.56, the results with different rounding powers
-	(and `c = ROUND_TO_NEAREST`) are as follows: `RP = 0 -> 35; RP = 1 -> 30; RP = -1 -> 34.6`.
-	\param c The type of rounding to do, from the CX::Util::CX_RoundingConfiguration enum. You can round up, down, to nearest (default), and toward zero.
+	(and `rounding = ToNearest`) are as follows: `RP = 0 -> 35; RP = 1 -> 30; RP = -1 -> 34.6`.
+	\param rounding The type of rounding to do, from the CX::Util::Rounding enum. You can round up, down, to nearest (default), and toward zero.
 	\return The rounded value.
 	*/
-	double round(double d, int roundingPower, CX::Util::CX_RoundingConfiguration c) {
+	double round(double d, int roundingPower, CX::Util::Rounding rounding) {
 		//When <cfenv> becomes availble, use that instead of this stuff.
 		double loc = std::pow(10, roundingPower);
-		double modulo = abs(fmod(d, loc));
+		double modulo = std::abs(std::fmod(d, loc));
 
 		if (d >= 0) {
 			d -= modulo;
@@ -110,16 +110,16 @@ namespace Util {
 			d -= (loc - modulo);
 		}
 
-		switch (c) {
-		case CX_RoundingConfiguration::ROUND_TO_NEAREST:
+		switch (rounding) {
+		case Rounding::ToNearest:
 			d += (modulo >= (.5 * loc)) ? (loc) : 0;
 			break;
-		case CX_RoundingConfiguration::ROUND_UP:
+		case Rounding::Up:
 			d += (modulo != 0) ? loc : 0;
 			break;
-		case CX_RoundingConfiguration::ROUND_DOWN:
+		case Rounding::Down:
 			break;
-		case CX_RoundingConfiguration::ROUND_TOWARD_ZERO:
+		case Rounding::TowardZero:
 			if (d < 0) {
 				d += (modulo != 0) ? loc : 0;
 			}

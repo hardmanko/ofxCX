@@ -84,7 +84,7 @@ bool CX_Joystick::pollEvents (void) {
 			if (_axisPositions[i] != axes[i]) {
 				CX_Joystick::Event ev;
 
-				ev.type = CX_Joystick::EventType::AXIS_POSITION_CHANGE;
+				ev.type = CX_Joystick::EventType::AxisPositionChange;
 				ev.axisIndex = i;
 				ev.axisPosition = axes[i];
 
@@ -103,11 +103,11 @@ bool CX_Joystick::pollEvents (void) {
 			if (_buttonStates[i] != buttons[i]) {
 				CX_Joystick::Event ev;
 
-				//I'm just guessing about button state here. 1 might be PRESSED, but it could also be UNDEFINED_BUTTON.
+				//I'm just guessing about button state here. 1 might be Pressed, but it could also be UNDEFINED_BUTTON.
 				if (buttons[i] == 1) {
-					ev.type = CX_Joystick::EventType::BUTTON_PRESS;
+					ev.type = CX_Joystick::EventType::ButtonPress;
 				} else {
-					ev.type = CX_Joystick::EventType::BUTTON_RELEASE;
+					ev.type = CX_Joystick::EventType::ButtonRelease;
 				}
 
 				ev.buttonIndex = i;
@@ -218,11 +218,11 @@ task for debugging purposes.
 \param ev The event to append.
 */
 void CX_Joystick::appendEvent(CX_Joystick::Event ev) {
-	if (ev.type == CX_Joystick::AXIS_POSITION_CHANGE) {
+	if (ev.type == CX_Joystick::AxisPositionChange) {
 		_axisPositions[ev.axisIndex] = ev.axisPosition;
-	} else if (ev.type == CX_Joystick::BUTTON_PRESS) {
+	} else if (ev.type == CX_Joystick::ButtonPress) {
 		_buttonStates[ev.buttonIndex] = 1;
-	} else if (ev.type == CX_Joystick::BUTTON_RELEASE) {
+	} else if (ev.type == CX_Joystick::ButtonRelease) {
 		_buttonStates[ev.buttonIndex] = 0;
 	}
 
@@ -256,9 +256,9 @@ std::istream& operator>> (std::istream& is, CX_Joystick::Event& ev) {
 	int eventType;
 	is >> eventType;
 	switch (eventType) {
-	case CX_Joystick::EventType::BUTTON_PRESS: ev.type = CX_Joystick::EventType::BUTTON_PRESS; break;
-	case CX_Joystick::EventType::BUTTON_RELEASE: ev.type = CX_Joystick::EventType::BUTTON_RELEASE; break;
-	case CX_Joystick::EventType::AXIS_POSITION_CHANGE: ev.type = CX_Joystick::EventType::AXIS_POSITION_CHANGE; break;
+	case CX_Joystick::EventType::ButtonPress: ev.type = CX_Joystick::EventType::ButtonPress; break;
+	case CX_Joystick::EventType::ButtonRelease: ev.type = CX_Joystick::EventType::ButtonRelease; break;
+	case CX_Joystick::EventType::AxisPositionChange: ev.type = CX_Joystick::EventType::AxisPositionChange; break;
 	}
 
 	return is;

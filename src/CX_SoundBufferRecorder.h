@@ -2,6 +2,7 @@
 
 #include "CX_SoundStream.h"
 #include "CX_SoundBuffer.h"
+#include "CX_ThreadUtils.h"
 
 namespace CX {
 	/*! This class is used for recording audio data from, e.g., a microphone. The recorded data is
@@ -31,13 +32,13 @@ namespace CX {
 	*/
 	class CX_SoundBufferRecorder {
 	public:
-		typedef CX_SoundStream::Configuration Configuration; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
+		//typedef CX_SoundStream::Configuration Configuration; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
 
 		CX_SoundBufferRecorder(void);
 		~CX_SoundBufferRecorder(void);
 
 		// 1. Set up the recorder (choose one)
-		bool setup(Configuration& config);
+		//bool setup(Configuration& config);
 		bool setup(CX_SoundStream* ss);
 		bool setup(std::shared_ptr<CX_SoundStream> ss);
 
@@ -49,7 +50,8 @@ namespace CX {
 
 		// 3. Record or queue recording
 		bool record(bool clearExistingData = false);
-		bool queueRecording(bool clear, CX_Millis startTime, CX_Millis latencyOffset = CX_Millis(0));
+		bool queueRecording(CX_Millis startTime, CX_Millis timeout, bool clear = false);
+		bool queueRecording(CX_SoundStream::SampleFrame sampleFrame, bool clear = false);
 
 		// (Optional) Check recording status
 		bool isRecording(void);
@@ -69,7 +71,7 @@ namespace CX {
 		unsigned int getOverflowsSinceLastCheck(bool logOverflows = true);
 
 		std::shared_ptr<CX_SoundStream> getSoundStream(void);
-		const Configuration& getConfiguration(void) const;
+		//const CX_SoundStream::Configuration& getConfiguration(void) const;
 
 	private:
 
@@ -88,7 +90,7 @@ namespace CX {
 			
 
 			bool recordingQueued;
-			uint64_t queuedRecordingStartSampleFrame;
+			CX_SoundStream::SampleFrame queuedRecordingStartSampleFrame;
 
 			CX_Millis recordingStart;
 			CX_Millis recordingEnd;
@@ -97,17 +99,18 @@ namespace CX {
 			
 		} _inData;
 
-		void _inputEventHandler(CX_SoundStream::InputEventArgs& inputData);
-
+		//void _listenForEvents(bool listen);
+		//bool _listeningForEvents;
+		void _inputEventHandler(const CX_SoundStream::InputEventArgs& inputData);
+		CX::Util::ofEventHelper<const CX_SoundStream::InputEventArgs&> _inputEventHelper;
 
 		std::shared_ptr<CX_SoundStream> _soundStream;
 
 		void _cleanUpOldSoundStream(void);
 
-		void _listenForEvents(bool listen);
-		bool _listeningForEvents;
+		
 
-		Configuration _defaultConfigReference;
+		//Configuration _defaultConfigReference;
 
 		void _prepareRecordBuffer(bool clear, std::string callingFunctionName);
 	};

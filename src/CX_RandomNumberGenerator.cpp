@@ -24,7 +24,7 @@ Although this data should have high entropy, it is not always going to be a hard
 The random_device is only used to seed the Mersenne Twister, so as long as the initial value 
 is random enough, it should be fine (this is not cryptography, just fooling humans).
 */
-CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
+CX_RandomNumberGenerator::CX_RandomNumberGenerator(void) {
 	std::random_device rd;
 	
 	setSeed( rd() ); //Store the seed for reference and seed the Mersenne Twister.
@@ -32,7 +32,7 @@ CX_RandomNumberGenerator::CX_RandomNumberGenerator (void) {
 
 /*! Set the seed for the random number generator. You can retrieve the seed with getSeed().
 \param seed The new seed. */
-void CX_RandomNumberGenerator::setSeed (unsigned long seed) {
+void CX_RandomNumberGenerator::setSeed(unsigned long seed) {
 	_seed = seed; //Store the seed for reference.
 
 	_mersenneTwister.seed( _seed );
@@ -52,7 +52,7 @@ void CX_RandomNumberGenerator::setSeed(const std::string& seedString) {
 
 /*! Get the seed used to seed the random number generator. 
 \return The seed. May have been set by the user with setSeed() or during construction of the CX_RandomNumberGenerator. */
-unsigned long CX_RandomNumberGenerator::getSeed (void) { 
+unsigned long CX_RandomNumberGenerator::getSeed(void) { 
 	return _seed; 
 }
 
@@ -78,7 +78,7 @@ CX_RandomInt_t CX_RandomNumberGenerator::randomInt(CX_RandomInt_t min, CX_Random
 
 /*! Get the minimum value that can be returned by randomInt(). 
 \return The minimum value. */
-CX_RandomInt_t CX_RandomNumberGenerator::getMinimumRandomInt (void) {
+CX_RandomInt_t CX_RandomNumberGenerator::getMinimumRandomInt(void) {
 	return std::numeric_limits<CX_RandomInt_t>::min();
 }
 

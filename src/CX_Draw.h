@@ -205,11 +205,11 @@ namespace Draw {
 				while (Input.Mouse.availableEvents() > 0) {
 					CX_Mouse::Event mev = Input.Mouse.getNextEvent();
 
-					if (mev.type == CX_Mouse::SCROLLED) {
+					if (mev.type == CX_Mouse::Scrolled) {
 						L += mev.y;
 					}
 
-					if (mev.type == CX_Mouse::MOVED) {
+					if (mev.type == CX_Mouse::Moved) {
 						aOff = mev.x - Disp.getCenter().x;
 						bOff = mev.y - Disp.getCenter().y;
 					}

@@ -313,11 +313,30 @@ void RollingLinearModel::store(double x, double y) {
 
 	_data.push_back(Datum(x, y));
 
+	while (_data.size() > _maxSamples) {
+		_data.pop_front();
+	}
+
 	_modelNeedsUpdate = true;
+
+	if (_autoUpdate) {
+		updateModel();
+	}
+}
+
+void RollingLinearModel::storeMultiple(const std::vector<double>& x, const std::vector<double>& y) {
+
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	for (unsigned int i = 0; i < x.size(); i++) {
+		_data.push_back(Datum(x[i], y[i]));
+	}
 
 	while (_data.size() > _maxSamples) {
 		_data.pop_front();
 	}
+
+	_modelNeedsUpdate = true;
 
 	if (_autoUpdate) {
 		updateModel();
@@ -355,7 +374,7 @@ bool RollingLinearModel::updateModelOnSubset(unsigned int start_inclusive, unsig
 
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-	if (start_inclusive >= end_exclusive || end_exclusive >= _data.size()) {
+	if (start_inclusive >= end_exclusive || end_exclusive > _data.size()) {
 		return false;
 	}
 
@@ -431,7 +450,6 @@ double RollingLinearModel::getIntercept(void) {
 bool RollingLinearModel::modelReady(void) {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 	return updateModel();
-	//return _modelNeedsUpdate == false;
 }
 
 std::deque<RollingLinearModel::Datum>& RollingLinearModel::getData(void) {

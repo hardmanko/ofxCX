@@ -7,6 +7,8 @@
 namespace CX {
 namespace Util {
 
+	ofPoint mapPointBetweenRectangles(const ofPoint& ap, const ofRectangle& a, const ofRectangle& b);
+
 	float degreesToPixels(float degrees, float pixelsPerUnit, float viewingDistance);
 	float pixelsToDegrees(float pixels, float pixelsPerUnit, float viewingDistance);
 
@@ -148,5 +150,6 @@ namespace Util {
 
 		CX_BaseUnitConverter *_conv;
 	};
-}
-}
+
+} // namespace Util
+} // namespace CX

@@ -97,8 +97,6 @@ namespace CX {
 
 	private:
 
-		//bool _successfullyLoaded;
-
 		unsigned int _channels;
 		float _sampleRate;
 

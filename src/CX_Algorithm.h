@@ -100,6 +100,7 @@ namespace CX {
 			size_t _columns;
 		};
 
+
 		/*! This class implements a simple linear regression model that 
 		1. Collects samples of data over time using the store() function.
 		2. Calculates new parameter values when updateModel() is called.
@@ -135,6 +136,7 @@ namespace CX {
 			void setup(bool autoUpdate, unsigned int maxSamples, unsigned int minSamples = 3);
 
 			void store(double x, double y);
+			void storeMultiple(const std::vector<double>& x, const std::vector<double>& y);
 			unsigned int storedSamples(void);
 			void clear(void);
 
@@ -460,15 +462,12 @@ namespace CX {
 		factor, rather than an index. You can see this in the example.
 
 		\code{.cpp}
-		string shapes[3] = { "square", "rectangle", "triangle" };
-		vector<string> shapesV = Util::arrayToVector(shapes, 3);
-
-		string numbers[2] = { "1.5", "3.7" };
-		vector<string> numbersV = Util::arrayToVector(numbers, 2);
+		vector<string> shapes = { "square", "rectangle", "triangle" };
+		vector<string> numbers = { "1.5", "3.7" };
 
 		map<string, vector<string>> factors;
-		factors["shapes"] = shapesV;
-		factors["numbers"] = numbersV;
+		factors["shapes"] = shapes;
+		factors["numbers"] = numbers;
 
 		CX_DataFrame crossed = Algo::fullyCross(factors);
 

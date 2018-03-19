@@ -133,7 +133,7 @@ namespace CX {
 			/*! \brief The names of all of the slides that had any errors. */
 			std::vector< std::string > namesOfSlidesWithErrors;
 
-			/*! \brief True if presentation errors were successfully checked for. This does not mean that there were
+			/*! \brief `true` if presentation errors were successfully checked for. This does not mean that there were
 			no presentation errors, but that there were no presentation error checking errors. */
 			bool presentationErrorsSuccessfullyChecked;
 
@@ -207,8 +207,8 @@ namespace CX {
 
 		/*! Contains information about the presentation timing of the slide. */
 		struct SlideTimingInfo {
-			uint32_t startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by Disp.getFrameNumber(). */
-			uint32_t frameCount; /*!< \brief The number of frames the slide was/should have been presented for. */
+			uint64_t startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by CX::CX_Display::getLastFrameNumber(). */
+			uint64_t frameCount; /*!< \brief The number of frames the slide was/should have been presented for. */
 			CX_Millis startTime; /*!< \brief The time at which the slide was/should have been started. Can be compared with values from CX::CX_Clock::now(). */
 			CX_Millis duration; /*!< \brief The amount of time the slide was/should have been presented for. */
 		};
@@ -234,8 +234,9 @@ namespace CX {
 
 			std::string name; //!< The name of the slide. Set by the user during slide creation.
 
-			ofFbo framebuffer; /*!< \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
-							   If drawingFunction points to a function, `framebuffer` will not be drawn and drawingFunction will be called instead. */
+			/*! \brief A framebuffer containing image data that will be drawn to the screen during this slide's presentation.
+			If drawingFunction points to a function, `framebuffer` will not be drawn and `drawingFunction` will be called instead. */
+			ofFbo framebuffer;
 
 			/*! \brief Pointer to a user function that will be called to draw the slide, rather than using the `framebuffer`.
 			
@@ -257,10 +258,11 @@ namespace CX {
 			SlideTimingInfo intended; //!< The intended timing parameters (i.e. what should have happened if there were no presentation errors).
 			SlideTimingInfo actual; //!< The actual timing parameters.
 
-			CX_Millis copyToBackBufferCompleteTime; /*!< \brief The time at which the drawing operations for this slide finished.
-													This is pretty useful to determine if there was an error on the trial (e.g. framebuffer was copied late).
-													If this is greater than actual.startTime, the slide may not have been fully drawn at the time the
-													front and back buffers swapped. */
+			/*! \brief The time at which the drawing operations for this slide finished.
+			This is pretty useful to determine if there was an error on the trial (e.g. framebuffer was copied late).
+			If this is greater than actual.startTime, the slide may not have been fully drawn at the time the
+			front and back buffers swapped. */
+			CX_Millis copyToBackBufferCompleteTime;
 		};
 
 
@@ -269,6 +271,7 @@ namespace CX {
 		bool setup(CX_Display *display = &CX::Instances::Disp);
 		bool setup(const CX_SlidePresenter::Configuration &config);
 		
+		const Configuration& getConfiguration(void);
 
 		void appendSlide(CX_SlidePresenter::Slide slide);
 		void appendSlideFunction(std::function<void(void)> drawingFunction, CX_Millis slideDuration, std::string slideName = "");
@@ -291,13 +294,11 @@ namespace CX {
 		std::string getLastPresentedSlideName(void) const;
 
 		std::vector<CX_Millis> getActualPresentationDurations(void);
-		std::vector<unsigned int> getActualFrameCounts(void);
+		std::vector<uint64_t> getActualFrameCounts(void);
 
 		CX_SlidePresenter::PresentationErrorInfo checkForPresentationErrors(void) const;
 		std::string printLastPresentationInformation(void) const;
 		CX_DataFrame getLastPresentationInformation(void) const;
-
-		const Configuration& getConfiguration(void);
 
 	private:
 
@@ -326,9 +327,9 @@ namespace CX {
 
 		unsigned int _calculateFrameCount(CX_Millis duration);
 
-		void _singleCoreBlockingUpdate (void);
-		void _singleCoreThreadedUpdate (void);
-		void _multiCoreUpdate (void);
+		void _singleCoreBlockingUpdate(void);
+		void _singleCoreThreadedUpdate(void);
+		void _multiCoreUpdate(void);
 
 		void _renderCurrentSlide(void);
 

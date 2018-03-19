@@ -520,15 +520,15 @@ to the slide presenter will be at index 0.
 as soon as the last slide is put on the screen, it is done presenting the slides. Because the
 slide presenter is not responsible for removing the last slide from the screen, it has no idea
 about the duration of that slide. */
-std::vector<unsigned int> CX_SlidePresenter::getActualFrameCounts (void) {
+std::vector<uint64_t> CX_SlidePresenter::getActualFrameCounts (void) {
 
 	if (isPresentingSlides()) {
 		CX::Instances::Log.error("CX_SlidePresenter") << "getActualFrameCounts called during slide presentation."
 			" Wait until presentation is done to call this function.";
-		return std::vector<unsigned int>();
+		return std::vector<uint64_t>();
 	}
 
-	vector<unsigned int> frameCount(_slides.size());
+	vector<uint64_t> frameCount(_slides.size());
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 		frameCount[i] = _slides[i].actual.frameCount;
 	}
@@ -713,7 +713,7 @@ void CX_SlidePresenter::update(void) {
 
 void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 	//This is currently not a supported mode. with more work, it might be worthwhile.
-	
+	/*
 	if (_presentingSlides) {
 
 		Slide::PresStatus status = _slides.at(_currentSlide).presentationStatus;
@@ -755,6 +755,7 @@ void CX_SlidePresenter::_singleCoreThreadedUpdate(void) {
 
 		_hoggingStartTime = CX::Instances::Clock.now();
 	}
+	*/
 }
 
 void CX_SlidePresenter::_singleCoreBlockingUpdate(void) {
@@ -823,7 +824,7 @@ void CX_SlidePresenter::_multiCoreUpdate(void) {
 			return;
 		}
 
-		uint64_t currentFrameNumber = _config.display->getFrameNumber();
+		uint64_t currentFrameNumber = _config.display->getLastFrameNumber();
 
 		Slide::PresStatus status = _slides.at(_currentSlide).presentationStatus;
 
@@ -944,7 +945,7 @@ void CX_SlidePresenter::_handleFinalSlide(void) {
 
 		//The duration of the current slide is set to undefined (user may keep it on screen indefinitely).
 		_slides.at(_currentSlide).actual.duration = CX_Millis::max();
-		_slides.at(_currentSlide).actual.frameCount = std::numeric_limits<uint32_t>::max();
+		_slides.at(_currentSlide).actual.frameCount = std::numeric_limits<uint64_t>::max();
 
 		//The durations of following slides (if any) are set to 0 (never presented).
 		for (unsigned int i = _currentSlide + 1; i < _slides.size(); i++) {
@@ -986,7 +987,7 @@ void CX_SlidePresenter::_prepareNextSlide(void) {
 
 		uint64_t endFrameNumber = nextSlide.intended.startFrame + nextSlide.intended.frameCount;
 
-		if (endFrameNumber <= _config.display->getFrameNumber()) {
+		if (endFrameNumber <= _config.display->getLastFrameNumber()) {
 
 			if ((_currentSlide + 2) < _slides.size()) {
 				//If the next slide is not the last slide, it may be skipped
@@ -1069,7 +1070,7 @@ void CX_SlidePresenter::_renderCurrentSlide(void) {
 
 unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Millis duration) {
 	double framesInDuration = duration / _config.display->getFramePeriod();
-	framesInDuration = CX::Util::round(framesInDuration, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+	framesInDuration = CX::Util::round(framesInDuration, 0, CX::Util::Rounding::ToNearest);
 	return (unsigned int)framesInDuration;
 }
 
@@ -1080,7 +1081,7 @@ unsigned int CX_SlidePresenter::_calculateFrameCount(CX_Millis duration) {
 //this issue is to have CX_Display::hasSwappedSinceLastCheck() take an argument specifying the call site, but that is
 //overly complex for no reason.
 bool CX_SlidePresenter::_hasSwappedSinceLastCheck(void) {
-	uint64_t currentFrameNumber = _config.display->getFrameNumber();
+	uint64_t currentFrameNumber = _config.display->getLastFrameNumber();
 	if (currentFrameNumber != _frameNumberOnLastSwapCheck) {
 		_frameNumberOnLastSwapCheck = currentFrameNumber;
 		return true;

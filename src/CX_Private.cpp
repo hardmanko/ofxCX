@@ -7,7 +7,197 @@
 namespace CX {
 namespace Private {
 
+////////////////////
+// CX_GLFenceSync //
+////////////////////
+
+CX_GLFenceSync::CX_GLFenceSync(void) :
+	_syncSuccess(false),
+	_syncCompleteTime(-1),
+	_syncStart(-1),
+	_status(SyncStatus::NotStarted)
+{}
+
+void CX_GLFenceSync::startSync(void) {
+
+	stopSyncing();
+
+	_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+	glFlush(); //This glFlush assures that the fence sync object gets pushed into the command queue.
+
+	_syncStart = Instances::Clock.now();
+
+	_status = SyncStatus::Syncing;
+}
+
+void CX_GLFenceSync::updateSync(void) {
+
+	if (_status != SyncStatus::Syncing) {
+		return;
+	}
+
+	GLenum result = glClientWaitSync(_fenceSyncObject, 0, 0);
+	if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
+
+		_syncCompleteTime = Instances::Clock.now();
+		_status = SyncStatus::SyncComplete;
+		_syncSuccess = true;
+		
+		
+	} else if (result == GL_WAIT_FAILED) {
+
+		_syncCompleteTime = CX_Millis(-1);
+		_status = SyncStatus::SyncComplete;
+		_syncSuccess = false;
+		
+	} 
+	//else if (result == GL_TIMEOUT_EXPIRED) {
+		// do nothing
+	//}
+
+}
+
+void CX_GLFenceSync::stopSyncing(void) {
+	glDeleteSync(_fenceSyncObject);
+	_status = SyncStatus::NotStarted;
+}
+
+void CX_GLFenceSync::clear(void) {
+	stopSyncing();
+	_syncSuccess = false;
+	_syncCompleteTime = CX_Millis(-1);
+	_syncStart = CX_Millis(-1);
+}
+
+bool CX_GLFenceSync::isSyncing(void) const {
+	return _status == SyncStatus::Syncing;
+}
+
+bool CX_GLFenceSync::syncSuccess(void) const {
+	return _status == SyncStatus::SyncComplete && _syncSuccess;
+}
+
+bool CX_GLFenceSync::syncComplete(void) const {
+	return _status == SyncStatus::SyncComplete;
+}
+
+CX_Millis CX_GLFenceSync::getStartTime(void) const {
+	return _syncStart;
+}
+
+CX_Millis CX_GLFenceSync::getSyncTime(void) const {
+	return _syncCompleteTime;
+}
+
+
+///////////////////////////
+// CX_GlfwContextManager //
+///////////////////////////
+
+void CX_GlfwContextManager::setup(GLFWwindow* context, std::thread::id mainThreadId) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	_glfwContext = context;
+	_mainThreadId = mainThreadId;
+
+	this->lock();
+
+}
+
+bool CX_GlfwContextManager::trylock(void) {
+
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (isUnlocked()) {
+		_lockingThreadId = std::this_thread::get_id();
+
+		glfwMakeContextCurrent(_glfwContext);
+		//glFinish();
+
+		// This extra release and acquire appears to be required, probably due to bug, maybe due to nasty GLFW and oF interaction
+		glfwMakeContextCurrent(NULL);
+		//glFinish();
+		glfwMakeContextCurrent(_glfwContext);
+		//glFinish();
+
+		return true;
+	}
+
+	return false;
+}
+
+void CX_GlfwContextManager::lock(void) {
+	while (!trylock())
+		;
+}
+
+void CX_GlfwContextManager::unlock(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (isLockedByThisThread()) {
+		_lockingThreadId = std::thread::id();
+		glfwMakeContextCurrent(NULL);
+		//glFinish();
+	}
+}
+
+/*
+bool CX_GlfwContextManager::isCurrentOnThisThread(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _glfwContext == glfwGetCurrentContext(); // glfwGetCurrentContext returns the context of any thread.
+}
+*/
+
+bool CX_GlfwContextManager::isUnlocked(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _lockingThreadId == std::thread::id();
+}
+
+bool CX_GlfwContextManager::isLockedByThisThread(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _lockingThreadId == std::this_thread::get_id();
+}
+
+bool CX_GlfwContextManager::isLockedByMainThread(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _lockingThreadId == _mainThreadId;
+}
+
+bool CX_GlfwContextManager::isLockedByAnyThread(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _lockingThreadId != std::thread::id();
+}
+
+std::thread::id CX_GlfwContextManager::getLockingThreadId(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	return _lockingThreadId;
+}
+
+GLFWwindow* CX_GlfwContextManager::get(void) {
+	GLFWwindow* rval = nullptr;
+	if (isLockedByThisThread()) {
+		rval = _glfwContext;
+	}
+	return rval;
+}
+
+bool CX_GlfwContextManager::isMainThread(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return std::this_thread::get_id() == _mainThreadId;
+}
+
+CX_GlfwContextManager glfwContextManager;
+
 GLFWwindow* glfwContext = NULL;
+
+
+
 
 ofPtr<ofAppBaseWindow> appWindow;
 

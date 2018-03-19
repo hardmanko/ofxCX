@@ -132,14 +132,11 @@ bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::strin
 
 
 CX_SoundStream::CX_SoundStream(void) :
-	_rtAudio(nullptr),
-	_lastSwapTime(0),
-	_lastBufferStartSampleFrame(0),
-	_nextBufferStartSampleFrame(0),
-	//_lastSwapSampleFrame(0),
-	_lastBufferStartSampleFrameAtLastCheck(0)
-	//_currentBufferIndex(0)
-{}
+	_rtAudio(nullptr)
+	//_lastBufferStartSampleFrame(0)
+{
+	_polledSwapListener = swapData.getPolledSwapListener();
+}
 
 CX_SoundStream::~CX_SoundStream(void) {
 	closeStream();
@@ -222,49 +219,67 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config, bool startStre
 		return false;
 	}
 
+	_callbackMutex.lock();
 	_config = config; //Store the updated settings.
+	_callbackMutex.unlock();
 
 	bool success = true;
 	if (startStream) {
-		success = start();
+		success = this->startStream();
 	}
 	return success;
 }
 
 /*! Starts the sound stream. The stream must already be have been set up (see setup()).
 \return `false` if the stream was not started, `true` if the stream was started or if it was already running. */
-bool CX_SoundStream::start(void) {
+bool CX_SoundStream::startStream(void) {
 
 	if(_rtAudio == nullptr) {
-		CX::Instances::Log.error("CX_SoundStream") << "start(): Stream not started because the RtAudio instance pointer was nullptr. Have you remembered to call setup()?";
+		CX::Instances::Log.error("CX_SoundStream") << "startStream(): Stream not started because the RtAudio instance pointer was nullptr. Have you remembered to call setup()?";
 		return false;
 	}
 
 	if (!_rtAudio->isStreamOpen()) {
-		CX::Instances::Log.error("CX_SoundStream") << "start(): Stream not started because the stream was not open. Have you remembered to call setup()?";
+		CX::Instances::Log.error("CX_SoundStream") << "startStream(): Stream not started because the stream was not open. Have you remembered to call setup()?";
 		return false;
 	}
 
 	if (_rtAudio->isStreamRunning()) {
-		CX::Instances::Log.verbose("CX_SoundStream") << "start(): Stream was not started because it was already running.";
+		CX::Instances::Log.verbose("CX_SoundStream") << "startStream(): Stream was not started because it was already running.";
 		return true;
 	}
 
-	_lastSwapTime = CX_Millis(0);
 
-	_lastBufferStartSampleFrame = 0;
-	_nextBufferStartSampleFrame = 0;
+	//_lastBufferStartSampleFrame = 0;
 
-	//_lastSwapSampleFrame = 0;
-	_lastBufferStartSampleFrameAtLastCheck = 0;
+
 
 	//TODO: Where is this configured?
-	_swapLM.setup(10);
+	// _callbackMutex ???
+	{
+		Sync::DataContainer::Configuration sdcc;
+		sdcc.unitsPerSwap = _config.bufferSize;
+		sdcc.latency = 0;
+		sdcc.nominalSwapPeriod = CX_Seconds((double)_config.bufferSize / _config.sampleRate);
+		//sdcc.swapEvent = nullptr;
+		sdcc.sampleSize = std::ceil(CX_Millis(250) / sdcc.nominalSwapPeriod);
+
+		swapData.setup(sdcc);
+
+		Sync::DataClient::Configuration sduc;
+		sduc.autoUpdate = false;
+		sduc.dataContainer = &swapData;
+		sduc.dataCollectionDuration = CX_Millis(250);
+		sduc.swapPeriodTolerance = 0.5; // realy high tolerance
+
+		swapClient.setup(sduc);
+	}
+
 
 	try {
 		_rtAudio->startStream();
 	} catch (RT_AUDIO_ERROR_TYPE &err) {
-		CX::Instances::Log.error("CX_SoundStream") << "start(): RtAudio threw an exception: " << err.getMessage();
+		CX::Instances::Log.error("CX_SoundStream") << "startStream(): RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
 
@@ -272,7 +287,7 @@ bool CX_SoundStream::start(void) {
 }
 
 /*! Check whether the sound stream is running.
-\return false if the stream is not setup or not running or if RtAudio has not been initialized. Returns `true` if the stream is running. */
+\return `false` if the stream is not setup or not running or if `RtAudio` has not been initialized. Returns `true` if the stream is running. */
 bool CX_SoundStream::isStreamRunning(void) const {
 	if (_rtAudio == nullptr) {
 		return false;
@@ -284,48 +299,33 @@ bool CX_SoundStream::isStreamRunning(void) const {
 options are only suggestions, this function allows you to check what the actual used configuration was.
 \return A const reference to the configuration struct. */
 const CX_SoundStream::Configuration& CX_SoundStream::getConfiguration(void) const {
+	/// _callbackMutex ???
 	return _config; 
 }
 
+
 /*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
 /*
-uint64_t CX_SoundStream::getSampleFrameNumber(void) {
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-	return _lastSwapSampleFrame;
-}
-*/
+CX_SoundStream::SampleFrame CX_SoundStream::getNextBufferStartSampleFrame(void) {
+	//std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
+	return getLastBufferStartSampleFrame() + _config.bufferSize;
 
-/*! Returns the number of the sample frame that is about to be loaded into the stream buffer on the next buffer swap. */
-uint64_t CX_SoundStream::getNextBufferStartSampleFrame(void) {
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-	return _nextBufferStartSampleFrame;
+	// or
+	//return swapData.getSwapUnitForNextSwap();
 }
 
-uint64_t CX_SoundStream::getLastBufferStartSampleFrame(void) {
+CX_SoundStream::SampleFrame CX_SoundStream::getLastBufferStartSampleFrame(void) {
 	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 	return _lastBufferStartSampleFrame;
 }
-
-
-// Incomplete
-/*
-CX_Millis CX_SoundStream::estimateEarliestPossibleStartTime(void) {
-	// looking forward, if a sample were to be put into the output buffer at
-	// the next swap, when would that sample be played?
-
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-
-	uint64_t sampleFrameOnNextSwap = _lastSwapSampleFrame + _config.bufferSize;
-
-	return CX_Millis(0);
-}
 */
 
-CX_Millis CX_SoundStream::estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Millis latencyOffset) {
+/*
+CX_Millis CX_SoundStream::estimateTimeAtSampleFrame(SampleFrame sampleFrame, CX_Millis latencyOffset) {
 
 	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 
-	//CX_Millis intermediateBufferLatency = (_config.streamOptions.numberOfBuffers - 1) * estimateLatencyPerBuffer();
+	//CX_Millis intermediateBufferLatency = (_config.streamOptions.numberOfBuffers - 1) * getLatencyPerBuffer();
 	CX_Millis intermediateBufferLatency = 0;
 
 
@@ -333,41 +333,44 @@ CX_Millis CX_SoundStream::estimateTimeAtSampleFrame(uint64_t sampleFrame, CX_Mil
 
 	CX_Millis timeFromLastSwap = CX_Seconds( (double)sfFromLastSwap / _config.sampleRate );
 
-	CX_Millis lastSwapTime = estimateLastSwapTime(); // or _lastSwapTime
+	CX_Millis lastSwapTime = getLastBufferSwapTime(); // or predictLastSwapTime().prediction();
 	CX_Millis time = timeFromLastSwap + lastSwapTime;
 
-	time = time + latencyOffset - intermediateBufferLatency;
+	time = (time + latencyOffset) - intermediateBufferLatency;
 
 	return time;
 
 }
 
-uint64_t CX_SoundStream::estimateSampleFrameAtTime(CX_Millis time, CX_Millis latencyOffset) {
+CX_SoundStream::SampleFrame CX_SoundStream::estimateSampleFrameAtTime(CX_Millis time, CX_Millis latencyOffset) {
 
 	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
 
-	//CX_Millis intermediateBufferLatency = (_config.streamOptions.numberOfBuffers - 1) * estimateLatencyPerBuffer();
+	//CX_Millis intermediateBufferLatency = (_config.streamOptions.numberOfBuffers - 1) * getLatencyPerBuffer();
 	CX_Millis intermediateBufferLatency = 0;
 
 
-	time = time + latencyOffset - intermediateBufferLatency;
+	time = (time + latencyOffset) - intermediateBufferLatency;
 
-	CX_Millis lastSwapTime = estimateLastSwapTime(); // or _lastSwapTime
+	CX_Millis lastSwapTime = getLastBufferSwapTime(); // or predictLastSwapTime().prediction();
 	CX_Millis timeFromLastSwap = time - lastSwapTime;
 
 	int64_t sfFromLastSwap = timeFromLastSwap.seconds() * _config.sampleRate;
 
-	uint64_t sampleFrame = sfFromLastSwap + getLastBufferStartSampleFrame();
+	SampleFrame sampleFrame = sfFromLastSwap + getLastBufferStartSampleFrame();
 
 	return sampleFrame;
 }
+*/
 
-/*! Stops the stream. In order to restart the stream, CX::CX_SoundStream::start() must be called.
+
+
+/*! Stops the stream. In order to restart the stream, CX::CX_SoundStream::startStream() must be called.
 If there is an error, a message will be logged.
 \return `false` if there was an error, `true` otherwise. */
-bool CX_SoundStream::stop (void) {
+bool CX_SoundStream::stopStream (void) {
 	if(_rtAudio == nullptr) {
-		CX::Instances::Log.error("CX_SoundStream") << "stop(): Stream not stopped because instance pointer was NULL. Have you remembered to call setup()?";
+		CX::Instances::Log.error("CX_SoundStream") << "stopStream(): Stream not stopped because instance pointer was NULL. Have you remembered to call setup()?";
 		return false;
 	}
 
@@ -375,10 +378,10 @@ bool CX_SoundStream::stop (void) {
 		if (_rtAudio->isStreamRunning()) {
     		_rtAudio->stopStream();
 		} else {
-			CX::Instances::Log.notice("CX_SoundStream") << "stop(): Stream was already stopped.";
+			CX::Instances::Log.notice("CX_SoundStream") << "stopStream(): Stream was already stopped.";
 		}
   	} catch (RT_AUDIO_ERROR_TYPE &err) {
-   		CX::Instances::Log.error("CX_SoundStream") << "stop(): RtAudio threw an exception: " << err.getMessage();
+   		CX::Instances::Log.error("CX_SoundStream") << "stopStream(): RtAudio threw an exception: " << err.getMessage();
 		return false;
  	}
 	return true;
@@ -415,7 +418,7 @@ constant, but it depends on where in the buffer swapping process you start playi
 \return An estimate of the stream latency. */
 /*
 CX_Millis CX_SoundStream::estimateTotalLatency(void) const {
-	return _config.streamOptions.numberOfBuffers * estimateLatencyPerBuffer();
+	return _config.streamOptions.numberOfBuffers * getLatencyPerBuffer();
 }
 */
 
@@ -423,7 +426,7 @@ CX_Millis CX_SoundStream::estimateTotalLatency(void) const {
 S_b / SR, where S_b is the size of each buffer in sample frames and SR is the sample rate in samples per second.
 \return Latency per buffer.
 */
-CX_Millis CX_SoundStream::estimateLatencyPerBuffer(void) const {
+CX_Millis CX_SoundStream::getLatencyPerBuffer(void) const {
 	return CX_Seconds((double)_config.bufferSize / _config.sampleRate); //Samples per buffer / samples per second = seconds per buffer
 }
 
@@ -431,71 +434,43 @@ CX_Millis CX_SoundStream::estimateLatencyPerBuffer(void) const {
 this function was called.
 \return `true` if at least one audio buffer has been swapped out, `false` if no buffers have been swapped. */
 bool CX_SoundStream::hasSwappedSinceLastCheck(void) {
-
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-
-	if (_lastBufferStartSampleFrameAtLastCheck != _lastBufferStartSampleFrame) {
-		_lastBufferStartSampleFrameAtLastCheck = _lastBufferStartSampleFrame;
-		return true;
-	}
-	return false;
+	return _polledSwapListener->hasSwappedSinceLastCheck();
 }
 
 /*! Blocks until the next swap of the audio buffers. If the stream is not running, it returns immediately.
 \see See \ref blockingCode */
-void CX_SoundStream::waitForBufferSwap(void) {
-	if (_rtAudio == nullptr || !_rtAudio->isStreamRunning()) {
-		CX::Instances::Log.warning("CX_SoundStream") << "waitForBufferSwap(): Wait for buffer swap requested while stream not running. Returning immediately.";
+void CX_SoundStream::waitForSwap(CX_Millis timeout, bool reset) {
+	if (!isStreamRunning()) {
+		CX::Instances::Log.warning("CX_SoundStream") << "waitForBufferSwap(): Wait for buffer swap requested while stream not running (see isStreamRunning()). Returning immediately.";
 		return;
 	}
 
-	hasSwappedSinceLastCheck();
-	while (!hasSwappedSinceLastCheck())
-		;
+	_polledSwapListener->waitForSwap(timeout, reset);
 }
 
 /*! Gets the time at which the last buffer swap occurred. 
 \return This time value can be compared with the result of CX::CX_Clock::now(). 
 \note `estimateLastSwapTime()` may be more accurate.
 */
+/*
 CX_Millis CX_SoundStream::getLastBufferSwapTime(void) {
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-	return _lastSwapTime;
+	return swapData.getNewestDataPoint().time;
 }
+*/
 
-CX_Millis CX_SoundStream::estimateLastSwapTime(void) {
-	return estimateSwapTime(getLastBufferStartSampleFrame());
-	//return _lmTimeAtSF(getLastBufferStartSampleFrame());
+/*
+Sync::TimePrediction CX_SoundStream::predictLastSwapTime(void) {
+	return predictTimeAtSampleFrame(getLastBufferStartSampleFrame());
 }
+*/
 
 /*! Estimate the time at which the next buffer swap will occur.
 \return The estimated time of next swap. This value can be compared with the result of CX::Instances::Clock.now(). */
-CX_Millis CX_SoundStream::estimateNextSwapTime(void) {
-	return estimateSwapTime(getNextBufferStartSampleFrame());
-	//return _lmTimeAtSF(getNextBufferStartSampleFrame());
+/*
+Sync::TimePrediction CX_SoundStream::predictNextSwapTime(void) {
+	return predictTimeAtSampleFrame(getNextBufferStartSampleFrame());
 }
-
-CX_Millis CX_SoundStream::estimateSwapTime(uint64_t sampleFrame) {
-
-	std::lock_guard<std::recursive_mutex> callbackLock(_callbackMutex);
-
-	if (!_swapLM.ready()) {
-		return 0;
-	}
-
-	unsigned int sampleSize = _swapLM.storedSamples();
-
-	uint64_t dataEndSF = getLastBufferStartSampleFrame();
-	uint64_t dataStartSF = dataEndSF - sampleSize;
-
-	if (sampleFrame < dataStartSF - sampleSize || sampleFrame > dataEndSF + sampleSize) {
-		// warning: SF too far for accurate prediction
-		Instances::Log.warning("CX_SoundStream") << "estimateSwapTime(): Sample frame " << sampleFrame << " is far from recorded data, which limits the accuracy of the estimate.";
-	}
-
-	return _swapLM.getY(sampleFrame);
-
-}
+*/
 
 /*! This function returns a pointer to the RtAudio instance that this CX_SoundStream is using.
 This should not be needed most of the time, but there may be cases in which you need to directly
@@ -725,9 +700,14 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 
 	// Enforce const configuration in callback
 	_callbackMutex.lock();
+
+		// The only time _config.inputChannels and outputChannels are written to is in setup when the config is copied in
 		int inputChannels = _config.inputChannels;
 		int outputChannels = _config.outputChannels;
-		uint64_t thisBufferStartSampleFrame = _lastBufferStartSampleFrame + bufferSize;
+		
+		//SampleFrame thisBufferStartSampleFrame = swapData.getNewestDataPoint().unit + bufferSize; // swapData.getSwapUnitForNextSwap()
+		SampleFrame thisBufferStartSampleFrame = swapData.getSwapUnitForNextSwap();
+		//SampleFrame thisBufferStartSampleFrame = _lastBufferStartSampleFrame + bufferSize;
 	_callbackMutex.unlock();
 
 	bool usingInput  =  inputEvent.size() > 0 &&  inputChannels > 0;
@@ -773,21 +753,11 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 	}
 
 	// Update variables once the swap is complete
-	_callbackMutex.lock();
+	//_callbackMutex.lock();
 
-		_lastSwapTime = swapTime;
+		swapData.storeSwap(swapTime);
 
-		_lastBufferStartSampleFrame = thisBufferStartSampleFrame;
-		_nextBufferStartSampleFrame = thisBufferStartSampleFrame + bufferSize;
-
-		if (swapEvent.size() > 0) {
-			SwapEventData sssd{ swapTime, thisBufferStartSampleFrame, _nextBufferStartSampleFrame };
-			ofNotifyEvent(swapEvent, sssd);
-		}
-
-		_swapLM.store(thisBufferStartSampleFrame, swapTime);
-
-	_callbackMutex.unlock();
+	//_callbackMutex.unlock();
 
 	return 0; //Return 0 to keep the stream going.
 }

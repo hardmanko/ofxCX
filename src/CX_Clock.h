@@ -35,6 +35,8 @@ namespace CX {
 	class CX_Clock {
 	public:
 
+		CX_Clock(void);
+
 		bool setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStartTime = true, unsigned int samples = 100000);
 
 		CX_Millis now(void) const;
@@ -42,15 +44,29 @@ namespace CX {
 		void sleep(CX_Millis t) const;
 		void delay(CX_Millis t) const;
 
+		// except if sleeping doesn't happen in such short units, interruptedSleep doesn't work (but interruptedDelay does)
+		//void interruptedSleep(CX_Millis total, CX_Millis unit = CX_Micros(50), std::function<void(void)> fun = nullptr) const;
+		//void interruptedDelay(CX_Millis total, CX_Millis unit = CX_Micros(50), std::function<void(void)> fun = nullptr) const;
+
+		//CX_Millis estimateSleepPrecision(CX_Millis testLength);
+		//void setSleepUnit(CX_Millis unit);
+		//CX_Millis getSleepUnit(void);
+
 		void resetExperimentStartTime(void);
 
 		std::string getDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
 		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
 
+		template <typename ImplType>
+		void setImplementation(void) {
+			std::shared_ptr<ImplType> impl = std::make_shared<ImplType>();
+			setImplementation(impl);
+		}
+
 		void setImplementation(std::shared_ptr<CX_BaseClockInterface> impl);
 		std::shared_ptr<CX_BaseClockInterface> getImplementation(void) const;
 
-		/*! Struct containing results for a given clock implementation obtained from `precisionTest()`. */
+		/*! Struct containing results for a given clock implementation obtained from `testImplPrecision()`. */
 		struct PrecisionTestResults {
 			std::string summaryString; //<! A printable summary of the results.
 
@@ -71,14 +87,32 @@ namespace CX {
 
 		};
 
-		static PrecisionTestResults testPrecision(std::shared_ptr<CX_BaseClockInterface> impl, unsigned int samples = 100000, std::vector<double> percentiles = std::vector<double>());
+		static PrecisionTestResults testImplPrecision(std::shared_ptr<CX_BaseClockInterface> impl, 
+			unsigned int samples = 100000, std::vector<double> percentiles = std::vector<double>());
 		static std::pair<std::shared_ptr<CX_BaseClockInterface>, PrecisionTestResults> 
 			chooseBestClockImplementation(unsigned int iterationsPerClock, bool excludeUnstable = true, bool excludeWorseThanMs = true, bool log = true);
+
+		
+		void enableRegularEvent(bool enable);
+		bool isRegularEventEnabled(void);
+		void setRegularEventPeriod(CX_Millis period);
+		CX_Millis getRegularEventPeriod(void);
+		ofEvent<void> regularEvent;
 
 	private:
 		std::unique_ptr<Poco::LocalDateTime> _pocoExperimentStart;
 
 		std::shared_ptr<CX_BaseClockInterface> _impl;
+
+		
+		void _regularEventThreadFunction(void);
+
+		struct {
+			std::recursive_mutex mutex;
+			std::thread thread;
+			CX_Millis period;
+			bool enabled;
+		} _regularEvent;
 	};
 
 	namespace Instances {

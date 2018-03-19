@@ -126,7 +126,7 @@ CX_Keyboard::Event CX_Keyboard::waitForKeypress(std::vector<int> keys, bool clea
 		}
 
 		for (auto it = _keyEvents.begin(); it != _keyEvents.end(); it++) {
-			if (it->type == CX_Keyboard::PRESSED) {
+			if (it->type == CX_Keyboard::Pressed) {
 				
 				bool keyFound = std::find(keys.begin(), keys.end(), it->key) != keys.end();
 
@@ -174,15 +174,15 @@ bool CX_Keyboard::isChordHeld(const std::vector<int>& chord) const {
 (e.g. the timestamp is not set to the current time, it is left as-is).
 This can be useful if you want to have a simulated participant perform the
 task for debugging purposes.
-If the event type is CX_Keyboard::PRESSED or CX_Keyboard::RELEASED, the key of the
+If the event type is CX_Keyboard::Pressed or CX_Keyboard::Released, the key of the
 event will be added to or removed from the list of held keys, depending on event
 type.
 \param ev The event to append.
 */
 void CX_Keyboard::appendEvent(CX_Keyboard::Event ev) {
-	if (ev.type == CX_Keyboard::PRESSED) {
+	if (ev.type == CX_Keyboard::Pressed) {
 		_heldKeys.insert(ev.key);
-	} else if (ev.type == CX_Keyboard::RELEASED) {
+	} else if (ev.type == CX_Keyboard::Released) {
 		_heldKeys.erase(ev.key);
 	}
 
@@ -210,9 +210,9 @@ void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
 	
 	if (this->isKeyHeld(a.keycode)) {
-		ev.type = CX_Keyboard::REPEAT;
+		ev.type = CX_Keyboard::Repeat;
 	} else {
-		ev.type = CX_Keyboard::PRESSED;
+		ev.type = CX_Keyboard::Pressed;
 	}
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
@@ -227,7 +227,7 @@ void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
 
 void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
 	CX_Keyboard::Event ev;
-	ev.type = CX_Keyboard::RELEASED;
+	ev.type = CX_Keyboard::Released;
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 0
 	ev.codes = Keycodes(a.key, -1, -1, -1);
@@ -241,7 +241,7 @@ void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
 
 void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
 	CX_Keyboard::Event ev;
-	ev.type = CX_Keyboard::REPEAT;
+	ev.type = CX_Keyboard::Repeat;
 
 	ev.codes = Keycodes(a.key, a.keycode, a.scancode, a.codepoint);
 
@@ -264,13 +264,13 @@ void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
 	}
 
 	switch (ev.type) {
-	case CX_Keyboard::PRESSED:
+	case CX_Keyboard::Pressed:
 		_heldKeys.insert(ev.key);
 		break;
-	case CX_Keyboard::RELEASED:
+	case CX_Keyboard::Released:
 		_heldKeys.erase(ev.key);
 		break;
-	case CX_Keyboard::REPEAT:
+	case CX_Keyboard::Repeat:
 	default:
 		break;
 	}
@@ -398,9 +398,9 @@ std::istream& operator>> (std::istream& is, CX_Keyboard::Event& ev) {
 	is >> eventType;
 
 	switch (eventType) {
-	case CX_Keyboard::PRESSED: ev.type = CX_Keyboard::PRESSED; break;
-	case CX_Keyboard::RELEASED: ev.type = CX_Keyboard::RELEASED; break;
-	case CX_Keyboard::REPEAT: ev.type = CX_Keyboard::REPEAT; break;
+	case CX_Keyboard::Pressed: ev.type = CX_Keyboard::Pressed; break;
+	case CX_Keyboard::Released: ev.type = CX_Keyboard::Released; break;
+	case CX_Keyboard::Repeat: ev.type = CX_Keyboard::Repeat; break;
 	}
 	return is;
 }

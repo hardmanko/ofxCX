@@ -43,64 +43,65 @@ namespace Util {
 	unsigned int getMsaaSampleCount(void); //Move to Draw ns?
 
 	bool writeToFile(std::string filename, std::string data, bool append = true, bool overwriteWarning = true);
+
 	std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 	bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter = "=");
 
-	template <typename T> T rgbStringToColor(std::string rgba, std::string delim = ",");
-
 	std::string wordWrap(std::string s, float width, ofTrueTypeFont& font);
 
-	template <typename T> std::vector<T> arrayToVector(T arr[], unsigned int arraySize);
-
-	template <typename T> std::vector<T> sequence(T start, T end, T stepSize);
-	template <typename T> std::vector<T> sequenceSteps(T start, unsigned int steps, T stepSize);
-	template <typename T> std::vector<T> sequenceAlong(T start, T end, unsigned int steps);
-
-	template <typename T> std::vector<T> intVector(T start, T end);
-
-	template <typename T> std::vector<T> repeat(T value, unsigned int times);
-	template <typename T> std::vector<T> repeat(std::vector<T> values, unsigned int times, unsigned int each = 1);
-	template <typename T> std::vector<T> repeat(std::vector<T> values, std::vector<unsigned int> each, unsigned int times = 1);
-
-	template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
-	template <typename T> std::vector<T> stringToVector(std::string s, std::string delimiter);
-
 	/*! The way in which numbers should be rounded with CX::Util::round(). */
-	enum class CX_RoundingConfiguration {
-		ROUND_TO_NEAREST, //!< Round to the nearest number.
-		ROUND_UP, //!< Round to the number above the current number.
-		ROUND_DOWN, //!< Round to the number below the current number.
-		ROUND_TOWARD_ZERO //!< Round toward zero.
+	enum class Rounding {
+		ToNearest, //!< Round to the nearest number.
+		Up, //!< Round to the number above the current number.
+		Down, //!< Round to the number below the current number.
+		TowardZero //!< Round toward zero.
 	};
 
-	double round(double d, int roundingPower, CX_RoundingConfiguration c = CX_RoundingConfiguration::ROUND_TO_NEAREST);
-
-	template <typename T> T clamp(T val, T minimum, T maximum);
-	template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
-
-	//template <typename T> std::vector<T> unique(std::vector<T> vals, bool keepOrder = false);
-	template <typename T> std::vector<T> exclude(const std::vector<T>& vals, const std::vector<T>& exclude);
-
-	template <typename T> std::vector<T> unionV(std::vector<T> a, std::vector<T> b);
-	template <typename T> std::vector<T> intersectionV(std::vector<T> a, std::vector<T> b);
-
-	//template <typename T> std::vector<T> reorder(const std::vector<T>& v, const std::vector<T>& ordering);
-
-	template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
-	template <typename T> std::vector<T> concatenate(T A, const std::vector<T>& B);
-	template <typename T> std::vector<T> concatenate(const std::vector<T>& A, T B);
-	template <typename T> std::vector<T> concatenate(T A, T B);
-
-
-	template <typename T> T max(std::vector<T> vals);
-	template <typename T> T min(std::vector<T> vals);
-	template <typename T> T mean(std::vector<T> vals);
-	template <typename T_OUT, typename T_IN> T_OUT mean(std::vector<T_IN> vals);
-	template <typename T> T var(std::vector<T> vals);
-	template <typename T_OUT, typename T_IN> T_OUT var(std::vector<T_IN> vals);
+	double round(double d, int roundingPower, Rounding rounding = Rounding::ToNearest);
 
 	float getAngleBetweenPoints(ofPoint p1, ofPoint p2);
 	ofPoint getRelativePointFromDistanceAndAngle(ofPoint start, float distance, float angle);
+
+
+	//template <typename T> T rgbStringToColor(std::string rgba, std::string delim = ",");
+
+	//template <typename T> std::vector<T> sequence(T start, T end, T stepSize);
+	//template <typename T> std::vector<T> sequenceSteps(T start, unsigned int steps, T stepSize);
+	//template <typename T> std::vector<T> sequenceAlong(T start, T end, unsigned int steps);
+
+	//template <typename T> std::vector<T> intVector(T start, T end);
+
+	//template <typename T> std::vector<T> repeat(T value, unsigned int times);
+	//template <typename T> std::vector<T> repeat(std::vector<T> values, unsigned int times, unsigned int each = 1);
+	//template <typename T> std::vector<T> repeat(std::vector<T> values, std::vector<unsigned int> each, unsigned int times = 1);
+
+	//template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
+	//template <typename T> std::vector<T> stringToVector(std::string s, std::string delimiter);
+
+	//template <typename T> T clamp(T val, T minimum, T maximum);
+	//template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
+
+	//template <typename T> std::vector<T> unique(std::vector<T> vals, bool keepOrder = false);
+	//template <typename T> std::vector<T> exclude(const std::vector<T>& vals, const std::vector<T>& exclude);
+
+	//template <typename T> std::vector<T> unionV(std::vector<T> a, std::vector<T> b);
+	//template <typename T> std::vector<T> intersectionV(std::vector<T> a, std::vector<T> b);
+
+	//template <typename T> std::vector<T> reorder(const std::vector<T>& v, const std::vector<T>& ordering);
+
+	//template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
+	//template <typename T> std::vector<T> concatenate(T A, const std::vector<T>& B);
+	//template <typename T> std::vector<T> concatenate(const std::vector<T>& A, T B);
+	//template <typename T> std::vector<T> concatenate(T A, T B);
+
+
+	//template <typename T> T max(std::vector<T> vals);
+	//template <typename T> T min(std::vector<T> vals);
+	//template <typename T> T mean(std::vector<T> vals);
+	//template <typename T_OUT, typename T_IN> T_OUT mean(std::vector<T_IN> vals);
+	//template <typename T> T var(std::vector<T> vals);
+	//template <typename T_OUT, typename T_IN> T_OUT var(std::vector<T_IN> vals);
+
 
 
 
@@ -143,8 +144,8 @@ namespace Util {
 	\return A vector containing times copies of the repeated value.
 	*/
 	template <typename T>
-	std::vector<T> repeat(T value, unsigned int times) {
-		return std::vector<T>( times, value );
+	std::vector<T> repeat(T value, size_t times) {
+		return std::vector<T>(times, value);
 	}
 
 	/*!
@@ -156,13 +157,13 @@ namespace Util {
 	\return A vector of the repeated values.
 	*/
 	template <typename T>
-	std::vector<T> repeat(std::vector<T> values, unsigned int times, unsigned int each) {
+	std::vector<T> repeat(std::vector<T> values, size_t times, size_t each = 1) {
 		std::vector<T> rval;
 
-		for (int i = 0; i < times; i++) {
-			for (int val = 0; val < values.size(); val++) {
-				for (int j = 0; j < each; j++) {
-					rval.push_back( values[val] );
+		for (size_t i = 0; i < times; i++) {
+			for (size_t val = 0; val < values.size(); val++) {
+				for (size_t j = 0; j < each; j++) {
+					rval.push_back(values[val]);
 				}
 			}
 		}
@@ -180,7 +181,7 @@ namespace Util {
 	\return A vector of the repeated values.
 	*/
 	template <typename T>
-	std::vector<T> repeat(std::vector<T> values, std::vector<unsigned int> each, unsigned int times) {
+	std::vector<T> repeat(std::vector<T> values, std::vector<size_t> each, size_t times = 1) {
 		std::vector<T> rval;
 
 		if (values.size() != each.size()) {
@@ -188,10 +189,10 @@ namespace Util {
 			return rval;
 		}
 
-		for (int i = 0; i < times; i++) {
-			for (int j = 0; j < values.size(); j++) {
-				for (int k = 0; k < each[j]; k++) {
-					rval.push_back( values[j] );
+		for (size_t i = 0; i < times; i++) {
+			for (size_t j = 0; j < values.size(); j++) {
+				for (size_t k = 0; k < each[j]; k++) {
+					rval.push_back(values[j]);
 				}
 			}
 		}
@@ -207,7 +208,7 @@ namespace Util {
 	\return A string containing a representation of the vector of values.
 	*/
 	template <typename T>
-	std::string vectorToString(std::vector<T> values, std::string delimiter, int significantDigits) {
+	std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8) {
 		std::stringstream s;
 		s << std::fixed << std::setprecision(significantDigits);
 		for (unsigned int i = 0; i < values.size(); i++) {
@@ -355,7 +356,7 @@ namespace Util {
 	\param maximum The upper bound. Must be greater than or equal to minimum.
 	\return The clamped value. */
 	template <typename T>
-	T clamp(T val, T minimum, T maximum) {
+	T clamp(const T& val, const T& minimum, const T& maximum) {
 		return std::min(std::max(val, minimum), maximum);
 	}
 
@@ -365,27 +366,25 @@ namespace Util {
 	\param maximum The upper bound. Must be greater than or equal to minimum.
 	\return The clamped values. */
 	template <typename T>
-	std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum) {
-		std::vector<T> rval(vals.size());
-		for (unsigned int i = 0; i < vals.size(); i++) {
-			rval[i] = clamp<T>(vals[i], minimum, maximum);
+	std::vector<T> clamp(std::vector<T> vals, const T& minimum, const T& maximum) {
+		for (std::vector<T>::size_type i = 0; i < vals.size(); i++) {
+			vals[i] = CX::Util::clamp<T>(vals[i], minimum, maximum);
 		}
-		return rval;
+		return vals;
 	}
 
 	/*! Finds the maximum value in a vector of values.
 	\tparam T The type of data to be operated on. This type must have operator> defined.
 	\param vals The vector of values.
 	\return The maximum value in the vector. */
-	template <typename T> T max(std::vector<T> vals) {
+	template <typename T> 
+	T max(const std::vector<T>& vals) {
 		if (vals.size() == 0) {
 			return T();
 		}
 		T maximum = vals[0];
-		for (unsigned int i = 1; i < vals.size(); i++) {
-			if (vals[i] > maximum) {
-				maximum = vals[i];
-			}
+		for (std::vector<T>::size_type i = 1; i < vals.size(); i++) {
+			maximum = std::max<T>(maximum, vals[i]);
 		}
 		return maximum;
 	}
@@ -395,15 +394,13 @@ namespace Util {
 	\param vals The vector of values.
 	\return The minimum value in the vector. */
 	template <typename T> 
-	T min(std::vector<T> vals) {
+	T min(const std::vector<T>& vals) {
 		if (vals.size() == 0) {
 			return T();
 		}
 		T minimum = vals[0];
-		for (unsigned int i = 1; i < vals.size(); i++) {
-			if (vals[i] < minimum) {
-				minimum = vals[i];
-			}
+		for (std::vector<T>::size_type i = 1; i < vals.size(); i++) {
+			minimum = std::min<T>(minimum, vals[i]);
 		}
 		return minimum;
 	}
@@ -413,21 +410,24 @@ namespace Util {
 	\param vals The vector of values.
 	\return The mean of the vector. */
 	template <typename T> 
-	T mean(std::vector<T> vals) {
+	T mean(const std::vector<T>& vals) {
 		return CX::Util::mean<T, T>(vals);
 	}
 
 	/*! Calculates the mean value of a vector of values.
-	\tparam T_OUT The type of data to be returned. This type must have operator+(T_IN) and operator/(unsigned int) defined.
+	\tparam T_OUT The type of data to be returned. This type must have operator+(T_IN) and operator/(size_t) defined.
 	\tparam T_IN The type of data to be operated on.
 	\param vals The vector of values.
 	\return The mean of the vector. */
 	template <typename T_OUT, typename T_IN> 
-	T_OUT mean(std::vector<T_IN> vals) {
+	T_OUT mean(const std::vector<T_IN>& vals) {
 		T_OUT sum = 0;
-		for (unsigned int i = 0; i < vals.size(); i++) {
-			sum = sum + vals[i];
+		for (const T_IN& inv : vals) {
+			sum = sum + inv;
 		}
+		//for (unsigned int i = 0; i < vals.size(); i++) {
+		//	sum = sum + vals[i];
+		//}
 		return sum / vals.size();
 	}
 
@@ -436,7 +436,7 @@ namespace Util {
 	\param vals The data.
 	\return The sample variance. */
 	template <typename T> 
-	T var(std::vector<T> vals) {
+	T var(const std::vector<T>& vals) {
 		return Util::var<T, T>(vals);
 	}
 
@@ -446,11 +446,11 @@ namespace Util {
 	\param vals The vector of values.
 	\return The mean of the vector. */
 	template <typename T_OUT, typename T_IN> 
-	T_OUT var(std::vector<T_IN> vals) {
+	T_OUT var(const std::vector<T_IN>& vals) {
 		T_OUT m = Util::mean(vals);
 		T_OUT sum = 0;
-		for (unsigned int i = 0; i < vals.size(); i++) {
-			T_OUT dif = vals[i] - m;
+		for (const T_IN& inv : vals) {
+			T_OUT dif = inv - m;
 			sum += dif * dif;
 		}
 		return sum / (vals.size() - 1); //Sample variance has n - 1 for denominator
@@ -536,7 +536,7 @@ namespace Util {
 
 	/*! Reorders a vector `v` based on an ordering specified by `ordering`.
 	Values in `v` not found in `ordering` are discarded.
-	Repeated values in `v` are kept.
+	Duplicate values in `v` are kept or discarded depending on the value of `keepDuplicates`.
 	
 	\param v A vector of items to be ordered.
 	\param ordering A vector of values providing the ordering. Values in this vector should be unique, but this is not enforced.
@@ -584,7 +584,7 @@ namespace Util {
 	\param B The vector of values.
 	\return The concatenation of A and B, being a vector containing {A, B1, B2, ..., Bn}. */
 	template <typename T>
-	std::vector<T> concatenate(T A, const std::vector<T>& B) {
+	std::vector<T> concatenate(const T& A, const std::vector<T>& B) {
 		std::vector<T> C;
 		C.push_back(A);
 		C.insert(C.end(), B.begin(), B.end());
@@ -596,7 +596,7 @@ namespace Util {
 	\param B The vector of values.
 	\return The concatenation of A and B, being a vector containing {A1, A2, ..., An, B}. */
 	template <typename T> 
-	std::vector<T> concatenate(const std::vector<T>& A, T B) {
+	std::vector<T> concatenate(const std::vector<T>& A, const T& B) {
 		std::vector<T> C = A;
 		C.push_back(B);
 		return C;
@@ -607,7 +607,7 @@ namespace Util {
 	\param B The second value.
 	\return The concatenation of A and B, being a vector containing {A, B}. */
 	template <typename T> 
-	std::vector<T> concatenate(T A, T B) {
+	std::vector<T> concatenate(const T& A, const T& B) {
 		std::vector<T> C;
 		C.push_back(A);
 		C.push_back(B);
@@ -622,20 +622,27 @@ namespace Util {
 	std::vector<T> exclude(const std::vector<T>& values, const std::vector<T>& exclude) {
 		std::vector<T> kept;
 
-		for (T val : values) {
-			bool valueExcluded = false;
-			for (T ex : exclude) {
-				if (val == ex) {
-					valueExcluded = true;
-					break;
-				}
-			}
-
-			if (!valueExcluded) {
+		for (const T& val : values) {
+			if (!Util::contains(exclude, val)) {
 				kept.push_back(val);
 			}
 		}
 		return kept;
+	}
+
+	// 3-4x slower than exclude()
+	template <typename T>
+	std::vector<T> excludeEraser(std::vector<T> values, const std::vector<T>& exclude) {
+
+		for (auto it = values.begin(); it != values.end();) {
+			if (Util::contains(exclude, *it)) {
+				it = values.erase(it);
+			} else {
+				++it;
+			}
+		}
+
+		return values;
 	}
 
 	/*! Calculates a quantile for some data set `x`.

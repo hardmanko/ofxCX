@@ -3,10 +3,16 @@
 #include "ofUtils.cpp" //for whatever reason, the function I need (ofGetMonotonicTime) is not in the header, only in the .cpp
 
 #include "CX_Private.h"
+#include "CX_InputManager.h" // Instances::Input
 
 namespace CX {
 
 CX_Clock CX::Instances::Clock;
+
+CX_Clock::CX_Clock(void) {
+	_regularEvent.enabled = false;
+	_regularEvent.period = CX_Millis(10);
+}
 
 /*! Set up the CX_Clock with the given clock implementation or choose the best available implementation.
 
@@ -133,6 +139,9 @@ is set up during the beginning of program execution. See also `resetExperimentSt
 
 \return A `CX_Millis` object containing the time.
 
+\note See \ref CX::cxTick_t for calculations showing the amount of time that can be stored
+by a `CX_Millis` object.
+
 \note This cannot be converted to current date/time in any meaningful way. Use getDateTimeString() for that.*/
 CX_Millis CX_Clock::now(void) const {
 	return CX_Nanos(_impl->nanos());
@@ -160,6 +169,44 @@ void CX_Clock::sleep(CX_Millis t) const {
 	}
 }
 
+/*
+void CX_Clock::interruptedSleep(CX_Millis total, CX_Millis unit, std::function<void(void)> fun) const {
+	CX_Millis endTime = this->now() + total;
+	if (unit < total) {
+		unit = total;
+	}
+
+	while (this->now() < endTime) {
+
+		Instances::Input.pollEvents();
+
+		if (fun != nullptr) {
+			fun();
+		}
+
+		this->sleep(unit);
+
+	};
+
+}
+
+void CX_Clock::interruptedDelay(CX_Millis total, CX_Millis unit, std::function<void(void)> fun) const {
+	CX_Millis endTime = this->now() + total;
+
+	while (this->now() < endTime) {
+
+		Instances::Input.pollEvents();
+
+		if (fun != nullptr) {
+			fun();
+		}
+
+		this->delay(unit);
+
+	};
+}
+*/
+
 /*! Blocks in a tight spinloop for the requested period of time. This is likely more
 precise than CX_Clock::sleep() because it does not give up control to the operating
 system, but it wastes resources because it just sits in a spinloop for the requested
@@ -170,8 +217,8 @@ This function is effectively a static function of the CX_Clock class.
 \param t The requested delay duration.
 */
 void CX_Clock::delay(CX_Millis t) const {
-	CX_Millis startTime = this->now();
-	while ((this->now() - startTime) < t)
+	CX_Millis endTime = this->now() + t;
+	while (this->now() < endTime)
 		;
 }
 
@@ -193,7 +240,57 @@ std::string CX_Clock::getDateTimeString(const std::string& format) const {
 	return Poco::DateTimeFormatter::format(localTime, format);
 }
 
-/*! Tests the precision, with `testPrecision()`, of all of the clock implementations that are built-in to CX and chooses the 
+void CX_Clock::enableRegularEvent(bool enable) {
+	std::lock_guard<std::recursive_mutex> lock(_regularEvent.mutex);
+
+	if (enable) {
+		if (_regularEvent.enabled) {
+			return;
+		} else {
+			_regularEvent.enabled = true; // enable first
+			_regularEvent.thread = std::thread(std::bind(&CX_Clock::_regularEventThreadFunction, this));
+		}
+	} else {
+		_regularEvent.enabled = false;
+	}
+}
+
+bool CX_Clock::isRegularEventEnabled(void) {
+	std::lock_guard<std::recursive_mutex> lock(_regularEvent.mutex);
+	return _regularEvent.enabled;
+}
+
+void CX_Clock::setRegularEventPeriod(CX_Millis period) {
+	std::lock_guard<std::recursive_mutex> lock(_regularEvent.mutex);
+	_regularEvent.period = period;
+}
+
+CX_Millis CX_Clock::getRegularEventPeriod(void) {
+	std::lock_guard<std::recursive_mutex> lock(_regularEvent.mutex);
+	return _regularEvent.period;
+}
+
+void CX_Clock::_regularEventThreadFunction(void) {
+
+	bool threadRunning = true;
+	while (threadRunning) {
+		_regularEvent.mutex.lock();
+		threadRunning = _regularEvent.enabled;
+		CX_Millis period = _regularEvent.period;
+		_regularEvent.mutex.unlock();
+
+		if (!threadRunning) {
+			break;
+		}
+
+		this->sleep(period);
+
+		ofNotifyEvent(this->regularEvent);
+	}
+
+}
+
+/*! Tests the precision, with `testImplPrecision()`, of all of the clock implementations that are built-in to CX and chooses the 
 best one on the basis of the following criteria:
 
 1. If `excludeUnstable == true`, clock implementations that are unstable/not monotonic are excluded.
@@ -245,7 +342,7 @@ std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults
 		TestRes res;
 
 		res.first = std::make_shared<CX_StdClockWrapper<std::chrono::high_resolution_clock>>();
-		res.second = CX_Clock::testPrecision(res.first, samples);
+		res.second = CX_Clock::testImplPrecision(res.first, samples);
 
 		results["high_resolution_clock (" + res.first->getName() + ")"] = res;
 	}
@@ -254,7 +351,7 @@ std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults
 		TestRes res;
 
 		res.first = std::make_shared<CX_StdClockWrapper<std::chrono::system_clock>>();
-		res.second = CX_Clock::testPrecision(res.first, samples);
+		res.second = CX_Clock::testImplPrecision(res.first, samples);
 
 		results["system_clock (" + res.first->getName() + ")"] = res;
 	}
@@ -263,7 +360,7 @@ std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults
 		TestRes res;
 
 		res.first = std::make_shared<CX_StdClockWrapper<std::chrono::steady_clock>>();
-		res.second = CX_Clock::testPrecision(res.first, samples);
+		res.second = CX_Clock::testImplPrecision(res.first, samples);
 
 		results["steady_clock (" + res.first->getName() + ")"] = res;
 	}
@@ -273,7 +370,7 @@ std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults
 		TestRes res;
 
 		res.first = std::make_shared<CX_WIN32_PerformanceCounterClock>();
-		res.second = CX_Clock::testPrecision(res.first, samples);
+		res.second = CX_Clock::testImplPrecision(res.first, samples);
 
 		results[res.first->getName()] = res;
 	}
@@ -284,7 +381,7 @@ std::pair<std::shared_ptr<CX_BaseClockInterface>, CX_Clock::PrecisionTestResults
 		TestRes res;
 
 		res.first = std::make_shared<CX_ofMonotonicTimeClock>();
-		res.second = CX_Clock::testPrecision(res.first, samples);
+		res.second = CX_Clock::testImplPrecision(res.first, samples);
 
 		results[res.first->getName()] = res;
 	}
@@ -366,7 +463,7 @@ quantiles of the time samples. If an empty vector is provided, defaults will be 
 
 \return A CX_Clock::PrecisionTestResults struct containing some information about the precision of the clock.
 */
-CX_Clock::PrecisionTestResults CX_Clock::testPrecision(std::shared_ptr<CX_BaseClockInterface> impl, unsigned int samples, std::vector<double> percentiles) {
+CX_Clock::PrecisionTestResults CX_Clock::testImplPrecision(std::shared_ptr<CX_BaseClockInterface> impl, unsigned int samples, std::vector<double> percentiles) {
 
 	std::vector<cxTick_t> intervals(samples);
 

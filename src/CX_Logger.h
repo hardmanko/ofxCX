@@ -77,7 +77,7 @@ namespace CX {
 		error (because of the console setting).
 		\ingroup errorLogging
 		*/
-		enum class Level {
+		enum class Level : int {
 			//These rely on numeric values being ordered: Do not change the values.
 			LOG_ALL = 0, //This is functionally identical to LOG_VERBOSE, but it is more clear about what it does.
 			LOG_VERBOSE = 1,
@@ -110,8 +110,8 @@ namespace CX {
 		};
 
 
-		CX_Logger (void);
-		~CX_Logger (void);
+		CX_Logger(void);
+		~CX_Logger(void);
 
 		CX::Private::CX_LogMessageSink log(Level level, std::string module = "");
 		CX::Private::CX_LogMessageSink verbose(std::string module = "");
@@ -119,8 +119,12 @@ namespace CX {
 		CX::Private::CX_LogMessageSink warning(std::string module = "");
 		CX::Private::CX_LogMessageSink error(std::string module = "");
 		CX::Private::CX_LogMessageSink fatalError(std::string module = "");
+		CX::Private::CX_LogMessageSink operator()(std::string module = "");
 
-		void level(Level level, std::string module);
+		void flush(void);
+		void clear(void);
+
+		void levelForModule(Level level, std::string module);
 		void levelForAllModules(Level level);
 
 		void levelForConsole (Level level);
@@ -131,30 +135,30 @@ namespace CX {
 
 		Level getModuleLevel(std::string module);
 
-		void flush(void);
-		void clear(void);
-
 		void timestamps(bool logTimestamps, std::string format = "%H:%M:%S.%i");
 
-		void setMessageFlushCallback(std::function<void(MessageFlushData&)> f);
+		/*! When flush() is called, listeners to `flushEvent` will be passed a `MessageFlushData` struct
+		for each message in the queue. No filtering is performed: All messages regardless of the module
+		log level will be sent to listeners. */
+		ofEvent<const MessageFlushData&> flushEvent;
 
 		void captureOFLogMessages(bool capture);
 
 	private:
 
 		std::vector<CX::Private::CX_LoggerTargetInfo> _targetInfo;
-		std::map<std::string, Level> _moduleLogLevels;
-		std::vector<CX::Private::CX_LogMessage> _messageQueue;
+
 		Poco::Mutex _messageQueueMutex;
+		std::vector<CX::Private::CX_LogMessage> _messageQueue;
+		
 		Poco::Mutex _moduleLogLevelsMutex;
+		std::map<std::string, Level> _moduleLogLevels;
 
 
 		CX::Private::CX_LogMessageSink _log(Level level, std::string module);
 
 		friend class CX::Private::CX_LogMessageSink;
 		void _storeLogMessage(CX::Private::CX_LogMessageSink& msg);
-
-		std::function<void(MessageFlushData&)> _flushCallback;
 
 		bool _logTimestamps;
 		std::string _timestampFormat;
@@ -181,11 +185,7 @@ namespace CX {
 		//so that it can only be made by a CX_Logger.
 		class CX_LogMessageSink {
 		public:
-#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 			~CX_LogMessageSink(void) noexcept(false);
-#else
-			~CX_LogMessageSink(void);
-#endif
 
 			CX_LogMessageSink& operator<<(std::ostream& (*func)(std::ostream&));
 

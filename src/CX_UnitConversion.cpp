@@ -5,6 +5,17 @@
 namespace CX {
 namespace Util {
 
+	ofPoint mapPointBetweenRectangles(const ofPoint& ap, const ofRectangle& a, const ofRectangle& b) {
+
+		float apxp = (ap.x - a.x) / a.getWidth();
+		float apyp = (ap.y - a.y) / a.getHeight();
+
+		ofPoint bp;
+		bp.x = apxp * b.getWidth() + b.x;
+		bp.y = apyp * b.getHeight() + b.y;
+
+		return bp;
+	}
 
 	/*! Returns the number of pixels needed to subtend deg degrees of visual angle. You might want to round this
 	if you want to align to pixel boundaries. However, if you are antialiasing your stimuli you
@@ -134,7 +145,7 @@ namespace Util {
 	float CX_DegreeToPixelConverter::operator() (float degrees) {
 		float px = degreesToPixels(degrees, _pixelsPerUnit, _viewingDistance);
 		if (_roundResult) {
-			px = CX::Util::round(px, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+			px = CX::Util::round(px, 0, CX::Util::Rounding::ToNearest);
 		}
 		return px;
 	}
@@ -145,7 +156,7 @@ namespace Util {
 	float CX_DegreeToPixelConverter::inverse(float pixels) {
 		float deg = pixelsToDegrees(pixels, _pixelsPerUnit, _viewingDistance);
 		//if (_roundResult) {
-		//	deg = CX::Util::round(deg, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+		//	deg = CX::Util::round(deg, 0, CX::Util::Rounding::ToNearest);
 		//}
 		return deg;
 	}
@@ -225,7 +236,7 @@ namespace Util {
 	float CX_LengthToPixelConverter::operator() (float length) {
 		float px = length * _pixelsPerUnit;
 		if (_roundResult) {
-			px = CX::Util::round(px, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+			px = CX::Util::round(px, 0, CX::Util::Rounding::ToNearest);
 		}
 		return px;
 	}
@@ -236,7 +247,7 @@ namespace Util {
 	float CX_LengthToPixelConverter::inverse(float pixels) {
 		float length = pixels / _pixelsPerUnit;
 		//if (_roundResult) {
-		//	length = CX::Util::round(length, 0, CX::Util::CX_RoundingConfiguration::ROUND_TO_NEAREST);
+		//	length = CX::Util::round(length, 0, CX::Util::Rounding::ToNearest);
 		//}
 		return length;
 	}

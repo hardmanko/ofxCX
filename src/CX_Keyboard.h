@@ -153,9 +153,9 @@ namespace CX {
 
 		/*! The type of the keyboard event. */
 		enum EventType {
-			PRESSED, //!< A key has been pressed.
-			RELEASED, //!< A key has been released.
-			REPEAT /*!< \brief A key has been held for some time and automatic key repeat has kicked in, causing
+			Pressed, //!< A key has been pressed.
+			Released, //!< A key has been released.
+			Repeat /*!< \brief A key has been held for some time and automatic key repeat has kicked in, causing
 				   multiple keypresses to be rapidly sent. This event is one of the many repeats. */
 		};
 

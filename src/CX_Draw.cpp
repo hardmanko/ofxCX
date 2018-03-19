@@ -149,9 +149,9 @@ std::vector<ofPoint> getStarVertices(unsigned int numberOfPoints, float innerRad
 	bool inside = true;
 
 	float rotationRad = (rotationDeg + 90) * PI / 180;
-	if (CX::Instances::Disp.getYIncreasesUpwards()) {
-		rotationRad = (rotationDeg - 90) * PI / 180;
-	}
+	//if (CX::Instances::Disp.getYIncreasesUpwards()) {
+	//	rotationRad = (rotationDeg - 90) * PI / 180;
+	//}
 
 	for (unsigned int i = 0; i < vertices.size(); i++) {
 		float xUnit = cos(rotationRad + (i * PI / numberOfPoints));
@@ -220,11 +220,11 @@ with the x and y values in the point. */
 void centeredString(int x, int y, std::string s, ofTrueTypeFont &font) {
 	ofRectangle bb = font.getStringBoundingBox(s, 0, 0);
 	x -= bb.width / 2;
-	if (CX::Instances::Disp.getYIncreasesUpwards()) {
-		y = y + bb.y + bb.height / 2;
-	} else {
+	//if (CX::Instances::Disp.getYIncreasesUpwards()) {
+	//	y = y + bb.y + bb.height / 2;
+	//} else {
 		y = y - bb.y - bb.height / 2;
-	}
+	//}
 	font.drawString(s, x, y);
 }
 

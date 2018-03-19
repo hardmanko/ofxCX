@@ -1219,24 +1219,12 @@ void StereoSoundBufferOutput::sampleData(CX::CX_Millis t, bool clear) {
 
 	std::vector<float> tempData(samplesToTake * channels);
 
-	unsigned int oversampling = left.getData()->getOversampling();
-
+	// GenericOutput deals with oversampling
 	for (unsigned int i = 0; i < samplesToTake; i++) {
-
-		double rightSum = 0;
-		double leftSum = 0;
-		for (unsigned int ovs = 0; ovs < oversampling; ovs++) {
-			rightSum += right.getNextSample();
-			leftSum += left.getNextSample();
-		}
-		tempData[(i * channels) + 0] = Util::clamp<float>(rightSum / oversampling, -1, 1);
-		tempData[(i * channels) + 1] = Util::clamp<float>(leftSum / oversampling, -1, 1);
+		unsigned int index = i * channels;
+		tempData[index + 0] = CX::Util::clamp<float>((float)left.getNextSample(), -1, 1);
+		tempData[index + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
 	}
-
-	//for (unsigned int i = 0; i < samplesToTake; i++) {
-	//	tempData[(i * channels) + 0] = CX::Util::clamp<float>((float)left.getNextSample(), -1, 1);
-	//	tempData[(i * channels) + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
-	//}
 
 	if (sb.getTotalSampleCount() == 0) {
 		sb.setFromVector(tempData, channels, left.getData()->getSampleRate());
@@ -1305,7 +1293,7 @@ void StreamInput::setMaximumBufferSize(unsigned int size) {
 	_maxBufferSize = size;
 }
 
-void StreamInput::_callback(CX::CX_SoundStream::InputEventArgs& in) {
+void StreamInput::_callback(const CX::CX_SoundStream::InputEventArgs& in) {
 	for (unsigned int sampleFrame = 0; sampleFrame < in.bufferSize; sampleFrame++) {
 		_buffer.push_back(in.inputBuffer[sampleFrame]);
 	}
@@ -1351,7 +1339,7 @@ void StreamOutput::setup(CX::CX_SoundStream* stream, unsigned int oversampling) 
 	this->setData(mcd);
 }
 
-void StreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
+void StreamOutput::_callback(const CX::CX_SoundStream::OutputEventArgs& d) {
 	if (_inputs.size() == 0) {
 		return;
 	}
@@ -1431,23 +1419,15 @@ void StereoStreamOutput::setup(CX::CX_SoundStream* stream, unsigned int oversamp
 	right.setData(mcd);
 }
 
-void StereoStreamOutput::_callback(CX::CX_SoundStream::OutputEventArgs& d) {
+void StereoStreamOutput::_callback(const CX::CX_SoundStream::OutputEventArgs& d) {
 
 	unsigned int oversampling = left.getData()->getOversampling();
 
+	// GenericOutput deals with oversampling
 	for (unsigned int sample = 0; sample < d.bufferSize; sample++) {
 		unsigned int index = sample * d.outputChannels;
-		//d.outputBuffer[index + 0] += CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
-		//d.outputBuffer[index + 1] += CX::Util::clamp<float>(left.getNextSample(), -1, 1);
-
-		double rightSum = 0;
-		double leftSum = 0;
-		for (unsigned int ovs = 0; ovs < oversampling; ovs++) {
-			rightSum += right.getNextSample();
-			leftSum += left.getNextSample();
-		}
-		d.outputBuffer[index + 0] = Util::clamp<float>(rightSum / oversampling, -1, 1);
-		d.outputBuffer[index + 1] = Util::clamp<float>(leftSum / oversampling, -1, 1);
+		d.outputBuffer[index + 0] += CX::Util::clamp<float>(right.getNextSample(), -1, 1); //The buffers only use float, so clamp with float.
+		d.outputBuffer[index + 1] += CX::Util::clamp<float>(left.getNextSample(), -1, 1);
 	}
 }
 

@@ -179,7 +179,8 @@ void Gabor::_setUniforms(void) {
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fb);
 	bool drawingToBackBuffer = (fb == 0);
 
-	bool yIncreasesUpwards = CX::Instances::Disp.getYIncreasesUpwards();
+	//bool yIncreasesUpwards = CX::Instances::Disp.getYIncreasesUpwards();
+	bool yIncreasesUpwards = false;
 
 	ofPoint modCenter = center;
 	float relativeYMultiple = 1;
@@ -219,8 +220,6 @@ void Gabor::_setUniforms(void) {
 	waveValues.multiplier = 1 / sqrt(pow(waveValues.A, 2) + 1);
 
 	waveValues.inverseWavelength = 1 / wave.wavelength;
-
-
 
 
 	_shader.setUniform1f("relativeYMultiple", relativeYMultiple);

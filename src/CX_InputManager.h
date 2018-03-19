@@ -64,7 +64,7 @@ namespace CX {
 			CX_Keyboard::Event keyEvent = Input.Keyboard.getNextEvent();
 
 			// Process each event
-			if (keyEvent.type == CX_Keyboard::PRESSED && keyEvent.key == 'A') {
+			if (keyEvent.type == CX_Keyboard::Pressed && keyEvent.key == 'A') {
 				//do something...
 			}
 		}
@@ -87,7 +87,7 @@ namespace CX {
 		// Iterate over the copied events
 		for (CX_Keyboard::Event event : events) {
 			// Process events
-			if (keyEvent.type == CX_Keyboard::PRESSED && event.key == 'A') {
+			if (keyEvent.type == CX_Keyboard::Pressed && event.key == 'A') {
 				//do something...
 			}
 		}

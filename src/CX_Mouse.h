@@ -21,19 +21,19 @@ namespace CX {
 
 		/*! Names of the mouse buttons corresponding to some of the integer button identifiers. */
 		enum Buttons {
-			LEFT = OF_MOUSE_BUTTON_LEFT,
-			MIDDLE = OF_MOUSE_BUTTON_MIDDLE,
-			RIGHT = OF_MOUSE_BUTTON_RIGHT
+			LeftButton = OF_MOUSE_BUTTON_LEFT,
+			MiddleButton = OF_MOUSE_BUTTON_MIDDLE,
+			RightButton = OF_MOUSE_BUTTON_RIGHT
 		};
 
 		/*! The type event that caused the creation of a CX_Mouse::Event. */
 		enum EventType {
-			MOVED, //!< The mouse has been moved without a button being held. Event::button should be -1 (meaningless).
-			PRESSED, //!< A mouse button has been pressed. Check Event::button for the button index and Event::x and Event::y for the location.
-			RELEASED, //!< A mouse button has been released. Check Event::button for the button index and Event::x and Event::y for the location.
-			DRAGGED, //!< The mouse has been moved while at least one button was held. Event::button may not be meaningful because the held button
+			Moved, //!< The mouse has been moved without a button being held. Event::button should be -1 (meaningless).
+			Pressed, //!< A mouse button has been pressed. Check Event::button for the button index and Event::x and Event::y for the location.
+			Released, //!< A mouse button has been released. Check Event::button for the button index and Event::x and Event::y for the location.
+			Dragged, //!< The mouse has been moved while at least one button was held. Event::button may not be meaningful because the held button
 			//!< can be changed during a drag, or multiple buttons may be held at once during a drag.
-			SCROLLED //!< The mouse wheel has been scrolled. Check Event::y to get the change in the standard mouse wheel direction, or 
+			Scrolled //!< The mouse wheel has been scrolled. Check Event::y to get the change in the standard mouse wheel direction, or 
 				//!< Event::x if your mouse has a wheel that can move horizontally.
 		};
 
@@ -41,16 +41,16 @@ namespace CX {
 		simply movement, a button press or release, a drag event (mouse button held while mouse is moved), or movement
 		of the scroll wheel. */
 		struct Event {
-			/*! \brief The relevant mouse button if the event `type` is PRESSED, RELEASED, or DRAGGED.
+			/*! \brief The relevant mouse button if the event `type` is Pressed, Released, or Dragged.
 			Can be compared with elements of enum CX_Mouse::Buttons to find out about the named buttons. */
 			int button;
 
 			/*! \brief The x position of the cursor at the time of the event, or the change in 
-			the x-axis scroll if the `type` is EventType::SCROLLED. */
+			the x-axis scroll if the `type` is EventType::Scrolled. */
 			float x;
 
 			/*! \brief The y position of the cursor at the time of the event, or the change in 
-			the y-axis scroll if the `type` is EventType::SCROLLED. */
+			the y-axis scroll if the `type` is EventType::Scrolled. */
 			float y;
 
 			EventType type; //!< The type of the event.

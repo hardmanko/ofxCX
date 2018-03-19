@@ -136,11 +136,7 @@ namespace Private {
 	(by design) in CX_Logger::_storeLogMessage() if exceptions are enabled with 
 	CX_Logger::levelForExceptions().
 	*/
-#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 	CX_LogMessageSink::~CX_LogMessageSink(void) noexcept(false) {
-#else
-	CX_LogMessageSink::~CX_LogMessageSink(void) {
-#endif
 		if (_logger != nullptr) {
 			_logger->_storeLogMessage(*this);
 		}
@@ -156,7 +152,6 @@ namespace Private {
 
 
 CX_Logger::CX_Logger(void) :
-	_flushCallback(nullptr),
 	_logTimestamps(false),
 	_timestampFormat("%H:%M:%S"),
 	_defaultLogLevel(Level::LOG_NOTICE)
@@ -220,9 +215,9 @@ void CX_Logger::flush(void) {
 		CX::Private::CX_LogMessage m = _messageQueue[i];
 		_messageQueueMutex.unlock();
 
-		if (_flushCallback) {
+		if (flushEvent.size() > 0) {
 			MessageFlushData dat(m.message, m.level, m.module);
-			_flushCallback(dat);
+			ofNotifyEvent(flushEvent, dat);
 		}
 
 		std::string formattedMessage = _formatMessage(m) + "\n";
@@ -337,7 +332,7 @@ void CX_Logger::levelForFile(Level level, std::string filename) {
 \param level See the \ref CX::CX_Logger::Level enum for valid values.
 \param module A string representing one of the modules from which log messages are generated.
 */
-void CX_Logger::level(Level level, std::string module) {
+void CX_Logger::levelForModule(Level level, std::string module) {
 	_moduleLogLevelsMutex.lock();
 	_moduleLogLevels[module] = level;
 	_moduleLogLevelsMutex.unlock();
@@ -369,15 +364,6 @@ void CX_Logger::levelForAllModules(Level level) {
 	_moduleLogLevelsMutex.unlock();
 }
 
-/*!
-Sets the user function that will be called on each message flush event. For every message that has been
-logged, the user function will be called. No filtering is performed: All messages regardless of the module
-log level will be sent to the user function.
-\param f A pointer to a user function that takes a reference to a CX_MessageFlushData struct and returns nothing.
-*/
-void CX_Logger::setMessageFlushCallback(std::function<void(CX_Logger::MessageFlushData&)> f) {
-	_flushCallback = f;
-}
 
 /*! Set whether or not to log timestamps and the format for the timestamps.
 \param logTimestamps Does what it says.
@@ -433,6 +419,11 @@ CX::Private::CX_LogMessageSink CX_Logger::error(std::string module) {
 /*! \brief Equivalent to `log(CX_Logger::Level::LOG_FATAL_ERROR, module)`. */
 CX::Private::CX_LogMessageSink CX_Logger::fatalError(std::string module) {
 	return _log(Level::LOG_FATAL_ERROR, module);
+}
+
+/*! \brief Equivalent to `log(CX_Logger::Level::LOG_NOTICE, module)`. */
+CX::Private::CX_LogMessageSink CX_Logger::operator()(std::string module) {
+	return _log(Level::LOG_NOTICE, module);
 }
 
 /*! Set this instance of CX_Logger to be the target of any messages created by openFrameworks logging functions.
@@ -548,13 +539,14 @@ std::string CX_Logger::_getLogLevelString(Level level) {
 }
 
 std::string CX_Logger::_formatMessage(const CX::Private::CX_LogMessage& message) {
-	std::string logName = _getLogLevelString(message.level);
-	logName.append(max<int>((int)(7 - logName.size()), 0), ' '); //Pad out names to 7 chars
+
 	std::string formattedMessage;
 	if (_logTimestamps) {
 		formattedMessage += message.timestamp + " ";
 	}
 
+	std::string logName = _getLogLevelString(message.level);
+	logName.append(max<int>((int)(7 - logName.size()), 0), ' '); //Pad out names to 7 chars
 	formattedMessage += "[ " + logName + " ] ";
 
 	if (message.module != "") {
