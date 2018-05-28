@@ -1,14 +1,14 @@
 #pragma once
 
-//#include <future>
-
+#include "CX_Definitions.h"
 #include "CX_DataFrameCell.h"
 #include "CX_Private.h" // CX_GLFenceSync ???
-//#include "CX_SwapSynchronizer.h"
 #include "CX_SynchronizationUtils.h"
+#include "CX_DisplaySwapper.h"
 
 namespace CX {
 
+	//class CX_CLASS(Display);
 	class CX_Display;
 
 	namespace Private {
@@ -18,25 +18,22 @@ namespace CX {
 	class CX_DisplayThread {
 	public:
 
-		typedef Sync::SwapUnit FrameNumber;
-
 		struct Configuration {
 
 			CX_Millis preSwapSafetyBuffer;
 
-			CX_Millis requiredSwapDuration; // duration of swaps required for data and swap lock
+			//CX_Millis requiredSwapDuration; // duration of swaps required for data and swap lock
 
-			CX_Millis nominalFramePeriod;
-			double framePeriodTolerance;
+			//CX_Millis nominalFramePeriod;
+			//double framePeriodTolerance;
 
 			bool enableFrameQueue;
 
 		};
 
-		// private constructor
 		~CX_DisplayThread(void);
 
-
+		// I don't think that anything uses these functions, so they can probably be removed
 		bool tryLock(std::string lockOwner);
 		bool isLocked(void);
 		std::string getLockOwner(void);
@@ -51,23 +48,22 @@ namespace CX {
 		void stopThread(bool wait = true);
 		bool isThreadRunning(void);
 
+		ofEvent<void> updateEvent;
+		// for the swap event, use Disp.swapData.newDataEvent
+
 		// do not depend on swap lock
-		CX_Millis getLastSwapTime(void); // don't need or want these functions, right? use display functions
-		FrameNumber getFrameNumber(void);
-		bool hasSwappedSinceLastCheck(void);
-		void waitForSwap(void);
+		//CX_Millis getLastSwapTime(void); // don't need or want these functions, right? use display functions
+		//FrameNumber getFrameNumber(void);
+		//bool hasSwappedSinceLastCheck(void); // don't need or want these functions, right? use display functions
+		//void waitForSwap(void);
 
-
-		//Sync::DataContainer swapData;
-
-		//Sync::DataClient swapClient; // may be private
 
 
 		///////////////
 		// Swap Lock //
 		///////////////
 
-		// don't need
+		// don't need/move to display
 		bool isSwappingStably(void); // dataUser
 		bool waitForStableSwapping(CX_Millis timeout); // dataUser
 
@@ -114,19 +110,18 @@ namespace CX {
 		unsigned int getQueuedFrameCount(void);
 
 
+		
+
 	private:
 
 		friend class CX::CX_Display;
 
-		CX_DisplayThread(CX_Display* disp, std::function<void(CX_Display*, CX_Millis)> swapCallback);
-
-		void _setGLFinishAfterSwap(bool glFinishAfterSwap);
-		void _setEstimatedFramePeriod(CX_Millis framePeriod);
-		std::function<void(CX_Millis)> _swapCallback;
-		// End CX_Display calling section (other than commands)
+		CX_DisplayThread(CX_Display* disp, std::function<void(CX_Display*)> swapFun);
 		
 		CX_Display* _display;
-		bool _glFinishAfterSwap;
+		std::function<void(void)> _bufferSwapFunction;
+
+		CX_DisplaySwapper _displaySwapper;
 
 		std::recursive_mutex _mutex;
 		
@@ -142,7 +137,7 @@ namespace CX {
 
 		void _threadFunction(void);
 		void _swap(void);
-		bool _callingThreadIsSwapThread(void);
+
 
 		
 
@@ -157,7 +152,7 @@ namespace CX {
 		void _queuedFrameTask(void);
 		void _drawQueuedFrameIfNeeded(void);
 
-		void _queuedFramePostSwapTask(FrameNumber swapFrame, CX_Millis swapTime);
+		void _queuedFramePostSwapTask(void);
 		
 		
 
@@ -168,8 +163,8 @@ namespace CX {
 		enum class CommandType : int {
 			SetSwapInterval, // "swapInterval": unsigned int (0 or 1)
 			AcquireRenderingContext, // "acquire": bool
-			SetGLFinishAfterSwap, // "finish": bool
-			SetSwapPeriod, // "period": CX_Millis
+			//SetGLFinishAfterSwap, // "finish": bool
+			//SetSwapPeriod, // "period": CX_Millis
 			ExecuteFunction // uses fun()
 		};
 		struct CommandResult;
@@ -187,8 +182,8 @@ namespace CX {
 		// command functions may not be called with a wait while the mutex is locked
 		bool commandSetSwapInterval(unsigned int swapInterval, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
 		bool commandAcquireRenderingContext(bool acquire, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
-		bool commandSetGLFinishAfterSwap(bool finish, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
-		bool commandSetSwapPeriod(CX_Millis period, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
+		//bool commandSetGLFinishAfterSwap(bool finish, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
+		//bool commandSetSwapPeriod(CX_Millis period, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
 		bool commandExecuteFunction(std::function<bool(void)> fun, bool wait = true, std::function<void(CommandResult&&)> callback = nullptr);
 
 		std::recursive_mutex _commandQueueMutex;
@@ -200,9 +195,9 @@ namespace CX {
 	};
 
 	class CX_SlideQueue {
-	public:
-
-	private:
+		// Move the queued frames logic into this class.
+		// The exception is that enableFrameQueue() might stay with CX_DisplayThread, but be renamed renderOnDisplayThread().
+		// Use CX_SlideBuffer::Slide.
 	};
 
 

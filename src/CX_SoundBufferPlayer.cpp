@@ -138,15 +138,15 @@ bool CX_SoundBufferPlayer::queuePlayback(CX_Millis startTime, CX_Millis timeout,
 	//return queuePlayback(startSF, restart);
 }
 
-bool CX_SoundBufferPlayer::queuePlayback(CX_SoundStream::SampleFrame sampleFrame, bool restart) {
+bool CX_SoundBufferPlayer::queuePlayback(SampleFrame sampleFrame, bool restart) {
 
 	if (!_checkPlaybackRequirements("queuePlayback")) {
 		return false;
 	}
 
-	if (sampleFrame < _soundStream->swapData.getSwapUnitForNextSwap()) {
+	if (sampleFrame < _soundStream->swapData.getNextSwapUnit()) {
 		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "queuePlayback(): Desired start sample frame has already passed. Starting immediately. "
-			"Desired start SF: " <<	sampleFrame << ", next swap SF: " << _soundStream->swapData.getSwapUnitForNextSwap() << ".";
+			"Desired start SF: " <<	sampleFrame << ", next swap SF: " << _soundStream->swapData.getNextSwapUnit() << ".";
 		play(restart);
 		return false;
 	}

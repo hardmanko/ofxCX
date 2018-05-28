@@ -9,6 +9,7 @@
 #include "ofTypes.h"
 #include "ofEvents.h"
 
+#include "CX_Definitions.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 #include "CX_SynchronizationUtils.h"
@@ -31,8 +32,6 @@ going wrong by checking out the page for RtAudio: http://www.music.mcgill.ca/~ga
 */
 class CX_SoundStream {
 public:
-
-	typedef Sync::SwapUnit SampleFrame;
 
 	/*! This struct controls the configuration of the CX_SoundStream. */
 	struct Configuration {

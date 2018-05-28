@@ -178,16 +178,16 @@ bool CX_SoundBufferRecorder::isRecording(void) {
 	return _inData.recording;
 }
 
-bool CX_SoundBufferRecorder::queueRecording(CX_SoundStream::SampleFrame sampleFrame, bool clear) {
+bool CX_SoundBufferRecorder::queueRecording(SampleFrame sampleFrame, bool clear) {
 
 	if (_soundStream == nullptr) {
 		CX::Instances::Log.error("CX_SoundBufferRecorder") << "queueRecording(): Could not queue recording becuase the sound stream was nullptr. Have you forgotten to call setup()?";
 		return false;
 	}
 
-	if (sampleFrame < _soundStream->swapData.getSwapUnitForNextSwap()) {
+	if (sampleFrame < _soundStream->swapData.getNextSwapUnit()) {
 		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "queueRecording(): Desired start sample frame has already passed. Starting immediately. "
-			"Desired start SF: " << sampleFrame << ", next swap SF: " << _soundStream->swapData.getSwapUnitForNextSwap() << ".";
+			"Desired start SF: " << sampleFrame << ", next swap SF: " << _soundStream->swapData.getNextSwapUnit() << ".";
 		record(clear);
 		return false;
 	}

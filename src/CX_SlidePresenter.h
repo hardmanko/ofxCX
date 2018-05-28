@@ -63,7 +63,7 @@ namespace CX {
 		of all future stimuli back by the amount of extra time (or frames) used to the erroneous slide. This makes the
 		durations of all future stimuli correct, so that there is only an error in the duration of one slide. If
 		a slide's presentation start time is early, the intended start time is used (i.e. only delays, not early
-		arrivals, are propogated).
+		arrivals, are propagated).
 
 		Other alternatizes are being developed.
 		*/

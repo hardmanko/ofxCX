@@ -22,8 +22,8 @@ namespace CX {
 
 			CX_Millis startTime; /*!< \brief The time at which the slide was/should have been started. Can be compared with values from CX::CX_Clock::now(). */
 			CX_Millis timeDuration; /*!< \brief The amount of time the slide was/should have been presented for. */
-			CX_Display::FrameNumber startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by CX_Display::getLastFrameNumber(). */
-			CX_Display::FrameNumber frameDuration; /*!< \brief The number of frames the slide was/should have been presented for. */
+			FrameNumber startFrame; /*!< \brief The frame on which the slide started/should have started. Can be compared with the value given by CX_Display::getLastFrameNumber(). */
+			FrameNumber frameDuration; /*!< \brief The number of frames the slide was/should have been presented for. */
 
 		};
 
@@ -101,7 +101,7 @@ namespace CX {
 			// the caller shall call this function after
 			// 1. renderSlide was called
 			// 2. a swap happened
-			void swappedIn(CX_Millis swapTime, CX_Display::FrameNumber swapFrame);
+			void swappedIn(CX_Millis swapTime, FrameNumber swapFrame);
 
 			// the caller shall call this function after
 			// 1. renderSlide() was called for this slide
@@ -109,7 +109,7 @@ namespace CX {
 			// 3. swappedIn() was called for this slide
 			// 4. renderSlide() was called for a different slide
 			// 5. a swap happened
-			void swappedOut(CX_Millis swapTime, CX_Display::FrameNumber swapFrame);
+			void swappedOut(CX_Millis swapTime, FrameNumber swapFrame);
 
 
 			bool isInactive(void) const;
@@ -119,6 +119,7 @@ namespace CX {
 			bool isPreparedToSwap(void) const;
 			bool isOnScreen(void) const;
 
+			void deallocateFramebuffer(void);
 			void resetPresentationInfo(void);
 
 		private:
@@ -148,16 +149,16 @@ namespace CX {
 
 		void setup(CX_Display* disp);
 		void setup(Configuration config);
-		Configuration& getConfiguration(void);
+		const Configuration& getConfiguration(void) const;
 
-		void beginDrawingNextSlide(CX_Millis timeDuration, std::string slideName = "", uint64_t frameDuration = 0);
+		void beginDrawingNextSlide(CX_Millis timeDuration, std::string slideName = "", FrameNumber frameDuration = 0);
 		void endDrawingCurrentSlide(void);
 
-		void appendSlideFunction(CX_Millis timeDuration, std::function<void(void)> drawingFunction, std::string slideName = "", uint64_t frameDuration = 0);
+		void appendSlideFunction(CX_Millis timeDuration, std::function<void(void)> drawingFunction, std::string slideName = "", FrameNumber frameDuration = 0);
 		void appendSlide(CX_SlideBuffer::Slide slide);
 
 		// modifiers to last slide
-		void setLastSlideFrameDuration(CX_Display::FrameNumber frameDuration);
+		void setLastSlideFrameDuration(FrameNumber frameDuration);
 
 
 		void clear(void);
@@ -170,18 +171,13 @@ namespace CX {
 		Slide* operator[](std::string name);
 		bool deleteSlide(std::string name);
 
-		bool slideExists(unsigned int index) const;
-		Slide* getSlide(unsigned int index);
-		Slide* operator[](unsigned int index);
-		bool deleteSlide(unsigned int index);
+		bool slideExists(size_t index) const;
+		Slide* getSlide(size_t index);
+		Slide* operator[](size_t index);
+		bool deleteSlide(size_t index);
 
-		unsigned int size(void) const;
+		size_t size(void) const;
 		std::vector<Slide>& getSlides(void);
-
-
-		void setFramesFromTimes(uint64_t startFrame, CX_Millis framePeriod);
-		void setIntendedStartTimesFromDurations(CX_Millis startTime);
-
 
 
 		// ??
@@ -257,7 +253,7 @@ namespace CX {
 	};
 
 
-
+	// This class is not thread safe
 	class CX_SlideBufferPlaybackHelper {
 	public:
 
@@ -265,95 +261,152 @@ namespace CX {
 
 			Configuration(void) :
 				slideBuffer(nullptr),
-				disp(nullptr)
+				display(nullptr)
 			{}
 
-			//bool useTimeDurations; // if false, use frame durations
-
-			bool deallocateCompletedSlides;
-			bool propagateDelays;
-
 			CX_SlideBuffer* slideBuffer;
-			CX_Display* disp;
+			CX_Display* display;
 
 		};
 
-		void setup(CX_SlideBuffer* sb, CX_Display* disp = nullptr) {
-			_sb = sb;
-			if (disp) {
-				_display = disp;
-			} else {
-				_display = _sb->getConfiguration().display;
-			}
-		}
-
-
-		/* Usage:
-
-		CX_SlideBufferPlaybackHelper helper;
-		helper.setup(&slideBuf, &Disp);
-
-		startPresenting();
-
-		while (isPresenting()) {
-			
-			bool needToRenderNextSlide = // whatever logic you need to decide when to render
-			if (needToRenderNextSlide) {
-				renderNextSlide();
-			}
-
-			// regardless of whether you rendered a frame,
-			// do stuff to swap the buffers
-
-			bufferSwap(time, frame); // tell this class about it
-
-			updatePresentation();
-		}
-		
-		*/
-		
-		void startPresenting(void);
+		bool setup(const Configuration& config);
+		const Configuration& getConfiguration(void) const;
 
 		
-		bool isPresenting(void);
-		void updatePresentation(void);
+		bool startPlaying(void);
+		void updatePlayback(void);
+		bool isPlaying(void);
+		void stopPlaying(void);
+
 
 		void renderNextSlide(void);
-		void bufferSwap(CX_Millis swapTime, uint64_t frameNumber);
+		void reRenderCurrentSlide(void);
+		void bufferSwap(CX_Millis swapTime, FrameNumber frameNumber);
+
 		bool slideAdvancedOnLastSwap(void);
 
+		bool currentSlideIsFirstSlide(void) const;
+		bool currentSlideIsLastSlide(void) const;
 
-		void stopPresenting(void);
-		void rerenderCurrentSlide(void);
+		void setIntendedStartFramesUsingTimeDurations(FrameNumber startFrame, CX_Millis nominalFramePeriod);
+		void setIntendedStartFramesUsingFrameDurations(FrameNumber startFrame);
+		void setIntendedStartTimesUsingTimeDurations(CX_Millis startTime);
+		void setIntendedStartTimesUsingFrameDurations(CX_Millis startTime, CX_Millis nominalFramePeriod);
 
+		void setIntendedStartOfRemainingSlidesFromCurrentSlide(bool setTime = true, bool setFrames = true);
 		void setIntendedStartTimesOfRemainingSlidesFromCurrentSlide(void);
 		void setIntendedStartFramesOfRemainingSlidesFromCurrentSlide(void);
 
 		void resetPresentationInfo(void);
 
-		//Slide* getPreviousSlide(void);
+		CX_SlideBuffer::Slide* getPreviousSlide(void);
 		CX_SlideBuffer::Slide* getCurrentSlide(void); // on screen
 		CX_SlideBuffer::Slide* getNextSlide(void);
 
+		/*
 		int getOnScreenSlideIndex(void) {
-			if (!_presenting) {
+			if (!_playing) {
 				return -1;
 			}
 			return _currentSlide;
 		}
+		*/
+
+
 
 	private:
-		//std::recursive_mutex _mutex;
 
 		Configuration _config;
 
-		CX_Display* _display;
-		CX_SlideBuffer* _sb;
 
-		bool _presenting;
+		bool _playing;
 		int _currentSlide;
 
 		bool _slideAdvancedOnLastSwap;
+
 	};
 
-}
+	// This class is thread-safe
+	class CX_SlideBufferPredicatePlayback {
+	public:
+
+		struct PredicateArgs {
+			bool hasSwapped;
+		};
+
+		struct Configuration {
+
+			CX_SlideBuffer* slideBuffer;
+			CX_Display* display;
+
+			//CX_SlideBufferPlaybackHelper* helper;
+
+			bool useTimeDurations; // if false, use frame durations
+			bool deallocateCompletedSlides;
+			bool propagateDelays;
+
+			// choose one
+			std::function<bool(void)> shouldSwapPredicate;
+			std::function<bool(void)> hasSwappedPredicate;
+
+			// must supply
+			std::function<bool(const PredicateArgs&)> renderNextPredicate;
+
+			// may supply
+			std::function<bool(const PredicateArgs&)> reRenderCurrentPredicate;
+
+		};
+
+		bool setup(const Configuration& config);
+		Configuration getConfiguration(void);
+
+		struct StartConfig {
+
+			StartConfig(void) :
+				intendedStartTime(CX_Millis::max()),
+				intendedStartFrame(std::numeric_limits<FrameNumber>::max())
+			{}
+
+			//bool setStartTimes; // if false, set startFrames (why not set both?)
+
+			//bool useTimeDurations; // if false, use frame durations
+
+			// provide at least one. If both are provided, both will be used
+			CX_Millis intendedStartTime;
+			FrameNumber intendedStartFrame;
+		};
+
+		//bool startPlaying(CX_Millis intendedStartTime, FrameNumber intendedStartFrame);
+		bool startPlaying(StartConfig sc);
+
+		//bool startPlaying(void);
+		bool isPlaying(void);
+		void updatePlayback(void);
+
+		void updatePlaybackSwapping(void);
+		void updatePlaybackRendering(void);
+		
+
+		void stopPlaying(void);
+
+		//bool play(void);
+
+		typedef Util::LockedPointer<CX_SlideBufferPlaybackHelper, std::recursive_mutex> SlideHelperLP;
+		SlideHelperLP getLockedHelperPointer(void);
+
+		typedef Util::LockedPointer<CX_SlideBuffer, std::recursive_mutex> SlideBufferLP;
+		SlideBufferLP getSlideBufferLP(void);
+
+	private:
+
+		std::recursive_mutex _mutex;
+
+		Configuration _config;
+
+		CX_SlideBufferPlaybackHelper _helper;
+
+		PredicateArgs _predArgs;
+
+	};
+
+} // namespace CX

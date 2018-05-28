@@ -19,16 +19,15 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 #include "ofGLProgrammableRenderer.h"
 
 #include "CX_DisplayThread.h"
+#include "CX_DisplaySwapper.h"
 
 #include "CX_Clock.h"
 #include "CX_Logger.h"
-//#include "CX_SwapSynchronizer.h"
-//#include "CX_SynchronizationUtils.h"
 #include "CX_DataFrame.h"
-//#include "CX_ThreadUtils.h"
 
 
 namespace CX {
+
 
 	/*! This class represents an abstract visual display surface, which is my way of saying that it doesn't
 	necessarily represent a monitor. The display surface can either be a window or, if full screen, the whole
@@ -42,8 +41,6 @@ namespace CX {
 	*/
 	class CX_Display {
 	public:
-
-		typedef Sync::SwapUnit FrameNumber;
 
 		CX_Display(void);
 		~CX_Display(void);
@@ -82,10 +79,10 @@ namespace CX {
 		ofPoint getCenter(void) const;
 
 
-		// move to DisplayThread? I mean, they really only make sense in automatic swapping mode
+		// these functions stay
 		FrameNumber getLastFrameNumber(void);
 		CX_Millis getLastSwapTime(void);
-		CX_Millis getNextSwapTime(void);	
+		CX_Millis getNextSwapTime(void);
 
 
 		// swapping in display thread, rendering in main thread
@@ -137,115 +134,16 @@ namespace CX {
 
 		bool _softVSyncWithGLFinish;
 
-
 		// display thread stuff
 		CX_DisplayThread _dispThread;
-		void _dispThreadSwapCallback(CX_Millis swapTime);
 
 		std::unique_ptr<Sync::DataContainer::PolledSwapListener> _polledSwapListener;
 
-		//Util::ofEventHelper<const Sync::DataContainer::NewData&> _displayThreadSwapHelper;
-		//void _threadedSwapEventCallback(const Sync::DataContainer::NewData& nd);
+		void _setUpSwapTracking(void);
 
-		//void _handleSwap(FrameNumber frameNumber, CX_Millis time);
-
-		void _setUpSyncs(void);
+		void _swapBuffers(void);
 
 	};
-
-	class CX_DisplayBufferSwapper {
-	public:
-		enum class Mode {
-			NominalPeriod,
-			Prediction
-		};
-
-		struct Configuration {
-			CX_Display* display;
-
-			CX_Millis preSwapSafePeriod;
-
-			Mode mode;
-		};
-
-		void setup(const Configuration& config, bool enable = true) {
-			_config = config;
-			this->enable(enable);
-		}
-		const Configuration& getConfiguration(void) const {
-			return _config;
-		}
-
-		void enable(bool enable) {
-			_enabled = enable;
-		}
-		bool isEnabled(void) const {
-			return _enabled;
-		}
-
-		// true if swap happened
-		bool trySwap(void) {
-			if (!_enabled) {
-				return false;
-			}
-
-			switch (_config.mode) {
-			case Mode::NominalPeriod:
-				return NominalPeriod_trySwap();
-			case Mode::Prediction:
-				return Prediction_trySwap();
-			}
-
-			return false;
-		}
-
-		CX_Millis getLastSwapTime(void) {
-			return _lastSwapTime;
-		}
-
-		// isn't this redundant with swapData.swapEvent ?
-		//struct SwapEventData {
-		//	CX_Millis time;
-		//};
-		//ofEvent<const SwapEventData&> swapEvent;
-
-	private:
-		Configuration _config;
-		bool _enabled;
-		CX_Millis _lastSwapTime;
-
-		bool NominalPeriod_trySwap(void) {
-			CX_Millis timeToSwap = _lastSwapTime + _config.display->getFramePeriod() - Instances::Clock.now();
-			if (timeToSwap < _config.preSwapSafePeriod) {
-				Private::swapVideoBuffers(_config.display->usingSoftwareVSync()); // no, no
-				_lastSwapTime = Instances::Clock.now();
-				return true;
-			}
-			return false;
-		}
-
-		bool Prediction_trySwap(void) {
-			Sync::TimePrediction tp = _config.display->swapClient.predictNextSwapTime();
-			if (tp.usable) {
-
-				tp.pred -= Instances::Clock.now();
-
-				CX_Millis minTimeToSwap = tp.lowerBound();
-
-				if (minTimeToSwap < _config.preSwapSafePeriod) {
-					Private::swapVideoBuffers(_config.display->usingSoftwareVSync());
-					_lastSwapTime = Instances::Clock.now();
-					return true;
-				}
-
-			} else {
-				return NominalPeriod_trySwap();
-			}
-			return false;
-		}
-
-	};
-
 
 
     namespace Instances {

@@ -140,8 +140,11 @@ public:
 	LockedDataPointer getLockedDataPointer(void);
 	std::deque<SwapData> copyData(void);
 
-	SwapData getNewestDataPoint(void);
-	SwapUnit getSwapUnitForNextSwap(void);
+	SwapData getLastSwapData(void);
+	CX_Millis getLastSwapTime(void);
+	SwapUnit getLastSwapUnit(void);
+
+	SwapUnit getNextSwapUnit(void);
 
 	struct NewData {
 
@@ -172,12 +175,12 @@ public:
 
 		PolledSwapListener(DataContainer* cont) {
 			_container = cont;
-			_lastDataPoint = _container->getNewestDataPoint();
+			_lastDataPoint = _container->getLastSwapData();
 		}
 
 		// \return What it says on the tin. An immediate call to this function after calling setup() will return false.
 		bool hasSwappedSinceLastCheck(void) {
-			SwapData thisDataPoint = _container->getNewestDataPoint();
+			SwapData thisDataPoint = _container->getLastSwapData();
 
 			if (thisDataPoint.unit != _lastDataPoint.unit) {
 				_lastDataPoint = thisDataPoint;
@@ -187,7 +190,7 @@ public:
 		}
 
 		SwapData getNewestData(void) {
-			SwapData thisDataPoint = _container->getNewestDataPoint();
+			SwapData thisDataPoint = _container->getLastSwapData();
 			if (thisDataPoint.unit != _lastDataPoint.unit) {
 				_lastDataPoint = thisDataPoint;
 			}
@@ -274,7 +277,7 @@ private:
 
 	std::deque<SwapData> _data;
 
-	SwapUnit _timePushNextSwapUnit;
+	SwapUnit _timeStoreNextSwapUnit;
 
 	std::shared_ptr<PolledSwapListener> _polledSwapListener;
 

@@ -48,13 +48,13 @@ the data frame will be resized in order to fit the new row(s) and/or column.
 \param column The column name.
 \return A CX_DataFrameCell that can be read from or written to.
 */
-CX_DataFrameCell CX_DataFrame::operator() (std::string column, rowIndex_t row) {
+CX_DataFrameCell CX_DataFrame::operator() (std::string column, RowIndex row) {
 	_resizeToFit(column, row);
 	return _data.at(column).at(row);
 }
 
-/*! \brief Equivalent to CX_DataFrame::operator()(std::string, rowIndex_t). */
-CX_DataFrameCell CX_DataFrame::operator() (rowIndex_t row, std::string column) {
+/*! \brief Equivalent to CX_DataFrame::operator()(std::string, RowIndex). */
+CX_DataFrameCell CX_DataFrame::operator() (RowIndex row, std::string column) {
 	return this->operator()(column, row);
 }
 
@@ -64,12 +64,12 @@ exception and logs an error if either the row or column is out of bounds.
 \param column The column name.
 \return A CX_DataFrameCell that can be read from or written to.
 */
-CX_DataFrameCell CX_DataFrame::at(rowIndex_t row, std::string column) {
+CX_DataFrameCell CX_DataFrame::at(RowIndex row, std::string column) {
 	return at(column, row);
 }
 
-/*! Equivalent to `CX::CX_DataFrame::at(rowIndex_t, std::string)`. */
-CX_DataFrameCell CX_DataFrame::at(std::string column, rowIndex_t row) {
+/*! Equivalent to `CX::CX_DataFrame::at(RowIndex, std::string)`. */
+CX_DataFrameCell CX_DataFrame::at(std::string column, RowIndex row) {
 	try {
 		return _data.at(column).at(row);
 	} catch (...) {
@@ -104,15 +104,15 @@ the row, use copyRow().
 \param row The index of the row to extract.
 \return A CX_DataFrameRow.
 */
-CX_DataFrameRow CX_DataFrame::operator[] (rowIndex_t row) {
+CX_DataFrameRow CX_DataFrame::operator[] (RowIndex row) {
 	return CX_DataFrameRow(this, row);
 }
 
 /*! \brief Reduced argument version of print(). Prints all rows and columns. */
 std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) const {
-	std::vector<CX_DataFrame::rowIndex_t> rowsToPrint;
+	std::vector<CX_DataFrame::RowIndex> rowsToPrint;
 	if (this->getRowCount() > 0) {
-		rowsToPrint = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1);
+		rowsToPrint = CX::Util::intVector<CX_DataFrame::RowIndex>(0, getRowCount() - 1);
 	}
 
 	return print(rowsToPrint, delimiter, printRowNumbers);
@@ -120,16 +120,16 @@ std::string CX_DataFrame::print(std::string delimiter, bool printRowNumbers) con
 
 /*! \brief Reduced argument version of print(). Prints all rows and the selected columns. */
 std::string CX_DataFrame::print(const std::vector<std::string>& columns, std::string delimiter, bool printRowNumbers) const {
-	std::vector<CX_DataFrame::rowIndex_t> rowsToPrint;
+	std::vector<CX_DataFrame::RowIndex> rowsToPrint;
 	if (this->getRowCount() > 0) {
-		rowsToPrint = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, getRowCount() - 1);
+		rowsToPrint = CX::Util::intVector<CX_DataFrame::RowIndex>(0, getRowCount() - 1);
 	}
 
 	return print(columns, rowsToPrint, delimiter, printRowNumbers);
 }
 
 /*! \brief Reduced argument version of print(). Prints all columns and the selected rows. */
-std::string CX_DataFrame::print(const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
+std::string CX_DataFrame::print(const std::vector<RowIndex>& rows, std::string delimiter, bool printRowNumbers) const {
 	return print(getColumnNames(), rows, delimiter, printRowNumbers);
 }
 
@@ -150,7 +150,7 @@ being the selected row indices. If false, no row numbers will be printed.
 
 \note This function may be \ref blockingCode if the data frame is large enough.
 */
-std::string CX_DataFrame::print(const std::vector<std::string>& columns, const std::vector<rowIndex_t>& rows,
+std::string CX_DataFrame::print(const std::vector<std::string>& columns, const std::vector<RowIndex>& rows,
 								std::string delimiter, bool printRowNumbers) const
 {
 	OutputOptions oOpt;
@@ -184,7 +184,7 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 
 	//No rows to print is not an error: Just the column headers are printed.
 	if (oOpt.rowsToPrint.empty() && this->getRowCount() > 0) {
-		oOpt.rowsToPrint = Util::intVector<rowIndex_t>(0, this->getRowCount() - 1);
+		oOpt.rowsToPrint = Util::intVector<RowIndex>(0, this->getRowCount() - 1);
 	}
 
 	std::ostringstream output;
@@ -202,7 +202,7 @@ std::string CX_DataFrame::print(OutputOptions oOpt) const {
 	}
 
 	//Output the rows of data
-	for (rowIndex_t i = 0; i < oOpt.rowsToPrint.size(); i++) {
+	for (RowIndex i = 0; i < oOpt.rowsToPrint.size(); i++) {
 		//Skip invalid row numbers
 		if (oOpt.rowsToPrint[i] >= _rowCount) {
 			Instances::Log.warning("CX_DataFrame") << "Invalid row index requested for printing: " << oOpt.rowsToPrint[i];
@@ -250,7 +250,7 @@ bool CX_DataFrame::printToFile(std::string filename, const std::vector<std::stri
 }
 
 /*! \brief Reduced argument version of printToFile(). Prints all columns and the selected rows. */
-bool CX_DataFrame::printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter, bool printRowNumbers) const {
+bool CX_DataFrame::printToFile(std::string filename, const std::vector<RowIndex>& rows, std::string delimiter, bool printRowNumbers) const {
 	std::string dfStr = this->print(rows, delimiter, printRowNumbers);
 	return CX::Util::writeToFile(filename, dfStr, false);
 }
@@ -271,7 +271,7 @@ vectors.
 being the selected row indices. If false, no row numbers will be printed.
 
 \return `true` for success, `false` if there was a problem writing to the file. */
-bool CX_DataFrame::printToFile(std::string filename, const std::vector<std::string>& columns, const std::vector<rowIndex_t>& rows,
+bool CX_DataFrame::printToFile(std::string filename, const std::vector<std::string>& columns, const std::vector<RowIndex>& rows,
 							   std::string delimiter, bool printRowNumbers) const
 {
 	std::string dfStr = this->print(columns, rows, delimiter, printRowNumbers);
@@ -354,7 +354,7 @@ bool CX_DataFrame::_readFromString(const std::string& dfStr, const CX_DataFrame:
 
 	std::vector<std::string> headers = ofSplitString(lines.front(), opt.cellDelimiter, true, true);
 
-	rowIndex_t rowNumber = 0;
+	RowIndex rowNumber = 0;
 
 	for (unsigned int lineIndex = 1; lineIndex < lines.size(); lineIndex++) {
 
@@ -476,7 +476,7 @@ bool CX_DataFrame::deleteColumn(std::string columnName) {
 \param row The row to delete (0 indexed). If row is greater than or equal to the number of rows in the data frame, a warning will be logged.
 \return `true` if the row was in bounds and was deleted, `false` if the row was out of bounds.
 */
-bool CX_DataFrame::deleteRow(rowIndex_t row) {
+bool CX_DataFrame::deleteRow(RowIndex row) {
 	if (row >= _rowCount) {
 		Instances::Log.warning("CX_DataFrame") << "Failed to delete row " << row << ". It was out of bounds. Number of rows: " << this->getRowCount();
 		return false;
@@ -523,7 +523,7 @@ will be appended to the end of the data frame.
 \note If `row` has columns that do not exist in the data frame, those columns will be added to the data frame.
 \note This may be a blocking operation, depending on the size of the data frame.
 */
-void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
+void CX_DataFrame::insertRow(CX_DataFrameRow row, RowIndex beforeIndex) {
 
 	//Cache row names
 	std::vector<std::string> rowNames = row.names();
@@ -534,7 +534,7 @@ void CX_DataFrame::insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex) {
 	}
 
 	//Set up the location at which the new data will be added.
-	rowIndex_t insertIndex = std::min(beforeIndex, this->getRowCount());
+	RowIndex insertIndex = std::min(beforeIndex, this->getRowCount());
 	
 	//For each existing column, insert one cell then assign new data to that cell
 	for (auto existingColumn = this->_data.begin(); existingColumn != this->_data.end(); existingColumn++) {
@@ -570,7 +570,7 @@ std::vector<std::string> CX_DataFrame::getColumnNames(void) const {
 }
 
 /*! \brief Returns the number of rows in the data frame. */
-CX_DataFrame::rowIndex_t CX_DataFrame::getRowCount(void) const {
+CX_DataFrame::RowIndex CX_DataFrame::getRowCount(void) const {
 	return _rowCount;
 }
 
@@ -579,7 +579,7 @@ CX_DataFrame::rowIndex_t CX_DataFrame::getRowCount(void) const {
 (i.e. they must be < getRowCount()). Both of these error conditions are checked for in the function call and errors are logged.
 \return true if all of the conditions of newOrder are met, false otherwise.
 */
-bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newOrder) {
+bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::RowIndex>& newOrder) {
 	if (newOrder.size() != _rowCount) {
 		CX::Instances::Log.error("CX_DataFrame") << "reorderRows failed: The number of indices in newOrder did not equal the number of rows in the data frame.";
 		return false;
@@ -609,11 +609,11 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 
 		std::vector<CX_DataFrameCell> columnCopy(_rowCount); //Data must first be copied into new columns,
 			//otherwise moving data from one row to another could overwrite a row that hasn't been copied yet.
-		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
+		for (RowIndex i = 0; i < newOrder.size(); i++) {
 			_data[*it][newOrder[i]].copyCellTo( &columnCopy[i] );
 		}
 
-		for (rowIndex_t i = 0; i < newOrder.size(); i++) {
+		for (RowIndex i = 0; i < newOrder.size(); i++) {
 			columnCopy[i].copyCellTo( &_data[*it][newOrder[i]] );
 		}
 
@@ -623,13 +623,13 @@ bool CX_DataFrame::reorderRows(const std::vector<CX_DataFrame::rowIndex_t>& newO
 }
 
 /*! Creates a CX_DataFrameRow that contains a copy of the given row of the CX_DataFrame.
-This is different from the CX_DataFrameRow returned by operator[](rowIndex_t), 
+This is different from the CX_DataFrameRow returned by operator[](RowIndex), 
 which refers back to the original data frame.
 
 \param row The row to copy.
 \return A CX_DataFrameRow containing a copy of the row of the CX_DataFrame.
 */
-CX_DataFrameRow CX_DataFrame::copyRow(rowIndex_t row) const {
+CX_DataFrameRow CX_DataFrame::copyRow(RowIndex row) const {
 
 	CX_DataFrameRow r;
 
@@ -648,14 +648,14 @@ CX_DataFrameRow CX_DataFrame::copyRow(rowIndex_t row) const {
 }
 
 /*! Creates a `CX_DataFrame` containing a copy of the rows specified in `rowOrder`. The new data frame is not linked to the existing data frame.
-\param rowOrder A vector of `CX_DataFrame::rowIndex_t` containing the rows from this data frame to be copied out.
+\param rowOrder A vector of `CX_DataFrame::RowIndex` containing the rows from this data frame to be copied out.
 The indices in `rowOrder` may be in any order: They don't need to be ascending. Additionally, the same row to be
 copied may be specified multiple times, which will result in multiple copies of that row being created in the new data frame.
 \return A `CX_DataFrame` containing the rows specified in `rowOrder`.
 
 \note This function may be \ref blockingCode if the amount of copied data is large.
 */
-CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const {
+CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::RowIndex> rowOrder) const {
 	unsigned int outOfRangeCount = 0;
 	for (unsigned int i = 0; i < rowOrder.size(); i++) {
 		if (rowOrder[i] >= _rowCount) {
@@ -673,7 +673,7 @@ CX_DataFrame CX_DataFrame::copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrd
 
 	for (const std::string& col : getColumnNames()) {
         copyDf._resizeToFit(col, rowOrder.size() - 1);
-        for (rowIndex_t row = 0; row < rowOrder.size(); row++) {
+        for (RowIndex row = 0; row < rowOrder.size(); row++) {
             //this->_data.at(col)[rowOrder[row]].copyCellTo( &copyDf._data.at(col)[row] );
 
 			copyDf._data.at(col)[row] = _data.at(col)[rowOrder[row]].clone();
@@ -716,7 +716,7 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 
 		copyDf._resizeToFit(col, this->getRowCount() - 1);
 
-		for (rowIndex_t row = 0; row < this->getRowCount(); row++) {
+		for (RowIndex row = 0; row < this->getRowCount(); row++) {
 
 			//this->operator()(col, row).copyCellTo( &copyDf._data.at(col)[row] );
 
@@ -732,7 +732,7 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 \note This function may be \ref blockingCode if the data frame is large.
 */
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
-	vector<CX_DataFrame::rowIndex_t> newOrder = CX::Util::intVector<CX_DataFrame::rowIndex_t>(0, _rowCount - 1);
+	vector<CX_DataFrame::RowIndex> newOrder = CX::Util::intVector<CX_DataFrame::RowIndex>(0, _rowCount - 1);
 	rng.shuffleVector(&newOrder);
 	reorderRows(newOrder);
 }
@@ -747,7 +747,7 @@ void CX_DataFrame::shuffleRows(void) {
 \param rowCount The new number of rows in the data frame.
 \note If the row count is less than the number of rows already in the data frame, it will delete the extra rows.
 */
-void CX_DataFrame::setRowCount(rowIndex_t rowCount) {
+void CX_DataFrame::setRowCount(RowIndex rowCount) {
 	_resizeToFit(rowCount - 1);
 }
 
@@ -768,7 +768,7 @@ bool CX_DataFrame::addColumn(std::string columnName) {
 Internally, CX_DataFrame::appendRow() is used to copy over the rows of `df` one at a time.
 \param df The CX_DataFrame to append. */
 void CX_DataFrame::append(CX_DataFrame df) {
-	for (rowIndex_t i = 0; i < df.getRowCount(); i++) {
+	for (RowIndex i = 0; i < df.getRowCount(); i++) {
 		this->appendRow(df[i]);
 	}
 }
@@ -785,7 +785,7 @@ bool CX_DataFrame::columnContainsVectors(std::string columnName) const {
 		return false;
 	}
 
-	for (rowIndex_t i = 0; i < getRowCount(); i++) {
+	for (RowIndex i = 0; i < getRowCount(); i++) {
 		if (_data.at(columnName)[i].isVector()) {
 			return true;
 		}
@@ -830,7 +830,7 @@ std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string 
 	//Copy the data to string vectors.
 	std::vector<std::vector<std::string>> vectors(getRowCount()); //The original data; stored by row then column
 	size_t maxVectorLength = 0;
-	for (rowIndex_t i = 0; i < vectors.size(); i++) {
+	for (RowIndex i = 0; i < vectors.size(); i++) {
 		vectors[i] = this->operator()(i, columnName).toVector<std::string>();
 		maxVectorLength = std::max<size_t>(maxVectorLength, vectors[i].size());
 	}
@@ -851,7 +851,7 @@ std::vector<std::string> CX_DataFrame::convertVectorColumnToColumns(std::string 
 	for (unsigned int i = 0; i < columnNames.size(); i++) {
 		this->addColumn(columnNames[i]);
 
-		for (rowIndex_t j = 0; j < vectors.size(); j++) {
+		for (RowIndex j = 0; j < vectors.size(); j++) {
 			if (vectors[j].size() > i) {
 				this->operator()(j, columnNames[i]) = vectors[j][i];
 			} else {
@@ -896,8 +896,8 @@ void CX_DataFrame::_resizeToFit(std::string column) {
 	}
 }
 
-void CX_DataFrame::_resizeToFit(rowIndex_t row) {
-	rowIndex_t newCount = row + 1;
+void CX_DataFrame::_resizeToFit(RowIndex row) {
+	RowIndex newCount = row + 1;
 	if (newCount > _rowCount && _data.size() > 0) {
 		_rowCount = std::max(_rowCount, newCount);
 		for (std::map<std::string, std::vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
@@ -907,13 +907,13 @@ void CX_DataFrame::_resizeToFit(rowIndex_t row) {
 	}
 }
 
-void CX_DataFrame::_resizeToFit(std::string column, rowIndex_t row) {
+void CX_DataFrame::_resizeToFit(std::string column, RowIndex row) {
 	_resizeToFit(column);
 	_resizeToFit(row);
 }
 
 void CX_DataFrame::_equalizeRowLengths(void) {
-	rowIndex_t maxSize = 0;
+	RowIndex maxSize = 0;
 	for (std::map<std::string, std::vector<CX_DataFrameCell>>::iterator it = _data.begin(); it != _data.end(); it++) {
 		maxSize = std::max(it->second.size(), maxSize);
 	}
@@ -950,7 +950,7 @@ void CX_DataFrame::_duplicate(CX_DataFrame* target) const {
 
 		target->_resizeToFit(col, this->_rowCount - 1);
 
-		for (rowIndex_t row = 0; row < this->_rowCount; row++) {
+		for (RowIndex row = 0; row < this->_rowCount; row++) {
 			//this->_data.at(col)[row].copyCellTo(&target->_data.at(col)[row]);
 
 			target->_data.at(col)[row] = this->_data.at(col)[row].clone();
@@ -992,7 +992,7 @@ CX_DataFrameColumn::CX_DataFrameColumn(CX_DataFrame *df, std::string column) :
 {}
 
 /*! Accesses the element in the specified row of the column. */
-CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
+CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::RowIndex row) {
 	if (_df) {
 		return _df->operator()(row, _columnName);
 	} else {
@@ -1001,7 +1001,7 @@ CX_DataFrameCell CX_DataFrameColumn::operator[] (CX_DataFrame::rowIndex_t row) {
 }
 
 /*! \brief Returns the number of rows in the column. */
-CX_DataFrame::rowIndex_t CX_DataFrameColumn::size(void) {
+CX_DataFrame::RowIndex CX_DataFrameColumn::size(void) {
 	if (_df) {
 		return _df->getRowCount();
 	} else {
@@ -1021,7 +1021,7 @@ CX_DataFrameRow::CX_DataFrameRow(void) :
 {}
 
 //This is a private constructor
-CX_DataFrameRow::CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::rowIndex_t rowNumber) :
+CX_DataFrameRow::CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::RowIndex rowNumber) :
 	_df(df),
 	_rowNumber(rowNumber)
 {}

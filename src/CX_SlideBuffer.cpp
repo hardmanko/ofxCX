@@ -58,7 +58,7 @@ void CX_SlideBuffer::Slide::updateRenderStatus(void) {
 	}
 }
 
-void CX_SlideBuffer::Slide::swappedIn(CX_Millis swapTime, uint64_t swapFrame) {
+void CX_SlideBuffer::Slide::swappedIn(CX_Millis swapTime, FrameNumber swapFrame) {
 
 	if (isInactive()) {
 		Instances::Log.error("CX_SlideBuffer") << "Slide \"" << this->name << "\" swapped in when it was inactive.";
@@ -86,9 +86,13 @@ void CX_SlideBuffer::Slide::swappedIn(CX_Millis swapTime, uint64_t swapFrame) {
 
 	_status = PresentationStatus::OnScreen;
 
+	if (slidePresentedCallback) {
+		slidePresentedCallback();
+	}
+
 }
 
-void CX_SlideBuffer::Slide::swappedOut(CX_Millis swapTime, uint64_t swapFrame) {
+void CX_SlideBuffer::Slide::swappedOut(CX_Millis swapTime, FrameNumber swapFrame) {
 	if (_status != PresentationStatus::OnScreen) {
 		Instances::Log.error("CX_SlideBuffer") << "Slide \"" << this->name << "\" swapped out when it was not on screen.";
 		// warn: not on screen when swapped out
@@ -119,6 +123,13 @@ bool CX_SlideBuffer::Slide::isPreparingToSwap(void) const {
 
 bool CX_SlideBuffer::Slide::isPreparedToSwap(void) const {
 	return _status == PresentationStatus::RenderComplete;
+}
+
+void CX_SlideBuffer::Slide::deallocateFramebuffer(void) {
+	if (framebuffer) {
+		framebuffer->allocate(0, 0);
+		framebuffer = nullptr;
+	}
 }
 
 void CX_SlideBuffer::Slide::resetPresentationInfo(void) {
@@ -155,7 +166,7 @@ void CX_SlideBuffer::setup(Configuration config) {
 	_config = config;
 }
 
-CX_SlideBuffer::Configuration& CX_SlideBuffer::getConfiguration(void) {
+const CX_SlideBuffer::Configuration& CX_SlideBuffer::getConfiguration(void) const {
 	return _config;
 }
 
@@ -285,7 +296,7 @@ void runExperiment(void) {
 }
 \endcode
 */
-void CX_SlideBuffer::appendSlideFunction(CX_Millis timeDuration, std::function<void(void)> drawingFunction, std::string slideName, uint64_t frameDuration) {
+void CX_SlideBuffer::appendSlideFunction(CX_Millis timeDuration, std::function<void(void)> drawingFunction, std::string slideName, FrameNumber frameDuration) {
 
 	endDrawingCurrentSlide();
 
@@ -323,7 +334,7 @@ ofCircle(210, 50, 20);
 sp.endDrawingCurrentSlide();
 \endcode
 */
-void CX_SlideBuffer::beginDrawingNextSlide(CX_Millis timeDuration, std::string slideName, uint64_t frameDuration) {
+void CX_SlideBuffer::beginDrawingNextSlide(CX_Millis timeDuration, std::string slideName, FrameNumber frameDuration) {
 
 	endDrawingCurrentSlide();
 
@@ -419,14 +430,14 @@ CX_SlideBuffer::Slide* CX_SlideBuffer::getSlide(std::string name) {
 		Instances::Log.error("CX_SlideBuffer") << "getSlide(): No slide found with name \"" << name << "\".";
 		return nullptr;
 	}
-	return getSlide((unsigned int)index);
+	return getSlide((size_t)index);
 }
 
 CX_SlideBuffer::Slide* CX_SlideBuffer::operator[](std::string name) {
 	return getSlide(name);
 }
 
-CX_SlideBuffer::Slide* CX_SlideBuffer::operator[](unsigned int index) {
+CX_SlideBuffer::Slide* CX_SlideBuffer::operator[](size_t index) {
 	return getSlide(index);
 }
 
@@ -448,11 +459,11 @@ int CX_SlideBuffer::_namedSlideIndex(std::string name) const {
 	return -1;
 }
 
-bool CX_SlideBuffer::slideExists(unsigned int index) const {
+bool CX_SlideBuffer::slideExists(size_t index) const {
 	return index < _slides.size();
 }
 
-CX_SlideBuffer::Slide* CX_SlideBuffer::getSlide(unsigned int index) {
+CX_SlideBuffer::Slide* CX_SlideBuffer::getSlide(size_t index) {
 	if (!slideExists(index)) {
 		Instances::Log.error("CX_SlideBuffer") << "getSlide(): No slide found at index \"" << index << "\".";
 		return nullptr;
@@ -460,7 +471,7 @@ CX_SlideBuffer::Slide* CX_SlideBuffer::getSlide(unsigned int index) {
 	return &_slides[index];
 }
 
-bool CX_SlideBuffer::deleteSlide(unsigned int index) {
+bool CX_SlideBuffer::deleteSlide(size_t index) {
 	if (!slideExists(index)) {
 		return false;
 	}
@@ -468,45 +479,13 @@ bool CX_SlideBuffer::deleteSlide(unsigned int index) {
 	return true;
 }
 
-unsigned int CX_SlideBuffer::size(void) const {
+size_t CX_SlideBuffer::size(void) const {
 	return _slides.size();
 }
 
 std::vector<CX_SlideBuffer::Slide>& CX_SlideBuffer::getSlides(void) {
 	return _slides;
 }
-
-void CX_SlideBuffer::setFramesFromTimes(uint64_t startFrame, CX_Millis framePeriod) {
-
-	for (unsigned int i = 0; i < _slides.size(); i++) {
-		
-		Slide& slide = _slides[i];
-
-		slide.intended.startFrame = startFrame;
-		slide.intended.frameDuration = Util::round(slide.intended.timeDuration / framePeriod, 0, Util::Rounding::ToNearest);
-		if (slide.intended.frameDuration == 0) {
-			slide.intended.frameDuration = 1;
-		}
-		
-		startFrame += slide.intended.frameDuration;
-
-	}
-
-}
-
-void CX_SlideBuffer::setIntendedStartTimesFromDurations(CX_Millis startTime) {
-	for (unsigned int i = 0; i < _slides.size(); i++) {
-
-		Slide& slide = _slides[i];
-
-		slide.intended.startTime = startTime;
-
-		startTime += slide.intended.timeDuration;
-
-	}
-}
-
-
 
 
 
@@ -524,7 +503,7 @@ CX_SlideBuffer::PresentationErrorInfo CX_SlideBuffer::checkForPresentationErrors
 
 	CX_SlideBuffer::PresentationErrorInfo errors;
 
-	for (unsigned int i = 0; i < _slides.size(); i++) {
+	for (size_t i = 0; i < _slides.size(); i++) {
 		const CX_SlideBuffer::Slide &sl = _slides.at(i);
 
 		bool errorOnThisSlide = false;
@@ -580,7 +559,7 @@ std::string CX_SlideBuffer::printLastPresentationInformation(void) const {
 	}
 	s << endl;
 
-	for (unsigned int i = 0; i < _slides.size(); i++) {
+	for (size_t i = 0; i < _slides.size(); i++) {
 
 		const Slide& slide = _slides[i];
 
@@ -636,7 +615,7 @@ columns.
 CX_DataFrame CX_SlideBuffer::getLastPresentationInformation(void) const {
 	CX_DataFrame df;
 
-	for (unsigned int i = 0; i < _slides.size(); i++) {
+	for (size_t i = 0; i < _slides.size(); i++) {
 
 		const Slide& slide = _slides[i];
 
@@ -681,7 +660,7 @@ std::vector<CX_Millis> CX_SlideBuffer::getActualTimeDurations(void) {
 	*/
 
 	vector<CX_Millis> durations(_slides.size());
-	for (unsigned int i = 0; i < _slides.size(); i++) {
+	for (size_t i = 0; i < _slides.size(); i++) {
 		durations[i] = _slides[i].actual.timeDuration;
 	}
 	return durations;
@@ -696,18 +675,18 @@ to the slide presenter will be at index 0.
 as soon as the last slide is put on the screen, it is done presenting the slides. Because the
 slide presenter is not responsible for removing the last slide from the screen, it has no idea
 about the duration of that slide. */
-std::vector<uint64_t> CX_SlideBuffer::getActualFrameDurations(void) {
+std::vector<FrameNumber> CX_SlideBuffer::getActualFrameDurations(void) {
 
 	/*
 	if (isLocked()) {
 		CX::Instances::Log.error("CX_SlidePresenter") << "getActualFrameCounts called during slide presentation."
 			" Wait until presentation is done to call this function.";
-		return std::vector<uint64_t>();
+		return std::vector<FrameNumber>();
 	}
 	*/
 
-	vector<uint64_t> frameCount(_slides.size());
-	for (unsigned int i = 0; i < _slides.size(); i++) {
+	vector<FrameNumber> frameCount(_slides.size());
+	for (size_t i = 0; i < _slides.size(); i++) {
 		frameCount[i] = _slides[i].actual.frameDuration;
 	}
 	return frameCount;
@@ -718,43 +697,38 @@ std::vector<uint64_t> CX_SlideBuffer::getActualFrameDurations(void) {
 // CX_SlideBufferPlaybackHelper //
 //////////////////////////////////
 
-void CX_SlideBufferPlaybackHelper::startPresenting(void) {
-	resetPresentationInfo();
-
-	_currentSlide = -1; // the slide before the first on screen slide
-
-	_slideAdvancedOnLastSwap = false;
-
-	_presenting = true;
-}
-
-void CX_SlideBufferPlaybackHelper::stopPresenting(void) {
-	_presenting = false;
-}
-
-bool CX_SlideBufferPlaybackHelper::isPresenting(void) {
-	// If there is no next slide, then the current slide is the last slide, at which point presentation is complete
-	if (!getNextSlide()) {
-		_presenting = false;
-	}
-	return _presenting;
-}
-
-void CX_SlideBufferPlaybackHelper::updatePresentation(void) {
-
-	if (!isPresenting()) {
-		return;
+bool CX_SlideBufferPlaybackHelper::setup(const Configuration& config) {
+	if (config.slideBuffer == nullptr) {
+		return false;
 	}
 
-	CX_SlideBuffer::Slide* nextSlide = getNextSlide();
-	if (nextSlide && nextSlide->isRendering()) {
-		nextSlide->updateRenderStatus();
-	}
+	_config = config;
 
+	if (_config.display == nullptr) {
+		_config.display = _config.slideBuffer->getConfiguration().display;
+	}
+	
+	return true;
 }
+
+/*
+void CX_SlideBufferPlaybackHelper::setup(CX_SlideBuffer* sb, CX_Display* disp) {
+	_config.slideBuffer = sb;
+	if (disp) {
+		_config.display = disp;
+	} else {
+		_config.display = _config.slideBuffer->getConfiguration().display;
+	}
+}
+*/
+
+const CX_SlideBufferPlaybackHelper::Configuration& CX_SlideBufferPlaybackHelper::getConfiguration(void) const {
+	return _config;
+}
+
 
 // returns true if slides swapped in and out
-void CX_SlideBufferPlaybackHelper::bufferSwap(CX_Millis swapTime, uint64_t swapFrame) {
+void CX_SlideBufferPlaybackHelper::bufferSwap(CX_Millis swapTime, FrameNumber swapFrame) {
 
 	CX_SlideBuffer::Slide* nextSlide = getNextSlide();
 
@@ -787,111 +761,397 @@ bool CX_SlideBufferPlaybackHelper::slideAdvancedOnLastSwap(void) {
 	return _slideAdvancedOnLastSwap;
 }
 
+bool CX_SlideBufferPlaybackHelper::currentSlideIsFirstSlide(void) const {
+	return _currentSlide == 0;
+}
+
+bool CX_SlideBufferPlaybackHelper::currentSlideIsLastSlide(void) const {
+	return _currentSlide >= 0 && _currentSlide == (_config.slideBuffer->size() - 1);
+}
+
 void CX_SlideBufferPlaybackHelper::renderNextSlide(void) {
 	CX_SlideBuffer::Slide* nextSlide = getNextSlide();
 	if (nextSlide) {
-		nextSlide->renderSlide(_display);
+		nextSlide->renderSlide(_config.display);
 	}
 }
 
-void CX_SlideBufferPlaybackHelper::rerenderCurrentSlide(void) {
+void CX_SlideBufferPlaybackHelper::reRenderCurrentSlide(void) {
 	CX_SlideBuffer::Slide* currentSlide = getCurrentSlide();
 	if (currentSlide) {
-		currentSlide->renderSlide(_display);
+		currentSlide->renderSlide(_config.display);
 	}
 }
 
-/*
-CX_SlideBuffer::Slide* CX_SlideBuffer::getPreviousSlide(void) {
-	int index = _presData.currentSlide - 1;
-	if (!_presData.presenting || index < 0 || index >= _slides.size()) {
+
+CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getPreviousSlide(void) {
+	int index = _currentSlide - 1;
+	if (!_playing || index < 0 || index >= _config.slideBuffer->size()) {
 		return nullptr;
 	}
-	return &_slides[index];
+	return _config.slideBuffer->getSlide(index);
 }
-*/
+
 
 CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getCurrentSlide(void) {
-	if (!_presenting || _currentSlide < 0 || _currentSlide >= _sb->size()) {
+	if (!_playing || _currentSlide < 0 || _currentSlide >= _config.slideBuffer->size()) {
 		return nullptr;
 	}
-	return _sb->getSlide(_currentSlide);
+	return _config.slideBuffer->getSlide(_currentSlide);
 }
 
 CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getNextSlide(void) {
 	int index = _currentSlide + 1;
-	if (!_presenting || index < 0 || index >= _sb->size()) {
+	if (!_playing || index < 0 || index >= _config.slideBuffer->size()) {
 		return nullptr;
 	}
-	return _sb->getSlide(index);
+	return _config.slideBuffer->getSlide(index);
+}
+
+
+
+void CX_SlideBufferPlaybackHelper::setIntendedStartFramesUsingTimeDurations(FrameNumber startFrame, CX_Millis nominalFramePeriod) {
+
+	for (size_t i = 0; i < _config.slideBuffer->size(); i++) {
+
+		CX_SlideBuffer::Slide* slide = _config.slideBuffer->getSlide(i);
+
+		slide->intended.startFrame = startFrame;
+		slide->intended.frameDuration = Util::round(slide->intended.timeDuration / nominalFramePeriod, 0, Util::Rounding::ToNearest);
+		if (slide->intended.frameDuration == 0) {
+			// warn?
+			slide->intended.frameDuration = 1;
+		}
+
+		startFrame += slide->intended.frameDuration;
+
+	}
+
+}
+
+void CX_SlideBufferPlaybackHelper::setIntendedStartFramesUsingFrameDurations(FrameNumber startFrame) {
+
+	for (size_t i = 0; i < _config.slideBuffer->size(); i++) {
+
+		CX_SlideBuffer::Slide* slide = _config.slideBuffer->getSlide(i);
+
+		slide->intended.startFrame = startFrame;
+
+		startFrame += slide->intended.frameDuration;
+	}
+
+}
+
+void CX_SlideBufferPlaybackHelper::setIntendedStartTimesUsingTimeDurations(CX_Millis startTime) {
+	for (size_t i = 0; i < _config.slideBuffer->size(); i++) {
+
+		CX_SlideBuffer::Slide* slide = _config.slideBuffer->getSlide(i);
+
+		slide->intended.startTime = startTime;
+
+		startTime += slide->intended.timeDuration;
+
+	}
+}
+
+void CX_SlideBufferPlaybackHelper::setIntendedStartTimesUsingFrameDurations(CX_Millis startTime, CX_Millis nominalFramePeriod) {
+
+	for (size_t i = 0; i < _config.slideBuffer->size(); i++) {
+
+		CX_SlideBuffer::Slide* slide = _config.slideBuffer->getSlide(i);
+
+		slide->intended.startTime = startTime;
+
+		startTime += slide->intended.frameDuration * nominalFramePeriod;
+
+	}
+
+}
+
+void CX_SlideBufferPlaybackHelper::setIntendedStartOfRemainingSlidesFromCurrentSlide(bool setTime, bool setFrames) {
+
+	CX_SlideBuffer::Slide* currentSlide = getCurrentSlide();
+	if (!currentSlide) {
+		return;
+	}
+
+	// _currentSlide must be >= 0
+	size_t nextSlideIndex = _currentSlide + 1;
+	CX_Millis nextSlideStartTime = currentSlide->actual.startTime + currentSlide->intended.timeDuration;
+	FrameNumber nextSlideStartFrame = currentSlide->actual.startFrame + currentSlide->intended.frameDuration;
+
+	for (size_t i = nextSlideIndex; i < _config.slideBuffer->size(); i++) {
+
+		CX_SlideBuffer::Slide* slide = _config.slideBuffer->getSlide(i);
+
+		if (setTime) {
+			slide->intended.startTime = nextSlideStartTime;
+			nextSlideStartTime += slide->intended.timeDuration;
+		}
+
+		if (setFrames) {
+			slide->intended.startFrame = nextSlideStartFrame;
+			nextSlideStartFrame += slide->intended.frameDuration;
+		}
+	}
+
 }
 
 void CX_SlideBufferPlaybackHelper::setIntendedStartTimesOfRemainingSlidesFromCurrentSlide(void) {
-
-	CX_SlideBuffer::Slide* currentSlide = getCurrentSlide();
-	if (!currentSlide) {
-		return;
-	}
-
-	int nextSlideIndex = _currentSlide + 1;
-	CX_Millis nextSlideStartTime = currentSlide->actual.startTime + currentSlide->intended.timeDuration;
-
-	for (int i = nextSlideIndex; i < _sb->size(); i++) {
-
-		CX_SlideBuffer::Slide* slide = _sb->getSlide(i);
-
-		slide->intended.startTime = nextSlideStartTime;
-
-		nextSlideStartTime += slide->intended.timeDuration;
-	}
+	setIntendedStartOfRemainingSlidesFromCurrentSlide(true, false);
 }
 
 void CX_SlideBufferPlaybackHelper::setIntendedStartFramesOfRemainingSlidesFromCurrentSlide(void) {
-
-	CX_SlideBuffer::Slide* currentSlide = getCurrentSlide();
-	if (!currentSlide) {
-		return;
-	}
-
-	int nextSlideIndex = _currentSlide + 1;
-	uint64_t nextSlideStartFrame = currentSlide->actual.startFrame + currentSlide->intended.frameDuration;
-
-	for (int i = nextSlideIndex; i < _sb->size(); i++) {
-
-		CX_SlideBuffer::Slide* slide = _sb->getSlide(i);
-
-		slide->intended.startFrame = nextSlideStartFrame;
-
-		nextSlideStartFrame += slide->intended.frameDuration;
-	}
+	setIntendedStartOfRemainingSlidesFromCurrentSlide(false, true);
 }
 
 void CX_SlideBufferPlaybackHelper::resetPresentationInfo(void) {
-	_presenting = false;
+	_playing = false;
 	_currentSlide = -1;
 
-	for (unsigned int i = 0; i < _sb->size(); i++) {
-		_sb->getSlide(i)->resetPresentationInfo();
+	for (size_t i = 0; i < _config.slideBuffer->size(); i++) {
+		_config.slideBuffer->getSlide(i)->resetPresentationInfo();
 	}
 }
 
+
+bool CX_SlideBufferPlaybackHelper::startPlaying(void) {
+
+	if (_config.slideBuffer->size() == 0) {
+		return false;
+	}
+
+	resetPresentationInfo();
+
+	_currentSlide = -1; // the slide before the first on screen slide
+
+	_slideAdvancedOnLastSwap = false;
+
+	_playing = true;
+
+	return true;
+}
+
+void CX_SlideBufferPlaybackHelper::updatePlayback(void) {
+
+	if (!isPlaying()) {
+		return;
+	}
+
+	CX_SlideBuffer::Slide* nextSlide = getNextSlide();
+	if (nextSlide && nextSlide->isRendering()) {
+		nextSlide->updateRenderStatus();
+	}
+
+}
+
+bool CX_SlideBufferPlaybackHelper::isPlaying(void) {
+	if (!getNextSlide()) {
+		_playing = false;
+	}
+	return _playing;
+}
+
+void CX_SlideBufferPlaybackHelper::stopPlaying(void) {
+	_playing = false;
+}
+
+
+
+
+
+
+
+/////////////////////////////////////
+// CX_SlideBufferPredicatePlayback //
+/////////////////////////////////////
+
+bool CX_SlideBufferPredicatePlayback::setup(const Configuration& config) {
+
+	if (!config.hasSwappedPredicate && !config.shouldSwapPredicate) {
+		/// must provide at least one of hasSwappedPredicate or shouldSwapPredicate
+		return false;
+	}
+	if (!config.renderNextPredicate) {
+
+		return false;
+	}
+
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	_config = config;
+
+	{
+		CX_SlideBufferPlaybackHelper::Configuration hc;
+		hc.display = _config.display;
+		hc.slideBuffer = _config.slideBuffer;
+		_helper.setup(hc);
+	}
+
+	return true;
+}
+
+CX_SlideBufferPredicatePlayback::Configuration CX_SlideBufferPredicatePlayback::getConfiguration(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return _config;
+}
 
 /*
-void CX_SlideBufferPlaybackHelper::propagateDelay(unsigned int startIndex, CX_Millis time, uint64_t frames) {
+bool CX_SlideBufferPredicatePlayback::startPlaying(CX_Millis intendedStartTime, FrameNumber intendedStartFrame) {
 
-	for (unsigned int i = 0; i < (_slides.size() - 1); i++) {
+	StartConfig sc;
+	sc.intendedStartTime = intendedStartTime;
+	sc.intendedStartFrame = intendedStartFrame;
 
-		const Slide& currentSlide = _slides[i];
-		Slide& nextSlide = _slides[i + 1];
+	return startPlaying(sc);
+}
+*/
 
-		// do it from the beginning to the end
+bool CX_SlideBufferPredicatePlayback::startPlaying(StartConfig sc) {
 
-		//currentSlide.presentationComplete()
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (!_helper.startPlaying()) {
+		Instances::Log.error("CX_SlideBufferPredicatePlayback") << "startPlaying(): Could not start playing.";
+		return false;
+	}
+
+	CX_SlideBuffer::Slide* firstSlide = _helper.getNextSlide(); // There must be a next slide if _helper.startPlaying() returns true
+
+	firstSlide->intended.startTime = sc.intendedStartTime;
+	firstSlide->intended.startFrame = sc.intendedStartFrame;
+
+	if (_config.useTimeDurations) {
+
+		if (sc.intendedStartTime != CX_Millis::max()) {
+			_helper.setIntendedStartTimesUsingTimeDurations(sc.intendedStartTime);
+		}
+
+		if (sc.intendedStartFrame != std::numeric_limits<FrameNumber>::max()) {
+			_helper.setIntendedStartFramesUsingTimeDurations(sc.intendedStartFrame, _config.display->getFramePeriod());
+		}
+
+	} else {
+
+		if (sc.intendedStartTime != CX_Millis::max()) {
+			_helper.setIntendedStartTimesUsingFrameDurations(sc.intendedStartTime, _config.display->getFramePeriod());
+		}
+
+		if (sc.intendedStartFrame != std::numeric_limits<FrameNumber>::max()) {
+			_helper.setIntendedStartFramesUsingFrameDurations(sc.intendedStartFrame);
+		}
 
 	}
 
+	return true;
+}
+
+/*
+bool CX_SlideBufferPredicatePlayback::startPlaying(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	_helper.startPlaying();
+
+	return true;
 }
 */
+
+bool CX_SlideBufferPredicatePlayback::isPlaying(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return _helper.isPlaying();
+}
+
+void CX_SlideBufferPredicatePlayback::updatePlayback(void) {
+	if (!isPlaying()) {
+		return;
+	}
+
+	updatePlaybackSwapping();
+	updatePlaybackRendering();
+}
+
+void CX_SlideBufferPredicatePlayback::stopPlaying(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	_helper.stopPlaying();
+}
+
+CX_SlideBufferPredicatePlayback::SlideHelperLP CX_SlideBufferPredicatePlayback::getLockedHelperPointer(void) {
+	return SlideHelperLP(&_helper, _mutex);
+}
+
+CX_SlideBufferPredicatePlayback::SlideBufferLP CX_SlideBufferPredicatePlayback::getSlideBufferLP(void) {
+	return SlideBufferLP(_config.slideBuffer, _mutex);
+}
+
+/*
+bool CX_SlideBufferPredicatePlayback::play(void) {
+
+	if (!startPlaying()) {
+		return false;
+	}
+
+	while (isPlaying()) {
+		updatePlayback();
+	}
+
+	return true;
+}
+*/
+
+void CX_SlideBufferPredicatePlayback::updatePlaybackSwapping(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (!isPlaying()) {
+		return;
+	}
+
+	bool shouldSwap = _config.shouldSwapPredicate && _config.shouldSwapPredicate();
+	if (shouldSwap) {
+		_config.display->swapBuffers();
+	}
+
+	bool hasSwapped = shouldSwap || (_config.hasSwappedPredicate && _config.hasSwappedPredicate());
+
+	if (hasSwapped) {
+		Sync::SwapData newest = _config.display->swapData.getLastSwapData();
+		_helper.bufferSwap(newest.time, newest.unit);
+
+		if ((_config.propagateDelays || _helper.currentSlideIsFirstSlide()) && _helper.slideAdvancedOnLastSwap()) {
+			_helper.setIntendedStartOfRemainingSlidesFromCurrentSlide(true, true);
+		}
+	}
+
+	_predArgs.hasSwapped = hasSwapped;
+}
+
+void CX_SlideBufferPredicatePlayback::updatePlaybackRendering(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+	if (!isPlaying()) {
+		return;
+	}
+
+	bool renderNext = _config.renderNextPredicate && _config.renderNextPredicate(_predArgs);
+	if (renderNext) {
+		_helper.renderNextSlide();
+	}
+
+	bool reRenderCurrent = _config.reRenderCurrentPredicate && _config.reRenderCurrentPredicate(_predArgs);
+	if (reRenderCurrent) {
+		_helper.reRenderCurrentSlide();
+	}
+
+	_helper.updatePlayback(); // Where should this go? Here seems ok
+
+	if (_config.deallocateCompletedSlides && _predArgs.hasSwapped) {
+		CX_SlideBuffer::Slide* previous = _helper.getPreviousSlide();
+		if (previous) {
+			previous->deallocateFramebuffer();
+		}
+	}
+
+	_predArgs.hasSwapped = false;
+}
 
 
 

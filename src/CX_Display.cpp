@@ -13,7 +13,7 @@ CX_Display::CX_Display(void) :
 	_framePeriod(0),
 	_framePeriodStandardDeviation(0),
 	_softVSyncWithGLFinish(false),
-	_dispThread(this, &CX_Display::_dispThreadSwapCallback)
+	_dispThread(this, &CX_Display::_swapBuffers)
 {}
 
 CX_Display::~CX_Display(void) {
@@ -27,11 +27,11 @@ void CX_Display::setup(void) {
 
 	_dispThread.setup(CX_DisplayThread::Configuration(), false);
 
-	_setUpSyncs();
+	_setUpSwapTracking();
 
 }
 
-void CX_Display::_setUpSyncs(void) {
+void CX_Display::_setUpSwapTracking(void) {
 	Sync::DataContainer::Configuration sdc;
 
 	sdc.latency = 0;
@@ -40,8 +40,6 @@ void CX_Display::_setUpSyncs(void) {
 	sdc.sampleSize = 0; // let it be set by users
 
 	swapData.setup(sdc);
-
-	//swapData.receiveFrom(&_dispThread.swapData);
 
 
 	Sync::DataClient::Configuration dcc;
@@ -178,9 +176,9 @@ number of front and back buffer swaps. It tracks buffer swaps that result from
 2) manual swaps resulting from a call to swapBuffers() or swapBuffersInThread().
 \return The number of the last frame. This value can only be compared with other values
 returned by this function. */
-CX_Display::FrameNumber CX_Display::getLastFrameNumber(void) {
+FrameNumber CX_Display::getLastFrameNumber(void) {
 
-	return swapData.getNewestDataPoint().unit;
+	return swapData.getLastSwapData().unit;
 
 	//std::lock_guard<std::recursive_mutex> lock(_swaps.mutex);
 	//return _swaps.lastFrameNumber;
@@ -190,7 +188,7 @@ CX_Display::FrameNumber CX_Display::getLastFrameNumber(void) {
 /*! Get the last time at which the front and back buffers were swapped.
 \return A time value that can be compared with CX::Instances::Clock.now(). */
 CX_Millis CX_Display::getLastSwapTime(void) {
-	return swapData.getNewestDataPoint().time;
+	return swapData.getLastSwapData().time;
 	//std::lock_guard<std::recursive_mutex> lock(_swaps.mutex);
 	//return _swaps.lastSwapTime;
 }
@@ -279,11 +277,10 @@ void CX_Display::endDrawingToBackBuffer(void) {
 		_renderer->finishRender();
 	}
 
-	glFlush(); //This is very important, because it seems like commands are buffered in a thread-local fashion initially.
-		//As a result, if a swap is requested from a swapping thread separate from the rendering thread, the automatic flush
-		//that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush
-		//here guarantees at least some amount of security that the rendering thread's commands will be executed before
-		//the swapping thread queues the swap.
+	glFlush(); // This is very important, because it seems like commands are buffered in a thread-local fashion initially.
+		// As a result, if a swap is requested from a different thread than the rendering thread, the automatic flush
+		// that supposedly happens when a swap is queued may not flush commands from the rendering thread. Calling glFlush
+		// here helps guarantee that the rendering thread's commands will be executed before the swapping thread queues the swap.
 }
 
 /*! This function queues up a swap of the front and back buffers then
@@ -291,19 +288,19 @@ blocks until the swap occurs. This usually should not be used if
 `isAutomaticallySwapping() == true`. If it is, a warning will be logged.
 \see \ref blockingCode */
 void CX_Display::swapBuffers(void) {
+	
 	if (isAutomaticallySwapping()) {
 		Instances::Log.error("CX_Display") << "swapBuffers(): Manual buffer swap requested "
 			"while automatic buffer swapping mode was in use. The manual swap has been ignored.";
 		return;
 	}
-
-	Private::swapVideoBuffers(_softVSyncWithGLFinish);
-	swapData.storeSwap(Instances::Clock.now());
 	
+	_swapBuffers();
 }
 
-void CX_Display::_dispThreadSwapCallback(CX_Millis swapTime) {
-	swapData.storeSwap(swapTime);
+void CX_Display::_swapBuffers(void) {
+	Private::swapVideoBuffers(_softVSyncWithGLFinish);
+	swapData.storeSwap(Instances::Clock.now());
 }
 
 
@@ -435,7 +432,7 @@ better than only using one.
 void CX_Display::useSoftwareVSync(bool use) {
 	_softVSyncWithGLFinish = use;
 
-	_dispThread._setGLFinishAfterSwap(use);
+	//_dispThread._setGLFinishAfterSwap(use);
 }
 
 //bool CX_Display::usingHardwareVSync(void) {
@@ -699,14 +696,10 @@ void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
 	_framePeriod = knownPeriod;
 	_framePeriodStandardDeviation = 0;
 
-	_dispThread._setEstimatedFramePeriod(_framePeriod);
-
-	//swapData.setNominalSwapPeriod(_framePeriod);
-
-	_setUpSyncs();
+	_setUpSwapTracking();
 }
 
-/*! Epilepsy warning: This function causes your display to rapidly flash with a variety of high-contrast patterns.
+/*! Epilepsy warning: This function causes your display to rapidly flash with high-contrast patterns.
 
 This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
 are requested in the main thread or in a secondary thread. The tests combine visual inspection and automated
@@ -915,7 +908,7 @@ std::map<std::string, CX_DataFrame> CX_Display::testBufferSwapping(CX_Millis des
 				for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
 					durations[i] = swapTimes[i + 1] - swapTimes[i];
 
-					CX_DataFrame::rowIndex_t row = constantSwapping.getRowCount();
+					CX_DataFrame::RowIndex row = constantSwapping.getRowCount();
 
 					constantSwapping(row, "thread") = threadName;
 					constantSwapping(row, "hardVSync") = hardV;
@@ -979,7 +972,7 @@ std::map<std::string, CX_DataFrame> CX_Display::testBufferSwapping(CX_Millis des
 					for (unsigned int i = 0; i < swapTimes.size() - 1; i++) {
 						durations[i] = swapTimes[i + 1] - swapTimes[i];
 
-						CX_DataFrame::rowIndex_t row = waitSwap.getRowCount();
+						CX_DataFrame::RowIndex row = waitSwap.getRowCount();
 
 						waitSwap(row, "thread") = threadName;
 						waitSwap(row, "hardVSync") = hardV;

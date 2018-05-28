@@ -311,7 +311,7 @@ CX_SoundStream::SampleFrame CX_SoundStream::getNextBufferStartSampleFrame(void) 
 	return getLastBufferStartSampleFrame() + _config.bufferSize;
 
 	// or
-	//return swapData.getSwapUnitForNextSwap();
+	//return swapData.getNextSwapUnit();
 }
 
 CX_SoundStream::SampleFrame CX_SoundStream::getLastBufferStartSampleFrame(void) {
@@ -454,7 +454,7 @@ void CX_SoundStream::waitForSwap(CX_Millis timeout, bool reset) {
 */
 /*
 CX_Millis CX_SoundStream::getLastBufferSwapTime(void) {
-	return swapData.getNewestDataPoint().time;
+	return swapData.getLastSwapData().time;
 }
 */
 
@@ -705,8 +705,8 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 		int inputChannels = _config.inputChannels;
 		int outputChannels = _config.outputChannels;
 		
-		//SampleFrame thisBufferStartSampleFrame = swapData.getNewestDataPoint().unit + bufferSize; // swapData.getSwapUnitForNextSwap()
-		SampleFrame thisBufferStartSampleFrame = swapData.getSwapUnitForNextSwap();
+		//SampleFrame thisBufferStartSampleFrame = swapData.getLastSwapData().unit + bufferSize; // swapData.getNextSwapUnit()
+		SampleFrame thisBufferStartSampleFrame = swapData.getNextSwapUnit();
 		//SampleFrame thisBufferStartSampleFrame = _lastBufferStartSampleFrame + bufferSize;
 	_callbackMutex.unlock();
 

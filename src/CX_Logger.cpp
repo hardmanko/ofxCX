@@ -174,7 +174,7 @@ CX_Logger::~CX_Logger(void) {
 
 	flush();
 
-	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+	for (size_t i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
 			//_targetInfo[i].file->close(); //They should already be closed from flush()
 			delete _targetInfo[i].file;
@@ -191,7 +191,7 @@ void CX_Logger::flush(void) {
 	//By getting the message count once and only iterating over that many messages,
 	//a known number of messages are processed and just that many messages can be deleted later.
 	_messageQueueMutex.lock();
-	unsigned int messageCount = _messageQueue.size();
+	size_t messageCount = _messageQueue.size();
 	_messageQueueMutex.unlock();
 
 	if (messageCount == 0) {
@@ -199,7 +199,7 @@ void CX_Logger::flush(void) {
 	}
 
 	//Open output files
-	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+	for (size_t i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
 			_targetInfo[i].file->open(_targetInfo[i].filename, ofFile::Append, false);
 			if (!_targetInfo[i].file->is_open()) {
@@ -208,7 +208,7 @@ void CX_Logger::flush(void) {
 		}
 	}
 
-	for (unsigned int i = 0; i < messageCount; i++) {
+	for (size_t i = 0; i < messageCount; i++) {
 		//Lock and copy each message. Messages cannot be added while locked.
 		//After the unlock, the message copy is used, not the original message.
 		_messageQueueMutex.lock();
@@ -223,7 +223,7 @@ void CX_Logger::flush(void) {
 		std::string formattedMessage = _formatMessage(m) + "\n";
 
 		if (m.level >= _moduleLogLevels[m.module]) {
-			for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+			for (size_t i = 0; i < _targetInfo.size(); i++) {
 				if (m.level >= _targetInfo[i].level) {
 					if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
 						std::cout << formattedMessage;
@@ -236,7 +236,7 @@ void CX_Logger::flush(void) {
 	}
 
 	//Close output files
-	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+	for (size_t i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
 			_targetInfo[i].file->close();
 		}
@@ -258,7 +258,7 @@ void CX_Logger::clear(void) {
 /*! \brief Set the log level for messages to be printed to the console. */
 void CX_Logger::levelForConsole(Level level) {
 	bool consoleFound = false;
-	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+	for (size_t i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
 			consoleFound = true;
 			_targetInfo[i].level = level;
@@ -277,20 +277,21 @@ void CX_Logger::levelForConsole(Level level) {
 If the file does exist, it will be overwritten with a warning logged to cerr (typically the console).
 \param level Log messages with level greater than or equal to this level will be outputted to the file.
 See the \ref CX::CX_Logger::Level enum for valid values.
-\param filename The name of the file to output to. If no file name is given, a file with name
-generated from a date/time from the start time of the experiment will be used.
+\param filename The name of the file to output to. If no file name is given, a file with the name
+"Log file %DTS%.txt" will be created, where %DTS% is a string containing the date/time at which the experiment started. date/time string from the start time of the experiment will be used.
+ from a date/time from the start time of the experiment will be used.
 */
 void CX_Logger::levelForFile(Level level, std::string filename) {
 	if (filename == "CX_LOGGER_DEFAULT") {
-		filename = "Log file " + CX::Instances::Clock.getExperimentStartDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
+		filename = "Log file " + CX::Instances::Clock.getDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
 	}
 	filename = ofToDataPath(filename);
 
-	bool fileFound = false;
-	unsigned int fileIndex = -1;
-	for (unsigned int i = 0; i < _targetInfo.size(); i++) {
+	bool fileAlreadyExists = false;
+	size_t fileIndex = std::numeric_limits<size_t>::max();
+	for (size_t i = 0; i < _targetInfo.size(); i++) {
 		if ((_targetInfo[i].targetType == CX::Private::LogTarget::FILE) && (_targetInfo[i].filename == filename)) {
-			fileFound = true;
+			fileAlreadyExists = true;
 			fileIndex = i;
 			_targetInfo[i].level = level;
 		}
@@ -298,33 +299,39 @@ void CX_Logger::levelForFile(Level level, std::string filename) {
 
 	//If nothing is to be logged, either delete or never create the target
 	if (level == Level::LOG_NONE) {
-		if (fileFound) {
+		if (fileAlreadyExists) {
 			_targetInfo.erase(_targetInfo.begin() + fileIndex);
 		}
 		return;
 	}
 
-	if (!fileFound) {
-		CX::Private::CX_LoggerTargetInfo fileTarget;
-		fileTarget.targetType = CX::Private::LogTarget::FILE;
-		fileTarget.level = level;
-		fileTarget.filename = filename;
-		fileTarget.file = new ofFile(); //This is deallocated in the dtor
-
-		fileTarget.file->open(filename, ofFile::Reference, false);
-		if (fileTarget.file->exists()) {
-			std::cerr << "<CX_Logger> Log file already exists with name: " << filename << ". It will be overwritten." << std::endl;
-		}
-
-		fileTarget.file->open(filename, ofFile::WriteOnly, false);
-		if (fileTarget.file->is_open()) {
-			std::cout << "<CX_Logger> Log file \"" + filename + "\" opened." << std::endl;
-		}
-		*fileTarget.file << "CX log file. Created " << CX::Instances::Clock.getDateTimeString() << std::endl;
-		fileTarget.file->close();
-
-		_targetInfo.push_back(fileTarget);
+	// If the file exists, change the log level
+	if (fileAlreadyExists) {
+		_targetInfo.at(fileIndex).level = level;
+		return;
 	}
+
+	// If the file isn't found, create it
+	CX::Private::CX_LoggerTargetInfo fileTarget;
+	fileTarget.targetType = CX::Private::LogTarget::FILE;
+	fileTarget.level = level;
+	fileTarget.filename = filename;
+	fileTarget.file = new ofFile(); //This is deallocated in the dtor
+
+	fileTarget.file->open(filename, ofFile::Reference, false);
+	if (fileTarget.file->exists()) {
+		std::cerr << "<CX_Logger> levelForFile(): Log file already exists with name: " << filename << ". It will be overwritten." << std::endl;
+	}
+
+	fileTarget.file->open(filename, ofFile::WriteOnly, false);
+	if (fileTarget.file->is_open()) {
+		std::cout << "<CX_Logger> levelForFile(): Log file \"" + filename + "\" opened." << std::endl;
+	}
+	*fileTarget.file << "CX log file. Created at " << CX::Instances::Clock.getDateTimeString() << std::endl;
+	fileTarget.file->close();
+
+	_targetInfo.push_back(fileTarget);
+
 }
 
 /*! Sets the log level for the given module. Messages from that module that are at a lower level than

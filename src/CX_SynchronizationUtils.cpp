@@ -69,7 +69,7 @@ namespace Sync {
 	///////////////////////
 
 	DataContainer::DataContainer(void) :
-		_timePushNextSwapUnit(0)
+		_timeStoreNextSwapUnit(0)
 	{}
 
 	void DataContainer::setup(const Configuration& config) {
@@ -79,7 +79,7 @@ namespace Sync {
 
 		_config = config;
 
-		_timePushNextSwapUnit = 0;
+		_timeStoreNextSwapUnit = 0;
 
 		_polledSwapListener = getPolledSwapListener();
 	}
@@ -141,45 +141,13 @@ namespace Sync {
 
 
 
-
-
-
-
-	/*
-	void DataContainer::push(SwapData data) {
-
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		data.time -= _config.latency;
-
-		_data.push_back(std::move(data));
-
-		//_lastSwapUnit = data.unit;
-		_timePushNextSwapUnit = data.unit + _config.unitsPerSwap;
-
-		while (_data.size() > _config.sampleSize) {
-			_data.pop_front();
-		}
-
-		ofNotifyEvent(this->newDataEvent, _data);
-	}
-
-	void DataContainer::push(CX_Millis time) {
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		push(SwapData(time, _timePushNextSwapUnit));
-
-		_timePushNextSwapUnit += _config.unitsPerSwap;
-	}
-	*/
-
 	void DataContainer::storeSwap(CX_Millis time) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
 		// adjust for latency
 		time -= _config.latency;
 
-		_data.push_back(SwapData( time, _timePushNextSwapUnit));
+		_data.push_back(SwapData(time, _timeStoreNextSwapUnit));
 
 		// remove excess data
 		while (_data.size() > _config.sampleSize) {
@@ -187,7 +155,7 @@ namespace Sync {
 		}
 
 		// advance swap unit
-		_timePushNextSwapUnit += _config.unitsPerSwap;
+		_timeStoreNextSwapUnit += _config.unitsPerSwap;
 
 		ofNotifyEvent(this->newDataEvent, _data);
 	}
@@ -207,7 +175,7 @@ namespace Sync {
 		}
 
 		// advance swap unit
-		//_timePushNextSwapUnit += _config.unitsPerSwap;
+		//_timeStoreNextSwapUnit += _config.unitsPerSwap;
 
 		ofNotifyEvent(this->newDataEvent, _data);
 
@@ -237,7 +205,7 @@ namespace Sync {
 
 		if (resetSwapUnit) {
 			last.unit = 0; // reset last to 0
-			_timePushNextSwapUnit = _config.unitsPerSwap; // set next to 0 plus unitsPerSwap
+			_timeStoreNextSwapUnit = _config.unitsPerSwap; // set next to 0 plus unitsPerSwap
 		}
 
 		if (keepLastSample) {
@@ -297,9 +265,9 @@ namespace Sync {
 		return _config.unitsPerSwap;
 	}
 
-	SwapUnit DataContainer::getSwapUnitForNextSwap(void) {
+	SwapUnit DataContainer::getNextSwapUnit(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
-		return getNewestDataPoint().unit + _config.unitsPerSwap;
+		return getLastSwapData().unit + _config.unitsPerSwap;
 	}
 
 	DataContainer::LockedDataPointer DataContainer::getLockedDataPointer(void) {
@@ -324,7 +292,15 @@ namespace Sync {
 	}
 	*/
 
-	SwapData DataContainer::getNewestDataPoint(void) {
+	CX_Millis DataContainer::getLastSwapTime(void) {
+		return getLastSwapData().time;
+	}
+
+	SwapUnit DataContainer::getLastSwapUnit(void) {
+		return getLastSwapData().unit;
+	}
+
+	SwapData DataContainer::getLastSwapData(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
 		if (_data.empty()) {
@@ -1124,7 +1100,7 @@ namespace Sync {
 		//std::lock_guard<std::recursive_mutex> lock(_mutex);
 
 		_mutex.lock();
-		SwapUnit nextSwapUnit = _config.dataContainer->getSwapUnitForNextSwap();
+		SwapUnit nextSwapUnit = _config.dataContainer->getNextSwapUnit();
 		_mutex.unlock();
 
 		LinearModel::LockedFittedModel lfm = lm.getLockedFittedModel();
@@ -1168,7 +1144,7 @@ namespace Sync {
 
 	TimePrediction DataClient::predictLastSwapTime(void) {
 		_mutex.lock();
-		SwapData lastData = _config.dataContainer->getNewestDataPoint();
+		SwapData lastData = _config.dataContainer->getLastSwapData();
 		_mutex.unlock();
 
 		Sync::TimePrediction rval = predictSwapTime(lastData.unit);
@@ -1185,14 +1161,14 @@ namespace Sync {
 	TimePrediction DataClient::predictNextSwapTime(void) {
 
 		_mutex.lock();
-		SwapUnit nextSwapUnit = _config.dataContainer->getSwapUnitForNextSwap();
+		SwapUnit nextSwapUnit = _config.dataContainer->getNextSwapUnit();
 		_mutex.unlock();
 
 		Sync::TimePrediction rval = predictSwapTime(nextSwapUnit);
 
 		if (!rval.usable) {
 			_mutex.lock();
-			rval.pred = _config.dataContainer->getNewestDataPoint().time + _config.dataContainer->getNominalSwapPeriod();
+			rval.pred = _config.dataContainer->getLastSwapData().time + _config.dataContainer->getNominalSwapPeriod();
 			rval.predictionIntervalHalfWidth = PredictionIntervalWarning;
 			rval.usable = true;
 			_mutex.unlock();

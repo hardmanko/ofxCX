@@ -44,7 +44,7 @@ is large enough.
 class CX_DataFrame {
 public:
 
-	typedef std::vector<CX_DataFrameCell>::size_type rowIndex_t; //!< An unsigned integer type used for indexing the rows of a CX_DataFrame.
+	typedef std::vector<CX_DataFrameCell>::size_type RowIndex; //!< An unsigned integer type used for indexing the rows of a CX_DataFrame.
 
 	/*! \class IoOptions
 	Options for the format of files that are output to or input from a CX_DataFrame.
@@ -67,7 +67,7 @@ public:
 		{}
 
 		bool printRowNumbers; //!< If `true`, a column of row numbers will be printed. The column will be named "rowNumber". Defaults to `true`.
-		std::vector<rowIndex_t> rowsToPrint; //!< The indices of the rows that should be printed. If the vector has size 0, all rows will be printed.
+		std::vector<RowIndex> rowsToPrint; //!< The indices of the rows that should be printed. If the vector has size 0, all rows will be printed.
 		std::vector<std::string> columnsToPrint; //!< The names of the columns that should be printed. If the vector has size 0, all columns will be printed.
 	};
 
@@ -88,26 +88,26 @@ public:
 
 
 	//Cell operations
-	CX_DataFrameCell operator() (std::string column, rowIndex_t row);
-	CX_DataFrameCell operator() (rowIndex_t row, std::string column);
+	CX_DataFrameCell operator() (std::string column, RowIndex row);
+	CX_DataFrameCell operator() (RowIndex row, std::string column);
 
-	CX_DataFrameCell at(rowIndex_t row, std::string column);
-	CX_DataFrameCell at(std::string column, rowIndex_t row);
+	CX_DataFrameCell at(RowIndex row, std::string column);
+	CX_DataFrameCell at(std::string column, RowIndex row);
 
 
 	//Row operations
 	void appendRow(CX_DataFrameRow row);
-	void insertRow(CX_DataFrameRow row, rowIndex_t beforeIndex);
-	bool deleteRow(rowIndex_t row);
-	CX_DataFrameRow operator[] (rowIndex_t row);
+	void insertRow(CX_DataFrameRow row, RowIndex beforeIndex);
+	bool deleteRow(RowIndex row);
+	CX_DataFrameRow operator[] (RowIndex row);
 
-	void setRowCount(rowIndex_t rowCount);
-	rowIndex_t getRowCount(void) const;
+	void setRowCount(RowIndex rowCount);
+	RowIndex getRowCount(void) const;
 
-	CX_DataFrameRow copyRow(rowIndex_t row) const;
-	CX_DataFrame copyRows(std::vector<CX_DataFrame::rowIndex_t> rowOrder) const;
+	CX_DataFrameRow copyRow(RowIndex row) const;
+	CX_DataFrame copyRows(std::vector<CX_DataFrame::RowIndex> rowOrder) const;
 
-	bool reorderRows(const vector<CX_DataFrame::rowIndex_t>& newOrder);
+	bool reorderRows(const vector<CX_DataFrame::RowIndex>& newOrder);
 
 	void shuffleRows(void);
 	void shuffleRows(CX_RandomNumberGenerator &rng);
@@ -115,7 +115,7 @@ public:
 
 	//Column operations
 	//template <typename T> bool addColumn(std::string columnName);
-	//template <typename T> bool setColumn(std::string column, const std::vector<CX_DataFrame::rowIndex_t>& rows, const std::vector<T>& vals);
+	//template <typename T> bool setColumn(std::string column, const std::vector<CX_DataFrame::RowIndex>& rows, const std::vector<T>& vals);
 
 	bool addColumn(std::string columnName);
 	bool deleteColumn(std::string columnName);
@@ -139,16 +139,18 @@ public:
 	//Data IO
 	std::string print(std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(const std::vector<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	std::string print(const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	std::string print(const std::vector<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::vector<RowIndex>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	std::string print(const std::vector<std::string>& columns, const std::vector<RowIndex>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	std::string print(OutputOptions oOpt) const;
 
+	// save
 	bool printToFile(std::string filename, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	bool printToFile(std::string filename, const std::vector<std::string>& columns, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	bool printToFile(std::string filename, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
-	bool printToFile(std::string filename, const std::vector<std::string>& columns, const std::vector<rowIndex_t>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::vector<RowIndex>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
+	bool printToFile(std::string filename, const std::vector<std::string>& columns, const std::vector<RowIndex>& rows, std::string delimiter = "\t", bool printRowNumbers = false) const;
 	bool printToFile(std::string filename, OutputOptions oOpt) const;
 
+	// load
 	bool readFromFile(std::string filename, InputOptions iOpt);
 	bool readFromFile(std::string filename, std::string cellDelimiter = "\t", std::string vectorEncloser = "\"", std::string vectorElementDelimiter = ";");
 
@@ -160,10 +162,10 @@ private:
 	std::map<std::string, std::vector<CX_DataFrameCell>> _data;
 	std::vector<std::string> _orderToName;
 
-	rowIndex_t _rowCount;
+	RowIndex _rowCount;
 
-	void _resizeToFit(std::string column, rowIndex_t row);
-	void _resizeToFit(rowIndex_t row);
+	void _resizeToFit(std::string column, RowIndex row);
+	void _resizeToFit(RowIndex row);
 	void _resizeToFit(std::string column);
 
 	void _equalizeRowLengths(void);
@@ -186,7 +188,7 @@ bool CX_DataFrame::addColumn(std::string columnName) {
 		return false;
 	}
 
-	for (rowIndex_t row = 0; row < getRowCount(); row++) {
+	for (RowIndex row = 0; row < getRowCount(); row++) {
 		_data.at(columnName).at(row).setStoredType<T>();
 	}
 	
@@ -249,8 +251,8 @@ will see the effects.
 class CX_DataFrameColumn {
 public:
 	CX_DataFrameColumn (void);
-	CX_DataFrameCell operator[] (CX_DataFrame::rowIndex_t row);
-	CX_DataFrame::rowIndex_t size (void);
+	CX_DataFrameCell operator[] (CX_DataFrame::RowIndex row);
+	CX_DataFrame::RowIndex size (void);
 
 private:
 	friend class CX_DataFrame;
@@ -262,7 +264,7 @@ private:
 };
 
 /*! This class represents a row from a CX_DataFrame. It has special behavior that may not be obvious.
-If it is extracted from a CX_DataFrame with the use of CX::CX_DataFrame::operator[](CX_DataFrame::rowIndex_t),
+If it is extracted from a CX_DataFrame with the use of CX::CX_DataFrame::operator[](CX_DataFrame::RowIndex),
 then the extracted row is linked to the original row of data such that if either are modified, both
 will see the effects. See the code example.
 If a CX_DataFrameRow is constructed normally (not extracted from a CX_DataFrame) it is not linked to any
@@ -303,10 +305,10 @@ public:
 
 private:
 	friend class CX_DataFrame;
-	CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::rowIndex_t rowNumber);
+	CX_DataFrameRow(CX_DataFrame *df, CX_DataFrame::RowIndex rowNumber);
 
 	CX_DataFrame *_df;
-	CX_DataFrame::rowIndex_t _rowNumber;
+	CX_DataFrame::RowIndex _rowNumber;
 
 	std::map<std::string, CX_DataFrameCell> _data;
 	std::vector<std::string> _orderToName;

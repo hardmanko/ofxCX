@@ -50,7 +50,7 @@ namespace CX  {
 		// 3. Play or queue the sound
 		bool play(bool restart = true);
 		bool queuePlayback(CX_Millis startTime, CX_Millis timeout, bool restart = true);
-		bool queuePlayback(CX_SoundStream::SampleFrame sampleFrame, bool restart = true);
+		bool queuePlayback(SampleFrame sampleFrame, bool restart = true);
 
 		// 4. (Optional) Check playback status or stop the sound before it finishes
 		bool isPlaying(void);

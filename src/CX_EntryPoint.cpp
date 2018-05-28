@@ -90,6 +90,15 @@ bool initializeCX(CX_InitConfiguation config) {
 	return openedSucessfully;
 }
 
+bool terminateCX(void) {
+
+	CX::Instances::Log.flush();
+
+	//glfwTerminate();
+
+	return true;
+}
+
 namespace Private {
 
 void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRendererIfNoneDesired, ofAppBaseWindow* window) {
@@ -351,39 +360,13 @@ bool reopenWindow(CX_WindowConfiguration config) {
 } //namespace CX
 
 
-/*!
-\def CX_NO_MAIN
-For advanced users who want the customize how CX starts up.
-
-If this preprocessor macro is defined, CX will not produce a `main` function, leaving it up to the user to produce such a function.
-In addition, if `CX_NO_MAIN` is defined, `runExperiment()` will not be declared. This means that you will not need to define
-a `runExperiment()` function.
-
-A `main` function can be as simple as:
-
-\code{cpp}
-void main (void) {
-	CX::initializeCX(CX_InitConfiguation());
-
-	// Your experiment goes here...
-}
-\endcode
-
-\ingroup entryPoint
-*/
-#ifdef DOXYGEN
-#define CX_NO_MAIN
-#endif
-
 #ifndef CX_NO_MAIN
-int main (void) {
+int main(void) {
 	CX::initializeCX(CX_InitConfiguation());
 
 	runExperiment();
 
-	CX::Instances::Log.flush();
-
-	//glfwTerminate();
+	CX::terminateCX();
 
 	return 0;
 }

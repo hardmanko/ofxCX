@@ -135,6 +135,55 @@ public:
 		
 };
 
+// this seems pointless
+template <class ObjType, class MutexType>
+class LockedReference {
+public:
+
+	LockedReference(void) = delete; // no default construction
+
+	LockedReference(ObjType& obj, MutexType& m) :
+		_robj(obj)
+	{
+		_lock = std::unique_lock<MutexType>(m); // unique_lock releases the lock when it destructs
+	}
+
+	LockedReference(ObjType& obj, MutexType& m, std::adopt_lock_t adopt) :
+		_robj(obj)
+	{
+		_lock = std::unique_lock<MutexType>(m, adopt);
+	}
+
+	ObjType& get(void) {
+		if (_lock.owns_lock()) {
+			return _robj;
+		}
+		return _default;
+	}
+
+	operator ObjType&(void) {
+		return get();
+	}
+
+	ObjType& operator->(void) {
+		return get();
+	}
+
+	ObjType& operator*(void) {
+		return get();
+	}
+
+	bool empty(void) = delete; // no empty
+	void unlock(void) = delete; // no unlock: you can't null out a reference
+
+protected:
+
+	std::unique_lock<MutexType> _lock;
+	ObjType& _robj;
+	ObjType _default;
+
+};
+
 
 template <typename T>
 class MessageQueue {
@@ -385,6 +434,115 @@ private:
 		}
 	}
 	
+};
+
+template <>
+class ofEventHelper<void> {
+public:
+
+	enum class Priority : int {
+		Early = 0,
+		Normal = 100,
+		Late = 200
+	};
+
+	ofEventHelper(void) :
+		_currentEvent(nullptr)
+	{}
+
+	ofEventHelper(std::function<void(void)> listenFun) :
+		ofEventHelper()
+	{
+		setCallback(listenFun);
+	}
+
+	template <class Listener>
+	ofEventHelper(Listener* listener, std::function<void(Listener*)> listenerFun) :
+		ofEventHelper()
+	{
+		setCallback<Listener>(listener, listenerFun);
+	}
+
+	ofEventHelper(ofEvent<void>* evp, std::function<void(void)> listenFun, int priority = (int)Priority::Normal) :
+		ofEventHelper()
+	{
+		setup(evp, listenFun, priority);
+	}
+
+	template <class Listener>
+	ofEventHelper(ofEvent<void>* evp, Listener* listener, std::function<void(Listener*)> listenerFun, int priority = (int)Priority::Normal) :
+		ofEventHelper()
+	{
+		setup<Listener>(evp, listener, listenerFun, priority);
+	}
+
+	~ofEventHelper(void) {
+		stopListening();
+	}
+
+	void setup(ofEvent<void>* evp, std::function<void(void)> lfun, int priority = (int)Priority::Normal) {
+		setCallback(lfun);
+		_listenTo(evp, priority);
+	}
+
+	template <class Listener>
+	void setup(ofEvent<void>* evp, Listener* listener, std::function<void(Listener*)> cbMethod, int priority = (int)Priority::Normal) {
+		setCallback<Listener>(listener, cbMethod);
+		_listenTo(evp, priority);
+	}
+
+	void setCallback(std::function<void(void)> cb) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		_callback = cb;
+	}
+
+	template <class Listener>
+	void setCallback(Listener* listener, std::function<void(Listener*)> cbMethod) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		_callback = std::bind(cbMethod, listener, std::placeholders::_1);
+	}
+
+	void listenTo(ofEvent<void>* evp, int priority = (int)Priority::Normal) {
+		_listenTo(evp, priority);
+	}
+
+	bool isListening(void) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		return _currentEvent != nullptr;
+	}
+
+	void stopListening(void) {
+		_listenTo(nullptr, 0); // priority doesn't matter if removing because _currentPriority is used to remove
+	}
+
+private:
+	std::recursive_mutex _mutex;
+	ofEvent<void>* _currentEvent;
+	int _currentPriority;
+
+	std::function<void(void)> _callback;
+
+	inline void _listenFun(void) {
+		_mutex.lock();
+		this->_callback();
+		_mutex.unlock();
+	}
+
+	void _listenTo(ofEvent<void>* ev, int priority) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		if (_currentEvent) {
+			ofRemoveListener(*_currentEvent, this, &ofEventHelper::_listenFun, _currentPriority);
+			_currentEvent = nullptr;
+		}
+
+		if (ev) {
+			_currentEvent = ev;
+			_currentPriority = priority;
+			ofAddListener(*_currentEvent, this, &ofEventHelper::_listenFun, _currentPriority);
+		}
+	}
+
 };
 
 }

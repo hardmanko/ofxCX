@@ -240,7 +240,7 @@ namespace CX {
 			*/
 			void setup(CX_RandomNumberGenerator* rng, const CX_DataFrame& df) {
 				std::vector<CX_DataFrameRow> allRows(df.getRowCount());
-				for (CX_DataFrame::rowIndex_t i = 0; i < df.getRowCount(); i++) {
+				for (CX_DataFrame::RowIndex i = 0; i < df.getRowCount(); i++) {
 					allRows[i] = df.copyRow(i);
 				}
 				this->setup(rng, allRows);

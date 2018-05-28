@@ -51,7 +51,7 @@ namespace CX {
 		// 3. Record or queue recording
 		bool record(bool clearExistingData = false);
 		bool queueRecording(CX_Millis startTime, CX_Millis timeout, bool clear = false);
-		bool queueRecording(CX_SoundStream::SampleFrame sampleFrame, bool clear = false);
+		bool queueRecording(SampleFrame sampleFrame, bool clear = false);
 
 		// (Optional) Check recording status
 		bool isRecording(void);
@@ -90,7 +90,7 @@ namespace CX {
 			
 
 			bool recordingQueued;
-			CX_SoundStream::SampleFrame queuedRecordingStartSampleFrame;
+			SampleFrame queuedRecordingStartSampleFrame;
 
 			CX_Millis recordingStart;
 			CX_Millis recordingEnd;

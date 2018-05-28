@@ -75,6 +75,32 @@ It also provides declarations (but not definitions) of a function which the user
 (see \ref runExperiment()).
 */
 
+/*!
+\def CX_NO_MAIN
+For advanced users who want the customize how CX starts up.
+
+If this preprocessor macro is defined, CX will not produce a `main` function, leaving it up to the user to produce such a function.
+In addition, if `CX_NO_MAIN` is defined, `runExperiment()` will not be declared. This means that you will not need to define
+a `runExperiment()` function.
+
+A `main` function can be as simple as:
+
+\code{cpp}
+void main (void) {
+CX::initializeCX(CX_InitConfiguation());
+
+// Your experiment goes here...
+
+CX::terminateCX();
+}
+\endcode
+
+\ingroup entryPoint
+*/
+#ifdef DOXYGEN
+#define CX_NO_MAIN
+#endif
+
 /*! \fn runExperiment
 The user code should define a function with this name and type signature (takes no arguments and returns nothing).
 This function will be called once setup is done for CX. When `runExperiment` returns, the program will exit.

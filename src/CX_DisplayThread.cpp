@@ -19,72 +19,12 @@ CX_DisplayThread::~CX_DisplayThread(void) {
 	stopThread(true);
 }
 
-CX_DisplayThread::CX_DisplayThread(CX_Display* disp, std::function<void(CX_Display*, CX_Millis)> swapCallback) :
+CX_DisplayThread::CX_DisplayThread(CX_Display* disp, std::function<void(CX_Display*)> swapFun) :
 	_threadRunning(false),
 	_hasSwappedSinceLastCheck(false),
-	_display(disp),
-	_glFinishAfterSwap(false)
+	_display(disp)
 {
-	_swapCallback = std::bind(swapCallback, disp, std::placeholders::_1);
-
-	//_lastFrameNumber = 0;
-
-	//setup(Configuration(), false);
-}
-
-/*
-CX_DisplayThread::CX_DisplayThread(PrivateConfig config) :
-	_threadRunning(false),
-	_hasSwappedSinceLastCheck(false)
-{
-	_privateConfig = config;
-
-	_swapLock.lastFrameNumber = 0;
-}
-*/
-
-
-void CX_DisplayThread::_setGLFinishAfterSwap(bool glFinishAfterSwap) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-	_glFinishAfterSwap = glFinishAfterSwap;
-}
-
-void CX_DisplayThread::_setEstimatedFramePeriod(CX_Millis framePeriod) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-	_config.nominalFramePeriod = framePeriod;
-}
-
-
-// Display thread locking.
-// These functions may only be called from the main thread.
-// CX_Display does not need to have a lock to modify the display thread.
-bool CX_DisplayThread::tryLock(std::string lockOwner) {
-	if (lockOwner == "UNLOCKED") {
-		return false;
-	}
-	if (isLocked()) {
-		return false;
-	}
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	_lockOwner = lockOwner;
-	return true;
-}
-
-bool CX_DisplayThread::isLocked(void) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	return _lockOwner != "UNLOCKED";
-}
-
-std::string CX_DisplayThread::getLockOwner(void) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	return _lockOwner;
-}
-
-void CX_DisplayThread::unlock(void) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	_lockOwner = "UNLOCKED";
+	_bufferSwapFunction = std::bind(swapFun, disp);
 }
 
 
@@ -97,34 +37,18 @@ bool CX_DisplayThread::setup(Configuration config, bool startThread) {
 	{
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		if (config.nominalFramePeriod < CX_Millis(0)) {
-			config.nominalFramePeriod = _display->getFramePeriod();
-		}
+		
+		CX_DisplaySwapper::Configuration dsc;
+		dsc.display = _display;
+		dsc.client = &_display->swapClient;
+		dsc.preSwapSafetyBuffer = config.preSwapSafetyBuffer;
+		dsc.mode = CX_DisplaySwapper::Mode::Prediction;
 
-		if (config.preSwapSafetyBuffer < CX_Millis(1)) {
-			Instances::Log.warning("CX_DisplayThread") << "setup(): config.preSwapSafetyBuffer was less than 1 millisecond. It is recommended that preSwapSafetyBuffer be at least one millisecond.";
+		if (!_displaySwapper.setup(dsc)) {
+			return false;
 		}
 
 		_config = config;
-
-		/*
-		Sync::DataContainer::Configuration sdc;
-		sdc.latency = 0;
-		sdc.unitsPerSwap = 1;
-		sdc.nominalSwapPeriod = _config.nominalFramePeriod;
-		sdc.sampleSize = std::ceil(_config.requiredSwapDuration / _config.nominalFramePeriod);
-
-		swapData.setup(sdc);
-
-
-		Sync::DataClient::Configuration suc;
-		suc.dataContainer = &this->swapData;
-		suc.autoUpdate = false;
-		suc.dataCollectionDuration = _config.requiredSwapDuration;
-		suc.swapPeriodTolerance = 0.2;
-
-		swapClient.setup(suc);
-		*/
 
 		if (startThread) {
 			this->startThread();
@@ -154,9 +78,6 @@ void CX_DisplayThread::startThread(void) {
 	if (_threadRunning) {
 		return;
 	}
-
-	//_lastFrameNumber = 0;
-	//swapData.clear();
 
 	_threadRunning = true;
 	_thread = std::thread(&CX_DisplayThread::_threadFunction, this);
@@ -205,83 +126,13 @@ bool CX_DisplayThread::waitForStableSwapping(CX_Millis timeout) {
 	return this->_display->swapClient.verifier.waitForStableSwapping(timeout);
 }
 
-CX_Millis CX_DisplayThread::getLastSwapTime(void) {
-	return _display->swapData.getNewestDataPoint().time;
-}
-
-CX_DisplayThread::FrameNumber CX_DisplayThread::getFrameNumber(void) {
-	return _display->swapData.getNewestDataPoint().unit;
-}
-
-/*
-CX_Millis CX_DisplayThread::estimateFramePeriod(void) {
-	if (!swapClient.allReady()) {
-		return CX_Millis(0);
-	}
-	Sync::LinearModel::LockedFittedModel lfm = swapClient.lm.getLockedFittedModel();
-	return lfm->slope;
-}
-*/
-
-
-/*
-Sync::TimePrediction CX_DisplayThread::predictSwapTime(FrameNumber frame) {
-	if (!swapClient.allReady()) {
-		return Sync::TimePrediction();
-	}
-
-	Sync::LinearModel::LockedFittedModel lfm = swapClient.lm.getLockedFittedModel();
-	return lfm->predictTime(frame);
-}
-
-Sync::TimePrediction CX_DisplayThread::predictNextSwapTime(void) {
-
-	Sync::TimePrediction rval = predictSwapTime(getFrameNumber() + 1);
-
-	if (!rval.valid) {
-		_mutex.lock();
-		rval.pred = getLastSwapTime() + _config.nominalFramePeriod;
-		rval.predictionIntervalHalfWidth = CX_Hours(1);
-		rval.valid = true;
-		_mutex.unlock();
-	}
-
-	return rval;
-
-}
-
-Sync::TimePrediction CX_DisplayThread::predictTimeToSwap(void) {
-
-	Sync::TimePrediction rval = predictNextSwapTime();
-	rval.pred -= Instances::Clock.now();
-
-	return rval;
-}
-*/
-
-
-
-bool CX_DisplayThread::hasSwappedSinceLastCheck(void) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	if (!_threadRunning) {
-		return true; // in most cases, hasSwappedSinceLastCheck will be waited upon for something to happen. better something happen too soon than not at all.
-	}
-	bool hasSwapped = _hasSwappedSinceLastCheck;
-	_hasSwappedSinceLastCheck = false;
-	return hasSwapped;
-}
-
-void CX_DisplayThread::waitForSwap(void) {
-	hasSwappedSinceLastCheck();
-	while (!hasSwappedSinceLastCheck())
-		;
-}
 
 void CX_DisplayThread::_threadFunction(void) {
 
 	//Instances::Log.notice() << "startThread(): Thread function started at " << Instances::Clock.now().seconds();
 
-	_mutex.lock();
+	
+	_mutex.lock(); // --- LOCK
 
 	while (this->_threadRunning) {
 
@@ -289,22 +140,32 @@ void CX_DisplayThread::_threadFunction(void) {
 
 		_processQueuedCommands();
 
-		CX_Millis preSwapSafetyBuffer = _config.preSwapSafetyBuffer;
-		_mutex.unlock();
+		//CX_Millis preSwapSafetyBuffer = _config.preSwapSafetyBuffer;
 
+		_mutex.unlock(); // --- UNLOCK
 		
+		ofNotifyEvent(updateEvent);
+
+		if (_displaySwapper.shouldSwap()) {
+			_swap();
+		} else {
+			std::this_thread::yield();
+		}
+		
+		/*
 		Sync::TimePrediction tp = _display->swapClient.predictTimeToNextSwap();
 		if (tp.lowerBound() <= preSwapSafetyBuffer) {
 			_swap();
 		} else {
 			std::this_thread::yield();
 		}
-
-		_mutex.lock();
+		*/
+		
+		_mutex.lock(); // --- LOCK
 		
 	}
 
-	_mutex.unlock();
+	_mutex.unlock(); // --- UNLOCK
 
 	// failsafe
 	if (Private::glfwContextManager.isLockedByThisThread()) {
@@ -316,23 +177,13 @@ void CX_DisplayThread::_threadFunction(void) {
 
 void CX_DisplayThread::_swap(void) {
 
-	_mutex.lock();
-	bool glFinishAfterSwap = _glFinishAfterSwap;
-	_mutex.unlock();
+	_bufferSwapFunction();
 
-
-	Private::swapVideoBuffers(glFinishAfterSwap);
-
-	CX_Millis swapTime = CX::Instances::Clock.now();
-
-	_swapCallback(swapTime);
-	//swapData.storeSwap(swapTime);
-	
 	_mutex.lock();
 
 	_hasSwappedSinceLastCheck = true;
 
-	_queuedFramePostSwapTask(this->getFrameNumber(), swapTime);
+	_queuedFramePostSwapTask();
 
 	_mutex.unlock();
 
@@ -375,15 +226,8 @@ bool CX_DisplayThread::_queueCommand(std::shared_ptr<Command> cmd, bool wait) {
 	_commandQueue.push_back(cmd);
 	_commandQueueMutex.unlock();
 
-	//_mutex.lock();
-	//CX_Millis sleepUnit = _config.sleep.unit;
-	//_mutex.unlock();
-
 	while (!signal) {
 		std::this_thread::yield();
-		//Instances::Clock.interruptedSleep(sleepUnit);
-		//Instances::Clock.sleep(sleepUnit);
-		//Instances::Input.pollEvents();
 	}
 
 	return success;
@@ -400,6 +244,7 @@ bool CX_DisplayThread::commandSetSwapInterval(unsigned int swapInterval, bool wa
 	return _queueCommand(cmd, wait);
 }
 
+/*
 bool CX_DisplayThread::commandSetGLFinishAfterSwap(bool finish, bool wait, std::function<void(CommandResult&&)> callback) {
 	std::shared_ptr<Command> cmd = std::make_shared<Command>();
 
@@ -410,6 +255,7 @@ bool CX_DisplayThread::commandSetGLFinishAfterSwap(bool finish, bool wait, std::
 	return _queueCommand(cmd, wait);
 }
 
+
 bool CX_DisplayThread::commandSetSwapPeriod(CX_Millis period, bool wait, std::function<void(CommandResult&&)> callback) {
 	std::shared_ptr<Command> cmd = std::make_shared<Command>();
 
@@ -419,6 +265,7 @@ bool CX_DisplayThread::commandSetSwapPeriod(CX_Millis period, bool wait, std::fu
 
 	return _queueCommand(cmd, wait);
 }
+*/
 
 bool CX_DisplayThread::commandAcquireRenderingContext(bool acquire, bool wait, std::function<void(CommandResult&&)> callback) {
 	std::shared_ptr<Command> cmd = std::make_shared<Command>();
@@ -459,15 +306,15 @@ void CX_DisplayThread::_processQueuedCommands(void) {
 			}
 			break;
 
-		case CommandType::SetGLFinishAfterSwap:
-			_glFinishAfterSwap = cmd->values["finish"];
-			success = true;
-			break;
+		//case CommandType::SetGLFinishAfterSwap:
+			//_glFinishAfterSwap = cmd->values["finish"];
+			//success = true;
+			//break;
 
-		case CommandType::SetSwapPeriod:
-			_config.nominalFramePeriod = cmd->values["period"];
-			success = true;
-			break;
+		//case CommandType::SetSwapPeriod:
+			//_config.nominalFramePeriod = cmd->values["period"];
+			//success = true;
+			//break;
 
 		case CommandType::AcquireRenderingContext:
 		{
@@ -502,12 +349,6 @@ void CX_DisplayThread::_processQueuedCommands(void) {
 
 
 
-bool CX_DisplayThread::_callingThreadIsSwapThread(void) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-	
-	return _thread.get_id() == std::this_thread::get_id();
-}
-
 bool CX_DisplayThread::threadOwnsRenderingContext(void) {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -525,10 +366,6 @@ bool CX_DisplayThread::enableFrameQueue(bool enable) {
 		Instances::Log.notice("CX_DisplayThread") << "enableFrameQueue(): Thread not running, returning.";
 		return false; // must be running
 	}
-
-	//if (_callingThreadIsSwapThread()) {
-	//	return false; // can't call from swap thread
-	//}
 
 	if (!Private::glfwContextManager.isMainThread()) {
 		Instances::Log.notice("CX_DisplayThread") << "enableFrameQueue(): Called from non-main thread, returning.";
@@ -650,9 +487,11 @@ bool CX_DisplayThread::queueFrame(std::shared_ptr<QueuedFrame> qf) {
 
 	{
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
-		if (qf->startFrame <= this->getFrameNumber()) {
+		
+		FrameNumber lastFrameNumber = _display->swapData.getLastSwapUnit();
+		if (qf->startFrame <= lastFrameNumber) {
 			Instances::Log.warning("CX_DisplayThread") << "Queued frame for frame number " << qf->startFrame <<
-				" arrived late (on frame number " << this->getFrameNumber() << ") and was ignored.";
+				" arrived late (on frame number " << lastFrameNumber << ") and was ignored.";
 			return false;
 		}
 	}
@@ -794,7 +633,9 @@ void CX_DisplayThread::_queuedFrameTask(void) {
 	}
 }
 
-void CX_DisplayThread::_queuedFramePostSwapTask(FrameNumber swapFrame, CX_Millis swapTime) {
+void CX_DisplayThread::_queuedFramePostSwapTask(void) {
+
+	Sync::SwapData lastSwap = _display->swapData.getLastSwapData();
 
 	std::lock_guard<std::recursive_mutex> qfLock(_queuedFramesMutex);
 
@@ -809,8 +650,8 @@ void CX_DisplayThread::_queuedFramePostSwapTask(FrameNumber swapFrame, CX_Millis
 
 		result.desiredStartFrame = _currentQF.frame->startFrame;
 
-		result.actualStartFrame = swapFrame;
-		result.startTime = swapTime;
+		result.actualStartFrame = lastSwap.unit;
+		result.startTime = lastSwap.time;
 
 		result.renderTimeValid = _currentQF.fenceSync.syncSuccess();
 
@@ -835,12 +676,7 @@ void CX_DisplayThread::_drawQueuedFrameIfNeeded(void) {
 	std::unique_lock<std::recursive_mutex> qfLock(_queuedFramesMutex, std::defer_lock);
 	std::lock(lock, qfLock);
 
-	//if (lastObservedFrameNumber < _swapLock.lastFrameNumber - 1) {
-	//	Instances::Log.error("CX_DisplayThread") << "Queued frames missed! Difference: " << _swapLock.lastFrameNumber - lastObservedFrameNumber;
-	//}
-	//lastObservedFrameNumber = _swapLock.lastFrameNumber;
-
-	FrameNumber nextFrameNumber = this->getFrameNumber() + 1;
+	FrameNumber nextFrameNumber = _display->swapData.getNextSwapUnit();
 
 	while (_queuedFrames.size() > 0 && _queuedFrames.front()->startFrame < nextFrameNumber) {
 		// this should never happen
@@ -882,6 +718,36 @@ void CX_DisplayThread::_drawQueuedFrameIfNeeded(void) {
 	_display->endDrawingToBackBuffer();
 
 	_currentQF.fenceSync.startSync();
+}
+
+// Display thread locking.
+// These functions may only be called from the main thread.
+// CX_Display does not need to have a lock to modify the display thread.
+bool CX_DisplayThread::tryLock(std::string lockOwner) {
+	if (lockOwner == "UNLOCKED") {
+		return false;
+	}
+	if (isLocked()) {
+		return false;
+	}
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	_lockOwner = lockOwner;
+	return true;
+}
+
+bool CX_DisplayThread::isLocked(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return _lockOwner != "UNLOCKED";
+}
+
+std::string CX_DisplayThread::getLockOwner(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	return _lockOwner;
+}
+
+void CX_DisplayThread::unlock(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	_lockOwner = "UNLOCKED";
 }
 
 } //namespace CX
