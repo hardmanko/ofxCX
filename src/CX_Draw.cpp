@@ -330,7 +330,7 @@ void arc(ofPoint center, float radiusX, float radiusY, float width, float angleB
 	float d = width / 2;
 	unsigned int vertexCount = resolution + 1;
 
-	vector<ofPoint> vertices(2 * vertexCount);
+	std::vector<ofPoint> vertices(2 * vertexCount);
 
 	for (unsigned int i = 0; i < vertexCount; i++) {
 		float angle = (angleEnd - angleBegin) * i / (vertexCount - 1) + angleBegin;
@@ -366,9 +366,9 @@ std::vector<ofPoint> getBezierVertices(std::vector<ofPoint> controlPoints, std::
 		segs[0][i].p2 = controlPoints[i + 1];
 	}
 
-	vector<ofPoint> outputPoints(times.size());
+	std::vector<ofPoint> outputPoints(times.size());
 
-	vector<ofPoint> nextLayerCP(segs.size());
+	std::vector<ofPoint> nextLayerCP(segs.size());
 	for (unsigned int ti = 0; ti < times.size(); ti++) {
 		float t = Util::clamp<float>(times[ti], 0, 1);
 
@@ -455,7 +455,7 @@ std::vector<double> convertColors(std::string conversionFormula, double S1, doub
 		!GetColorTransform(&cTrans, conversionFormula.c_str()))
 	{
 		CX::Instances::Log.error() << "CX::Draw::convertColors: Invalid syntax or unknown color space. The provided conversion formula was \"" << 
-			conversionFormula << "\"" << endl;
+			conversionFormula << "\"" << std::endl;
 		return dest;
 	}
 
@@ -564,10 +564,10 @@ void saveFboToFile(ofFbo& fbo, std::string filename) {
 // \cond INTERNAL_DOCS
 
 bool isPointInRegion(ofPoint p, ofPoint r1, ofPoint r2, float tolerance) {
-	float lowerX = min(r1.x, r2.x) - tolerance;
-	float upperX = max(r1.x, r2.x) + tolerance;
-	float lowerY = min(r1.y, r2.y) - tolerance;
-	float upperY = max(r1.y, r2.y) + tolerance;
+	float lowerX = std::min(r1.x, r2.x) - tolerance;
+	float upperX = std::max(r1.x, r2.x) + tolerance;
+	float lowerY = std::min(r1.y, r2.y) - tolerance;
+	float upperY = std::max(r1.y, r2.y) + tolerance;
 
 	return (p.x >= lowerX) && (p.x <= upperX) && (p.y >= lowerY) && (p.y <= upperY);
 }

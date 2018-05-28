@@ -107,7 +107,7 @@ public:
 	CX_DataFrameRow copyRow(RowIndex row) const;
 	CX_DataFrame copyRows(std::vector<CX_DataFrame::RowIndex> rowOrder) const;
 
-	bool reorderRows(const vector<CX_DataFrame::RowIndex>& newOrder);
+	bool reorderRows(const std::vector<CX_DataFrame::RowIndex>& newOrder);
 
 	void shuffleRows(void);
 	void shuffleRows(CX_RandomNumberGenerator &rng);

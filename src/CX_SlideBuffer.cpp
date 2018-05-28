@@ -552,33 +552,33 @@ std::string CX_SlideBuffer::printLastPresentationInformation(void) const {
 
 	std::stringstream s;
 
-	s << "Errors: " << errors.totalErrors() << endl;
+	s << "Errors: " << errors.totalErrors() << std::endl;
 	if (errors.totalErrors() > 0) {
-		s << "Incorrect frame counts: " << errors.incorrectFrameCounts << endl;
-		s << "Late copies to back buffer: " << errors.lateCopiesToBackBuffer << endl;
+		s << "Incorrect frame counts: " << errors.incorrectFrameCounts << std::endl;
+		s << "Late copies to back buffer: " << errors.lateCopiesToBackBuffer << std::endl;
 	}
-	s << endl;
+	s << std::endl;
 
 	for (size_t i = 0; i < _slides.size(); i++) {
 
 		const Slide& slide = _slides[i];
 
-		s << "-----------------------------------" << endl;
+		s << "-----------------------------------" << std::endl;
 		s << "Index: " << i;
-		s << " Name: " << slide.name << endl;
+		s << " Name: " << slide.name << std::endl;
 
-		s << "Measure:\tIntended,\tActual" << endl;
+		s << "Measure:\tIntended,\tActual" << std::endl;
 		s << "Start time: \t" << slide.intended.startTime << ", " << slide.actual.startTime;
 
 		if (slide.actual.startTime > slide.intended.startTime) {
 			s << "**";
 		}
-		s << endl;
+		s << std::endl;
 
-		s << "Time duration:   \t" << slide.intended.timeDuration << ", " << slide.actual.timeDuration << endl;
+		s << "Time duration:   \t" << slide.intended.timeDuration << ", " << slide.actual.timeDuration << std::endl;
 
 
-		s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << endl;
+		s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << std::endl;
 
 		s << "Frame duration:\t" << slide.intended.frameDuration << ", " << slide.actual.frameDuration;
 		if (slide.intended.frameDuration != slide.actual.frameDuration) {
@@ -586,7 +586,7 @@ std::string CX_SlideBuffer::printLastPresentationInformation(void) const {
 				s << "**"; //Mark the error, but not for the last slide
 			}
 		}
-		s << endl;
+		s << std::endl;
 
 		s << "Render start: " << slide.presInfo.renderStartTime.millis() << std::endl <<
 			"Render complete: " << slide.presInfo.renderCompleteTime.millis();
@@ -659,7 +659,7 @@ std::vector<CX_Millis> CX_SlideBuffer::getActualTimeDurations(void) {
 	}
 	*/
 
-	vector<CX_Millis> durations(_slides.size());
+	std::vector<CX_Millis> durations(_slides.size());
 	for (size_t i = 0; i < _slides.size(); i++) {
 		durations[i] = _slides[i].actual.timeDuration;
 	}
@@ -685,7 +685,7 @@ std::vector<FrameNumber> CX_SlideBuffer::getActualFrameDurations(void) {
 	}
 	*/
 
-	vector<FrameNumber> frameCount(_slides.size());
+	std::vector<FrameNumber> frameCount(_slides.size());
 	for (size_t i = 0; i < _slides.size(); i++) {
 		frameCount[i] = _slides[i].actual.frameDuration;
 	}

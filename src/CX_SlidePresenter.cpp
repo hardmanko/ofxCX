@@ -504,7 +504,7 @@ std::vector<CX_Millis> CX_SlidePresenter::getActualPresentationDurations(void) {
 		return std::vector<CX_Millis>();
 	}
 
-	vector<CX_Millis> durations(_slides.size());
+	std::vector<CX_Millis> durations(_slides.size());
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 		durations[i] = _slides[i].actual.duration;
 	}
@@ -528,7 +528,7 @@ std::vector<uint64_t> CX_SlidePresenter::getActualFrameCounts (void) {
 		return std::vector<uint64_t>();
 	}
 
-	vector<uint64_t> frameCount(_slides.size());
+	std::vector<uint64_t> frameCount(_slides.size());
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 		frameCount[i] = _slides[i].actual.frameCount;
 	}
@@ -600,22 +600,22 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 
 	std::stringstream s;
 
-	s << "Errors: " << errors.totalErrors() << endl;
+	s << "Errors: " << errors.totalErrors() << std::endl;
 	if (errors.totalErrors() > 0) {
-		s << "Incorrect frame counts: " << errors.incorrectFrameCounts << endl;
-		s << "Late copies to back buffer: " << errors.lateCopiesToBackBuffer << endl;
+		s << "Incorrect frame counts: " << errors.incorrectFrameCounts << std::endl;
+		s << "Late copies to back buffer: " << errors.lateCopiesToBackBuffer << std::endl;
 	}
-	s << endl;
+	s << std::endl;
 
 	for (unsigned int i = 0; i < _slides.size(); i++) {
 
 		const Slide& slide = _slides[i];
 
-		s << "-----------------------------------" << endl;
+		s << "-----------------------------------" << std::endl;
 		s << "Index: " << i;
-		s << " Name: " << slide.name << endl;
+		s << " Name: " << slide.name << std::endl;
 
-		s << "Measure:\tIntended,\tActual" << endl;
+		s << "Measure:\tIntended,\tActual" << std::endl;
 		s << "Start time: \t" << slide.intended.startTime << ", " << slide.actual.startTime;
 
 		CX_Millis earliness = slide.intended.startTime - slide.actual.startTime;
@@ -623,12 +623,12 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 		if ((_config.swappingMode != SwappingMode::MULTI_CORE && earliness > _config.preSwapCPUHoggingDuration) || earliness < CX_Millis(0)) {
 			s << "**";
 		}
-		s << endl;
+		s << std::endl;
 
-		s << "Duration:   \t" << slide.intended.duration << ", " << slide.actual.duration << endl;
+		s << "Duration:   \t" << slide.intended.duration << ", " << slide.actual.duration << std::endl;
 
 		if (_config.swappingMode == SwappingMode::MULTI_CORE) {
-			s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << endl;
+			s << "Start frame:\t" << slide.intended.startFrame << ", " << slide.actual.startFrame << std::endl;
 
 			s << "Frame count:\t" << slide.intended.frameCount << ", " << slide.actual.frameCount;
 			if (slide.intended.frameCount != slide.actual.frameCount) {
@@ -636,7 +636,7 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 					s << "**"; //Mark the error, but not for the last slide
 				}
 			}
-			s << endl;
+			s << std::endl;
 		}
 
 		s << "Copy to back buffer complete time: " << slide.copyToBackBufferCompleteTime;
@@ -644,7 +644,7 @@ std::string CX_SlidePresenter::printLastPresentationInformation(void) const {
 			s << "**"; //Mark the error
 		}
 
-		s << endl << endl;
+		s << std::endl << std::endl;
 	}
 
 	return s.str();

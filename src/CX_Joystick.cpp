@@ -2,6 +2,8 @@
 
 #include "ofAppGLFWWindow.h"
 
+#include "GLFW\glfw3.h"
+
 namespace CX {
 
 CX_Joystick::CX_Joystick (void) :
@@ -165,7 +167,7 @@ std::vector<CX_Joystick::Event> CX_Joystick::copyEvents(void) {
 
 /*! This function returns in the current positions of the joystick axes.
 \return A vector of the current axis positions. */
-vector<float> CX_Joystick::getAxisPositions (void) {
+std::vector<float> CX_Joystick::getAxisPositions (void) {
 	return _axisPositions;
 
 	/* This function is to be used for direct access to the axis positions of the joystick. It does not
@@ -189,7 +191,7 @@ vector<float> CX_Joystick::getAxisPositions (void) {
 
 /*! This function returns in the current states of the joystick buttons.
 \return A vector of the current button states. */
-vector<unsigned char> CX_Joystick::getButtonStates (void) {
+std::vector<unsigned char> CX_Joystick::getButtonStates (void) {
 	return _buttonStates;
 
 	/* This function is to be used for direct access to the button states of the joystick. It does not

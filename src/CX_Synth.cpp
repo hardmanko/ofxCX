@@ -386,7 +386,7 @@ will only be correct if the harmonic series is the standard harmonic series (see
 \param a The type of wave calculate amplitudes for.
 */
 void AdditiveSynth::setAmplitudes(AmplitudePresets a) {
-	vector<double> amps = calculateAmplitudes(a, _harmonics.size());
+	std::vector<double> amps = calculateAmplitudes(a, _harmonics.size());
 
 	for (unsigned int i = 0; i < _harmonics.size(); i++) {
 		_harmonics[i].amplitude = amps[i];
@@ -401,8 +401,8 @@ This is a convenient way to morph between waveforms.
 \param mixture Should be in the interval [0,1]. The proportion of `a1` that will be used, with the remainder (`1 - mixture`) used from `a2`.
 */
 void AdditiveSynth::setAmplitudes(AmplitudePresets a1, AmplitudePresets a2, double mixture) {
-	vector<double> amps1 = calculateAmplitudes(a1, _harmonics.size());
-	vector<double> amps2 = calculateAmplitudes(a2, _harmonics.size());
+	std::vector<double> amps1 = calculateAmplitudes(a1, _harmonics.size());
+	std::vector<double> amps2 = calculateAmplitudes(a2, _harmonics.size());
 
 	mixture = CX::Util::clamp<double>(mixture, 0, 1);
 

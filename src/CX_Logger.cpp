@@ -29,7 +29,7 @@ namespace Private {
 	};
 
 	struct CX_LogMessage {
-		CX_LogMessage(CX_Logger::Level level_, string module_) :
+		CX_LogMessage(CX_Logger::Level level_, std::string module_) :
 			level(level_),
 			module(module_)
 		{}
@@ -441,7 +441,7 @@ This function is called during CX setup for CX::Instances::Log, so you do not ne
 */
 void CX_Logger::captureOFLogMessages(bool capture) {
 	if (capture) {
-		ofSetLoggerChannel(ofPtr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
+		ofSetLoggerChannel(std::shared_ptr<ofBaseLoggerChannel>(this->_ofLoggerChannel));
 		ofSetLogLevel(ofLogLevel::OF_LOG_VERBOSE);
 	} else {
 		ofLogToConsole();
@@ -553,7 +553,7 @@ std::string CX_Logger::_formatMessage(const CX::Private::CX_LogMessage& message)
 	}
 
 	std::string logName = _getLogLevelString(message.level);
-	logName.append(max<int>((int)(7 - logName.size()), 0), ' '); //Pad out names to 7 chars
+	logName.append(std::max<int>((int)(7 - logName.size()), 0), ' '); //Pad out names to 7 chars
 	formattedMessage += "[ " + logName + " ] ";
 
 	if (message.module != "") {

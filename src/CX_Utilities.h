@@ -12,6 +12,7 @@
 #include "ofTrueTypeFont.h"
 #include "ofFbo.h"
 #include "ofImage.h"
+#include "ofPoint.h"
 
 #include "CX_Logger.h"
 

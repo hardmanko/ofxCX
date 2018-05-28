@@ -655,37 +655,37 @@ input and output channels, etc.
 std::string CX_SoundStream::listDevices(RtAudio::Api api) {
 	std::vector<RtAudio::DeviceInfo> devices = getDeviceList(api);
 
-	stringstream rval;
-	rval << "Available devices for " << convertApiToString(api) << " API:" << endl;
+	std::stringstream rval;
+	rval << "Available devices for " << convertApiToString(api) << " API:" << std::endl;
 
 	for (unsigned int i = 0; i < devices.size(); i++) {
 
 		RtAudio::DeviceInfo &dev = devices.at(i);
 
 		if (dev.probed == false) {
-			rval << "Device " << i << " not successfully probed." << endl;
+			rval << "Device " << i << " not successfully probed." << std::endl;
 		} else {
 
-			rval << endl << "---------------------------------------" << endl;
+			rval << std::endl << "---------------------------------------" << std::endl;
 
-			rval << "Index: " << i << endl;
-			rval << "Name: " << dev.name << endl;
+			rval << "Index: " << i << std::endl;
+			rval << "Name: " << dev.name << std::endl;
 			rval << "Supported sample rates: ";
 			for (unsigned int i = 0; i < dev.sampleRates.size(); i++) {
 				rval << dev.sampleRates.at(i) << "  ";
 			}
-			rval << endl;
+			rval << std::endl;
 
 			rval << "Is default input/output: " << (dev.isDefaultInput ? "True" : "False") <<
-				"/" << (dev.isDefaultOutput ? "True" : "False") << endl;
+				"/" << (dev.isDefaultOutput ? "True" : "False") << std::endl;
 
 			rval << "Input/output/duplex channels: " << dev.inputChannels << "/" <<
-				dev.outputChannels << "/" << dev.duplexChannels << endl;
+				dev.outputChannels << "/" << dev.duplexChannels << std::endl;
 
 			rval << "Supported formats: " << formatsToString(dev.nativeFormats, ", ");
 
-			rval << endl;
-			rval << "---------------------------------------" << endl;
+			rval << std::endl;
+			rval << "---------------------------------------" << std::endl;
 
 		}
 
@@ -770,7 +770,7 @@ int CX_SoundStream::_rtAudioCallback(void *outputBuffer, void *inputBuffer, unsi
 //If that is impossible, pick the next smallest sample rate.
 unsigned int CX_SoundStream::_getBestSampleRate(unsigned int requestedSampleRate, RtAudio::Api api, int deviceId) {
 
-	unsigned int closestGreaterSampleRate = numeric_limits<unsigned int>::max();
+	unsigned int closestGreaterSampleRate = std::numeric_limits<unsigned int>::max();
 	unsigned int closestLesserSampleRate = 0;
 
 	std::vector<unsigned int> sampleRates = getDeviceList(api).at(deviceId).sampleRates;
@@ -789,7 +789,7 @@ unsigned int CX_SoundStream::_getBestSampleRate(unsigned int requestedSampleRate
 	}
 
 	//If not at max, the desired sample rate must not have been possible and there was a greater sample rate available, so pick that sample rate.
-	if (closestGreaterSampleRate != numeric_limits<unsigned int>::max()) {
+	if (closestGreaterSampleRate != std::numeric_limits<unsigned int>::max()) {
 		CX::Instances::Log.warning("CX_SoundStream") << "Desired sample rate (" << requestedSampleRate << 
 			") not available. " << closestGreaterSampleRate << " chosen instead.";
 		return closestGreaterSampleRate;

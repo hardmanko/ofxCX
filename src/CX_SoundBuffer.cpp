@@ -28,7 +28,7 @@ If the file cannot be loaded, descriptive error messages will be logged.
 
 \return `true` if the sound given in the `fileName` was loaded succesffuly, `false` otherwise.
 */
-bool CX_SoundBuffer::loadFile(string fileName) {
+bool CX_SoundBuffer::loadFile(std::string fileName) {
 	
 
 	ofFmodSoundPlayer fmPlayer;
@@ -234,7 +234,7 @@ bool CX_SoundBuffer::addSound(CX_SoundBuffer sb, CX_Millis timeOffset) {
 	unsigned int insertionSample = _timeToSample(timeOffset);
 
 	//Get the new data that will be merged.
-	vector<float> &newData = sb.getRawDataReference();
+	std::vector<float> &newData = sb.getRawDataReference();
 
 	//If this sound isn't long enough to hold the new data, resize it to fit.
 	if (insertionSample + newData.size() > this->_data.size()) {
@@ -639,7 +639,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 			}
 		} else {
 			//Silence new channels
-			vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
+			std::vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
 			for (unsigned int sample = 0; sample < getSampleFrameCount(); sample++) {
 				for (unsigned int oldChannel = 0; oldChannel < _channels; oldChannel++) {
 					newSoundData[ (sample * newChannelCount) + oldChannel ] = _data[ (sample * _channels) + oldChannel ];
@@ -732,7 +732,7 @@ void CX_SoundBuffer::resample(float newSampleRate) {
 	uint64_t oldSampleCount = getSampleFrameCount();
 	uint64_t newSampleCount = (uint64_t)(getSampleFrameCount() * ((double)newSampleRate / _sampleRate));
 
-	vector<float> completeNewData((unsigned int)newSampleCount * _channels);
+	std::vector<float> completeNewData((unsigned int)newSampleCount * _channels);
 
 	for (unsigned int channel = 0; channel < _channels; channel++) {
 
@@ -777,7 +777,7 @@ uint64_t CX_SoundBuffer::getSampleFrameCount(void) const {
 /*! This function reverses the sound data stored in the CX_SoundBuffer so that if it is played, it will
 play in reverse. */
 void CX_SoundBuffer::reverse(void) {
-	vector<float> copy = _data;
+	std::vector<float> copy = _data;
 	unsigned int sampleFrameCount = getSampleFrameCount();
 	for (unsigned int sf = 0; sf < sampleFrameCount; sf++) {
 		unsigned int targetSampleFrame = sf*_channels;
@@ -872,7 +872,7 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 		CX::Instances::Log.warning("CX_SoundBuffer") << "writeToFile(): Can only write wav files - will save file as " << filename;
 	}
 
-	fstream file(ofToDataPath(filename).c_str(), ios::out | ios::binary);
+	std::fstream file(ofToDataPath(filename).c_str(), std::ios::out | std::ios::binary);
 	if (!file.is_open()) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "writeToFile(): Error opening sound file \"" << filename << "\" for writing.";
 		return false;
@@ -893,7 +893,7 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 	int myDataSize = bufferSize*bitsPerSample / 8;
 
 
-	file.seekp(0, ios::beg);
+	file.seekp(0, std::ios::beg);
 	file.write("RIFF", 4);
 	file.write((char*)&myChunkSize, 4);
 	file.write("WAVE", 4);

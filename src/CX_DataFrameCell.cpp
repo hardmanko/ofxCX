@@ -163,7 +163,7 @@ template<> std::vector<std::string> CX_DataFrameCell::toVector(bool log) const {
 std::ostream& operator<< (std::ostream& os, const CX_DataFrameCell& cell) {
 	std::string s;
 	if (cell.isVector()) {
-		s = Util::vectorToString(cell.toVector<string>(), "; ");
+		s = Util::vectorToString(cell.toVector<std::string>(), "; ");
 	} else {
 		s = cell.toString();
 	}

@@ -199,7 +199,7 @@ GLFWwindow* glfwContext = NULL;
 
 
 
-ofPtr<ofAppBaseWindow> appWindow;
+std::shared_ptr<ofAppBaseWindow> appWindow;
 
 CX_GLVersion glVersion;
 

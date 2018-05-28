@@ -108,7 +108,7 @@ namespace Private {
 	extern GLFWwindow* glfwContext;
 
 
-	extern ofPtr<ofAppBaseWindow> appWindow;
+	extern std::shared_ptr<ofAppBaseWindow> appWindow;
 
 	struct CX_GLVersion {
 		CX_GLVersion(void) :

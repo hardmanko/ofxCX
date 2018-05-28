@@ -47,8 +47,8 @@ be `2 * dimensions`.
 */
 void LatinSquare::generateBalanced(unsigned int dimensions) {
 
-	vector<unsigned int> currentRow(dimensions);
-	deque<unsigned int> firstHelper;
+	std::vector<unsigned int> currentRow(dimensions);
+	std::deque<unsigned int> firstHelper;
 	for (unsigned int i = 1; i < dimensions; i++) {
 		firstHelper.push_back(i);
 	}
@@ -201,7 +201,7 @@ LatinSquare& LatinSquare::operator+=(unsigned int value) {
 /*! Prints the contents of the latin square to a string with the given delimiter between
 elements of the latin square. */
 std::string LatinSquare::print(std::string delim) {
-	stringstream s;
+	std::stringstream s;
 	for (unsigned int i = 0; i < rows(); i++) {
 		for (unsigned int j = 0; j < columns(); j++) {
 			s << square[i][j];
@@ -209,7 +209,7 @@ std::string LatinSquare::print(std::string delim) {
 				s << delim;
 			}
 		}
-		s << endl;
+		s << std::endl;
 	}
 	return s.str();
 }
@@ -220,16 +220,16 @@ bool LatinSquare::validate(void) const {
 		return false;
 	}
 
-	vector<unsigned int> firstRow = square.front();
+	std::vector<unsigned int> firstRow = square.front();
 	std::sort(firstRow.begin(), firstRow.end());
 
-	vector<unsigned int>::iterator logicalEnd = std::unique(firstRow.begin(), firstRow.end());
+	std::vector<unsigned int>::iterator logicalEnd = std::unique(firstRow.begin(), firstRow.end());
 	if (logicalEnd != firstRow.end()) { //No duplicates allowed!
 		return false;
 	}
 
 	for (unsigned int i = 1; i < rows(); i++) {
-		vector<unsigned int> thisRow = square[i];
+		std::vector<unsigned int> thisRow = square[i];
 		std::sort(thisRow.begin(), thisRow.end());
 		for (unsigned int j = 0; j < columns(); j++) {
 			if (thisRow[j] != firstRow[j]) {
@@ -239,7 +239,7 @@ bool LatinSquare::validate(void) const {
 	}
 
 	for (unsigned int j = 0; j < columns(); j++) {
-		vector<unsigned int> thisColumn = getColumn(j);
+		std::vector<unsigned int> thisColumn = getColumn(j);
 		std::sort(thisColumn.begin(), thisColumn.end());
 		for (unsigned int i = 0; i < rows(); i++) {
 			if (thisColumn[i] != firstRow[i]) {

@@ -490,8 +490,8 @@ ofFloatPixels gaborToPixels(ofColor color1, ofColor color2, const ofFloatPixels&
 			" The minimum of both will be used.";
 	}
 
-	int width = ceil(min(wave.getWidth(), envelope.getWidth()));
-	int height = ceil(min(wave.getHeight(), envelope.getHeight()));
+	int width = ceil(std::min(wave.getWidth(), envelope.getWidth()));
+	int height = ceil(std::min(wave.getHeight(), envelope.getHeight()));
 
 	
 	pix.allocate(width, height, ofImageType::OF_IMAGE_COLOR_ALPHA);

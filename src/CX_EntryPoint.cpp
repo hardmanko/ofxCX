@@ -35,7 +35,7 @@ bool initializeCX(CX_InitConfiguation config) {
 		config.clockPrecisionTestIterations = 10000;
 	}
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 	ofInit();
 #else //Older versions...
 	ofSetWorkingDirectoryToDefault();
@@ -116,7 +116,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 				ofSetCurrentRenderer(newRenderer, true);
 				window->renderer() = newRenderer;
 #else
-				ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+				ofSetCurrentRenderer(std::shared_ptr<ofBaseRenderer>(new ofGLRenderer), true);
 #endif
 
 			}
@@ -141,7 +141,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 		ofSetCurrentRenderer(newRenderer, true);
 		window->renderer() = newRenderer;
 #else
-		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
+		ofSetCurrentRenderer(std::shared_ptr<ofBaseRenderer>(new ofGLProgrammableRenderer), true);
 #endif
 
 	} else {
@@ -152,7 +152,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 		ofSetCurrentRenderer(newRenderer, true);
 		window->renderer() = newRenderer;
 #else
-		ofSetCurrentRenderer(ofPtr<ofBaseRenderer>(new ofGLRenderer), true);
+		ofSetCurrentRenderer(std::shared_ptr<ofBaseRenderer>(new ofGLRenderer), true);
 #endif
 
 	}
@@ -236,7 +236,7 @@ void reopenWindow080(CX_WindowConfiguration config) {
 
 
 
-	CX::Private::appWindow = ofPtr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
+	CX::Private::appWindow = std::shared_ptr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
 
 	CX::Private::CX_AppWindow* awp = (CX::Private::CX_AppWindow*)CX::Private::appWindow.get();
 	awp->setOpenGLVersion(config.desiredOpenGLVersion.major, config.desiredOpenGLVersion.minor);
@@ -290,7 +290,7 @@ void reopenWindow084(CX_WindowConfiguration config) {
 	// End nasty hack //
 	////////////////////
 
-	CX::Private::appWindow = ofPtr<ofAppBaseWindow>((CX::Private::CX_AppWindow*)windowP);
+	CX::Private::appWindow = std::shared_ptr<ofAppBaseWindow>((CX::Private::CX_AppWindow*)windowP);
 
 	CX::Private::CX_AppWindow* awp = (CX::Private::CX_AppWindow*)CX::Private::appWindow.get();
 	awp->setOpenGLVersion(config.desiredOpenGLVersion.major, config.desiredOpenGLVersion.minor);
@@ -348,7 +348,7 @@ bool reopenWindow(CX_WindowConfiguration config) {
 	//Setup the display for the new window
 	CX::Instances::Disp.setup();
 
-#if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0)
+#if !(OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0)
 	ofGetCurrentRenderer()->update(); //Only needed for ofGLRenderer, not for ofGLProgrammableRenderer, but there is no harm in calling it
 	CX::Private::appWindow->initializeWindow();
 #endif

@@ -4,7 +4,7 @@
 
 #include "ofConstants.h"
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 #include "ofAppGLFWWindow.h"
 namespace CX {
 	namespace Private {

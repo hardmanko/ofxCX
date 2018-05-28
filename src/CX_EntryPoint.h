@@ -27,7 +27,7 @@ namespace CX {
 
 		/*! \brief If you want to request a specific renderer, you can provide one here.
 		If nothing is provided, a reasonable default is assumed. */
-		ofPtr<ofBaseGLRenderer> desiredRenderer;
+		std::shared_ptr<ofBaseGLRenderer> desiredRenderer;
 
 		/*! \brief If you want to request a specific OpenGL version, you can provide this value.
 		If nothing is provided, the newest OpenGL version available is used. */

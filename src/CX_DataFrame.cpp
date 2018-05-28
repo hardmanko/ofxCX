@@ -732,7 +732,7 @@ CX_DataFrame CX_DataFrame::copyColumns(std::vector<std::string> columns) {
 \note This function may be \ref blockingCode if the data frame is large.
 */
 void CX_DataFrame::shuffleRows(CX_RandomNumberGenerator &rng) {
-	vector<CX_DataFrame::RowIndex> newOrder = CX::Util::intVector<CX_DataFrame::RowIndex>(0, _rowCount - 1);
+	std::vector<CX_DataFrame::RowIndex> newOrder = CX::Util::intVector<CX_DataFrame::RowIndex>(0, _rowCount - 1);
 	rng.shuffleVector(&newOrder);
 	reorderRows(newOrder);
 }

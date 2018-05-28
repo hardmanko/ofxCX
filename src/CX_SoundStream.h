@@ -5,7 +5,7 @@
 #include "RtAudio.h"
 
 #include "ofConstants.h"
-#include "ofBaseSoundStream.h"
+//#include "ofBaseSoundStream.h"
 #include "ofTypes.h"
 #include "ofEvents.h"
 

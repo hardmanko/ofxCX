@@ -822,14 +822,14 @@ contains raw data from the wait swap test.
 */
 std::map<std::string, CX_DataFrame> CX_Display::testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread) {
 
-	auto drawScreenData = [](CX_Display* display, ofColor color, string information) {
+	auto drawScreenData = [](CX_Display* display, ofColor color, std::string information) {
 		display->beginDrawingToBackBuffer();
 		ofBackground(color);
 		ofDrawBitmapStringHighlight(information, ofPoint(100, 50), ofColor::black, ofColor::white);
 		display->endDrawingToBackBuffer();
 	};
 
-	auto drawWaitSwapScreenData = [](CX_Display* display, ofColor background, ofColor rectColor, ofRectangle rect, string information) {
+	auto drawWaitSwapScreenData = [](CX_Display* display, ofColor background, ofColor rectColor, ofRectangle rect, std::string information) {
 		display->beginDrawingToBackBuffer();
 		ofBackground(background);
 		ofSetColor(rectColor);
