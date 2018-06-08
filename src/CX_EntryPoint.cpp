@@ -110,7 +110,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 				CX::Instances::Log.warning("CX_EntryPoint") << "Desired renderer could not be used: "
 					"High enough version of OpenGL is not available (requires OpenGL >= 3.2). Falling back on ofGLRenderer.";
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 				std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
 				std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
 				ofSetCurrentRenderer(newRenderer, true);
@@ -135,7 +135,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 	//Check to see if the OpenGL version is high enough to fully support ofGLProgrammableRenderer. If not, fall back on ofGLRenderer.
 	if (Private::glCompareVersions(config.desiredOpenGLVersion, Private::CX_GLVersion(3, 2, 0)) >= 0) {
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 		std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLProgrammableRenderer(window));
 		std::dynamic_pointer_cast<ofGLProgrammableRenderer>(newRenderer)->setup(config.desiredOpenGLVersion.major, config.desiredOpenGLVersion.minor);
 		ofSetCurrentRenderer(newRenderer, true);
@@ -146,7 +146,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 
 	} else {
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 		std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
 		std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
 		ofSetCurrentRenderer(newRenderer, true);
@@ -160,7 +160,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 	
 }
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 //The window doesn't close automatically, so kill the window.
 bool exitCallbackHandler(ofEventArgs& args) {
 
@@ -181,6 +181,52 @@ bool exitCallbackHandler(ofEventArgs& args) {
 
 	return true;
 }
+#endif
+
+
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 10 && OF_VERSION_PATCH >= 0
+
+void reopenWindow_0_10_0(CX_WindowConfiguration config) {
+
+	bool firstCall = (CX::Private::appWindow == nullptr);
+
+	if (firstCall) {
+		CX::Private::appWindow = shared_ptr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
+	}
+	else {
+		CX::Private::appWindow->close();
+	}
+
+	std::shared_ptr<CX::Private::CX_AppWindow> awp = std::dynamic_pointer_cast<CX::Private::CX_AppWindow>(CX::Private::appWindow);
+
+	ofGLFWWindowSettings settings;
+	settings.windowMode = config.mode;
+	settings.glVersionMajor = config.desiredOpenGLVersion.major;
+	settings.glVersionMinor = config.desiredOpenGLVersion.minor;
+	settings.numSamples = config.msaaSampleCount;
+	settings.resizable = config.resizeable;
+	settings.setSize(config.width, config.height);
+
+	awp->setup(settings);
+
+	awp->events().enable();
+
+	if (firstCall) {
+		ofGetMainLoop()->addWindow(awp);
+	}
+
+	if (awp->getGLFWWindow() != nullptr) {
+
+		setDesiredRenderer(config, true, CX::Private::appWindow.get());
+
+		ofAddListener(ofEvents().exit, &exitCallbackHandler, ofEventOrder::OF_EVENT_ORDER_AFTER_APP);
+
+		//ofAppGLFWWindow doesn't show the window until the first call to update()
+		glfwShowWindow(glfwGetCurrentContext());
+	}
+}
+
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 
 void reopenWindow090(CX_WindowConfiguration config) {
 
@@ -319,7 +365,9 @@ bool reopenWindow(CX_WindowConfiguration config) {
 	}
 
 	try {
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 10 && OF_VERSION_PATCH >= 0
+		CX::Private::reopenWindow_0_10_0(config);
+#elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		CX::Private::reopenWindow090(config);
 #elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 8 && OF_VERSION_PATCH == 4
 		CX::Private::reopenWindow084(config);

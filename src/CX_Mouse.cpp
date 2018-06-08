@@ -222,7 +222,7 @@ void CX_Mouse::_mouseDraggedEventHandler(ofMouseEventArgs &a) {
 	_mouseEventHandler(a);
 }
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 void CX_Mouse::_mouseWheelScrollHandler(ofMouseEventArgs &a) {
 	CX_Mouse::Event ev;
 
@@ -306,8 +306,7 @@ void CX_Mouse::_listenForEvents(bool listen) {
 		ofAddListener(ofEvents().mouseReleased, this, &CX_Mouse::_mouseButtonReleasedEventHandler);
 		ofAddListener(ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler);
 		ofAddListener(ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler);
-
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 		ofAddListener(ofEvents().mouseScrolled, this, &CX_Mouse::_mouseWheelScrollHandler);
 #else
 		ofAddListener(CX::Private::getEvents().scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler);
@@ -319,7 +318,7 @@ void CX_Mouse::_listenForEvents(bool listen) {
 		ofRemoveListener(ofEvents().mouseMoved, this, &CX_Mouse::_mouseMovedEventHandler);
 		ofRemoveListener(ofEvents().mouseDragged, this, &CX_Mouse::_mouseDraggedEventHandler);
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 		ofRemoveListener(ofEvents().mouseScrolled, this, &CX_Mouse::_mouseWheelScrollHandler);
 #else
 		ofRemoveListener(CX::Private::getEvents().scrollEvent, this, &CX_Mouse::_mouseWheelScrollHandler);
