@@ -64,15 +64,23 @@ public:
 		if there are two channels and buffer size is set to 256, the actual buffer size will be 512 samples). */
 		unsigned int bufferSize;
 
-		/*! This argument depends on your operating system. Using RtAudio::Api::UNSPECIFIED will pick an available API for 
-		your system (if any; see the links below). The API means the type of software interface to use. For example,
-		on Windows, you can choose from Windows Direct Sound (DS) and ASIO. ASIO is commonly used with audio recording equipment
-		because	it has lower latency whereas DS is more of a consumer-grade interface. The choice of API does not affect
-		how you use this class, but it may affect the performance of sound playback.
+		/*! The API here is the audio API used by the operating system to transfer 
+		audio data between audio hardware and your CX program.
+		The choice of API does not affect how you use this class, but it may affect the performance of sound playback.
+		
+		The API depends on your operating system. 
+		See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849 for a listing of the APIs.
+		
+		Using `RtAudio::Api::UNSPECIFIED` will search for an available API for your system.
 
-		See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#ac9b6f625da88249d08a8409a9db0d849 for a listing of
-		the APIs. See http://www.music.mcgill.ca/~gary/rtaudio/classRtAudio.html#afd0bfa26deae9804e18faff59d0273d9 for the
-		default ordering of the APIs if RtAudio::Api::UNSPECIFIED is used. */
+		On Windows, you can choose from Direct Sound (DS), WASAPI, and ASIO:
+
+		+ ASIO has the best latency, but needs pro audio hardware with custom drivers.
+		+ WASAPI has good latency and works on any hardware.
+		+ DS: Direct Sound is old and has the worst latency. DS should be avoided as long ase WASAPI is available.
+
+		If you wanted to use WASAPI, you would provide `RtAudio::Api::WINDOWS_WASAPI` as the `api`.
+		 */
 		RtAudio::Api api;
 
 		/*! See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1StreamOptions.html for more information.
@@ -145,6 +153,7 @@ public:
 
 	ofEvent<const CX_SoundStream::OutputEventArgs&> outputEvent; //!< This event is triggered every time the CX_SoundStream needs to feed more data to the output buffer of the sound card.
 	ofEvent<const CX_SoundStream::InputEventArgs&> inputEvent; //!< This event is triggered every time the CX_SoundStream hsa gotten some data from the input buffer of the sound card.
+	ofEvent<void> destructEvent; //!< Triggers when CX_SoundStream class destructs so that listeners can know to stop listening to input and output events.
 
 	bool hasSwappedSinceLastCheck(void);
 	void waitForSwap(CX_Millis timeout, bool reset = true);

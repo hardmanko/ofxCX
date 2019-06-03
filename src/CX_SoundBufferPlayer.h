@@ -95,8 +95,6 @@ namespace CX  {
 
 		} _outData;
 
-		//bool _listeningForEvents;
-		//void _listenForEvents(bool listen);
 		void _outputEventHandler(const CX_SoundStream::OutputEventArgs& outputData);
 		CX::Util::ofEventHelper<const CX_SoundStream::OutputEventArgs&> _outputEventHelper;
 

@@ -9,41 +9,19 @@ namespace Instances {
 }
 
 CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
-	_soundStream(nullptr) //,
-	//_listeningForEvents(false)
+	_soundStream(nullptr)
 {}
 
 CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {
 	stop();
 
-	//_listenForEvents(false);
-
 	getUnderflowsSinceLastCheck(true);
 }
 
-/*! Configures the CX_SoundBufferPlayer with the given configuration. A CX_SoundStream will be set
-up within the CX_SoundBufferPlayer and the sound stream will be started.
-\param config The configuration to use for the CX_SoundBufferPlayer, which is really all about configuring
-the CX_SoundStream used internally by the CX_SoundBufferPlayer.
-*/
 /*
-bool CX_SoundBufferPlayer::setup(Configuration config) {
-	
-	_cleanUpOldSoundStream();
-
-	_soundStream = std::make_shared<CX_SoundStream>();
-
-	bool setupSuccessfully = _soundStream->setup((CX_SoundStream::Configuration&)config);
-	bool startedSuccessfully = _soundStream->startStream();
-
-	if (setupSuccessfully && startedSuccessfully) {
-		_listenForEvents(true);
-		setSoundBuffer(_outData.soundBuffer);
-	} else {
-		_cleanUpOldSoundStream();
-	}
-
-	return startedSuccessfully && setupSuccessfully;
+void CX_SoundBufferPlayer::_ssDestructEventHandler(void) {
+	_outputEventHelper.stopListening();
+	_ssDestructEventHelper.stopListening();
 }
 */
 
@@ -65,8 +43,8 @@ bool CX_SoundBufferPlayer::setup(std::shared_ptr<CX_SoundStream> ss) {
 
 	_soundStream = ss;
 
-	//_listenForEvents(true);
 	_outputEventHelper.setup<CX_SoundBufferPlayer>(&ss->outputEvent, this, &CX_SoundBufferPlayer::_outputEventHandler);
+	_outputEventHelper.listenToStopEvent(&ss->destructEvent);
 
 	setSoundBuffer(_outData.soundBuffer);
 
@@ -387,7 +365,6 @@ void modifySetSound(void) {
 
 }
 
-
 \endcode
 
 */
@@ -472,27 +449,12 @@ void CX_SoundBufferPlayer::_outputEventHandler(const CX_SoundStream::OutputEvent
 
 }
 
-/*
-void CX_SoundBufferPlayer::_listenForEvents(bool listen) {
-	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
-		return;
-	}
-
-	int priority = 10;
-	if (listen) {
-		ofAddListener(_soundStream->outputEvent, this, &CX_SoundBufferPlayer::_outputEventHandler, priority);
-	} else {
-		ofRemoveListener(_soundStream->outputEvent, this, &CX_SoundBufferPlayer::_outputEventHandler, priority);
-	}
-
-	_listeningForEvents = listen;
-}
-*/
-
 void CX_SoundBufferPlayer::_cleanUpOldSoundStream(void) {
 	stop();
-	//_listenForEvents(false);
-	_soundStream = nullptr;
+
+	getUnderflowsSinceLastCheck(true);
+
+	_soundStream = nullptr; // Unlink from shared_ptr
 }
 
 } //namespace CX;

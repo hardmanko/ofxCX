@@ -9,8 +9,7 @@ namespace Instances {
 }
 
 CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
-	_soundStream(nullptr) //,
-	//_listeningForEvents(false)
+	_soundStream(nullptr)
 {
 	_inData.recording = false;
 	_inData.startingRecording = false;
@@ -20,35 +19,9 @@ CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
 CX_SoundBufferRecorder::~CX_SoundBufferRecorder(void) {
 	stop();
 
-	//_listenForEvents(false);
-
 	getOverflowsSinceLastCheck(true);
 }
 
-/*! This function sets up the CX_SoundStream that CX_SoundBufferRecorder uses to record audio data.
-\param config A reference to a CX_SoundBufferRecorder::Configuration struct that will be used to configure
-an internally-stored CX_SoundStream.
-\return `true` if configuration of the CX_SoundStream was successful, `false` otherwise.
-*/
-/*
-bool CX_SoundBufferRecorder::setup(CX_SoundBufferRecorder::Configuration& config) {
-	
-	_soundStream = std::make_shared<CX_SoundStream>();
-
-	bool setupSuccessfully = _soundStream->setup((CX_SoundStream::Configuration&)config);
-	bool startedSuccessfully = _soundStream->startStream();
-
-	if (setupSuccessfully && startedSuccessfully) {
-		_listenForEvents(true);
-	} else {
-		_cleanUpOldSoundStream();
-	}
-
-	createNewSoundBuffer();
-
-	return startedSuccessfully && setupSuccessfully;
-}
-*/
 
 /*! Set up the sound buffer recorder to use an existing `CX_SoundStream`, `ss`. 
 `ss` is not started automatically, the user code must start it.
@@ -65,8 +38,8 @@ bool CX_SoundBufferRecorder::setup(std::shared_ptr<CX_SoundStream> ss) {
 
 	_soundStream = ss;
 
-	//_listenForEvents(true);
 	_inputEventHelper.setup<CX_SoundBufferRecorder>(&ss->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
+	_inputEventHelper.listenToStopEvent(&ss->destructEvent);
 
 	createNewSoundBuffer();
 
@@ -217,34 +190,7 @@ bool CX_SoundBufferRecorder::queueRecording(CX_Millis startTime, CX_Millis timeo
 	return false;
 }
 
-/*
-bool CX_SoundBufferRecorder::queueRecording(bool clear, CX_Millis startTime, CX_Millis latencyOffset) {
 
-
-	if (_soundStream == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferRecorder") << "queueRecording(): Could not queue recording becuase the sound stream was nullptr. Have you forgotten to call setup()?";
-		return false;
-	}
-
-	// Intentionally lock before doing calculations
-	std::lock_guard<std::recursive_mutex> inputLock(_inData);
-
-	uint64_t startSampleFrame = _soundStream->estimateSampleFrameAtTime(startTime, latencyOffset);
-
-	if (startSampleFrame < _soundStream->getNextBufferStartSampleFrame()) {
-		CX::Instances::Log.warning("CX_SoundBufferRecorder") << "queueRecording(): Desired start time has already passed. Starting immediately.";
-		record(clear);
-		return false;
-	}
-
-	_inData.queuedRecordingStartSampleFrame = startSampleFrame;
-	_inData.recordingQueued = true;
-
-	_prepareRecordBuffer(clear, "queueRecording");
-	
-	return true;
-}
-*/
 
 bool CX_SoundBufferRecorder::isRecordingQueued(void) {
 	std::lock_guard<std::recursive_mutex> inputLock(_inData);
@@ -274,17 +220,6 @@ unsigned int CX_SoundBufferRecorder::getOverflowsSinceLastCheck(bool logOverflow
 	return ovf;
 }
 
-/*! Returns the configuration used for this CX_SoundBufferRecorder. */
-/*
-const CX_SoundStream::Configuration& CX_SoundBufferRecorder::getConfiguration(void) const {
-	if (_soundStream == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferRecorder") << "getConfiguration(): Could not get configuration, the sound stream was nonexistent. Have you forgotten to call setup()?";
-		return _defaultConfigReference;
-	}
-
-	return _soundStream->getConfiguration();
-}
-*/
 
 /*! Provides direct access to the CX_SoundStream used by the CX_SoundBufferRecorder. */
 std::shared_ptr<CX_SoundStream> CX_SoundBufferRecorder::getSoundStream(void) {
@@ -378,28 +313,11 @@ void CX_SoundBufferRecorder::_inputEventHandler(const CX_SoundStream::InputEvent
 
 }
 
-/*
-void CX_SoundBufferRecorder::_listenForEvents(bool listen) {
-	if ((listen == _listeningForEvents) || (_soundStream == nullptr)) {
-		return;
-	}
-
-	int priority = 10;
-	if (listen) {
-		ofAddListener(_soundStream->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler, priority);
-	} else {
-		ofRemoveListener(_soundStream->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler, priority);
-	}
-
-	_listeningForEvents = listen;
-}
-*/
 
 void CX_SoundBufferRecorder::_cleanUpOldSoundStream(void) {
-
 	stop();
 
-	//_listenForEvents(false);
+	getOverflowsSinceLastCheck(true);
 
 	_soundStream = nullptr;
 }

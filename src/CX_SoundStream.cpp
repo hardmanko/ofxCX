@@ -140,6 +140,8 @@ CX_SoundStream::CX_SoundStream(void) :
 
 CX_SoundStream::~CX_SoundStream(void) {
 	closeStream();
+
+	destructEvent.notify();
 }
 
 /*! Opens the sound stream with the specified configuration. See CX::CX_SoundStream::Configuration for the configuration options.

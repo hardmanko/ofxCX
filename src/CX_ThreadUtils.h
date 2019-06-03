@@ -338,7 +338,8 @@ public:
 	};
 
 	ofEventHelper(void) :
-		_currentEvent(nullptr)
+		_currentEvent(nullptr),
+		_stopEvent(nullptr)
 	{}
 
 	ofEventHelper(std::function<void(EvType)> listenFun) :
@@ -404,6 +405,22 @@ public:
 
 	void stopListening(void) {
 		_listenTo(nullptr, 0); // priority doesn't matter if removing because _currentPriority is used to remove
+		listenToStopEvent(nullptr, 0);
+	}
+
+	void listenToStopEvent(ofEvent<void>* sev, int priority = (int)Priority::Normal) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		if (_stopEvent) {
+			ofRemoveListener(*_stopEvent, this, &ofEventHelper::stopListening, _stopPriority);
+			_stopEvent = nullptr;
+		}
+
+		if (sev) {
+			_stopEvent = sev;
+			_stopPriority = priority;
+			ofAddListener(*_stopEvent, this, &ofEventHelper::stopListening, _stopPriority);
+		}
 	}
 
 private:
@@ -412,6 +429,9 @@ private:
 	int _currentPriority;
 
 	std::function<void(EvType)> _callback;
+
+	ofEvent<void>* _stopEvent;
+	int _stopPriority;
 
 	inline void _listenFun(EvType t) {
 		_mutex.lock();
@@ -447,7 +467,8 @@ public:
 	};
 
 	ofEventHelper(void) :
-		_currentEvent(nullptr)
+		_currentEvent(nullptr),
+		_stopEvent(nullptr)
 	{}
 
 	ofEventHelper(std::function<void(void)> listenFun) :
@@ -513,6 +534,22 @@ public:
 
 	void stopListening(void) {
 		_listenTo(nullptr, 0); // priority doesn't matter if removing because _currentPriority is used to remove
+		listenToStopEvent(nullptr, 0);
+	}
+
+	void listenToStopEvent(ofEvent<void>* sev, int priority = (int)Priority::Normal) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		if (_stopEvent) {
+			ofRemoveListener(*_stopEvent, this, &ofEventHelper::stopListening, _stopPriority);
+			_stopEvent = nullptr;
+		}
+
+		if (sev) {
+			_stopEvent = sev;
+			_stopPriority = priority;
+			ofAddListener(*_stopEvent, this, &ofEventHelper::stopListening, _stopPriority);
+		}
 	}
 
 private:
@@ -521,6 +558,9 @@ private:
 	int _currentPriority;
 
 	std::function<void(void)> _callback;
+
+	ofEvent<void>* _stopEvent;
+	int _stopPriority;
 
 	inline void _listenFun(void) {
 		_mutex.lock();

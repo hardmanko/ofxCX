@@ -32,13 +32,11 @@ namespace CX {
 	*/
 	class CX_SoundBufferRecorder {
 	public:
-		//typedef CX_SoundStream::Configuration Configuration; //!< This is typedef'ed to \ref CX::CX_SoundStream::Configuration.
 
 		CX_SoundBufferRecorder(void);
 		~CX_SoundBufferRecorder(void);
 
 		// 1. Set up the recorder (choose one)
-		//bool setup(Configuration& config);
 		bool setup(CX_SoundStream* ss);
 		bool setup(std::shared_ptr<CX_SoundStream> ss);
 
@@ -71,7 +69,6 @@ namespace CX {
 		unsigned int getOverflowsSinceLastCheck(bool logOverflows = true);
 
 		std::shared_ptr<CX_SoundStream> getSoundStream(void);
-		//const CX_SoundStream::Configuration& getConfiguration(void) const;
 
 	private:
 
@@ -99,8 +96,7 @@ namespace CX {
 			
 		} _inData;
 
-		//void _listenForEvents(bool listen);
-		//bool _listeningForEvents;
+
 		void _inputEventHandler(const CX_SoundStream::InputEventArgs& inputData);
 		CX::Util::ofEventHelper<const CX_SoundStream::InputEventArgs&> _inputEventHelper;
 
@@ -108,9 +104,6 @@ namespace CX {
 
 		void _cleanUpOldSoundStream(void);
 
-		
-
-		//Configuration _defaultConfigReference;
 
 		void _prepareRecordBuffer(bool clear, std::string callingFunctionName);
 	};
