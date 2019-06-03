@@ -49,9 +49,6 @@ bool CX_DisplaySwapper::trySwap(void) {
 		return false;
 	}
 
-	// no, no, cache it somehow (but how do you know you have an up-to-date copy???) ofParameter?
-	//Private::swapVideoBuffers(_config.display->usingSoftwareVSync());
-
 	_config.display->swapBuffers(); // or do this
 
 	return true;

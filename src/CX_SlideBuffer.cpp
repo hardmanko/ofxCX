@@ -451,7 +451,7 @@ bool CX_SlideBuffer::deleteSlide(std::string name) {
 }
 
 int CX_SlideBuffer::_namedSlideIndex(std::string name) const {
-	for (int i = 0; i < _slides.size(); i++) {
+	for (size_t i = 0; i < _slides.size(); i++) {
 		if (_slides[i].name == name) {
 			return i;
 		}
@@ -559,6 +559,7 @@ std::string CX_SlideBuffer::printLastPresentationInformation(void) const {
 	}
 	s << std::endl;
 
+	/*
 	for (size_t i = 0; i < _slides.size(); i++) {
 
 		const Slide& slide = _slides[i];
@@ -590,6 +591,33 @@ std::string CX_SlideBuffer::printLastPresentationInformation(void) const {
 
 		s << "Render start: " << slide.presInfo.renderStartTime.millis() << std::endl <<
 			"Render complete: " << slide.presInfo.renderCompleteTime.millis();
+		if (slide.presInfo.swappedBeforeRenderingComplete) {
+			s << "**"; //Mark the error
+		}
+
+		s << std::endl << std::endl;
+	}
+	*/
+
+	for (size_t i = 0; i < _slides.size(); i++) {
+
+		const Slide& slide = _slides[i];
+
+		s << "-----------------------------------" << std::endl;
+		s << "Index: " << i << ", Name: " << slide.name << std::endl;
+
+		s << "Time:      Start                Duration" << std::endl;
+		s << "Intended:  " << slide.intended.startTime << "  " << slide.intended.timeDuration << std::endl;
+		s << "Actual:    " << slide.actual.startTime << "  " << slide.actual.timeDuration << std::endl;
+
+
+		s << "Frame:     Start   Duration" << std::endl;
+		s << "Intended:  " << slide.intended.startFrame << "  " << slide.intended.frameDuration << std::endl;
+		s << "Actual:    " << slide.actual.startFrame << "  " << slide.actual.frameDuration << std::endl;
+
+
+		s << "Render start:    " << slide.presInfo.renderStartTime << std::endl <<
+			 "Render complete: " << slide.presInfo.renderCompleteTime;
 		if (slide.presInfo.swappedBeforeRenderingComplete) {
 			s << "**"; //Mark the error
 		}
@@ -786,7 +814,7 @@ void CX_SlideBufferPlaybackHelper::reRenderCurrentSlide(void) {
 
 CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getPreviousSlide(void) {
 	int index = _currentSlide - 1;
-	if (!_playing || index < 0 || index >= _config.slideBuffer->size()) {
+	if (!_playing || index < 0 || index >= (int)_config.slideBuffer->size()) {
 		return nullptr;
 	}
 	return _config.slideBuffer->getSlide(index);
@@ -794,7 +822,7 @@ CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getPreviousSlide(void) {
 
 
 CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getCurrentSlide(void) {
-	if (!_playing || _currentSlide < 0 || _currentSlide >= _config.slideBuffer->size()) {
+	if (!_playing || _currentSlide < 0 || _currentSlide >= (int)_config.slideBuffer->size()) {
 		return nullptr;
 	}
 	return _config.slideBuffer->getSlide(_currentSlide);
@@ -802,7 +830,7 @@ CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getCurrentSlide(void) {
 
 CX_SlideBuffer::Slide* CX_SlideBufferPlaybackHelper::getNextSlide(void) {
 	int index = _currentSlide + 1;
-	if (!_playing || index < 0 || index >= _config.slideBuffer->size()) {
+	if (!_playing || index < 0 || index >= (int)_config.slideBuffer->size()) {
 		return nullptr;
 	}
 	return _config.slideBuffer->getSlide(index);

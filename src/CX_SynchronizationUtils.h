@@ -615,7 +615,7 @@ private:
 
 	SwapData* getNextSample(void) {
 		int next = _currentSample + 1;
-		if (next < 0 || next >= _recordedSamples.size()) {
+		if (next < 0 || next >= (int)_recordedSamples.size()) {
 			return nullptr;
 		}
 		return &_recordedSamples[next];

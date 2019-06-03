@@ -40,8 +40,8 @@ namespace CX {
 		void unlock(void);
 		
 
-		bool setup(Configuration config, bool startThread);
-		Configuration getConfiguration(void);
+		bool setup(const Configuration& config, bool startThread);
+		const Configuration& getConfiguration(void);
 
 
 		void startThread(void);

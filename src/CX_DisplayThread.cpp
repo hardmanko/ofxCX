@@ -28,7 +28,7 @@ CX_DisplayThread::CX_DisplayThread(CX_Display* disp, std::function<void(CX_Displ
 }
 
 
-bool CX_DisplayThread::setup(Configuration config, bool startThread) {
+bool CX_DisplayThread::setup(const Configuration& config, bool startThread) {
 
 	if (isThreadRunning()) {
 		stopThread(true);
@@ -63,7 +63,7 @@ bool CX_DisplayThread::setup(Configuration config, bool startThread) {
 }
 
 // It would be unsafe to return a reference. You should have getters for each setting.
-CX_DisplayThread::Configuration CX_DisplayThread::getConfiguration(void) {
+const CX_DisplayThread::Configuration& CX_DisplayThread::getConfiguration(void) {
 	return _config;
 }
 
@@ -72,8 +72,8 @@ CX_DisplayThread::Configuration CX_DisplayThread::getConfiguration(void) {
 
 void CX_DisplayThread::startThread(void) {
 
-	//std::lock_guard<std::recursive_mutex> lock(_mutex);
-	_mutex.lock();
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+	//_mutex.lock();
 
 	if (_threadRunning) {
 		return;
@@ -82,7 +82,7 @@ void CX_DisplayThread::startThread(void) {
 	_threadRunning = true;
 	_thread = std::thread(&CX_DisplayThread::_threadFunction, this);
 	
-	_mutex.unlock();
+	//_mutex.unlock();
 
 	//Instances::Log.notice() << "startThread(): Thread started at " << Instances::Clock.now().seconds();
 
@@ -498,9 +498,9 @@ bool CX_DisplayThread::queueFrame(std::shared_ptr<QueuedFrame> qf) {
 
 	std::lock_guard<std::recursive_mutex> qfLock(_queuedFramesMutex);
 
-	int existingFrameIndex = -1;
-	int nextGreaterIndex = 0;
-	for (int i = 0; i < _queuedFrames.size(); i++) {
+	size_t existingFrameIndex = std::numeric_limits<size_t>::max();
+	size_t nextGreaterIndex = 0;
+	for (size_t i = 0; i < _queuedFrames.size(); i++) {
 		if (_queuedFrames[i]->startFrame == qf->startFrame) {
 			existingFrameIndex = i;
 			break;
@@ -510,7 +510,7 @@ bool CX_DisplayThread::queueFrame(std::shared_ptr<QueuedFrame> qf) {
 		}
 	}
 
-	if (existingFrameIndex >= 0) {
+	if (existingFrameIndex != std::numeric_limits<size_t>::max()) {
 
 		Instances::Log.notice("CX_DisplayThread") << "Queued frame for frame number " << qf->startFrame << " replaced.";
 		_queuedFrames[existingFrameIndex] = qf;
