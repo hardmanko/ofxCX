@@ -38,16 +38,22 @@ void CX_RandomNumberGenerator::setSeed(unsigned long seed) {
 	_mersenneTwister.seed( _seed );
 }
 
-/*! This function provides a method of setting the seed using an arbitrary string
-(e.g. date-time and participant number) as the seed. A CRC32 checksum is used 
-to convert the string into an unsinged long, which is then used as the seed for 
-the CX_RandomNumberGenerator. You can retrieve the seed with getSeed().
+/*! This function provides a method of setting the seed using an arbitrary 
+string as the seed (e.g. date-time and participant number).
+
+The string is hashed to convert it to an integral value and passed to `setSeed()`.
+This means that you can retreive the hashed value with `getSeed()`.
+
 \param seedString The string from which the new seed will be calculated. 
 */
 void CX_RandomNumberGenerator::setSeed(const std::string& seedString) {
-	Poco::Checksum cs(Poco::Checksum::TYPE_CRC32);
-	cs.update(seedString);
-	this->setSeed(cs.checksum());
+
+	auto seedHash = std::hash<std::string>{}(seedString);
+	this->setSeed(seedHash);
+
+	//Poco::Checksum cs(Poco::Checksum::TYPE_CRC32);
+	//cs.update(seedString);
+	//this->setSeed(cs.checksum());
 }
 
 /*! Get the seed used to seed the random number generator. 

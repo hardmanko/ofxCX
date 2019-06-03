@@ -8,8 +8,7 @@
 #include <thread>
 #include <type_traits>
 #include <memory>
-
-#include "Poco/DateTimeFormatter.h"
+#include <ctime>
 
 #include "ofConstants.h"
 
@@ -54,8 +53,8 @@ namespace CX {
 
 		void resetExperimentStartTime(void);
 
-		std::string getDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
-		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%e %h-%M-%S %a") const;
+		std::string getDateTimeString(const std::string& format = "%Y-%b-%d %H-%M-%S") const;
+		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%d %H-%M-%S") const;
 
 		template <typename ImplType>
 		void setImplementation(void) {
@@ -100,7 +99,7 @@ namespace CX {
 		ofEvent<void> regularEvent;
 
 	private:
-		std::unique_ptr<Poco::LocalDateTime> _pocoExperimentStart;
+		std::time_t _experimentStartTime;
 
 		std::shared_ptr<CX_BaseClockInterface> _impl;
 
@@ -113,6 +112,8 @@ namespace CX {
 			CX_Millis period;
 			bool enabled;
 		} _regularEvent;
+
+		std::string _formatTime(const std::string& format, const std::time_t* time) const;
 	};
 
 	namespace Instances {

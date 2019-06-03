@@ -7,11 +7,10 @@
 #include <map>
 #include <algorithm>
 #include <functional>
+#include <mutex>
 
 #include <stdio.h> //vsnprintf
 #include <stdarg.h> //va_args
-
-#include "Poco/Mutex.h"
 
 #include "ofUtils.h"
 #include "ofFileUtils.h"
@@ -148,10 +147,10 @@ namespace CX {
 
 		std::vector<CX::Private::CX_LoggerTargetInfo> _targetInfo;
 
-		Poco::Mutex _messageQueueMutex;
+		std::recursive_mutex _messageQueueMutex;
 		std::vector<CX::Private::CX_LogMessage> _messageQueue;
 		
-		Poco::Mutex _moduleLogLevelsMutex;
+		std::recursive_mutex _moduleLogLevelsMutex;
 		std::map<std::string, Level> _moduleLogLevels;
 
 
@@ -165,7 +164,7 @@ namespace CX {
 
 		Level _defaultLogLevel;
 
-		Poco::Mutex _exceptionLevelsMutex;
+		std::recursive_mutex _exceptionLevelsMutex;
 		std::map<std::string, Level> _exceptionLevels;
 		Level _defaultExceptionLevel;
 

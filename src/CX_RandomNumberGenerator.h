@@ -4,10 +4,9 @@
 #include <cmath>
 #include <vector>
 #include <set>
+#include <functional>
 
 #include <stdint.h>
-
-#include "./Poco/Checksum.h"
 
 #include "CX_Utilities.h"
 

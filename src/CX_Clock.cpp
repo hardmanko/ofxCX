@@ -127,7 +127,8 @@ will count up from 0 starting from when this function was called.
 This function also resets the experiment start date/time retrieved with getExperimentStartDateTimeString().
 */
 void CX_Clock::resetExperimentStartTime(void) {
-	_pocoExperimentStart = std::make_unique<Poco::LocalDateTime>();
+	_experimentStartTime = std::time(nullptr);
+
 	if (_impl) {
 		_impl->resetStartTime();
 	}
@@ -222,22 +223,39 @@ void CX_Clock::delay(CX_Millis t) const {
 		;
 }
 
+// Helper function for time
+std::string CX_Clock::_formatTime(const std::string& format, const std::time_t* time) const {
+
+	char output[256];
+	std::size_t written = std::strftime(output, 256, format.c_str(), localtime(time));
+
+	std::string rval = "";
+	if (written > 0) {
+		rval = std::string(output);
+	}
+
+	return rval;
+}
 
 /*! Get a string representing the date/time of the start of the experiment encoded according to a format.
 \param format See getDateTimeString() for the definition of the format. */
 std::string CX_Clock::getExperimentStartDateTimeString(const std::string& format) const {
-	return Poco::DateTimeFormatter::format(*_pocoExperimentStart, format);
+
+	return _formatTime(format, &_experimentStartTime);
 }
 
+/*! Returns a string containing the local time encoded according to a format string.
 
-/*! Returns a string containing the local time encoded according to some format.
-\param format See http://pocoproject.org/docs/Poco.DateTimeFormatter.html#4684 for documentation of the format.
-E.g. "%Y/%m/%d %H:%M:%S" gives "year/month/day 24HourClock:minute:second" with some zero-padding for most things.
-The default "%Y-%b-%e %h-%M-%S %a" is "yearWithCentury-abbreviatedMonthName-nonZeroPaddedDay 12HourClock-minuteZeroPadded-secondZeroPadded am/pm".
+The format string `"%Y/%m/%d %H:%M %p"` gives `"year/month/day 24HourClock:minute (am|pm)"` with some zero-padding for most things.
+The default uses hyphens so that the timestamps can be used as filenames.
+
+\param format The format string is passed to `std::strftime`. See documentation for that function
+for information about the format string: https://en.cppreference.com/w/cpp/chrono/c/strftime
 */
 std::string CX_Clock::getDateTimeString(const std::string& format) const {
-	Poco::LocalDateTime localTime;
-	return Poco::DateTimeFormatter::format(localTime, format);
+
+	std::time_t localTime = std::time(nullptr);
+	return _formatTime(format, &localTime);
 }
 
 void CX_Clock::enableRegularEvent(bool enable) {

@@ -188,13 +188,13 @@ quite a while to output all log messages to various targets (see \ref blockingCo
 \note This function is not 100% thread-safe: Only call it from the main thread. */
 void CX_Logger::flush(void) {
 
-	//By getting the message count once and only iterating over that many messages,
-	//a known number of messages are processed and just that many messages can be deleted later.
+	// Copy out the messages and then clear them.
 	_messageQueueMutex.lock();
-	size_t messageCount = _messageQueue.size();
+	auto _mqCopy = _messageQueue;
+	_messageQueue.clear();
 	_messageQueueMutex.unlock();
 
-	if (messageCount == 0) {
+	if (_mqCopy.size() == 0) {
 		return;
 	}
 
@@ -208,12 +208,7 @@ void CX_Logger::flush(void) {
 		}
 	}
 
-	for (size_t i = 0; i < messageCount; i++) {
-		//Lock and copy each message. Messages cannot be added while locked.
-		//After the unlock, the message copy is used, not the original message.
-		_messageQueueMutex.lock();
-		CX::Private::CX_LogMessage m = _messageQueue[i];
-		_messageQueueMutex.unlock();
+	for (const CX::Private::CX_LogMessage& m : _mqCopy) {
 
 		if (flushEvent.size() > 0) {
 			MessageFlushData dat(m.message, m.level, m.module);
@@ -241,11 +236,6 @@ void CX_Logger::flush(void) {
 			_targetInfo[i].file->close();
 		}
 	}
-
-	//Delete printed messages
-	_messageQueueMutex.lock();
-	_messageQueue.erase(_messageQueue.begin(), _messageQueue.begin() + messageCount);
-	_messageQueueMutex.unlock();
 }
 
 /*! \brief Clear all stored log messages. */
@@ -365,9 +355,12 @@ are given the log level and the default log level for new modules as set to the 
 void CX_Logger::levelForAllModules(Level level) {
 	_moduleLogLevelsMutex.lock();
 	_defaultLogLevel = level;
-	for (std::map<std::string, Level>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
-		_moduleLogLevels[it->first] = level;
+	for (std::pair<const std::string, CX_Logger::Level>& modLevel : _moduleLogLevels) {
+		modLevel.second = level;
 	}
+	//for (std::map<std::string, Level>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
+	//	_moduleLogLevels[it->first] = level;
+	//}
 	_moduleLogLevelsMutex.unlock();
 }
 
@@ -455,22 +448,30 @@ void CX_Logger::captureOFLogMessages(bool capture) {
 void CX_Logger::levelForAllExceptions(Level level) {
 	_exceptionLevelsMutex.lock();
 	_defaultExceptionLevel = level;
-	for (std::map<std::string, Level>::iterator it = _exceptionLevels.begin(); it != _exceptionLevels.end(); it++) {
-		_exceptionLevels[it->first] = level;
+
+	for (std::pair<const std::string, Level>& exLevel : _exceptionLevels) {
+		exLevel.second = level;
 	}
+	//for (std::map<std::string, Level>::iterator it = _exceptionLevels.begin(); it != _exceptionLevels.end(); it++) {
+	//	_exceptionLevels[it->first] = level;
+	//}
 	_exceptionLevelsMutex.unlock();
 }
 
 /*! When a logged message is stored, if its log level is greater than or
 equal to the exception level for the given module, an exception will be thrown.
-The exception will be a std::runtime_error. By default, the exception level is LOG_NONE,
-i.e. that no logged messages will cause an exception to be thrown.
+The exception will be a std::runtime_error. 
+
+By default, the exception level is LOG_NONE, i.e. that no logged messages 
+will cause an exception to be thrown. If `level` is set to `LOG_ERROR`,
+then any messages with log level error or above will cause an exception
+to be thrown.
 
 You might want to use this feature for two reasons:
 1) There are certain really serious errors that sometimes happen while
-the experiment is running that are not themselves exceptions but that
-you want to be exceptions so that they will not allow the program to
-continue in an erroneous state.
+the experiment is running that are not themselves exceptions but which
+cause the program to continue in an erroneous state, so you would like
+an exception to be thrown in those cases.
 2) For debugging purposes. When an exception is thrown it triggers a
 breakpoint in some IDEs. When that happens, you have a full stack trace
 and interactive debugger environment to work with to help determine why
@@ -514,7 +515,7 @@ void CX_Logger::_storeLogMessage(CX::Private::CX_LogMessageSink& ms) {
 
 	//Check for exceptions
 	_exceptionLevelsMutex.lock();
-	Level level;
+	Level level = Level::LOG_NONE;
 	if (_exceptionLevels.find(ms._module) != _exceptionLevels.end()) {
 		level = _exceptionLevels[ms._module];
 	} else {
