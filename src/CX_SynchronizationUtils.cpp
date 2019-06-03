@@ -734,7 +734,7 @@ namespace Sync {
 		tp.pred = this->calculateTimeFP(unit);
 
 
-		double qt = LinearModel::FittedModel::_getQT(this->N - 2);
+		double qt = LinearModel::FittedModel::_getQT((int)this->N - 2);
 		double xDif = unit - xBar;
 		double rhRad = 1.0 + (1.0 / this->N) + (xDif * xDif) / _denSum;
 
@@ -803,13 +803,16 @@ namespace Sync {
 	double LinearModel::FittedModel::_getQT(int df) {
 		// 95% interval
 		static std::vector<double> qtLUT = { 12.7062047362, 4.3026527297, 3.1824463053, 2.7764451052, 2.5705818356, 2.4469118511, 2.3646242516, 2.3060041352, 2.2621571628, 2.2281388520, 2.2009851601, 2.1788128297, 2.1603686565, 2.1447866879, 2.1314495456, 2.1199052992, 2.1098155778, 2.1009220402, 2.0930240544, 2.0859634473, 2.0796138447, 2.0738730679, 2.0686576104, 2.0638985616, 2.0595385528, 2.0555294386, 2.0518305165, 2.0484071418, 2.0452296421, 2.0422724563 };
+
 		if (df <= 0) {
 			CX::Instances::Log.error("LinearModel") << "Invaid degrees of freedom for t-distribution quantile look-up-table.";
 			return 0;
 		}
-		if (df > qtLUT.size()) {
-			df = qtLUT.size();
+
+		if (df > (int)qtLUT.size()) {
+			df = (int)qtLUT.size();
 		}
+
 		return qtLUT[df - 1];
 	}
 
@@ -1190,8 +1193,6 @@ namespace Sync {
 	 // DataVisualizer //
 	////////////////////
 
-
-
 	void DataVisualizer::_newDataCallback(const Sync::DataContainer::NewData& nd) {
 		if (nd.empty()) {
 			return;
@@ -1229,8 +1230,6 @@ namespace Sync {
 			_currentSample++;
 
 		}
-
-
 
 
 

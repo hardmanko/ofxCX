@@ -68,8 +68,8 @@ namespace Util {
 			s << " Name: " << this->name << std::endl;
 		}
 
-		s << "Range: " << this->min() << ", " << this->max() << " ms" << std::endl <<
-			"Mean (SD): " << this->mean() << " (" << this->stdDev() << ") ms" << std::endl;
+		s << "Range: " << this->min().millis() << ", " << this->max().millis() << " ms" << std::endl <<
+			"Mean (SD): " << this->mean().millis() << " (" << this->stdDev().millis() << ") ms" << std::endl;
 
 		return s.str();
 	}
@@ -199,8 +199,8 @@ namespace Util {
 			s << " Name: " << this->name << std::endl;
 		}
 
-		s << "Range: " << this->min() << ", " << this->max() << " ms" << std::endl <<
-			"Mean (SD): " << this->mean() << " (" << this->stdDev() << ") ms" << std::endl;
+		s << "Range: " << this->min().millis() << ", " << this->max().millis() << " ms" << std::endl <<
+			"Mean (SD): " << this->mean().millis() << " (" << this->stdDev().millis() << ") ms" << std::endl;
 
 		return s.str();
 	}

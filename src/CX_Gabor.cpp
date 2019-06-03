@@ -301,8 +301,8 @@ ofFloatPixels waveformToPixels(const WaveformProperties& properties) {
 	float C = -intercept;
 	float mult = 1 / sqrt(A * A + 1 * 1);
 
-	for (int yi = 0; yi < pix.getHeight(); yi++) {
-		for (int xi = 0; xi < pix.getWidth(); xi++) {
+	for (size_t yi = 0; yi < pix.getHeight(); yi++) {
+		for (size_t xi = 0; xi < pix.getWidth(); xi++) {
 
 			//Center so that x and y are relative to the origin.
 			float px = xi - center.x;
@@ -315,7 +315,7 @@ ofFloatPixels waveformToPixels(const WaveformProperties& properties) {
 
 			intensity = CX::Util::clamp<float>(intensity, 0, 1);
 
-			int index = xi + yi * pix.getWidth();
+			size_t index = xi + yi * pix.getWidth();
 			pix[index] = intensity;
 		}
 	}
@@ -378,8 +378,8 @@ ofFloatPixels envelopeToPixels(const EnvelopeProperties& properties) {
 
 	ofPoint center = ofPoint(properties.width / 2, properties.height / 2);
 
-	for (int y = 0; y < pix.getHeight(); y++) {
-		for (int x = 0; x < pix.getWidth(); x++) {
+	for (size_t y = 0; y < pix.getHeight(); y++) {
+		for (size_t x = 0; x < pix.getWidth(); x++) {
 
 			float d = center.distance(ofPoint(x, y));
 
@@ -387,7 +387,7 @@ ofFloatPixels envelopeToPixels(const EnvelopeProperties& properties) {
 
 			amount = CX::Util::clamp<float>(amount, 0, 1);
 
-			int index = x + y * pix.getWidth();
+			size_t index = x + y * pix.getWidth();
 			pix[index] = amount;
 		}
 	}
@@ -496,10 +496,10 @@ ofFloatPixels gaborToPixels(ofColor color1, ofColor color2, const ofFloatPixels&
 	
 	pix.allocate(width, height, ofImageType::OF_IMAGE_COLOR_ALPHA);
 
-	for (int x = 0; x < pix.getHeight(); x++) {
-		for (int y = 0; y < pix.getWidth(); y++) {
+	for (size_t x = 0; x < pix.getHeight(); x++) {
+		for (size_t y = 0; y < pix.getWidth(); y++) {
 
-			int index = x + y * pix.getWidth();
+			size_t index = x + y * pix.getWidth();
 
 			float waveProportion = wave[index];
 			ofFloatColor lerped = color1.getLerped(color2, waveProportion);

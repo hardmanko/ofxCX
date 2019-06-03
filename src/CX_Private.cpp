@@ -25,7 +25,7 @@ void CX_GLFenceSync::startSync(void) {
 	_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 	glFlush(); //This glFlush assures that the fence sync object gets pushed into the command queue.
 
-	_syncStart = Instances::Clock.now();
+	_syncStart = CX::Instances::Clock.now();
 
 	_status = SyncStatus::Syncing;
 }
@@ -39,10 +39,9 @@ void CX_GLFenceSync::updateSync(void) {
 	GLenum result = glClientWaitSync(_fenceSyncObject, 0, 0);
 	if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
 
-		_syncCompleteTime = Instances::Clock.now();
+		_syncCompleteTime = CX::Instances::Clock.now();
 		_status = SyncStatus::SyncComplete;
 		_syncSuccess = true;
-		
 		
 	} else if (result == GL_WAIT_FAILED) {
 
@@ -52,7 +51,8 @@ void CX_GLFenceSync::updateSync(void) {
 		
 	} 
 	//else if (result == GL_TIMEOUT_EXPIRED) {
-		// do nothing
+		//do nothing
+		//CX::Instances::Log.warning("CX_GLFenceSync") << "Sync timeout";
 	//}
 
 }
