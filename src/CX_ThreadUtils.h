@@ -499,7 +499,7 @@ public:
 	template <class Listener>
 	void setCallback(Listener* listener, std::function<void(Listener*)> cbMethod) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
-		_callback = std::bind(cbMethod, listener, std::placeholders::_1);
+		_callback = std::bind(cbMethod, listener);
 	}
 
 	void listenTo(ofEvent<void>* evp, int priority = (int)Priority::Normal) {
