@@ -227,7 +227,7 @@ void CX_Clock::delay(CX_Millis t) const {
 std::string CX_Clock::_formatTime(const std::string& format, const std::time_t* time) const {
 
 	char output[256];
-	std::size_t written = std::strftime(output, 256, format.c_str(), localtime(time));
+	std::size_t written = std::strftime(output, 256, format.c_str(), std::localtime(time));
 
 	std::string rval = "";
 	if (written > 0) {

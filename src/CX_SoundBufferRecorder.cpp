@@ -267,7 +267,7 @@ void CX_SoundBufferRecorder::_inputEventHandler(const CX_SoundStream::InputEvent
 
 	if (_inData.recordingQueued) {
 
-		int64_t nextBufferStartSF = inputData.bufferStartSampleFrame + inputData.bufferSize;
+		SampleFrame nextBufferStartSF = inputData.bufferStartSampleFrame + inputData.bufferSize;
 		if (_inData.queuedRecordingStartSampleFrame >= nextBufferStartSF) {
 			//Instances::Log.notice("CX_SoundBufferPlayer") << "Queued but not starting...";
 			return;

@@ -18,12 +18,6 @@ CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {
 	getUnderflowsSinceLastCheck(true);
 }
 
-/*
-void CX_SoundBufferPlayer::_ssDestructEventHandler(void) {
-	_outputEventHelper.stopListening();
-	_ssDestructEventHelper.stopListening();
-}
-*/
 
 /*! Set up the sound buffer player to use an existing `CX_SoundStream`, `ss`. 
 `ss` is not set up or started automatically, the user code must set it up and start it.

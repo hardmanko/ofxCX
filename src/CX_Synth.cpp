@@ -1632,7 +1632,7 @@ double FIRFilter::getNextSample(void) {
 
 	double y_n = 0;
 
-	for (unsigned int i = 0; i < _coefCount; i++) {
+	for (int i = 0; i < _coefCount; i++) {
 		y_n += _inputSamples[i] * _coefficients[i];
 	}
 

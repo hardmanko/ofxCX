@@ -4,7 +4,6 @@ namespace CX {
 
 /*! Default constructor. */
 CX_SoundBuffer::CX_SoundBuffer(void) :
-	//_successfullyLoaded(false),
 	_channels(0),
 	_sampleRate(0)
 {}
@@ -156,7 +155,6 @@ bool CX_SoundBuffer::loadFile(std::string fileName) {
 
 	if (copySuccess) {
 		name = fileName;
-		//_successfullyLoaded = true;
 	} else {
 		this->clear();
 	}
@@ -187,7 +185,6 @@ bool CX_SoundBuffer::addSound(std::string fileName, CX_Millis timeOffset) {
 			return false;
 		}
 		this->addSound(temp, timeOffset);
-		//this->_successfullyLoaded = true; //What is this doing here?
 		return true;
 	}
 }
@@ -255,6 +252,13 @@ bool CX_SoundBuffer::addSound(CX_SoundBuffer sb, CX_Millis timeOffset) {
 /*! Inserts a sound into the sound buffer. Any sound data past the insertion point
 given by `timeOffset` will be moved to be after the content of `sb`.
 
+The new length of the sound buffer will be its previous length plus the
+length of `sb`.
+
+\param sb A `CX_SoundBuffer`. Must be successfully loaded.
+\param insertionTime Time at which to add the new sound data.
+
+\return `true` if `sb` was successfully inserted to this `CX_SoundBuffer`, `false` otherwise.
 */
 bool CX_SoundBuffer::insertSound(CX_SoundBuffer sb, CX_Millis insertionTime) {
 
@@ -298,11 +302,14 @@ bool CX_SoundBuffer::insertSound(CX_SoundBuffer sb, CX_Millis insertionTime) {
 
 
 /*! Set the contents of the sound buffer from a vector of float data.
+
 \param data A vector of sound samples. These values should go from -1 to 1. This requirement is not checked for.
 If there is more than once channel of data, the data must be interleaved. This means that if, for example,
 there are two channels, the ordering of the samples is 12121212... where 1 represents a sample for channel
-1 and 2 represents a sample for channel 2. This requirement is not checked for. The number of samples in this
-vector must be evenly divisible by the number of channels set with the `channels` argument, which is checked for!
+1 and 2 represents a sample for channel 2. This requirement is not checked for. 
+The number of samples in this vector must be evenly divisible by the number of channels set with the `channels` argument, 
+which is checked for and an error logged if needed.
+
 \param channels The number of channels worth of data that is stored in `data`.
 \param sampleRate The sample rate of the samples. If `data` contains, for example, a sine wave, that wave was sampled
 at some rate (e.g. 48000 samples per second of waveform). `sampleRate` should be that rate.
@@ -317,7 +324,6 @@ bool CX_SoundBuffer::setFromVector(const std::vector<float>& data, int channels,
 	_data = data;
 	_channels = channels;
 	_sampleRate = sampleRate;
-	//_successfullyLoaded = true; //Do no checking of the values.
 	return true;
 }
 
@@ -346,7 +352,6 @@ void CX_SoundBuffer::setChannelData(unsigned int channel, const std::vector<floa
 /*! Clears all data stored in the sound buffer and returns it to an uninitialized state. */
 void CX_SoundBuffer::clear(void) {
 	_data.clear();
-	//_successfullyLoaded = false;
 	_channels = 0;
 	_sampleRate = 0;
 	name = "";
@@ -515,13 +520,13 @@ bool CX_SoundBuffer::deleteChannel(unsigned int channel) {
 }
 
 /*!
-Sets the number of channels of the sound. Depending on the old number of channels (O) and the new number of channels (N),
-the conversion is performed in different ways. The cases in this list are evaluated in order an only 1 is executed, so a
+Sets the number of channels of the sound. Depending on the old number of channels (`O`) and the new number of channels (`N`),
+the conversion is performed in different ways. The cases in this list are evaluated in order and only case is executed, so a
 later case cannot be reached if an earlier case has already evaluated to true. When a case says anything about the average
 of existing data, it means the average on a sample-by-sample basis, not the average of all the samples.
 
 + If `O == N`, nothing happens.
-+ If `O == 0`, the number of channels is just set to N. However, `O == 0`, that usually means that there is no sound data 
++ If `O == 0`, the number of channels is just set to N. However, `O == 0` usually means that there is no sound data 
 available, so changing the number of channels is kind of meaningless.
 + If `N == 0`, the CX_SoundBuffer is cleared: all data is deleted. If you have no channels, you cannot have data in those channels.
 + If `O == 1`, each of the `N` new channels is set equal to the value of the single old channel.
@@ -535,26 +540,25 @@ The averaging is done in an unusual way, so that the average intensitity of the 
 An example to show why this is done:
 Assume that you have 3 channels -- a, b, and c -- and are switching to 2 channels, removing c. 
 The average of c is just c, so when c is added to a and b, you now have c in 2 channels,
-whereas it was just in 1 channel originally: (a + c) + (b + c) = a + b + 2c. Thus, the final intensity of c is too high.
+whereas it was just in 1 channel originally: (a + c) + (b + c) = a + b + 2c. Thus, the final intensity of c is double what it should be.
 What we want to do is scale c down by the number of channels it is being added to so that the total amount of c is equal
 both before and after changing the number of channels, so you divide c by the number of channels it is being added to (2).
 Now, (a + c/2) + (b + c/2) = a + b + c.
-However, there is another problem, which is that abs(a + c/2) can be greater than 1 even if the absolute value of both is no greater than 1.
+However, there is another problem, which is that abs(a + c/2) can be greater than 1 even if the absolute value of both is not greater than 1.
 Now we need to scale each sample so that it is constrained to the proper range.
 We do that by taking the ratio of the new and old channels and multiplying the samples by that ratio. `N/O = 2/3` in the example.
 Now we have 2/3 * (a + c/2) = 2/3 * a + 1/3 * c, which is bounded between -1 and 1, as long as a and c are both bounded.
 Also, 2/3 * [(a + c/2) + (b + c/2)] = 2a/3 + 2b/3 + 2c/3, so the ratios of the components of the original sound are constant in the final sound.
 
-\param newChannelCount The number of channels the CX_SoundBuffer will have after the conversion.
+\param N The number of channels the CX_SoundBuffer will have after the conversion.
 \param average If `true` and case `N < O` is reached, then the `O - N` old channels that are being removed will be averaged and this
 average will be added back into the `N` remaining channels. If `false` (the default), the channels that are being removed will actually be removed.
 
 \return `true` if the conversion was successful, `false` if the attempted conversion is unsupported.
 */
-bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average) {
+bool CX_SoundBuffer::setChannelCount (unsigned int N, bool average) {
 
 	unsigned int O = _channels; //Old number of channels
-	unsigned int N = newChannelCount; //New number of channels
 
 	if (O == N) {
 		return true;
@@ -563,7 +567,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 	if (O == 0) {
 		//If there are no old channels, just set the channel count to the new value. There can be no data to copy to new channels,
 		//because there were no channels to contain the data.
-		_channels = newChannelCount;
+		_channels = N;
 		return true;
 	}
 
@@ -577,17 +581,17 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 		//Mono to anything is easy: Just copy the data to new channels.
 
 		unsigned int originalSize = _data.size();
-		_data.resize( _data.size() * newChannelCount );
+		_data.resize( _data.size() * N);
 
 		for (unsigned int samp = 0; samp < originalSize; samp++) {
-			for (unsigned int ch = 0; ch < newChannelCount; ch++) {
-				unsigned int destIndex = _data.size() - 1 - (samp * newChannelCount) - ch;
+			for (unsigned int ch = 0; ch < N; ch++) {
+				unsigned int destIndex = _data.size() - 1 - (samp * N) - ch;
 				unsigned int sourceIndex = originalSize - samp - 1;
 				_data[destIndex]  = _data[sourceIndex];
 			}
 		}
 
-		_channels = newChannelCount;
+		_channels = N;
 		return true;
 	}
 
@@ -613,14 +617,14 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 
 		}
 
-		_channels = newChannelCount;
+		_channels = N;
 		_data = newSoundData;
 		return true;
 	}
 
 	if (N > O) {
 
-		std::vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
+		std::vector<float> newSoundData( this->getSampleFrameCount() * N);
 
 		if (average) {
 			//New channels set to average of existing channels
@@ -629,35 +633,35 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 				for (unsigned int oldChannel = 0; oldChannel < _channels; oldChannel++) {
 					float samp = _data[ (sample * _channels) + oldChannel ];
 					average += samp;
-					newSoundData[ (sample * newChannelCount) + oldChannel ] = samp;
+					newSoundData[ (sample * N) + oldChannel ] = samp;
 				}
 				average /= _channels;
 
-				for (unsigned int newChannel = _channels; newChannel < newChannelCount; newChannel++) {
-					newSoundData[ (sample * newChannelCount) + newChannel ] = average;
+				for (unsigned int newChannel = _channels; newChannel < N; newChannel++) {
+					newSoundData[ (sample * N) + newChannel ] = average;
 				}
 			}
 		} else {
 			//Silence new channels
-			std::vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
+			std::vector<float> newSoundData( this->getSampleFrameCount() * N);
 			for (unsigned int sample = 0; sample < getSampleFrameCount(); sample++) {
 				for (unsigned int oldChannel = 0; oldChannel < _channels; oldChannel++) {
-					newSoundData[ (sample * newChannelCount) + oldChannel ] = _data[ (sample * _channels) + oldChannel ];
+					newSoundData[ (sample * N) + oldChannel ] = _data[ (sample * _channels) + oldChannel ];
 				}
-				for (unsigned int newChannel = _channels; newChannel < newChannelCount; newChannel++) {
-					newSoundData[ (sample * newChannelCount) + newChannel ] = 0;
+				for (unsigned int newChannel = _channels; newChannel < N; newChannel++) {
+					newSoundData[ (sample * N) + newChannel ] = 0;
 				}
 			}
 		}
 
-		_channels = newChannelCount;
+		_channels = N;
 		_data = newSoundData;
 
 		return true;
 	}
 
 	if (N < O) {
-		std::vector<float> newSoundData( this->getSampleFrameCount() * newChannelCount );
+		std::vector<float> newSoundData( this->getSampleFrameCount() * N);
 
 		if (average) {
 			//the data from the `O - N` to-be-removed channels are averaged and added on to the `N` remaining channels
@@ -690,14 +694,14 @@ bool CX_SoundBuffer::setChannelCount (unsigned int newChannelCount, bool average
 			}
 		}
 
-		_channels = newChannelCount;
+		_channels = N;
 		_data = newSoundData;
 
 		return true;
 	}
 	/*
 	CX::Instances::Log.error("CX_SoundBuffer") << "Sound cannot be set to the given number of channels. There is no known conversion from " <<
-						_channels << " channels to " << newChannelCount <<
+						_channels << " channels to " << N <<
 						" channels. You will have to do it manually. Use getRawDataReference() to access the sound data." << endl;
 
 	return false;
@@ -765,8 +769,9 @@ void CX_SoundBuffer::resample(float newSampleRate) {
 
 }
 
-/*! This function returns the number of sample frames in the sound data held by the CX_SoundBuffer,
-which is equal to the total number of samples divided by the number of channels. */
+/*! Get the number of sample frames of the sound data held by the CX_SoundBuffer,
+which is equal to the total number of samples divided by the number of channels. 
+*/
 uint64_t CX_SoundBuffer::getSampleFrameCount(void) const {
 	if (_channels == 0) {
 		return 0;
@@ -774,8 +779,21 @@ uint64_t CX_SoundBuffer::getSampleFrameCount(void) const {
 	return _data.size() / _channels; 
 }
 
-/*! This function reverses the sound data stored in the CX_SoundBuffer so that if it is played, it will
-play in reverse. */
+/*! Get the total number of samples in the sound data held by the CX_SoundBuffer,
+which is equal to the number of sample frames times the number of channels. 
+*/
+uint64_t CX_SoundBuffer::getTotalSampleCount(void) const { 
+	return _data.size(); 
+}
+
+/*! Get a reference to the raw data underlying the CX_SoundBuffer. The raw data are a `vector<float>`.
+
+\return A reference to the data. Modify at your own risk! */
+std::vector<float>& CX_SoundBuffer::getRawDataReference(void) { 
+	return _data; 
+}
+
+/*! Reverses the sound data stored in the CX_SoundBuffer to play in reverse. */
 void CX_SoundBuffer::reverse(void) {
 	std::vector<float> copy = _data;
 	unsigned int sampleFrameCount = getSampleFrameCount();
@@ -789,7 +807,9 @@ void CX_SoundBuffer::reverse(void) {
 	}
 }
 
-/*! This function changes the speed of the sound by some multiple.
+/*! Changes the speed of the sound by some multiple. 
+Does not do pitch compensation (e.g. faster sounds will be higher pitch).
+
 \param speedMultiplier Amount to multiply the speed by. Must be greater than 0.
 \note If you would like to use a negative value to reverse the direction of playback, see reverse().
 */
@@ -803,10 +823,10 @@ void CX_SoundBuffer::multiplySpeed(float speedMultiplier) {
 	this->_sampleRate = sampleRate;
 }
 
-/*!
-Apply gain in terms of decibels.
+/*! Apply gain in terms of decibels. The resulting values are clamped to be within [-1, 1].
+
 \param decibels Gain to apply. 0 does nothing. Positive values increase volume, negative values decrease volume. 
-Negative infinity is essentially mute, although see multiplyAmplitudeBy() for a more obvious way to mute.
+Negative infinity is essentially mute, although see `multiplyAmplitudeBy()` for a more obvious way to mute.
 \param channel The channel that the gain should be applied to. If channel is less than 0, the gain is applied to all channels.
 */
 bool CX_SoundBuffer::applyGain(float decibels, int channel) {
@@ -814,9 +834,9 @@ bool CX_SoundBuffer::applyGain(float decibels, int channel) {
 	return multiplyAmplitudeBy( amplitudeMultiplier, channel );
 }
 
-/*!
-Apply gain in terms of amplitude. The original value is simply multiplied by `amount` 
+/*! Apply gain in terms of amplitude. The original value is simply multiplied by `amount` 
 and then clamped to be within [-1, 1].
+
 \param amount The gain that should be applied. A value of 0 mutes the channel. 
 1 does nothing. 2 doubles the amplitude. -1 inverts the waveform.
 \param channel The channel that the given multiplier should be applied to. If channel 
@@ -842,6 +862,7 @@ bool CX_SoundBuffer::multiplyAmplitudeBy(float amount, int channel) {
 		}
 
 	}
+
 	return true;
 }
 
@@ -854,8 +875,9 @@ unsigned int CX_SoundBuffer::_timeToSample(CX_Millis time, int channels) const {
 	return channelCount * getSampleRate() * time.seconds();
 }
 
-/*! Writes the contents of the sound buffer to a file with the given file name. The data will
+/*! Writes the contents of the sound buffer to a WAV file with the given file name. The data will
 be encoded as 16-bit PCM. The sample rate is determined by the sample rate of the sound buffer.
+
 \param filename The name of the file to save the sound data to. `filename` should have a .wav extension. If it does not,
 ".wav" will be appended to the file name and a warning will be logged.
 \return `true` for successfully saving the file. `false` if there was an error while opening the file. If so, an error will be logged.
@@ -927,10 +949,9 @@ bool CX_SoundBuffer::writeToFile(std::string filename) {
 }
 
 /*
-void CX_SoundBuffer::setMetadata(unsigned int channels, float sampleRate, bool isSuccessfullyLoaded) {
+void CX_SoundBuffer::setMetadata(unsigned int channels, float sampleRate) {
 	_channels = channels;
 	_sampleRate = sampleRate;
-	_successfullyLoaded = isSuccessfullyLoaded;
 }
 */
 
