@@ -62,6 +62,9 @@ namespace CX  {
 		// Other functions
 		void seek(CX_Millis time);
 		CX_Millis getPlaybackTime(void);
+		SampleFrame getPlaybackSF(void);
+		CX_Millis getRemainingPlaybackTime(void);
+		SampleFrame getRemainingPlaybackSF(void);
 
 		std::shared_ptr<CX_SoundBuffer> getSoundBuffer(void);
 
@@ -70,6 +73,8 @@ namespace CX  {
 		std::shared_ptr<CX_SoundStream> getSoundStream(void);
 		//const Configuration& getConfiguration(void) const;
 
+
+
 	private:
 		
 		struct OuputEventData : public std::recursive_mutex {
@@ -77,7 +82,7 @@ namespace CX  {
 			OuputEventData(void) :
 				playing(false),
 				playbackQueued(false),
-				playbackStartSampleFrame(std::numeric_limits<int64_t>::max()),
+				playbackStartSampleFrame(std::numeric_limits<int64_t>::max()), // big number means playback never starts
 				soundPlaybackSampleFrame(0),
 				underflowCount(0),
 				soundBuffer(nullptr)
@@ -86,12 +91,12 @@ namespace CX  {
 			bool playing;
 			bool playbackQueued;
 
-			int64_t playbackStartSampleFrame; // For queued playback, the sample frame at which playback should start.
-			int64_t soundPlaybackSampleFrame; // This is relative to the current playback of the current sound buffer.
+			int64_t playbackStartSampleFrame; // For queued playback, the sample frame of the sound stream at which playback should start.
+
+			int64_t soundPlaybackSampleFrame; // Playback position in the soundBuffer
+			std::shared_ptr<CX_SoundBuffer> soundBuffer;
 
 			unsigned int underflowCount;
-
-			std::shared_ptr<CX_SoundBuffer> soundBuffer;
 
 		} _outData;
 

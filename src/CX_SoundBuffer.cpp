@@ -381,7 +381,17 @@ void CX_SoundBuffer::setLength(CX_Millis length) {
 /*! Gets the length, in time, of the data stored in the sound buffer. This depends on the sample rate of the sound.
 \return The length. */
 CX_Millis CX_SoundBuffer::getLength(void) {
-	return CX_Seconds((double)_data.size() / (getChannelCount() * (double)getSampleRate()));
+
+	double samplesPerSecond = getSampleRate() * (double)getChannelCount();
+
+	double sec = 0;
+	if (samplesPerSecond > 0.0) {
+		sec = (double)getTotalSampleCount() / samplesPerSecond;
+	}
+	
+	return CX_Seconds(sec);
+
+	//return CX_Seconds((double)_data.size() / (getChannelCount() * (double)getSampleRate()));
 }
 
 
@@ -498,18 +508,26 @@ CX_SoundBuffer CX_SoundBuffer::copySection(CX_Millis start, CX_Millis end) const
 \return `true` if there were no errors.
 */
 bool CX_SoundBuffer::deleteChannel(unsigned int channel) {
-	if (channel >= this->getChannelCount()) {
+
+	if (channel >= _channels) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "deleteChannel(): Specified channel does not exist.";
 		return false;
 	}
 
-	std::vector<float> dataCopy;
+	uint64_t sampleFrames = this->getSampleFrameCount();
 
-	for (unsigned int sampleFrame = 0; sampleFrame < this->getSampleFrameCount(); sampleFrame++) {
-		for (unsigned int ch = 0; ch < this->getChannelCount(); ch++) {
+	std::vector<float> dataCopy;
+	dataCopy.resize(_data.size() - sampleFrames);
+	size_t copyIndex = 0;
+
+	for (unsigned int sampleFrame = 0; sampleFrame < sampleFrames; sampleFrame++) {
+		for (unsigned int ch = 0; ch < _channels; ch++) {
 			if (ch != channel) {
-				unsigned int index = (sampleFrame * this->getChannelCount()) + ch;
-				dataCopy.push_back( this->_data[index] );
+				unsigned int index = (sampleFrame * _channels) + ch;
+
+				//dataCopy.push_back( this->_data[index] );
+
+				dataCopy[copyIndex++] = _data[index];
 			}
 		}
 	}
@@ -710,7 +728,7 @@ bool CX_SoundBuffer::setChannelCount (unsigned int N, bool average) {
 }
 
 /*! \brief Returns the number of channels in the sound data stored in this CX_SoundBuffer. */
-int CX_SoundBuffer::getChannelCount(void) const {
+unsigned int CX_SoundBuffer::getChannelCount(void) const {
 	return _channels; 
 }
 
@@ -767,6 +785,13 @@ void CX_SoundBuffer::resample(float newSampleRate) {
 
 	_sampleRate = newSampleRate;
 
+}
+
+
+/*! Get the sample rate of the sound data stored in this CX_SoundBuffer.
+*/
+float CX_SoundBuffer::getSampleRate(void) const { 
+	return _sampleRate; 
 }
 
 /*! Get the number of sample frames of the sound data held by the CX_SoundBuffer,

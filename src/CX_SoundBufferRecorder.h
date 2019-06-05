@@ -7,6 +7,8 @@
 namespace CX {
 	/*! This class is used for recording audio data from, e.g., a microphone. The recorded data is
 	stored in a CX_SoundBuffer for further use. 
+
+
 	
 	\code{.cpp}
 	CX_SoundBufferRecorder recorder;
@@ -46,8 +48,9 @@ namespace CX {
 		bool setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer);
 		bool setSoundBuffer(CX_SoundBuffer* buffer);
 
+
 		// 3. Record or queue recording
-		bool record(bool clearExistingData = false);
+		bool record(bool clear = false);
 		bool queueRecording(CX_Millis startTime, CX_Millis timeout, bool clear = false);
 		bool queueRecording(SampleFrame sampleFrame, bool clear = false);
 
@@ -56,13 +59,21 @@ namespace CX {
 		bool isRecordingQueued(void);
 		bool isRecordingOrQueued(void);
 
+
 		// 4. Stop recording
 		void stop(void);
+		bool setAutoStopLength(CX_Millis recordingLength);
+
+		void pause(void);
+		void clear(void);
+
 
 		// 5. Get the recorded sound buffer and recording metadata
+		bool isRecordingComplete(void);
 		std::shared_ptr<CX_SoundBuffer> getSoundBuffer(void);
 		CX_Millis getRecordingStartTime(void);
 		CX_Millis getRecordingEndTime(void);
+		CX_Millis getRecordingLength(void);
 
 
 		// Misc functions
@@ -72,22 +83,33 @@ namespace CX {
 
 	private:
 
+		enum class RecordingState : int {
+			Ready,
+			Recording,
+			PreparingToRecord,
+			RecordingQueued,
+			RecordingComplete
+		};
+
 		struct InputEventData : public std::recursive_mutex {
 
 			InputEventData(void) :
+				//state(RecordingState::Ready),
 				recording(false),
 				startingRecording(false),
+				recordingQueued(false),
+				queuedRecordingStartSampleFrame(std::numeric_limits<SampleFrame>::max()),
 				overflowCount(0)
 			{}
 
+			//RecordingState state;
+
 			bool recording;
-			bool startingRecording;
-
-			std::shared_ptr<CX_SoundBuffer> buffer;
-			
-
+			bool startingRecording;			
 			bool recordingQueued;
 			SampleFrame queuedRecordingStartSampleFrame;
+
+			std::shared_ptr<CX_SoundBuffer> buffer;
 
 			CX_Millis recordingStart;
 			CX_Millis recordingEnd;

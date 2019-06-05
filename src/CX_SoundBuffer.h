@@ -33,6 +33,10 @@ namespace CX {
 		CX_SoundBuffer(std::string fileName);
 
 		bool loadFile(std::string fileName);
+		bool writeToFile(std::string path);
+
+		//! Stores the name of the last file from which data was loaded with `loadFile()`. It can be set by the user with no side effects.
+		std::string name;
 
 		bool addSound(std::string fileName, CX_Millis timeOffset);
 		bool addSound(CX_SoundBuffer sb, CX_Millis timeOffset);
@@ -69,21 +73,17 @@ namespace CX {
 
 		void multiplySpeed(float speedMultiplier);
 		void resample(float newSampleRate);
-		//! Get the sample rate of the sound data stored in this CX_SoundBuffer.
-		float getSampleRate(void) const { return _sampleRate; };
+		float getSampleRate(void) const;
 
 		bool setChannelCount(unsigned int channels, bool average = true);
-		int getChannelCount(void) const;
+		unsigned int getChannelCount(void) const;
 		
 		uint64_t getTotalSampleCount(void) const;
 		uint64_t getSampleFrameCount(void) const;
 
 		std::vector<float>& getRawDataReference(void);
 
-		bool writeToFile(std::string path);
 
-		//! Stores the name of the file from which data was read, if any. It can be set by the user with no side effects.
-		std::string name;
 
 		//void setMetadata(unsigned int channels, float sampleRate);
 

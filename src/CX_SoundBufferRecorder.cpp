@@ -100,7 +100,10 @@ std::shared_ptr<CX_SoundBuffer> CX_SoundBufferRecorder::getSoundBuffer(void) {
 	return _inData.buffer;
 }
 
-/*! \brief Get the time at which the recording started. This is not latency adjusted. */
+/*! \brief Get the experiment time at which the recording started. This is not latency adjusted. 
+
+Returns 0 if recording or queued to record.
+*/
 CX_Millis CX_SoundBufferRecorder::getRecordingStartTime(void) {
 	if (isRecordingOrQueued()) {
 		return CX_Millis(0);
@@ -110,7 +113,7 @@ CX_Millis CX_SoundBufferRecorder::getRecordingStartTime(void) {
 	return _inData.recordingStart;
 }
 
-/*! \brief Get the time at which the recording ended. This is not latency adjusted. */
+/*! \brief Get experiment the time at which the recording ended. This is not latency adjusted. */
 CX_Millis CX_SoundBufferRecorder::getRecordingEndTime(void) {
 	if (isRecordingOrQueued()) {
 		return CX_Millis(0);
@@ -120,18 +123,28 @@ CX_Millis CX_SoundBufferRecorder::getRecordingEndTime(void) {
 	return _inData.recordingEnd;
 }
 
+CX_Millis CX_SoundBufferRecorder::getRecordingLength(void) {
+	std::lock_guard<std::recursive_mutex> lock(_inData);
+	if (!_inData.buffer) {
+		return CX_Millis(0);
+	}
+
+	return _inData.buffer->getLength();
+}
 
 
-/*! Begins recording data to the CX_SoundBuffer that was associated with this CX_SoundBufferRecorder
-with setSoundBuffer().
-\param clearExistingData If true, any data in the CX_SoundBuffer will be deleted before recording starts.
+/*! Begins recording data to the `CX_SoundBuffer` that is associated with this `CX_SoundBufferRecorder`.
+
+See `setSoundBuffer()` for a way to associate a sound buffer of your choice with the recorder.
+
+\param clear If `true`, any data in the `CX_SoundBuffer` will be deleted before recording starts.
 \return `false` if recording could not start, `true` if recording started.
 */
-bool CX_SoundBufferRecorder::record(bool clearExistingData) {
+bool CX_SoundBufferRecorder::record(bool clear) {
 
 	std::lock_guard<std::recursive_mutex> inputLock(_inData);
 
-	_prepareRecordBuffer(clearExistingData, "record");
+	_prepareRecordBuffer(clear, "record");
 
 	_inData.startingRecording = true;
 	_inData.recording = true;
@@ -139,11 +152,55 @@ bool CX_SoundBufferRecorder::record(bool clearExistingData) {
 	return true;
 }
 
-/*! \brief Stop recording sound data. */
+/*! Stop recording sound data.
+
+If recording is queued, cancels queued recording.
+
+More sound data can be recorded at the end of the current 
+recording by calling `record()` again before clearing the data.
+
+*/
 void CX_SoundBufferRecorder::stop(void) {
 	std::lock_guard<std::recursive_mutex> inputLock(_inData);
 	_inData.recording = false;
+	_inData.recordingQueued = false;
+	_inData.startingRecording = false;
 }
+
+bool CX_SoundBufferRecorder::isRecordingComplete(void) {
+	return false;
+}
+
+void CX_SoundBufferRecorder::pause(void) {
+	std::lock_guard<std::recursive_mutex> inputLock(_inData);
+	
+}
+
+void CX_SoundBufferRecorder::clear(void) {
+	stop();
+
+	const CX_SoundStream::Configuration& ssc = _soundStream->getConfiguration();
+
+	std::lock_guard<std::recursive_mutex> inputLock(_inData);
+
+	if (_inData.buffer) {
+		//_inData.buffer->clear();
+		_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
+	}
+
+	_inData.recording = false;
+	_inData.startingRecording = false;
+	_inData.recordingQueued = false;
+
+	_inData.queuedRecordingStartSampleFrame = std::numeric_limits<SampleFrame>::max();
+
+	_inData.recordingStart = 0;
+	_inData.recordingEnd = 0;
+
+	_inData.overflowCount = 0;
+	
+}
+
 
 /*! \brief Returns `true` if currently recording. */
 bool CX_SoundBufferRecorder::isRecording(void) {
@@ -238,21 +295,23 @@ void CX_SoundBufferRecorder::_prepareRecordBuffer(bool clear, std::string callin
 		clear = true;
 	}
 
-	if (clear) {
-		_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
-	} else {
-		// If not clearing but there is a mismatch, that is a problem
+	if (!clear) {
 		if (_inData.buffer->getChannelCount() != ssc.inputChannels || _inData.buffer->getSampleRate() != ssc.sampleRate) {
-			CX::Instances::Log.warning("CX_SoundBufferRecorder") << callingFunctionName << 
+			CX::Instances::Log.warning("CX_SoundBufferRecorder") << callingFunctionName <<
 				"(): The sample rate or number of channels don't match between the stored sound buffer and the input stream. The sound buffer will be cleared.";
 
-			_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
+			clear = true;
 		}
+	}
+
+	if (clear) {
+		_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
 	}
 }
 
 void CX_SoundBufferRecorder::_inputEventHandler(const CX_SoundStream::InputEventArgs& inputData) {
 
+	// Get timestamp immediately
 	CX_Millis eventTime = Instances::Clock.now();
 
 	std::lock_guard<std::recursive_mutex> inputLock(_inData);
@@ -286,11 +345,14 @@ void CX_SoundBufferRecorder::_inputEventHandler(const CX_SoundStream::InputEvent
 	
 	// Timing
 	if (_inData.startingRecording) {
-		// When starting to record, the first buffer comes once it is full, which takes the amount of time per buffer.
 		_inData.startingRecording = false;
+
+		// When starting to record, the first buffer comes once it is full, which takes the amount of time per buffer.
+		// Subtract buffer latency from the event time to get the time at which that buffer started being recorded.
 		_inData.recordingStart = eventTime - _soundStream->getLatencyPerBuffer();
 	}
-	// The end comes when stop() is called. The current end is now, whenever the buffer arrived.
+
+	// The end of the recording is the current event time (minus unknown input latency)
 	_inData.recordingEnd = eventTime;
 
 
@@ -321,5 +383,7 @@ void CX_SoundBufferRecorder::_cleanUpOldSoundStream(void) {
 
 	_soundStream = nullptr;
 }
+
+
 
 } // namespace CX

@@ -1,6 +1,6 @@
 #include "CX.h"
 
-/* This example shows how to play back sound files with CX_SoundBufferPlayer.
+/* This example shows how to do play back sound files with CX_SoundBufferPlayer.
 
 Sound files are loaded and stored by CX_SoundBuffers.
 Once the files are loaded, CX_SoundBufferPlayer can play the corresponding CX_SoundBuffers.
@@ -36,17 +36,18 @@ void runExperiment (void) {
 	// The api affects how sound data is transferred between your program and the sound hardware.
 	config.api = RtAudio::Api::WINDOWS_WASAPI; // Best choice for reasonably modern Windows: Low latency support for most hardware.
 	//config.api = RtAudio::Api::WINDOWS_DS; // Fallback in case WASAPI is unsupported: Higher latency but broad hardware support.
+	//config.api = RtAudio::Api::WINDOWS_ASIO; // If you have hardware with specialized ASIO drivers, ASIO is probably the best.
 	//
 	// If you are not on Windows, use one of the APIs for your OS. 
 	// You can see which APIs are available on your system by using:
 	//cout << CX_SoundStream::convertApisToString( CX_SoundStream::getCompiledApis() ) << endl;
 	
 	
-	config.outputDeviceId = -1; // Using -1 means to use the default output device. 
+	config.outputDeviceId = -1; // Using -1 means to use the default output device (which is the default). 
 		// See which output devices are available on your system with:
 		//cout << CX_SoundStream::listDevices(config.api) << endl;
 
-	config.outputChannels = 2; // We want at least stereo output for this example. CX does not *gracefully*
+	config.outputChannels = 2; // Choose stereo output. CX does not *gracefully*
 		// support channel configurations past stereo, but they are supported.
 	
 	config.sampleRate = 48000; // Requested sample rate for the audio samples, which may not be supported. 
@@ -74,7 +75,8 @@ void runExperiment (void) {
 	// At this point, if all went well, the sound player is all set up and we just need to
 	// give it something to play, so we will load up some sound files. These files should be present in 
 	// ./bin/data (relative to the project directory). Those sound files should come with this example.
-	cow.loadFile("Cow.wav"); //cow and duck are CX_SoundBuffers that were created at the start of this example.
+	// cow and duck are CX_SoundBuffers that were created at the start of this example.
+	cow.loadFile("Cow.wav"); 
 	duck.loadFile("Duck.wav");
 
 	// Given the way CX_SoundBufferPlayer works, the CX_SoundBuffers given to it must be at the same
@@ -112,15 +114,15 @@ void runExperiment (void) {
 	// If you want to present several auditory stimuli one after the other
 	// with known offsets, this is a good way to do so.
 
-	compoundSound.addSound(cow, 0); //Add the cow at an offset of 0 milliseconds from the start.
+	compoundSound.addSound(cow, 0); // Add the cow at an offset of 0 milliseconds from the start.
 
-	compoundSound.addSound(duck, CX_Seconds(6)); //Add the duck 6 seconds after the start.
+	compoundSound.addSound(duck, CX_Seconds(6)); // Add the duck 6 seconds after the start.
 
 	compoundSound.addSound(fastDuck, CX_Seconds(2)); // Also add the fast duck at 2 seconds.
 
 	player.setSoundBuffer( &compoundSound );
 
-	cout << "Playing compound sound: cow overlapped with fast duck, then normal duck." << endl;
+	cout << "Playing compound sound: cow overlapped with fast duck, followed by normal duck." << endl;
 	player.play();
 	while (player.isPlaying())
 		;

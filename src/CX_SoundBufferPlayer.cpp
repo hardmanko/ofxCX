@@ -49,6 +49,7 @@ std::shared_ptr<CX_SoundStream> CX_SoundBufferPlayer::getSoundStream(void) {
 	return _soundStream; 
 }
 
+
 /*! Attempts to start playing the current CX_SoundBuffer associated with the player.
 
 \param restart If `true`, playback will be restarted from the beginning of the sound. 
@@ -203,26 +204,56 @@ void CX_SoundBufferPlayer::seek(CX_Millis time) {
 
 	std::lock_guard<std::recursive_mutex> outputLock(_outData);
 
-	if (_outData.playing) {
-		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "seek() used while sound was playing.";
+	if (_outData.playing || _outData.playbackQueued) {
+		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "seek() used while sound was playing or queued.";
 	}
 
 	_outData.soundPlaybackSampleFrame = time.seconds() * _soundStream->getConfiguration().sampleRate;
 	
 }
 
-/*! Gets the current playback time of the sound. 
-Works whether the sound is playing or not.
+/*! Get the playback time of the sound buffer that is associated with the player.
 
-\return A CX_Millis containing the current time of the sound.
+The return value of this function does not depend on whether the sound is playing.
+
+\return A `CX_Millis` containing the current time of the sound.
 */
 CX_Millis CX_SoundBufferPlayer::getPlaybackTime(void) {
-
-	std::lock_guard<std::recursive_mutex> outputLock(_outData);
-
-	double seconds = (double)_outData.soundPlaybackSampleFrame / (double)_soundStream->getConfiguration().sampleRate;
+	double seconds = getPlaybackSF() / (double)_soundStream->getConfiguration().sampleRate;
 
 	return CX_Seconds(seconds);
+}
+
+
+/*! Get the playback position (in Sample Frames) of the sound buffer that is associated with the player.
+
+The return value of this function does not depend on whether the sound is playing.
+*/
+SampleFrame CX_SoundBufferPlayer::getPlaybackSF(void) {
+	std::lock_guard<std::recursive_mutex> outputLock(_outData);
+
+	//if (!_outData.playing) { return 0; }
+
+	return _outData.soundPlaybackSampleFrame;
+}
+
+
+CX_Millis CX_SoundBufferPlayer::getRemainingPlaybackTime(void) {
+	SampleFrame remainingSF = getRemainingPlaybackSF();
+
+	return CX_Seconds(remainingSF / (double)_soundStream->getConfiguration().sampleRate);
+}
+
+SampleFrame CX_SoundBufferPlayer::getRemainingPlaybackSF(void) {
+	std::lock_guard<std::recursive_mutex> outputLock(_outData);
+
+	//if (!_outData.playing) { return 0; }
+
+	if (_outData.soundBuffer != nullptr && _outData.soundBuffer->isReadyToPlay()) {
+		return _outData.soundBuffer->getSampleFrameCount() - _outData.soundPlaybackSampleFrame;
+	}
+
+	return _outData.soundPlaybackSampleFrame;
 }
 
 /*! Get the number of buffer underflows since the last check for underflows with this function.
