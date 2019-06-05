@@ -47,13 +47,8 @@ This means that you can retreive the hashed value with `getSeed()`.
 \param seedString The string from which the new seed will be calculated. 
 */
 void CX_RandomNumberGenerator::setSeed(const std::string& seedString) {
-
-	auto seedHash = std::hash<std::string>{}(seedString);
+	size_t seedHash = std::hash<std::string>{}(seedString);
 	this->setSeed(seedHash);
-
-	//Poco::Checksum cs(Poco::Checksum::TYPE_CRC32);
-	//cs.update(seedString);
-	//this->setSeed(cs.checksum());
 }
 
 /*! Get the seed used to seed the random number generator. 
@@ -144,8 +139,8 @@ vector. It returns a `CX_DataFrame`.
 \return A `CX_DataFrame` with `df.getRowCount() * blocksToSample` rows.
 */
 CX_DataFrame CX_RandomNumberGenerator::sampleBlocksDF(const CX_DataFrame& df, unsigned int blocksToSample) {
-	std::vector<unsigned int> rowIndices = Util::intVector<unsigned int>(0, df.getRowCount() - 1);
-	std::vector<unsigned int> blockIndices = this->sampleBlocks(rowIndices, blocksToSample);
+	std::vector<CX_DataFrame::RowIndex> rowIndices = Util::intVector<CX_DataFrame::RowIndex>(0, df.getRowCount() - 1);
+	std::vector<CX_DataFrame::RowIndex> blockIndices = this->sampleBlocks(rowIndices, blocksToSample);
 	return df.copyRows(blockIndices);
 }
 
