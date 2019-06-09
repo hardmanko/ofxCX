@@ -56,6 +56,8 @@ namespace CX {
 		std::string getDateTimeString(const std::string& format = "%Y-%b-%d %H-%M-%S") const;
 		std::string getExperimentStartDateTimeString(const std::string& format = "%Y-%b-%d %H-%M-%S") const;
 
+		//std::string convertExperimentTimeToDateTimeString(CX_Millis experimentTime, const std::string& format = "%Y-%b-%d %H-%M-%S") const;
+
 		template <typename ImplType>
 		void setImplementation(void) {
 			std::shared_ptr<ImplType> impl = std::make_shared<ImplType>();
@@ -152,6 +154,25 @@ namespace CX {
 		virtual bool isMonotonic(void) const = 0; //!< Returns `true` if the clock implementation is monotonic/stable (only moves forward at a fixed rate).
 	};
 
+	/*! A dummy clock implementation. nanos() always returns 0. */
+	class CX_DummyClock : public CX_BaseClockInterface {
+		cxTick_t nanos(void) const {
+			return 0;
+		}
+
+		void resetStartTime(void) {
+			return;
+		}
+
+		std::string getName(void) const {
+			return "CX_DummyClock";
+		}
+
+		virtual bool isMonotonic(void) const {
+			return false;
+		}
+	};
+
 	/* A generic wrapper for clocks meeting the standard library clock interface standards. 
 	For example `std::chrono::high_resolution_clock`. */
 	template <class stdClock>
@@ -183,9 +204,8 @@ namespace CX {
 	};
 
 
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
-	/* This clock implementation uses ofGetMonotonicTime() (in ofUtils.cpp).
-	*/
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+	/* This clock implementation uses ofGetMonotonicTime() (in ofUtils.cpp). */
 	class CX_ofMonotonicTimeClock : public CX_BaseClockInterface {
 	public:
 
@@ -211,6 +231,7 @@ namespace CX {
 		} _startTime;
 	};
 #endif
+
 
 #ifdef TARGET_WIN32
 	/* This clock uses the very precise win32 `QueryPerformanceCounter` interface. */

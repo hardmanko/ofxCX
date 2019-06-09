@@ -2,7 +2,7 @@
 
 #include "CX_Private.h"
 
-#include "CX_AppWindow.h"
+#include "CX_AppWindow.h" // 0.8.4 remove
 #include "ofAppGLFWWindow.h"
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
@@ -43,6 +43,9 @@ bool initializeCX(CX_InitConfiguation config) {
 	
 	ofSetEscapeQuitsApp(false);
 
+	// Set up the clock
+	CX::Instances::Clock.setup(nullptr, true, config.clockPrecisionTestIterations);
+
 	CX::Instances::Log.captureOFLogMessages(config.captureOFLogMessages);
 	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
 	CX::Instances::Log.levelForModule(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the verbose shader gobbeldygook.
@@ -52,17 +55,15 @@ bool initializeCX(CX_InitConfiguation config) {
 	bool openedSucessfully = CX::reopenWindow(config.windowConfig); //or for the first time.
 
 	if (!openedSucessfully) {
-		CX::Instances::Log.error("CX_EntryPoint") << "The window was not opened successfully.";
+		CX::Instances::Log.error("CX_EntryPoint") << "initializeCX(): The window was not opened successfully.";
 	} else {
-		// Set up the clock
-		CX::Instances::Clock.setup(nullptr, true, config.clockPrecisionTestIterations);
 
 		CX::Instances::Input.pollEvents(); //Do this so that the window is at least minimally responding and doesn't get killed by the OS.
 			//This must happen after the window is configured because it relies on GLFW.
 
 		if (config.framePeriodEstimationInterval != CX_Millis(0)) {
 			CX::Instances::Disp.estimateFramePeriod(config.framePeriodEstimationInterval);
-			CX::Instances::Log.notice("CX_EntryPoint") << "Estimated frame period for display: " << CX::Instances::Disp.getFramePeriod().millis() << " ms.";
+			CX::Instances::Log.notice("CX_EntryPoint") << "initializeCX(): Estimated frame period for display: " << CX::Instances::Disp.getFramePeriod().millis() << " ms.";
 		}
 
 		setupKeyboardShortcuts();
@@ -80,12 +81,15 @@ bool initializeCX(CX_InitConfiguation config) {
 		
 	}
 
-	CX::Instances::Log.verbose() << endl << endl << "### End of startup logging data ###" << endl << endl;
-	CX::Instances::Log.flush(); //Flush logs after setup, so user can see if any errors happened during setup.
+	CX::Instances::Log.verbose() << std::endl << std::endl << "### End of startup logging data ###" << std::endl << std::endl;
+	CX::Instances::Log.flush(); // Flush logs after setup so user can see if any errors happened during setup.
 
-	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_NOTICE);
-	CX::Instances::Log.levelForModule(CX_Logger::Level::LOG_WARNING, "ofFbo"); //It isn't clear that this should be here, but the fbos
-		//are really verbose when allocated and it is a lot of gibberish.
+	// By default, suppress verbose messages to the console
+	CX::Instances::Log.levelForConsole(CX_Logger::Level::LOG_NOTICE);
+
+	// It isn't clear that this should be here, but the fbos
+	// are really verbose (with notices) when allocated and it is a lot of gibberish.
+	CX::Instances::Log.levelForModule(CX_Logger::Level::LOG_WARNING, "ofFbo"); 
 
 	return openedSucessfully;
 }
@@ -114,7 +118,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 				std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
 				std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
 				ofSetCurrentRenderer(newRenderer, true);
-				window->renderer() = newRenderer;
+				window->renderer() = newRenderer; //This seems to be unnecessary as of 0.10.1
 #else
 				ofSetCurrentRenderer(std::shared_ptr<ofBaseRenderer>(new ofGLRenderer), true);
 #endif
@@ -161,23 +165,15 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 }
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
-//The window doesn't close automatically, so kill the window.
 bool exitCallbackHandler(ofEventArgs& args) {
 
-	ofNotifyEvent(Private::getEvents().exitEvent);
+	ofNotifyEvent(CX::Private::getEvents().exitEvent);
 
-	//glfwDestroyWindow is not supposed to be called from callbacks...
-	//if (glfwGetCurrentContext() != nullptr) {
-	//	glfwDestroyWindow(glfwGetCurrentContext());
-	//}
-
-	glfwTerminate(); //this also should not be called from callbacks...
-	//but without calling this, the window hangs.
-
-	//Another option:
-	//CX::Private::appWindow->close();
-
-	std::exit(0);
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 10 && OF_VERSION_PATCH == 0
+	glfwTerminate(); // This is not supposed to be called from callbacks
+	// but without calling this, the window hangs on 0.10.0.
+	// Not needed on 0.10.1.
+#endif
 
 	return true;
 }
@@ -191,9 +187,8 @@ void reopenWindow_0_10_0(CX_WindowConfiguration config) {
 	bool firstCall = (CX::Private::appWindow == nullptr);
 
 	if (firstCall) {
-		CX::Private::appWindow = shared_ptr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
-	}
-	else {
+		CX::Private::appWindow = std::shared_ptr<ofAppBaseWindow>(new CX::Private::CX_AppWindow);
+	} else {
 		CX::Private::appWindow->close();
 	}
 
@@ -375,7 +370,7 @@ bool reopenWindow(CX_WindowConfiguration config) {
 		CX::Private::reopenWindow080(config);
 #else
 		CX::Instances::Log.error("CX_EntryPoint") << "reopenWindow(): The current version of openFrameworks is not supported by CX. "
-			"Version 0.9.8 of openFrameworks is recommended.";
+			"Version 0.10.1 of openFrameworks is recommended.";
 		return false;
 #endif
 
@@ -412,6 +407,9 @@ bool reopenWindow(CX_WindowConfiguration config) {
 int main(void) {
 	CX::initializeCX(CX_InitConfiguation());
 
+	CX::Instances::Clock.resetExperimentStartTime();
+
+	// Always runExperiment even if initialization failed so user code can see that fact.
 	runExperiment();
 
 	CX::terminateCX();

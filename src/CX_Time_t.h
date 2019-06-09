@@ -12,7 +12,7 @@ namespace CX {
 	/*! The underlying time store for CX_Time_t (e.g. CX_Millis), which stores time in nanoseconds. 
 	CX_Time_t can store time differences, which can be negative, so cxTick_t must be a signed int.
 	
-	cxTick_t is defined as a signed 64 bit integer (int64_t), which can store 2^63 nanoseconds before
+	cxTick_t is defined as a signed 64 bit integer (`int64_t`), which can store 2^63 nanoseconds before
 	rolling over to a negative value. How long is that? 
 	2^63 nanoseconds * 1 second / 10^9 nanoseconds = 9.2 * 10^9 (9.2 billion) seconds 
 	9.2 * 10^9 seconds / 60 (secs/min) / 60 (mins/hr) / 24 (hrs / day) / 365 (days/year) = 292.47 years
@@ -53,14 +53,14 @@ namespace CX {
 	}
 
 	/*! Contains the time value stored within a `CX_Time_t<T>` as individual components of the time: hours, minutes, etc. 
-	See  CX_Time_t::getPartitionedTime() for a way to get a filled instance of PartitionedTime from a CX_Time_t. 
+	See  CX_Time_t::getTimeParts() for a way to get a filled instance of CX_TimeParts from a CX_Time_t. 
 	*/
-	struct PartitionedTime {
+	struct CX_TimeParts {
 
-		PartitionedTime(void);
+		CX_TimeParts(void);
 
 		template <typename TimeUnit> 
-		PartitionedTime(CX_Time_t<TimeUnit> time) {
+		CX_TimeParts(CX_Time_t<TimeUnit> time) {
 			setTime(time);
 		}
 
@@ -103,7 +103,7 @@ namespace CX {
 		}
 
 		template <typename TimeUnit>
-		PartitionedTime& operator=(CX_Time_t<TimeUnit> time) {
+		CX_TimeParts& operator=(CX_Time_t<TimeUnit> time) {
 			this->setTime<TimeUnit>(time);
 			return *this;
 		}
@@ -121,28 +121,32 @@ namespace CX {
 		int microseconds; //!< The microseconds component of the time.
 		int nanoseconds; //!< The nanoseconds component of the time.
 
-		std::string getString(void) const;
-		void setFromString(const std::string& str);
-		void setFromIstream(std::istream& is);
+		std::string toFormattedString(std::string fmt) const;
+
+		std::string toString(void) const;
+		void fromString(const std::string& str);
+		void fromIstream(std::istream& is);
 
 	private:
 		static std::string _zps(int i, int digits);
 	};
 
-	std::ostream& operator<<(std::ostream& os, const PartitionedTime& pt);
-	std::istream& operator>>(std::istream& is, PartitionedTime& pt);
+	std::ostream& operator<<(std::ostream& os, const CX_TimeParts& pt);
+	std::istream& operator>>(std::istream& is, CX_TimeParts& pt);
 
 	/*! The `CX_Time_t` class provides a convenient way to deal with time in different units, 
 	mostly seconds and milliseconds for psychology experiments. Different time units are represented
-	with different templated versions of the class, such as CX_Seconds and CX_Millis.
-	
-	For example, CX_Millis and CX_Seconds are two templated variations on the CX_Time_t class.
-	This allows you to express that you want time in different units.
+	with different templated versions of the class, with names like `CX_Seconds` and `CX_Millis`.
+
+	This allows you to express time in different units.
+
 	\code{.cpp}
 	CX_Millis hundredMillis = 100;
 	CX_Seconds twoSecs = 2;
 	\endcode
+
 	Even though the times are expressed in different units, you can compare them in various ways.
+
 	\code{.cpp}
 	if (twoSecs > hundredMillis) {
 		cout << "Two seconds is greater than 100 milliseconds" << endl;
@@ -152,14 +156,27 @@ namespace CX {
 	if (onePointNineSecs == nineteenHundredMillis) {
 		cout << "Units don't matter, only the underlying time representation." << endl;
 	}
+	\endcode
+
+	The contents of any of the templated versions of CX_Time_t are all stored in nanoseconds,
+	so conversion between time types is lossless.
+	This also means that CX_Time_t has at most nanosecond accuracy.
+	See \ref CX::cxTick_t for calculations showing the amount of time that can be stored
+	by a `CX_Time_t` object.
+
+	\code{cpp}
+
+	CX_Hours maxTime(std::numeric_limits<cxTick_t>::max());
+	cout << maxTime.
 
 	// Get the underlying nanoseconds representation
 	cxTick_t hundredMillionNanos = hundredMillis.nanos();
 	\endcode
 	
-	The upside of this
-	system is that although all functions in CX that take time can take time values in a variety of
-	units. For example, CX_Clock::wait() takes CX_Millis as the time type so if you were to do
+
+	The upside of this system is that all functions in CX that take time can take time values 
+	in a variety of	units. 
+	For example, CX_Clock::wait() takes CX_Millis as the time type so if you were to do:
 	\code{.cpp}
 	Clock.wait(20);
 	\endcode
@@ -168,14 +185,8 @@ namespace CX {
 	Clock.wait(CX_Seconds(2));
 	\endcode
 	to wait for 2 seconds, if units of seconds are easier to think in for the given situation.
-	
-	CX_Time_t has at most nanosecond accuracy.
-	See \ref CX::cxTick_t for calculations showing the amount of time that can be stored
-	by a `CX_Time_t` object.
-	The contents of any of the templated versions of CX_Time_t are all stored in nanoseconds, 
-	so conversion between time types is lossless.
 
-	See this example for a varity of things you can do with this class.
+	Here are some other things that you can do with this class:
 	\code{.cpp}
 	CX_Millis mil = 100;
 	CX_Micros mic = mil; //mic now contains 100000 microseconds == 100 milliseconds.
@@ -184,35 +195,36 @@ namespace CX {
 	//You can add times together.
 	CX_Seconds sec = CX_Minutes(.1) + CX_Millis(100); //sec contains 6.1 seconds.
 
-	//You can take the ratio of times.
+	//You can take the ratio of times. Note that time ratios are unitless, so the ratio is a floating point number.
 	double secondsPerMinute = CX_Seconds(1)/CX_Minutes(1);
 
 	//You can compare times using the standard comparison operators (==, !=, <, >, <=, >=).
 	if (CX_Minutes(60) == CX_Hours(1)) {
-	cout << "There are 60 minutes in an hour." << endl;
+		cout << "There are 60 minutes in an hour." << endl;
 	}
 
 	if (CX_Millis(12.3456) == CX_Micros(12345.6)) {
-	cout << "Time can be represented as a floating point value with sub-time-unit precision." << endl;
+		cout << "Time can be represented as a floating point value with sub-time-unit precision." << endl;
 	}
 
-	//If you want to be explicit about what time unit you want out, you can use the seconds(), millis(), etc., functions:
+	// To extract a floating point representation of the time in different units, 
+	// you can you can use the seconds(), millis(), etc., functions:
 	sec = CX_Seconds(6);
-	cout << "In " << sec.seconds() << " seconds there are " << sec.millis() << " milliseconds and " << sec.minutes() << " minutes." << endl;
+	double millisIn6 = sec.millis();
+	double minutesIn6 = sec.minutes();
+	cout << "In " << sec.seconds() << " seconds there are " << millisIn6 << " milliseconds and " << minutesIn6 << " minutes." << endl;
 
 	//You can alternately do a typecast if you're about to print the result:
 	cout << "In " << sec << " seconds there are " << (CX_Millis)sec << " milliseconds and " << (CX_Minutes)sec << " minutes." << endl;
 
-	//The difference between the above examples is the resulting type.
-	//double minutes = (CX_Minutes)sec; //This does not work: A CX_Minutes cannot be assigned to a double
-	double minutes = sec.minutes(); //minutes() returns a double.
 
 	//You can construct a time with the result of the construction of a time object with a different time unit.
 	CX_Minutes min = CX_Hours(.05); //3 minutes
 
 	//You can get the whole number amounts of different time units.
 	CX_Seconds longTime = CX_Hours(2) + CX_Minutes(16) + CX_Seconds(40) + CX_Millis(123) + CX_Micros(456) + CX_Nanos(1);
-	CX_Seconds::PartitionedTime parts = longTime.getPartitionedTime();
+	CX_Seconds::CX_TimeParts parts = longTime.getTimeParts();
+	parts.
 
 	\endcode
 
@@ -227,10 +239,10 @@ namespace CX {
 		that are stored in the CX_Time_t. This is different from seconds(), millis(), etc., because
 		those functions return the fractional part (e.g. 5.340 seconds) whereas this returns only
 		whole numbers (e.g. 5 seconds and 340 milliseconds).
-		\return A PartitionedTime struct containing whole number amounts of the components of the time.
+		\return A CX_TimeParts struct containing whole number amounts of the components of the time.
 		*/
-		PartitionedTime getPartitionedTime(void) const {
-			return PartitionedTime(*this);
+		CX_TimeParts getTimeParts(void) const {
+			return CX_TimeParts(*this);
 		}
 
 		/*! Default constructor for CX_Time_t. */
@@ -478,7 +490,7 @@ namespace CX {
 	template <typename TimeUnit>
 	std::ostream& operator<<(std::ostream& os, const CX_Time_t<TimeUnit>& t) {
 
-		os << PartitionedTime(t);
+		os << CX_TimeParts(t);
 
 		return os;
 	}
@@ -487,8 +499,8 @@ namespace CX {
 	template <typename TimeUnit>
 	std::istream& operator>>(std::istream& is, CX_Time_t<TimeUnit>& t) {
 
-		PartitionedTime pt;
-		pt.setFromIstream(is);
+		CX_TimeParts pt;
+		pt.fromIstream(is);
 		t = pt.getTime<TimeUnit>();
 
 		return is;

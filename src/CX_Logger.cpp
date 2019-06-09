@@ -25,19 +25,8 @@ namespace Private {
 		CX_Logger::Level level;
 
 		std::string filename;
-		ofFile *file;
-	};
-
-	struct CX_LogMessage {
-		CX_LogMessage(CX_Logger::Level level_, std::string module_) :
-			level(level_),
-			module(module_)
-		{}
-
-		std::string message;
-		CX_Logger::Level level;
-		std::string module;
-		std::string timestamp;
+		//ofFile *file;
+		ofPtr<ofFile> file;
 	};
 
 	struct CX_ofLogMessageEventData_t {
@@ -77,23 +66,17 @@ namespace Private {
 	}
 
 	void CX_LoggerChannel::log(ofLogLevel level, const std::string & module, const char* format, va_list args) {
-		int bufferSize = 256;
+		size_t bufferSize = 256;
 
 		while (true) {
 
-			char *buffer = new char[bufferSize];
+			std::vector<char> bufVect(bufferSize);
 
-			int result = vsnprintf(buffer, bufferSize - 1, format, args);
-			if ((result > 0) && (result < bufferSize)) {
-				this->log(level, module, std::string(buffer));
-
-				delete[] buffer;
-				buffer = nullptr;
+			int result = vsnprintf(bufVect.data(), bufferSize - 1, format, args);
+			if ((result > 0) && (result < (int)bufferSize)) {
+				this->log(level, module, std::string(bufVect.data()));
 				return;
 			}
-
-			delete[] buffer;
-			buffer = nullptr;
 
 			bufferSize *= 4;
 			if (bufferSize > 17000) { //Largest possible is 16384 chars.
@@ -150,20 +133,20 @@ namespace Private {
 } //namespace Private
 
 
+///////////////
+// CX_Logger //
+///////////////
 
 CX_Logger::CX_Logger(void) :
-	_logTimestamps(false),
-	_timestampFormat("%H:%M:%S"),
-	_defaultLogLevel(Level::LOG_NOTICE)
+	_timestampFormat(""),
+	_defaultModuleLevel(Level::LOG_ALL)
 {
 	levelForAllExceptions(Level::LOG_NONE);
 	levelForConsole(Level::LOG_ALL);
+	levelForAllModules(Level::LOG_ALL);
 
 	_ofLoggerChannel = std::make_shared<CX::Private::CX_LoggerChannel>();
-
 	ofAddListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
-
-	levelForAllModules(Level::LOG_ERROR);
 }
 
 CX_Logger::~CX_Logger(void) {
@@ -173,13 +156,6 @@ CX_Logger::~CX_Logger(void) {
 	//ofRemoveListener(_ofLoggerChannel->messageLoggedEvent, this, &CX_Logger::_loggerChannelEventHandler);
 
 	flush();
-
-	for (size_t i = 0; i < _targetInfo.size(); i++) {
-		if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
-			//_targetInfo[i].file->close(); //They should already be closed from flush()
-			delete _targetInfo[i].file;
-		}
-	}
 }
 
 /*! Log all of the messages stored since the last call to flush() to the
@@ -190,42 +166,63 @@ void CX_Logger::flush(void) {
 
 	// Copy out the messages and then clear them.
 	_messageQueueMutex.lock();
-	auto _mqCopy = _messageQueue;
+	std::vector<CX_LogMessage> mqCopy = _messageQueue;
 	_messageQueue.clear();
 	_messageQueueMutex.unlock();
 
-	if (_mqCopy.size() == 0) {
+	if (mqCopy.size() == 0) {
 		return;
 	}
 
+	_timestampMutex.lock();
+	std::string timestampFormat = _timestampFormat; // Store the format so you only have to lock its mutex once
+	_timestampMutex.unlock();
+
 	//Open output files
 	for (size_t i = 0; i < _targetInfo.size(); i++) {
-		if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
-			_targetInfo[i].file->open(_targetInfo[i].filename, ofFile::Append, false);
-			if (!_targetInfo[i].file->is_open()) {
-				std::cerr << "<CX_Logger> File " << _targetInfo[i].filename << " could not be opened for logging." << std::endl;
-			}
+		if (_targetInfo[i].targetType != CX::Private::LogTarget::FILE) {
+			continue;
+		}
+
+		_targetInfo[i].file->open(_targetInfo[i].filename, ofFile::Append, false);
+
+		if (!_targetInfo[i].file->is_open()) {
+
+			CX_LogMessage msg;
+			msg.module = "CX_Logger";
+			msg.timestamp = CX::Instances::Clock.now();
+			msg.level = Level::LOG_ERROR;
+			msg.message = "flush(): File " + _targetInfo[i].filename + " could not be opened for logging.";
+
+			std::cerr << _formatMessage(msg, _getTimestampFormat()) << std::endl;
+
 		}
 	}
 
-	for (const CX::Private::CX_LogMessage& m : _mqCopy) {
+	for (const CX_LogMessage& msg : mqCopy) {
 
+		// Flush event listeners get all messages regardless of filtering
 		if (flushEvent.size() > 0) {
-			MessageFlushData dat(m.message, m.level, m.module);
-			ofNotifyEvent(flushEvent, dat);
+			flushEvent.notify(msg);
 		}
 
-		std::string formattedMessage = _formatMessage(m) + "\n";
+		// If the message level is less than the log level for the message's module, don't output the message.
+		if (msg.level < _moduleLogLevels[msg.module]) {
+			continue;
+		}
 
-		if (m.level >= _moduleLogLevels[m.module]) {
-			for (size_t i = 0; i < _targetInfo.size(); i++) {
-				if (m.level >= _targetInfo[i].level) {
-					if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
-						std::cout << formattedMessage;
-					} else if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
-						*_targetInfo[i].file << formattedMessage;
-					}
-				}
+		std::string formattedMessage = _formatMessage(msg, timestampFormat);
+
+		for (size_t i = 0; i < _targetInfo.size(); i++) {
+			// If the level of the message is less than the logging target level, don't output the message.
+			if (msg.level < _targetInfo[i].level) {
+				continue;
+			}
+
+			if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
+				std::cout << formattedMessage << std::endl;
+			} else if (_targetInfo[i].targetType == CX::Private::LogTarget::FILE) {
+				*_targetInfo[i].file << formattedMessage << std::endl;
 			}
 		}
 	}
@@ -239,42 +236,46 @@ void CX_Logger::flush(void) {
 }
 
 /*! \brief Clear all stored log messages. */
+/*
 void CX_Logger::clear(void) {
 	_messageQueueMutex.lock();
 	_messageQueue.clear();
 	_messageQueueMutex.unlock();
 }
+*/
 
 /*! \brief Set the log level for messages to be printed to the console. */
 void CX_Logger::levelForConsole(Level level) {
-	bool consoleFound = false;
 	for (size_t i = 0; i < _targetInfo.size(); i++) {
 		if (_targetInfo[i].targetType == CX::Private::LogTarget::CONSOLE) {
-			consoleFound = true;
 			_targetInfo[i].level = level;
+			return;
 		}
 	}
 
-	if (!consoleFound) {
-		CX::Private::CX_LoggerTargetInfo consoleTarget;
-		consoleTarget.targetType = CX::Private::LogTarget::CONSOLE;
-		consoleTarget.level = level;
-		_targetInfo.push_back(consoleTarget);
-	}
+	CX::Private::CX_LoggerTargetInfo consoleTarget;
+	consoleTarget.targetType = CX::Private::LogTarget::CONSOLE;
+	consoleTarget.level = level;
+	_targetInfo.push_back(consoleTarget);
 }
 
 /*! Sets the log level for the file with the given file name. If the file does not exist, it will be created.
 If the file does exist, it will be overwritten with a warning logged to cerr (typically the console).
+
 \param level Log messages with level greater than or equal to this level will be outputted to the file.
-See the \ref CX::CX_Logger::Level enum for valid values.
+See the \ref CX::CX_Logger::Level enum for valid values. 
+
 \param filename The name of the file to output to. If no file name is given, a file with the name
-"Log file %DTS%.txt" will be created, where %DTS% is a string containing the date/time at which the experiment started. date/time string from the start time of the experiment will be used.
- from a date/time from the start time of the experiment will be used.
+"Logfile %DTS%.txt" will be created, where %DTS% is a string containing the date/time at which the experiment started.
+
+\param subdir Subdirectory in ./bin/data where the log file should be stored. 
+Should not end with the directory separator ("/" or "\") which is added automatically.
 */
-void CX_Logger::levelForFile(Level level, std::string filename) {
+void CX_Logger::levelForFile(Level level, std::string filename, std::string subdir) {
 	if (filename == "CX_LOGGER_DEFAULT") {
-		filename = "Log file " + CX::Instances::Clock.getDateTimeString("%Y-%b-%e %h-%M-%S %a") + ".txt";
+		filename = "Logfile " + CX::Instances::Clock.getExperimentStartDateTimeString() + ".txt";
 	}
+	filename = subdir + "/" + filename;
 	filename = ofToDataPath(filename);
 
 	bool fileAlreadyExists = false;
@@ -306,16 +307,30 @@ void CX_Logger::levelForFile(Level level, std::string filename) {
 	fileTarget.targetType = CX::Private::LogTarget::FILE;
 	fileTarget.level = level;
 	fileTarget.filename = filename;
-	fileTarget.file = new ofFile(); //This is deallocated in the dtor
+	fileTarget.file = std::make_shared<ofFile>();
 
 	fileTarget.file->open(filename, ofFile::Reference, false);
 	if (fileTarget.file->exists()) {
-		std::cerr << "<CX_Logger> levelForFile(): Log file already exists with name: " << filename << ". It will be overwritten." << std::endl;
+
+		CX_LogMessage msg;
+		msg.module = "CX_Logger";
+		msg.timestamp = CX::Instances::Clock.now();
+		msg.level = Level::LOG_WARNING;
+		msg.message = "levelForFile(): Log file already exists with name: " + filename + ". It will be overwritten.";
+
+		std::cerr << _formatMessage(msg, _getTimestampFormat()) << std::endl;
 	}
 
 	fileTarget.file->open(filename, ofFile::WriteOnly, false);
 	if (fileTarget.file->is_open()) {
-		std::cout << "<CX_Logger> levelForFile(): Log file \"" + filename + "\" opened." << std::endl;
+
+		CX_LogMessage msg;
+		msg.module = "CX_Logger";
+		msg.timestamp = CX::Instances::Clock.now();
+		msg.level = Level::LOG_NOTICE;
+		msg.message = "levelForFile(): Log file \"" + filename + "\" opened.";
+
+		std::cerr << _formatMessage(msg, _getTimestampFormat()) << std::endl;
 	}
 	*fileTarget.file << "CX log file. Created at " << CX::Instances::Clock.getDateTimeString() << std::endl;
 	fileTarget.file->close();
@@ -339,7 +354,7 @@ void CX_Logger::levelForModule(Level level, std::string module) {
 \param module The name of the module.
 \return The level for `module`. */
 CX_Logger::Level CX_Logger::getModuleLevel(std::string module) {
-	Level level = _defaultLogLevel;
+	Level level = _defaultModuleLevel;
 	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(module) != _moduleLogLevels.end()) {
 		level = _moduleLogLevels[module];
@@ -353,26 +368,50 @@ Set the log level for all modules. This works both retroactively and proactively
 are given the log level and the default log level for new modules as set to the level.
 */
 void CX_Logger::levelForAllModules(Level level) {
-	_moduleLogLevelsMutex.lock();
-	_defaultLogLevel = level;
+
+	std::lock_guard<std::recursive_mutex> lock(_moduleLogLevelsMutex);
+
+	_defaultModuleLevel = level;
+
 	for (std::pair<const std::string, CX_Logger::Level>& modLevel : _moduleLogLevels) {
 		modLevel.second = level;
 	}
+
 	//for (std::map<std::string, Level>::iterator it = _moduleLogLevels.begin(); it != _moduleLogLevels.end(); it++) {
 	//	_moduleLogLevels[it->first] = level;
 	//}
-	_moduleLogLevelsMutex.unlock();
 }
 
 
 /*! Set whether or not to log timestamps and the format for the timestamps.
-\param logTimestamps Does what it says.
-\param format Timestamp format string. See http://pocoproject.org/docs/Poco.DateTimeFormatter.html#4684 for
-documentation of the format. Defaults to %H:%M:%S.%i (24-hour clock with milliseconds at the end).
+Timestamps are in experiment time.
+
+By default, `CX_Logger` does not log timestamps.
+
+\param logTimestamps Whether or not to log timestamps.
+\param format Timestamp format string. 
+If `format` is set to the empty string (""), no timestamp is printed.
+See `CX_TimeParts::toFormattedString()` for documentation of the format. 
 */
 void CX_Logger::timestamps(bool logTimestamps, std::string format) {
-	_logTimestamps = logTimestamps;
+	std::lock_guard<std::recursive_mutex> lock(_timestampMutex);
+
+	if (!logTimestamps) {
+		format = ""; // No logging
+	}
+
 	_timestampFormat = format;
+}
+
+CX_LogMessage CX_Logger::getLastMessage(void) {
+
+	std::lock_guard<std::recursive_mutex> lock(_messageQueueMutex);
+
+	if (_messageQueue.size() == 0) {
+		return CX_LogMessage();
+	}
+
+	return _messageQueue.back();
 }
 
 /*! This is the fundamental logging function for this class. Example use:
@@ -494,20 +533,20 @@ void CX_Logger::levelForExceptions(Level level, std::string module) {
 }
 
 void CX_Logger::_storeLogMessage(CX::Private::CX_LogMessageSink& ms) {
+
+	CX_Millis timestamp = CX::Instances::Clock.now();
+
 	//If the module is unknown to the logger, it becomes known with the default log level.
 	_moduleLogLevelsMutex.lock();
 	if (_moduleLogLevels.find(ms._module) == _moduleLogLevels.end()) {
-		_moduleLogLevels[ms._module] = _defaultLogLevel;
+		_moduleLogLevels[ms._module] = _defaultModuleLevel;
 	}
 	_moduleLogLevelsMutex.unlock();
 
 
-	CX::Private::CX_LogMessage temp(ms._level, ms._module);
+	CX_LogMessage temp(ms._level, ms._module);
 	temp.message = (*(ms._message)).str();
-
-	if (_logTimestamps) {
-		temp.timestamp = CX::Instances::Clock.getDateTimeString(_timestampFormat);
-	}
+	temp.timestamp = timestamp;
 
 	_messageQueueMutex.lock();
 	_messageQueue.push_back(temp);
@@ -515,16 +554,14 @@ void CX_Logger::_storeLogMessage(CX::Private::CX_LogMessageSink& ms) {
 
 	//Check for exceptions
 	_exceptionLevelsMutex.lock();
-	Level level = Level::LOG_NONE;
+	Level exceptLevel = _defaultExceptionLevel;
 	if (_exceptionLevels.find(ms._module) != _exceptionLevels.end()) {
-		level = _exceptionLevels[ms._module];
-	} else {
-		level = _defaultExceptionLevel;
+		exceptLevel = _exceptionLevels[ms._module];
 	}
 	_exceptionLevelsMutex.unlock();
 
-	if (ms._level >= level && !std::uncaught_exception()) {
-		std::string formattedMessage = _formatMessage(temp);
+	if (ms._level >= exceptLevel && !std::uncaught_exception()) {
+		std::string formattedMessage = _formatMessage(temp, _getTimestampFormat());
 		throw std::runtime_error(formattedMessage);
 	}
 }
@@ -546,11 +583,13 @@ std::string CX_Logger::_getLogLevelString(Level level) {
 	return "";
 }
 
-std::string CX_Logger::_formatMessage(const CX::Private::CX_LogMessage& message) {
+std::string CX_Logger::_formatMessage(const CX_LogMessage& message, std::string timestampFormat) {
 
 	std::string formattedMessage;
-	if (_logTimestamps) {
-		formattedMessage += message.timestamp + " ";
+
+	if (timestampFormat != "") {
+		std::string timestamp = message.timestamp.getTimeParts().toFormattedString(timestampFormat);
+		formattedMessage = timestamp + " ";
 	}
 
 	std::string logName = _getLogLevelString(message.level);
@@ -564,6 +603,11 @@ std::string CX_Logger::_formatMessage(const CX::Private::CX_LogMessage& message)
 	formattedMessage += message.message;
 
 	return formattedMessage;
+}
+
+std::string CX_Logger::_getTimestampFormat(void) {
+	std::lock_guard<std::recursive_mutex> lock(_timestampMutex);
+	return _timestampFormat;
 }
 
 void CX_Logger::_loggerChannelEventHandler(CX::Private::CX_ofLogMessageEventData_t& md) {

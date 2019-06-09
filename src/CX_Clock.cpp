@@ -31,6 +31,9 @@ until an implementation is chosen.
 */
 bool CX_Clock::setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStartTime, unsigned int samples) {
 
+	// During setup, use a dummy clock impl
+	setImplementation<CX_DummyClock>();
+
 	if (impl == nullptr) {
 
 		std::string warning = "";
@@ -124,6 +127,11 @@ std::shared_ptr<CX_BaseClockInterface> CX_Clock::getImplementation(void) const {
 /*! If for some reason you have a long setup period before the experiment proper
 starts, you could call this function so that the values returned by CX_Clock::now()
 will count up from 0 starting from when this function was called.
+
+This function is not thread safe: If called while the clock is being used in another
+thread to get the current time while the start time is being updated, it is possible
+for some timestamps to be corrupted and display invalid times. The program will not crash.
+
 This function also resets the experiment start date/time retrieved with getExperimentStartDateTimeString().
 */
 void CX_Clock::resetExperimentStartTime(void) {
