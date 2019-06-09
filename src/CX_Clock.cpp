@@ -290,26 +290,54 @@ CX_Millis CX_Clock::getRegularEventPeriod(void) {
 
 void CX_Clock::_regularEventThreadFunction(void) {
 
-	bool threadRunning = true;
+	// The way to make this even more fancy is to use a PID
+	// controller (or somesuch)
+
+	_regularEvent.mutex.lock();
+
+	bool threadRunning = _regularEvent.enabled;
+	CX_Millis period = _regularEvent.period;
+	
+	_regularEvent.mutex.unlock();
+
+	CX_Millis nextWakeTarget = this->now() + period;
+	CX_Millis nextPeriodAdjustment = 0;
+	
+
 	while (threadRunning) {
+
 		_regularEvent.mutex.lock();
 		threadRunning = _regularEvent.enabled;
-		CX_Millis period = _regularEvent.period;
+		period = _regularEvent.period;
 		_regularEvent.mutex.unlock();
 
 		if (!threadRunning) {
 			break;
 		}
 
-		this->sleep(period);
+		this->sleep(period + nextPeriodAdjustment);
 
-		ofNotifyEvent(this->regularEvent);
+		CX_Millis wakeTime = this->now();
+
+		this->regularEvent.notify();
+
+		if (nextWakeTarget < CX_Millis(0)) {
+			nextWakeTarget = wakeTime;
+		}
+		CX_Millis oversleep = wakeTime - nextWakeTarget;
+
+		nextPeriodAdjustment = std::min(-oversleep, period / 5); // Don't add more than 1/5th of a period. or 0 for don't add ever.
+
+		CX_Millis processingTime = this->now() - wakeTime; // This seems like overkill, but allows users to do processing during event notification
+
+		nextWakeTarget = wakeTime + period + nextPeriodAdjustment - processingTime;
+
 	}
 
 }
 
-/*! Tests the precision, with `testImplPrecision()`, of all of the clock implementations that are built-in to CX and chooses the 
-best one on the basis of the following criteria:
+/*! Tests the precision, with `testImplPrecision()`, of all of the clock implementations that are 
+built-in to CX and chooses the best one on the basis of the following criteria:
 
 1. If `excludeUnstable == true`, clock implementations that are unstable/not monotonic are excluded.
 2. If `excludeWorseThanMs == true`, clock implmentations with precision worse than 1 ms are excluded.

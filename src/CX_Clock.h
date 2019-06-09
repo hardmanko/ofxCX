@@ -88,10 +88,12 @@ namespace CX {
 
 		static PrecisionTestResults testImplPrecision(std::shared_ptr<CX_BaseClockInterface> impl, 
 			unsigned int samples = 100000, std::vector<double> percentiles = std::vector<double>());
+
 		static std::pair<std::shared_ptr<CX_BaseClockInterface>, PrecisionTestResults> 
 			chooseBestClockImplementation(unsigned int iterationsPerClock, bool excludeUnstable = true, bool excludeWorseThanMs = true, bool log = true);
 
-		
+
+		// Regular event fires off every period 
 		void enableRegularEvent(bool enable);
 		bool isRegularEventEnabled(void);
 		void setRegularEventPeriod(CX_Millis period);
@@ -104,14 +106,14 @@ namespace CX {
 		std::shared_ptr<CX_BaseClockInterface> _impl;
 
 		
-		void _regularEventThreadFunction(void);
-
 		struct {
 			std::recursive_mutex mutex;
 			std::thread thread;
 			CX_Millis period;
 			bool enabled;
 		} _regularEvent;
+		void _regularEventThreadFunction(void);
+
 
 		std::string _formatTime(const std::string& format, const std::time_t* time) const;
 	};
