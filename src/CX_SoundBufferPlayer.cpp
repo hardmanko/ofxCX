@@ -33,6 +33,10 @@ bool CX_SoundBufferPlayer::setup(std::shared_ptr<CX_SoundStream> ss) {
 		return false;
 	}
 
+	if (!ss->isStreamRunning()) {
+		CX::Instances::Log.notice("CX_SoundBufferPlayer") << "setup(): Sound stream is not running.";
+	}
+
 	_cleanUpOldSoundStream();
 
 	_soundStream = ss;
@@ -250,10 +254,46 @@ SampleFrame CX_SoundBufferPlayer::getRemainingPlaybackSF(void) {
 	//if (!_outData.playing) { return 0; }
 
 	if (_outData.soundBuffer != nullptr && _outData.soundBuffer->isReadyToPlay()) {
-		return _outData.soundBuffer->getSampleFrameCount() - _outData.soundPlaybackSampleFrame;
+		return _outData.soundBuffer->getLengthSF() - _outData.soundPlaybackSampleFrame;
 	}
 
 	return _outData.soundPlaybackSampleFrame;
+}
+
+
+bool CX_SoundBufferPlayer::isReadyToPlay(bool log) {
+
+	if (!_soundStream) {
+		if (log) {
+			CX::Instances::Log.warning("CX_SoundBufferPlayer") << "isReadyToPlay(): Failed because there was no CX_SoundStream associated with the CX_SoundBufferPlayer. Use CX_SoundBufferPlayer::setup() to associate a sound stream with the player.";
+		}
+		return false;
+	}
+
+	if (!_soundStream->isStreamRunning()) {
+		if (log) {
+			CX::Instances::Log.warning("CX_SoundBufferPlayer") << "isReadyToPlay(): Failed because the sound stream was not running. If your CX_SoundBufferPlayer is named player, try: bool streamStarted = player.getSoundStream()->startStream();";
+		}
+		return false;
+	}
+
+	std::lock_guard<std::recursive_mutex> outputLock(_outData);
+
+	if (!_outData.soundBuffer) {
+		if (log) {
+			CX::Instances::Log.warning("CX_SoundBufferPlayer") << "isReadyToPlay(): Failed because there was no CX_SoundBuffer associated with the CX_SoundBufferPlayer. Use CX_SoundBufferPlayer::setSoundBuffer() to associate a sound buffer with the player.";
+		}
+		return false;
+	}
+
+	if (!_outData.soundBuffer->isReadyToPlay(log)) {
+		if (log) {
+			CX::Instances::Log.warning("CX_SoundBufferPlayer") << "isReadyToPlay(): Failed because the CX_SoundBuffer associated with the CX_SoundBufferPlayer was not ready to play.";
+		}
+		return false;
+	}
+
+	return true;
 }
 
 /*! Get the number of buffer underflows since the last check for underflows with this function.
@@ -330,12 +370,14 @@ bool CX_SoundBufferPlayer::setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer
 
 	const CX_SoundStream::Configuration &streamConfig = _soundStream->getConfiguration();
 
+	unsigned int oldChannelCount = buffer->getChannelCount();
 	if (streamConfig.outputChannels != buffer->getChannelCount()) {
 		if (!buffer->setChannelCount(streamConfig.outputChannels)) {
 			CX::Instances::Log.error("CX_SoundBufferPlayer") << "setSoundBuffer(): It was not possible to change the number of channels of the sound to the number used by the sound player.";
 			return false;
 		}
-		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "setSoundBuffer(): Channel count changed. Sound fidelity may have been lost.";
+		CX::Instances::Log.notice("CX_SoundBufferPlayer") << "setSoundBuffer(): Channel count changed from" <<
+			oldChannelCount << " to " << streamConfig.outputChannels << ", which is the sound stream's channel count.";
 	}
 
 	if (streamConfig.sampleRate != buffer->getSampleRate()) {
@@ -345,6 +387,7 @@ bool CX_SoundBufferPlayer::setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer
 
 	std::lock_guard<std::recursive_mutex> outputLock(_outData);
 	_outData.soundBuffer = buffer;
+	_outData.soundPlaybackSampleFrame = 0;
 
 	return true;
 }
@@ -405,7 +448,7 @@ std::shared_ptr<CX_SoundBuffer> CX_SoundBufferPlayer::getSoundBuffer(void) {
 		_outData.soundBuffer = std::make_shared<CX_SoundBuffer>();
 
 		// Set to the correct output channels and sample rate.
-		_outData.soundBuffer->setFromVector(std::vector<float>(), _soundStream->getConfiguration().outputChannels, _soundStream->getConfiguration().sampleRate);
+		_outData.soundBuffer->setFromVector(_soundStream->getConfiguration().sampleRate, _soundStream->getConfiguration().outputChannels, std::vector<float>());
 	}
 
 	return _outData.soundBuffer;
@@ -442,7 +485,7 @@ void CX_SoundBufferPlayer::_outputEventHandler(const CX_SoundStream::OutputEvent
 
 	//Instances::Log.notice("CX_SoundBufferPlayer") << "Playing";
 
-	int64_t remainingSampleFramesInSoundBuffer = _outData.soundBuffer->getSampleFrameCount() - _outData.soundPlaybackSampleFrame;
+	int64_t remainingSampleFramesInSoundBuffer = _outData.soundBuffer->getLengthSF() - _outData.soundPlaybackSampleFrame;
 
 	if (sampleFramesToOutput > remainingSampleFramesInSoundBuffer) {
 		//Instances::Log.notice("CX_SoundBufferPlayer") << "Done playing!";

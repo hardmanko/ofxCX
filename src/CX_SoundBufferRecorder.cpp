@@ -27,26 +27,62 @@ CX_SoundBufferRecorder::~CX_SoundBufferRecorder(void) {
 `ss` is not started automatically, the user code must start it.
 `ss` must exist for the lifetime of the `CX_SoundBufferRecorder`.
 \param ss A pointer to a fully configured `CX_SoundStream`.
-\return `true` in all cases. 
+\return `true` if setup was successful, `false` otherwise.
 */
 bool CX_SoundBufferRecorder::setup(CX_SoundStream* ss) {
 	return setup(CX::Private::wrapPtr(ss));
 }
 
 bool CX_SoundBufferRecorder::setup(std::shared_ptr<CX_SoundStream> ss) {
+
 	_cleanUpOldSoundStream();
 
 	_soundStream = ss;
 
+	if (!ss) {
+		return false;
+	}
+
 	_inputEventHelper.setup<CX_SoundBufferRecorder>(&ss->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
 	_inputEventHelper.listenToStopEvent(&ss->destructEvent);
 
-	createNewSoundBuffer();
+	resetSoundBuffer(true);
 
 	return true;
 }
 
 
+/*! Reset the CX_SoundBuffer that is being used for recording.
+
+\param createNewIfNeeded If the recorder does not have a sound buffer associated with it, create a new `CX_SoundBuffer` to record to. It can be accessed with `getSoundBuffer()`.
+*/
+void CX_SoundBufferRecorder::resetSoundBuffer(bool createNewIfNeeded) {
+
+	stop();
+
+	const CX_SoundStream::Configuration& ssc = _soundStream->getConfiguration();
+
+	std::lock_guard<std::recursive_mutex> inputLock(_inData);
+
+	if (createNewIfNeeded && !_inData.buffer) {
+		_inData.buffer = std::make_shared<CX_SoundBuffer>();
+	}
+
+	if (_inData.buffer) {
+		_inData.buffer->setFromVector(ssc.sampleRate, ssc.inputChannels, std::vector<float>());
+	}
+
+	_inData.recording = false;
+	_inData.startingRecording = false;
+	_inData.recordingQueued = false;
+
+	_inData.queuedRecordingStartSampleFrame = std::numeric_limits<SampleFrame>::max();
+
+	_inData.recordingStart = 0;
+	_inData.recordingEnd = 0;
+
+	_inData.overflowCount = 0;
+}
 
 /*! Associates a `CX_SoundBuffer` with the `CX_SoundBufferRecorder`.
 The `buffer` will be recorded to when `record()` is called.
@@ -60,11 +96,12 @@ settings from the stream when `record()` is called.
 \return `true` on success, `false` otherwise.
 */
 bool CX_SoundBufferRecorder::setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer) {
+
 	std::lock_guard<std::recursive_mutex> lock(_inData);
 
 	if (buffer == nullptr) {
-		_inData.buffer = std::make_shared<CX_SoundBuffer>();
-		// No need to clear and initialize: That is done in record()
+		//_inData.buffer = std::make_shared<CX_SoundBuffer>();
+		resetSoundBuffer(true);
 	} else {
 		_inData.buffer = buffer;
 	}
@@ -78,12 +115,7 @@ bool CX_SoundBufferRecorder::setSoundBuffer(CX_SoundBuffer* buffer) {
 	return setSoundBuffer(buf);
 }
 
-/*! \brief Create a new `CX_SoundBuffer` to record to. It can be accessed with `getSoundBuffer()`.
-*/
-void CX_SoundBufferRecorder::createNewSoundBuffer(void) {
-	std::lock_guard<std::recursive_mutex> lock(_inData);
-	_inData.buffer = std::make_shared<CX_SoundBuffer>();
-}
+
 
 /*! Returns a pointer to the `CX_SoundBuffer` that is currently in use by this `CX_SoundBufferRecorder`.
 You should not access the sound buffer while recording is in progress. Use `isRecording()` to check recording state.
@@ -167,39 +199,24 @@ void CX_SoundBufferRecorder::stop(void) {
 	_inData.startingRecording = false;
 }
 
-bool CX_SoundBufferRecorder::isRecordingComplete(void) {
-	return false;
-}
-
+// See stop. I think it should be pause, not stop.
 void CX_SoundBufferRecorder::pause(void) {
 	std::lock_guard<std::recursive_mutex> inputLock(_inData);
-	
-}
-
-void CX_SoundBufferRecorder::clear(void) {
-	stop();
-
-	const CX_SoundStream::Configuration& ssc = _soundStream->getConfiguration();
-
-	std::lock_guard<std::recursive_mutex> inputLock(_inData);
-
-	if (_inData.buffer) {
-		//_inData.buffer->clear();
-		_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
-	}
-
 	_inData.recording = false;
-	_inData.startingRecording = false;
 	_inData.recordingQueued = false;
-
-	_inData.queuedRecordingStartSampleFrame = std::numeric_limits<SampleFrame>::max();
-
-	_inData.recordingStart = 0;
-	_inData.recordingEnd = 0;
-
-	_inData.overflowCount = 0;
-	
+	_inData.startingRecording = false;
 }
+
+bool CX_SoundBufferRecorder::isRecordingComplete(void) {
+
+	bool success = !isRecordingOrQueued() && _inData.buffer && _inData.buffer->isReadyToPlay();
+
+	// Other things to consider?
+
+	return success;
+}
+
+
 
 
 /*! \brief Returns `true` if currently recording. */
@@ -285,13 +302,13 @@ std::shared_ptr<CX_SoundStream> CX_SoundBufferRecorder::getSoundStream(void) {
 
 void CX_SoundBufferRecorder::_prepareRecordBuffer(bool clear, std::string callingFunctionName) {
 
-	std::lock_guard<std::recursive_mutex> inputLock(_inData);
-
 	// Set the characteristics of the sound to the configuration of the sound stream that is doing the recording.
 	const CX_SoundStream::Configuration& ssc = _soundStream->getConfiguration();
 
+	std::lock_guard<std::recursive_mutex> inputLock(_inData);
+
 	if (_inData.buffer == nullptr) {
-		_inData.buffer = std::make_shared<CX_SoundBuffer>();
+		//_inData.buffer = std::make_shared<CX_SoundBuffer>();
 		clear = true;
 	}
 
@@ -305,7 +322,8 @@ void CX_SoundBufferRecorder::_prepareRecordBuffer(bool clear, std::string callin
 	}
 
 	if (clear) {
-		_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
+		resetSoundBuffer(true);
+		//_inData.buffer->setFromVector(std::vector<float>(), ssc.inputChannels, ssc.sampleRate);
 	}
 }
 

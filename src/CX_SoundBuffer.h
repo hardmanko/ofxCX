@@ -21,6 +21,7 @@ a potentially large vector of sound samples.
 
 #include "ofFmodSoundPlayer.h"
 
+#include "CX_Definitions.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
 
@@ -29,26 +30,41 @@ namespace CX {
 	class CX_SoundBuffer {
 	public:
 
+		//! Stores the name of the last file from which data was loaded with `loadFile()`. It can be set by the user with no side effects.
+		std::string name;
+
+
 		CX_SoundBuffer(void);
 		CX_SoundBuffer(std::string fileName);
 
 		bool loadFile(std::string fileName);
-		bool writeToFile(std::string path);
+		bool writeToFile(std::string fileName);
 
-		//! Stores the name of the last file from which data was loaded with `loadFile()`. It can be set by the user with no side effects.
-		std::string name;
+		bool initialize(float sampleRate, unsigned int channels, SampleFrame sf, bool zero = true);
+		bool setFromVector(float sampleRate, unsigned int channels, const std::vector<float>& data);
 
-		bool addSound(std::string fileName, CX_Millis timeOffset);
-		bool addSound(CX_SoundBuffer sb, CX_Millis timeOffset);
-		bool insertSound(CX_SoundBuffer sb, CX_Millis timeOffset);
-		bool setFromVector(const std::vector<float>& data, int channels, float sampleRate);
-		void setChannelData(unsigned int channel, const std::vector<float>& data);
-
-		CX_SoundBuffer copySection(CX_Millis start, CX_Millis end) const;
+		
+		bool isReadyToPlay(bool log = false) const;
 
 		void clear(void);
 
-		bool isReadyToPlay(void) const;
+
+
+		bool addSound(std::string fileName, CX_Millis timeOffset);
+		bool addSound(CX_SoundBuffer sb, CX_Millis timeOffset);
+
+		bool insertSound(CX_SoundBuffer sb, CX_Millis insertionTime);
+
+		bool insertChannel(CX_SoundBuffer sb, unsigned int channel);
+		bool setChannel(CX_SoundBuffer sb, unsigned int channel);
+		void setChannelData(unsigned int channel, const std::vector<float>& data);
+
+		CX_SoundBuffer copyChannel(unsigned int channel) const;
+		CX_SoundBuffer copySection(CX_Millis start, CX_Millis end) const;
+
+		
+
+
 
 		// Amplitude
 		bool applyGain(float gain, int channel = -1);
@@ -58,16 +74,24 @@ namespace CX {
 		float getPositivePeak(void);
 		float getNegativePeak(void);
 
-		// Duration
+		// Length
 		void setLength(CX_Millis length);
-		CX_Millis getLength(void);
+		CX_Millis getLength(void) const;
+
+		void setLengthSF(SampleFrame sf);
+		SampleFrame getLengthSF(void) const;
+
+		size_t getLengthSamples(void) const;
+
 
 		void stripLeadingSilence (float tolerance);
 		void addSilence(CX_Millis duration, bool atBeginning);
+		void addSilenceSF(SampleFrame sf, bool atBeginning);
 
 		void deleteAmount(CX_Millis duration, bool fromBeginning);
 		void deleteSection(CX_Millis start, CX_Millis end);
 		bool deleteChannel(unsigned int channel);
+		bool clearChannel(unsigned int channel);
 		
 		void reverse(void);
 
@@ -78,14 +102,20 @@ namespace CX {
 		bool setChannelCount(unsigned int channels, bool average = true);
 		unsigned int getChannelCount(void) const;
 		
-		uint64_t getTotalSampleCount(void) const;
-		uint64_t getSampleFrameCount(void) const;
-
+		
+		// Raw access
 		std::vector<float>& getRawDataReference(void);
 
-
+		float getSample(unsigned int channel, SampleFrame sf) const;
+		void setSample(unsigned int channel, SampleFrame sf, float val);
 
 		//void setMetadata(unsigned int channels, float sampleRate);
+
+
+		SampleFrame getSampleFrameAt(CX_Millis time) const;
+		// OR
+		SampleFrame timeToSF(CX_Millis time) const;
+		CX_Millis sfToTime(SampleFrame sf) const;
 
 	private:
 
@@ -94,7 +124,9 @@ namespace CX {
 
 		std::vector<float> _data;
 
-		unsigned int _timeToSample(CX_Millis time, int channels = -1) const;
+		size_t _timeToSample(CX_Millis time) const;
+
+		void _resize(unsigned int channelCount, SampleFrame sf, bool zero = true);
 
 	};
 

@@ -41,10 +41,11 @@ namespace CX {
 		// 1. Set up the recorder (choose one)
 		bool setup(CX_SoundStream* ss);
 		bool setup(std::shared_ptr<CX_SoundStream> ss);
-
+		//bool shutdown(void);
 
 		// 2. Set up a buffer to record to (choose one)
 		void createNewSoundBuffer(void);
+		void resetSoundBuffer(bool createBufferIfNeeded = true);
 		bool setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer);
 		bool setSoundBuffer(CX_SoundBuffer* buffer);
 
@@ -65,15 +66,16 @@ namespace CX {
 		bool setAutoStopLength(CX_Millis recordingLength);
 
 		void pause(void);
-		void clear(void);
+
+		
 
 
 		// 5. Get the recorded sound buffer and recording metadata
 		bool isRecordingComplete(void);
 		std::shared_ptr<CX_SoundBuffer> getSoundBuffer(void);
 		CX_Millis getRecordingStartTime(void);
-		CX_Millis getRecordingEndTime(void);
-		CX_Millis getRecordingLength(void);
+		CX_Millis getRecordingEndTime(void); // remove
+		CX_Millis getRecordingLength(void); // remove
 
 
 		// Misc functions

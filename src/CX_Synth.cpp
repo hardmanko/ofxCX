@@ -1107,7 +1107,7 @@ double SoundBufferInput::getNextSample(void) {
 /*! Checks to see if the CX_SoundBuffer that is associated with this SoundBufferInput is able to play.
 It is unable to play if CX_SoundBuffer::isReadyToPlay() is false or if the whole sound has been played.*/
 bool SoundBufferInput::canPlay(void) {
-	return (_sb != nullptr) && (_sb->isReadyToPlay()) && (_currentSample < _sb->getTotalSampleCount());
+	return (_sb != nullptr) && (_sb->isReadyToPlay()) && (_currentSample < _sb->getLengthSamples());
 }
 
 void SoundBufferInput::_dataSetEvent(void) {
@@ -1138,7 +1138,7 @@ void SoundBufferOutput::setup(float sampleRate, unsigned int oversampling) {
 	this->setData(ModuleControlData::construct(sampleRate, oversampling));
 
 	sb.clear();
-	sb.setFromVector(std::vector<float>(), 1, sampleRate);
+	sb.setFromVector(sampleRate, 1, std::vector<float>());
 }
 
 /*! This function samples `t` milliseconds of data at the sample rate given in setup().
@@ -1174,8 +1174,8 @@ void SoundBufferOutput::sampleData(CX::CX_Millis t, bool clear) {
 	//	tempData[i] = CX::Util::clamp<float>((float)input->getNextSample(), -1, 1);
 	//}
 
-	if (sb.getTotalSampleCount() == 0) {
-		sb.setFromVector(tempData, 1, _mcd->getSampleRate());
+	if (sb.getLengthSamples() == 0) {
+		sb.setFromVector(_mcd->getSampleRate(), 1, tempData);
 	} else {
 		std::vector<float>& bufData = sb.getRawDataReference();
 		bufData.insert(bufData.end(), tempData.begin(), tempData.end());
@@ -1201,7 +1201,7 @@ void StereoSoundBufferOutput::setup(float sampleRate, unsigned int oversampling)
 	right.setData(mcd);
 
 	sb.clear();
-	sb.setFromVector(std::vector<float>(), 2, sampleRate);
+	sb.setFromVector(sampleRate, 2, std::vector<float>());
 }
 
 /*! This function samples `t` milliseconds of data at the sample rate given in setup().
@@ -1226,8 +1226,8 @@ void StereoSoundBufferOutput::sampleData(CX::CX_Millis t, bool clear) {
 		tempData[index + 1] = CX::Util::clamp<float>((float)right.getNextSample(), -1, 1);
 	}
 
-	if (sb.getTotalSampleCount() == 0) {
-		sb.setFromVector(tempData, channels, left.getData()->getSampleRate());
+	if (sb.getLengthSamples() == 0) {
+		sb.setFromVector(left.getData()->getSampleRate(), channels, tempData);
 	} else {
 		std::vector<float>& bufData = sb.getRawDataReference();
 		bufData.insert(bufData.end(), tempData.begin(), tempData.end());

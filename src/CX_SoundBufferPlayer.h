@@ -66,6 +66,8 @@ namespace CX  {
 		CX_Millis getRemainingPlaybackTime(void);
 		SampleFrame getRemainingPlaybackSF(void);
 
+		bool isReadyToPlay(bool log = true);
+
 		std::shared_ptr<CX_SoundBuffer> getSoundBuffer(void);
 
 		unsigned int getUnderflowsSinceLastCheck(bool logUnderflows = true);

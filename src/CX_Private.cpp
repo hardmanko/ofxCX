@@ -237,11 +237,11 @@ CX_GLVersion getOpenGLVersion(void) {
 	return glVersion;
 }
 
-
+// See https://www.khronos.org/opengl/wiki/Core_Language_(GLSL)#OpenGL_and_GLSL_versions
+// Also https://en.wikipedia.org/wiki/OpenGL_Shading_Language#Versions
 CX_GLVersion getGLSLVersionFromGLVersion(CX_GLVersion glVersion) {
-	if (glVersionAtLeast(3, 2, 0)) {
-		return glVersion;
-	} else if (glVersion.major < 2) {
+
+	if (glVersion.major < 2) {
 		return CX_GLVersion(0, 0, 0); //No version exists
 	} else if (glVersion.major == 2 && glVersion.minor == 0) {
 		return CX_GLVersion(1, 10, 59);
@@ -253,6 +253,8 @@ CX_GLVersion getGLSLVersionFromGLVersion(CX_GLVersion glVersion) {
 		return CX_GLVersion(1, 40, 8);
 	} else if (glVersion.major == 3 && glVersion.minor == 2) {
 		return CX_GLVersion(1, 50, 11);
+	} else if (glVersionAtLeast(3, 3, 0)) {
+		return glVersion;
 	}
 
 	return CX_GLVersion(0, 0, 0); //No version exists
@@ -276,26 +278,25 @@ bool glVersionAtLeast(int desiredMajor, int desiredMinor, int desiredRelease) {
 	return glCompareVersions(actual, desired) >= 0;
 }
 
-//Returns 1 if a > b, 0 if b == a, or -1 if a < b
+//Returns 1 if a > b, 0 if a == b, or -1 if a < b
 int glCompareVersions(CX_GLVersion a, CX_GLVersion b) {
+
 	if (a.major > b.major) {
 		return 1;
 	} else if (a.major < b.major) {
 		return -1;
-	} else {
-		if (a.minor > b.minor) {
-			return 1;
-		} else if (a.minor < b.minor) {
-			return -1;
-		} else {
-			if (a.release > b.release) {
-				return 1;
-			} else if (a.release < b.release) {
-				return -1;
-			} else {
-				return 0;
-			}
-		}
+	}
+
+	if (a.minor > b.minor) {
+		return 1;
+	} else if (a.minor < b.minor) {
+		return -1;
+	}
+
+	if (a.release > b.release) {
+		return 1;
+	} else if (a.release < b.release) {
+		return -1;
 	}
 
 	return 0;
