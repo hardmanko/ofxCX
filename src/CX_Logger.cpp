@@ -268,12 +268,15 @@ See the \ref CX::CX_Logger::Level enum for valid values.
 \param filename The name of the file to output to. If no file name is given, a file with the name
 "Logfile %DTS%.txt" will be created, where %DTS% is a string containing the date/time at which the experiment started.
 
+
 \param subdir Subdirectory in ./bin/data where the log file should be stored. 
 Should not end with the directory separator ("/" or "\") which is added automatically.
 */
 void CX_Logger::levelForFile(Level level, std::string filename, std::string subdir) {
 	if (filename == "CX_LOGGER_DEFAULT") {
 		filename = "Logfile " + CX::Instances::Clock.getExperimentStartDateTimeString() + ".txt";
+	} else {
+		filename = CX::Instances::Clock.getExperimentStartDateTimeString(filename);
 	}
 	filename = subdir + "/" + filename;
 	filename = ofToDataPath(filename);

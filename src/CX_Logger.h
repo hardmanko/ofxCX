@@ -22,8 +22,32 @@
 #include "CX_Time_t.h"
 
 /*! \defgroup errorLogging Message Logging
-This module is designed for logging error, warnings, and other messages. The primary interface is the \ref CX_Logger class,
+This module is designed for logging error, warnings, and other messages. 
+The primary interface is the \ref CX_Logger class,
 in particular the preinstantiated \ref CX::Instances::Log.
+
+Basic logging looks like:
+\code {.cpp}
+// Create logfile that takes all logged messages using a filename created 
+// with a date/time string and placed in the Logfiles subdirectory
+Log.levelForFile(CX_Logger::Level::LOG_ALL);
+
+// Log messages anywhere, any time in your code
+Log.notice() << "An information notice.";
+
+// Flush messages to logging targets (console and optional files).
+Log.flush();
+// Printing the logged messages takes time, so only flush() 
+// in non-timing-critical sections of code.
+
+\endcode
+
+The messageLogging example contains examples of how to:
++ Add logging/debugging messages to your code.
++ Print logging/debugging messages to the console and files.
++ Filter which messages get printed by the logging level of the message (notice, warning, error, etc.).
++ And more.
+See examples/messageLogging/src/messageLogging.cpp
 */
 
 namespace CX {
@@ -42,17 +66,20 @@ namespace CX {
 	It is also recommended that users of CX use this class for logging in their experiment code.
 	
 	Rather than instantiating your own CX_Logger, it is better to use \ref CX::Instances::Log
-	which has been set up and is ready to use in user code as in this minimal example:
+	which has been set up and is ready to use in user code as in this minimal working example:
 
 	\code{.c++}
 	#include "CX.h"
 
 	void runExperiment(void) {
-		Log.warning() << "This is a warning."; // Store a log message.
+		// Log a message.
+		Log.warning() << "This is a warning.";
 
-		Log.flush(); // Flush the message to logging targets (check the console).
+		// Flush the message to logging targets (check the console).
+		Log.flush();
 
-		Input.Keyboard.waitForKeypress(-1); // Wait for user to exit.
+		// Wait for user to exit.
+		Input.Keyboard.waitForKeypress(-1);
 	}
 	\endcode
 
@@ -74,6 +101,13 @@ namespace CX {
 	
 	By default, no logfiles are created and messages are printed to the console. Verbose messages
 	are not printed to the console by default.
+
+	Logfiles are created using the `levelForFile()` function
+	\code{.cpp}
+	Log.levelForFile(CX_Logger::Level::LOG_ALL);
+
+	Log.levelForFile(CX_Logger::Level::LOG_WARNINGS);
+	\endcode
 
 	There are a few openFrameworks classes that are extremely verbose, like ofFbo, and less severe 
 	messages from those classes	are suppressed by default. 

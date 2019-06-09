@@ -13,8 +13,6 @@ that are less severe than a certain level.
 This two-level filtering can be used in complex ways, as in this example, to carefully control
 what is logged. However, logging everything to at least one log file is usually a good idea, 
 even if the console is kept clear for the most important messages.
-
-By default, CX does not create a log file.
 */
 
 #include "CX.h"
@@ -46,13 +44,22 @@ void runExperiment (void) {
 	// At the beginning of an experiment, you can set up where logged messages
 	// will be printed. By default, notices and above are printed to the console.
 
-	// You can log to any number of files at once, each with its own log level.
-	// Let's log errors and worse (errors and fatal errors) to their own file.
-	Log.levelForFile(CX_Logger::Level::LOG_ERROR, "Errors only.txt");
-
-	// We also want a file in which all messages are logged. Calling levelForFile() 
+	// We want a file in which all messages are logged. Calling levelForFile() 
 	// without a filename causes a log file with a date/time string filename to be created.
 	Log.levelForFile(CX_Logger::Level::LOG_ALL);
+
+	// You can log to any number of files at once, each with its own log level.
+	// Let's log errors and worse (errors and fatal errors) to their own file.
+	Log.levelForFile(CX_Logger::Level::LOG_ERROR, "Last run errors.txt");
+	// Since this file has a fixed name, it will be overwritten each time the experiment runs.
+
+	// This logfile encorporates a participant identifier, includes a
+	// year-month-day date string, and is put into the ParticipantLogfiles
+	// subdirectory.
+	int partId = 3421;
+	string filename = "Logfile for " + ofToString(partId) + " on %Y-%b-%d.txt";
+	//
+	Log.levelForFile(CX_Logger::Level::LOG_NOTICE, filename, "ParticipantLogfiles");
 	
 	// The log level for the console is independent of the file log levels.
 	// Set the console to display all messages that are a warning or worse (warning, error, fatal error).
