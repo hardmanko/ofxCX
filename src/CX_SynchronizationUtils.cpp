@@ -80,8 +80,6 @@ namespace Sync {
 		_config = config;
 
 		_timeStoreNextSwapUnit = 0;
-
-		_polledSwapListener = getPolledSwapListener();
 	}
 
 	DataContainer::Configuration DataContainer::getConfiguration(void) {
@@ -89,6 +87,8 @@ namespace Sync {
 		return _config;
 	}
 
+	/*! Receive data from another DataContianer.
+	*/
 	void DataContainer::receiveFrom(DataContainer* container) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -103,22 +103,24 @@ namespace Sync {
 		}
 	}
 
-	
+	/*! Receive data from an event that sends swap data (i.e. `const SwapData&`). 
+	This might receive from CX_Display or CX_SoundStream.
+	*/
 	void DataContainer::receiveFrom(ofEvent<const SwapData&>* eventSource) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
 		_stopListeningToSources();
 
 		_eventSourceHelper.setup<DataContainer>(eventSource, this, &DataContainer::_eventSourceCallback);
-
 	}
 	
-
 	void DataContainer::_eventSourceCallback(const SwapData& data) {
 		storeSwap(data);
 	}
 	
-	
+	/*! Receive data from an event that sends time data (i.e. `const CX_Millis&`).
+	This might recieve from CX_Clock. 
+	*/
 	void DataContainer::receiveFrom(ofEvent<const CX_Millis&>* eventSource) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -127,7 +129,6 @@ namespace Sync {
 		_eventSourceMillisHelper.setup<DataContainer>(eventSource, this, &DataContainer::_eventSourceMillisCallback);
 	}
 	
-
 	void DataContainer::_eventSourceMillisCallback(const CX_Millis& time) {
 		this->storeSwap(time);
 	}
@@ -144,27 +145,26 @@ namespace Sync {
 	void DataContainer::storeSwap(CX_Millis time) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		// adjust for latency
-		time -= _config.latency;
+		// Higher latency values values mean more latency, so subtract latency
+		time -= _config.latency; 
 
 		_data.push_back(SwapData(time, _timeStoreNextSwapUnit));
+		// Size a time was stored, the next swap unit has to be inferred, so increment by units per swap
+		_timeStoreNextSwapUnit += _config.unitsPerSwap;
 
 		// remove excess data
 		while (_data.size() > _config.sampleSize) {
 			_data.pop_front();
 		}
 
-		// advance swap unit
-		_timeStoreNextSwapUnit += _config.unitsPerSwap;
-
-		ofNotifyEvent(this->newDataEvent, _data);
+		this->newDataEvent.notify(NewData(_data));
 	}
 
 	void DataContainer::storeSwap(SwapData data) {
 
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		// adjust for latency
+		// Higher latency values values mean more latency, so subtract latency
 		data.time -= _config.latency;
 
 		_data.push_back(data);
@@ -174,10 +174,7 @@ namespace Sync {
 			_data.pop_front();
 		}
 
-		// advance swap unit
-		//_timeStoreNextSwapUnit += _config.unitsPerSwap;
-
-		ofNotifyEvent(this->newDataEvent, _data);
+		this->newDataEvent.notify(NewData(_data));
 
 	}
 
@@ -212,21 +209,22 @@ namespace Sync {
 			_data.push_back(std::move(last));
 		}
 
-		ofNotifyEvent(this->newDataEvent, _data);
+		this->newDataEvent.notify(NewData(_data));
 	}
 
 	void DataContainer::setLatency(CX_Millis latency) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
+		// Update stored times based on the new latency
 		CX_Millis latencyUpdate = _config.latency - latency;
-
 		for (SwapData& d : _data) {
 			d.time += latencyUpdate;
 		}
+		// Or should you just clear the data?
 
 		_config.latency = latency;
 
-		ofNotifyEvent(this->newDataEvent, _data);
+		this->newDataEvent.notify(NewData(_data));
 	}
 
 	CX_Millis DataContainer::getLatency(void) {
@@ -239,6 +237,8 @@ namespace Sync {
 		_config.sampleSize = size;
 	}
 
+	/*! Set the minimum sample size. If the current sample size is less than `minSize`, 
+	the sample will be set to `minSize`. Otherwise, nothing is changed. */
 	void DataContainer::setMinimumSampleSize(size_t minSize) {
 		if (minSize > getSampleSize()) {
 			setSampleSize(minSize);
@@ -267,6 +267,11 @@ namespace Sync {
 
 	SwapUnit DataContainer::getNextSwapUnit(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		if (_data.empty()) {
+			// TODO: what to do?????
+		}
+
 		return getLastSwapData().unit + _config.unitsPerSwap;
 	}
 
@@ -281,16 +286,6 @@ namespace Sync {
 		_mutex.unlock();
 		return std::move(copy);
 	}
-
-	/*
-	bool DataContainer::waitForSwap(CX_Millis timeout, bool reset) {
-		return _polledSwapListener->waitForSwap(timeout, reset);
-	}
-
-	bool DataContainer::hasSwappedSinceLastCheck(void) {
-		return _polledSwapListener->hasSwappedSinceLastCheck();
-	}
-	*/
 
 	CX_Millis DataContainer::getLastSwapTime(void) {
 		return getLastSwapData().time;
@@ -309,6 +304,78 @@ namespace Sync {
 		return _data.back();
 	}
 
+	////////////////////////////
+	// DataContainer::NewData //
+	////////////////////////////
+
+
+	DataContainer::NewData::NewData(const std::deque<SwapData>& d) :
+		data(d)
+	{}
+
+	bool DataContainer::NewData::empty(void) const {
+		return data.empty();
+	}
+
+	const SwapData& DataContainer::NewData::newest(void) const {
+		return data.back();
+	}
+
+	const SwapData& DataContainer::NewData::oldest(void) const {
+		return data.front();
+	}
+
+
+	///////////////////////////////////////
+	// DataContainer::PolledSwapListener //
+	///////////////////////////////////////
+
+	DataContainer::PolledSwapListener::PolledSwapListener(DataContainer* cont) :
+		_container(cont),
+		_hasSwapped(false)
+	{
+		_lastDataPoint = _container->getLastSwapData();
+	}
+
+	// \return What it says on the tin. An immediate call to this function after calling setup() will return false.
+	bool DataContainer::PolledSwapListener::hasSwappedSinceLastCheck(void) {
+		getNewestData();
+		bool rval = _hasSwapped;
+		_hasSwapped = false;
+		return rval;
+	}
+
+	SwapData DataContainer::PolledSwapListener::getNewestData(void) {
+		SwapData thisDataPoint = _container->getLastSwapData();
+
+		if (thisDataPoint.unit != _lastDataPoint.unit) {
+			_hasSwapped = true;
+			_lastDataPoint = thisDataPoint;
+		}
+
+		return thisDataPoint;
+	}
+
+	bool DataContainer::PolledSwapListener::waitForSwap(CX_Millis timeout, bool reset = true) {
+
+		if (reset) {
+			hasSwappedSinceLastCheck();
+		}
+
+		CX_Millis endTime = CX::Instances::Clock.now() + timeout;
+		do {
+			if (hasSwappedSinceLastCheck()) {
+				return true;
+			}
+
+			//Instances::Input.pollEvents();
+
+			std::this_thread::yield();
+
+		} while (CX::Instances::Clock.now() > endTime);
+		return false;
+	}
+
 	//////////////////////////
 	// StabilityVerifier //
 	//////////////////////////
@@ -317,18 +384,12 @@ namespace Sync {
 		_lastStatus(Status::Uninitialized)
 	{}
 
-	//StabilityVerifier::~StabilityVerifier(void) {
-	//	_listenForNewData(nullptr);
-	//}
-
 	bool StabilityVerifier::setup(const Configuration& config) {
 		if (config.dataContainer == nullptr) {
 			return false;
 		}
 
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		//this->clear();
 
 		_config = config;
 
@@ -351,87 +412,21 @@ namespace Sync {
 		return true;
 	}
 
-	/*
-	void StabilityVerifier::clear(void) {
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		_statusReports.clear();
-		_lastDataPoint = nullptr; // or not?
-
-		_statusCounter.clear();
-
-	}
-
-	bool StabilityVerifier::hasEnoughData(void) {
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-		return _statusReports.size() >= _config.sampleSize;
-	}
-	*/
-	
-	/*
-	StabilityVerifier::Status StabilityVerifier::getStatus(void) {
-
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		if (!_lastDataPoint) {
-			return Status::CollectingData; // ?
-		}
-
-		// check for stopped data source
-		CX_Millis timeFromLastDataPoint = Instances::Clock.now() - _lastDataPoint->time;
-		if (timeFromLastDataPoint > _calcConfig.stoppageInterval) {
-			return Status::Stopped;
-		} else if (timeFromLastDataPoint > _calcConfig.faultInterval) {
-			return Status::Fault;
-		}
-
-		if (_statusReports.size() < _config.sampleSize) {
-			return Status::CollectingData;
-		}
-
-		// why not just track this as they come in??????? (cuz hard)
-		uint64_t lastFaultSample = std::numeric_limits<uint64_t>::max();
-		// reverse iterate
-		for (auto rit = _statusReports.crbegin(); rit != _statusReports.crend(); rit++) {
-			if (rit->improperInterval) {
-				lastFaultSample = rit->thisSwapSampleNumber;
-				break;
-			}
-		}
-		// what are you doing with lastFaultSample?
-
-		if (lastFaultSample == std::numeric_limits<uint64_t>::max()) {
-			return Status::SwapLocked;
-		}
-
-		return Status::Unknown;
-
-	}
-	*/
 
 	StabilityVerifier::Status StabilityVerifier::_getStatus(const std::deque<SwapData>& data) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		// only need one data point to determine stoppage
 		if (data.size() < 1) {
 			return Status::InsufficientData;
 		}
 
 		const SwapData& lastDataPoint = data.back();
 
+		// only need one data point to determine stoppage
 		CX_Millis timeFromLastDataPoint = Instances::Clock.now() - lastDataPoint.time;
 		if (timeFromLastDataPoint > _calcConfig.stoppageInterval) {
 			return Status::Stopped;
 		}
-
-		/*
-		if (data.size() < _config.requiredPeriods + 1) {
-			return Status::InsufficientData;
-		}
-
-		size_t pastEnd = data.size() - 1;
-		size_t startIndex = data.size() - _config.requiredPeriods;
-		*/
 
 		if (data.size() < _config.sampleSize) {
 			return Status::InsufficientData;
@@ -535,33 +530,6 @@ namespace Sync {
 
 	}
 
-	/*
-	bool StabilityVerifier::isSwappingStably(void) {
-		return _isSwapLocked(false);
-	}
-	*/
-
-	// this function may only be called when _lastDataPoint is not nullptr
-	/*
-	StabilityVerifier::SwapLockStatusReport StabilityVerifier::_makeStatusReport(const DataContainer::DataPoint& dp) {
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		CX_Millis thisInterval = dp.time - _lastDataPoint->time;
-		bool intWithinTol = areTimesWithinTolerance(thisInterval, _config.nominalSwapPeriod, _calcConfig.intervalTolerance);
-
-		SwapLockStatusReport sr;
-		sr.improperInterval = !intWithinTol;
-
-		sr.thisSwapTime = dp.time;
-		sr.thisSwapSampleNumber = dp.sampleNumber;
-		sr.lastSwapTime = _lastDataPoint->time;
-
-		sr.status = getStatus(); // can you call this here like this?
-		
-		return sr;
-		
-	}
-	*/
 
 	/////////////////////
 	// LinearModel //
@@ -912,7 +880,7 @@ namespace Sync {
 		// You don't need to lock the mutexes.
 
 		for (auto& it : _clients) {
-			SyncPointClientData& spd = sp.clientData[it.first];
+			SyncPoint::ClientData& spd = sp.clientData[it.first];
 			DataClient* sync = it.second;
 
 			spd.allReady = sync->allReady();
@@ -948,7 +916,7 @@ namespace Sync {
 				sp.time = lfm->predictTime(unit);
 			}
 
-			SyncPointClientData& spd = sp.clientData[clientName];
+			SyncPoint::ClientData& spd = sp.clientData[clientName];
 
 			// no uncertainty about the input unit. note that this is lossy!
 			spd.pred.usable = true;
@@ -966,7 +934,7 @@ namespace Sync {
 				continue;
 			}
 
-			SyncPointClientData& spd = sp.clientData[it.first];
+			SyncPoint::ClientData& spd = sp.clientData[it.first];
 			DataClient* sync = it.second;
 
 			spd.allReady = sync->allReady();
@@ -983,27 +951,6 @@ namespace Sync {
 
 		return sp;
 	}
-
-	// wrappers of getSwapUnit() and getTime()
-	/*
-	SwapUnit DomainSynchronizer::getSwapUnitOf(std::string name, CX_Millis time) {
-		return SwapUnit();
-	}
-
-	CX_Millis DomainSynchronizer::getTimeOf(std::string name, SwapUnit unit) {
-		// this implementation is yucky. 
-		Synchronizer* sync = _getSync(name);
-		if (!sync) {
-			return CX_Millis(0);
-		}
-		LinearModel::LockedFittedModel lfm = sync->lm.getLockedFittedModel();
-		if (lfm.get() == nullptr) {
-			return CX_Millis(0);
-		}
-
-		return lfm->calculateTime(unit);
-	}
-	*/
 
 	DomainSynchronizer::DCLP DomainSynchronizer::getDCLP(std::string clientName) {
 		_mutex.lock();
@@ -1036,7 +983,15 @@ namespace Sync {
 		_config = config;
 
 		size_t sampleSize = std::ceil(_config.dataCollectionDuration / _config.dataContainer->getNominalSwapPeriod());
-		sampleSize = std::max<size_t>(sampleSize, 3);
+		if (sampleSize < 3) {
+			CX::Instances::Log.warning("Sync::DataClient") << 
+				"The swap sample size was less than 3 for data collection of " << _config.dataCollectionDuration.seconds() << 
+				" seconds. The sample size must be at least 3 and was set to 3.";
+			sampleSize = 3;
+		}
+
+		// Make sure the data container is storing enough data.
+		_config.dataContainer->setMinimumSampleSize(sampleSize);
 
 
 		//
@@ -1057,12 +1012,9 @@ namespace Sync {
 		slvConfig.swapPeriodTolerance = _config.swapPeriodTolerance;
 		slvConfig.sampleSize = sampleSize;
 
-		slvConfig.stoppagePeriodMultiplier = 3; // TODO: Make this settable
+		slvConfig.stoppagePeriodMultiplier = _config.stoppagePeriodMultiplier;
 
 		verifier.setup(slvConfig);
-
-
-		//_addToDomainSync(_config.name);
 
 		return true;
 
@@ -1070,9 +1022,6 @@ namespace Sync {
 
 
 	bool DataClient::allReady(void) {
-		//if (!data.hasEnoughData()) {
-		//	return false;
-		//}
 
 		if (verifier.getStatus() != StabilityVerifier::Status::SwappingStably) {
 			return false;
@@ -1089,34 +1038,15 @@ namespace Sync {
 	bool DataClient::waitUntilAllReady(CX_Millis timeout) {
 
 		CX_Millis endTime = Instances::Clock.now() + timeout;
+
 		do {
 			if (allReady()) {
 				return true;
 			}
 		} while (Instances::Clock.now() > endTime);
+
 		return false;
 	}
-
-	/*
-	TimePrediction DataClient::predictNextSwap(void) {
-
-		//std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		_mutex.lock();
-		SwapUnit nextSwapUnit = _config.dataContainer->getNextSwapUnit();
-		_mutex.unlock();
-
-		LinearModel::LockedFittedModel lfm = lm.getLockedFittedModel();
-
-		return lfm->predictTime(nextSwapUnit);
-	}
-
-	TimePrediction DataClient::predictTimeToSwap(void) {
-		TimePrediction nextSwap = predictNextSwap();
-		nextSwap.pred -= Instances::Clock.now();
-		return nextSwap;
-	}
-	*/
 
 	SwapUnitPrediction DataClient::predictSwapUnitAtTime(CX_Millis time) {
 		if (!this->allReady()) {

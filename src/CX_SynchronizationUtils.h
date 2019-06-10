@@ -58,7 +58,7 @@ struct TimePrediction {
 	CX_Millis pred;
 	CX_Millis predictionIntervalHalfWidth;
 
-	//float alpha; // set alpha = 0.05 (or whatever was used), even if the user can't request an alpha?
+	//float alpha; // Show users what alpha was used even if the user can't request an alpha?
 };
 
 struct SwapUnitPrediction {
@@ -87,22 +87,15 @@ public:
 	struct Configuration {
 
 		Configuration(void) :
-			latency(0),
-			unitsPerSwap(1)
-			//eventSource(nullptr),
-			//containerSource(nullptr)
+			unitsPerSwap(1),
+			sampleSize(0)
 		{}
 
 		CX_Millis nominalSwapPeriod;
 		SwapUnit unitsPerSwap;
-
 		size_t sampleSize;
 
-		CX_Millis latency; // + values: more latency, so subtract latency
-
-		// choose one. if not nullptr, will be listened to for data
-		//ofEvent<const SwapData&>* eventSource; 
-		//DataContainer* containerSource;
+		CX_Millis latency;
 	};
 
 	DataContainer(void);
@@ -118,27 +111,27 @@ public:
 	void storeSwap(SwapData swapData);
 
 	size_t size(void);
-	bool full(void); // what???
+	bool full(void);
 	void clear(bool keepLastSample = true, bool resetSwapUnit = true);
 
 
 	void setLatency(CX_Millis latency);
-	CX_Millis getLatency(void); // getConfiguration
+	CX_Millis getLatency(void); // getConfiguration   TODO remove these getConfiguration
 
 	void setSampleSize(size_t size);
 	void setMinimumSampleSize(size_t minSize);
 	size_t getSampleSize(void); // getConfiguration
 
-	// cannot be set, other than by setup
+	
 	void setNominalSwapPeriod(CX_Millis period);
-	CX_Millis getNominalSwapPeriod(void);
+	CX_Millis getNominalSwapPeriod(void); // getConfiguration
 
-	//void setUnitsPerSwap(SwapUnit unitsPerSwap);
-	SwapUnit getUnitsPerSwap(void);
+	// Units per swap cannot be set other than by setup. Why?
+	SwapUnit getUnitsPerSwap(void); // getConfiguration
 
 	
 	LockedDataPointer getLockedDataPointer(void);
-	std::deque<SwapData> copyData(void);
+	std::deque<SwapData> copyData(void); // return vector<SwapData>?
 
 	SwapData getLastSwapData(void);
 	CX_Millis getLastSwapTime(void);
@@ -146,127 +139,36 @@ public:
 
 	SwapUnit getNextSwapUnit(void);
 
-	struct NewData {
 
-		NewData(const std::deque<SwapData>& d) :
-			data(d)
-		{}
+	struct NewData {
+		NewData(const std::deque<SwapData>& d);
 
 		const std::deque<SwapData>& data;
 
-		bool empty(void) const {
-			return data.empty();
-		}
-
-		const SwapData& newest(void) const {
-			return data.back();
-		}
-
-		const SwapData& oldest(void) const {
-			return data.front();
-		}
+		bool empty(void) const;
+		const SwapData& newest(void) const;
+		const SwapData& oldest(void) const;
 	};
 
 	ofEvent<const NewData&> newDataEvent;
 
 	
-
 	struct PolledSwapListener {
+		PolledSwapListener(DataContainer* cont);
 
-		PolledSwapListener(DataContainer* cont) {
-			_container = cont;
-			_lastDataPoint = _container->getLastSwapData();
-		}
-
-		// \return What it says on the tin. An immediate call to this function after calling setup() will return false.
-		bool hasSwappedSinceLastCheck(void) {
-			SwapData thisDataPoint = _container->getLastSwapData();
-
-			if (thisDataPoint.unit != _lastDataPoint.unit) {
-				_lastDataPoint = thisDataPoint;
-				return true;
-			}
-			return false;
-		}
-
-		SwapData getNewestData(void) {
-			SwapData thisDataPoint = _container->getLastSwapData();
-			if (thisDataPoint.unit != _lastDataPoint.unit) {
-				_lastDataPoint = thisDataPoint;
-			}
-			return _lastDataPoint;
-		}
-
-		bool waitForSwap(CX_Millis timeout, bool reset = true) {
-
-			if (reset) {
-				hasSwappedSinceLastCheck();
-			}
-
-			CX_Millis endTime = Instances::Clock.now() + timeout;
-			do {
-				if (hasSwappedSinceLastCheck()) {
-					return true;
-				}
-
-				//Instances::Input.pollEvents();
-
-				std::this_thread::yield();
-
-			} while (Instances::Clock.now() > endTime);
-			return false;
-		}
+		SwapData getNewestData(void);
+		bool hasSwappedSinceLastCheck(void);
+		bool waitForSwap(CX_Millis timeout, bool reset = true);
 
 	private:
 		DataContainer* _container;
+		bool _hasSwapped;
 		SwapData _lastDataPoint;
 	};
-
-
 
 	std::unique_ptr<PolledSwapListener> getPolledSwapListener(void) {
 		return std::make_unique<PolledSwapListener>(this);
 	}
-
-	// not as useful as PolledSwapListener
-	/*
-	struct CallbackSwapListener {
-
-		CallbackSwapListener(DataContainer* container) {
-			setup(container);
-		}
-
-		void setup(DataContainer* container) {
-			_helper.setup<CallbackSwapListener>(&container->newDataEvent, this, &CallbackSwapListener::_callbackHandler);
-		}
-
-		void setCallback(std::function<void(const NewData&)> callback) {
-			_mutex.lock();
-			_callback = callback;
-			_mutex.unlock();
-		}
-
-	private:
-
-		std::mutex _mutex;
-
-		std::function<void(const NewData&)> _callback;
-
-		Util::ofEventHelper<const NewData&> _helper;
-
-		void _callbackHandler(const NewData& data) {
-			_mutex.lock();
-			_callback(data);
-			_mutex.unlock();
-		}
-
-	};
-
-	std::unique_ptr<CallbackSwapListener> getCallbackSwapListener(void) {
-		return std::make_unique<CallbackSwapListener>(this);
-	}
-	*/
-
 
 
 private:
@@ -277,9 +179,7 @@ private:
 
 	std::deque<SwapData> _data;
 
-	SwapUnit _timeStoreNextSwapUnit;
-
-	std::shared_ptr<PolledSwapListener> _polledSwapListener;
+	SwapUnit _timeStoreNextSwapUnit; // TODO: This seems funky
 
 	void _stopListeningToSources(void);
 
@@ -311,25 +211,20 @@ public:
 
 		Configuration(void) :
 			dataContainer(nullptr),
+			sampleSize(0),
 			swapPeriodTolerance(0.5),
-			stoppagePeriodMultiplier(3)
+			stoppagePeriodMultiplier(3),
+			autoUpdate(false)
 		{}
 
 		DataContainer* dataContainer;
-		bool autoUpdate; // now that updating is costlier, it makes sense to have auto update as an option.
-
 		size_t sampleSize; // `sampleSize` is in swap events, so results in sampleSize - 1 swap periods. Thus, sampleSize must be >= 2.
-		//unsigned int requiredPeriods;
 
-		//CX_Millis nominalSwapPeriod;
-
-		//CX_Millis swapPeriodBias; // optional bias (can be estimated with LinearModel)
 		double swapPeriodTolerance; // proportion of nominalSwapPeriod
-
 		double stoppagePeriodMultiplier; // multiple of nominalSwapPeriod
-	};
 
-	// is there some way to check for missed swaps? have a window for the next two swap times and if the first is missed but second on time, note missed swap
+		bool autoUpdate; // now that updating is costlier, it makes sense to have auto update as an option.
+	};
 
 	StabilityVerifier(void);
 
@@ -338,10 +233,10 @@ public:
 	Status getStatus(void);
 	static std::string getStatusString(Status status);
 
-	bool isSwappingStably(void); // shouldn't this take an int of some kind?
+	bool isSwappingStably(void);
 	bool waitForStableSwapping(CX_Millis timeout);
 
-	ofEvent<Status> statusChangeEvent; // any time the status changes
+	ofEvent<Status> statusChangeEvent; //!< Event triggers every time the status changes.
 
 private:
 
@@ -352,7 +247,6 @@ private:
 		CX_Millis nominalSwapPeriod;
 		CX_Millis stoppageInterval;
 		CX_Millis intervalTolerance;
-		//CX_Millis missedSwapPeriodLength;
 	} _calcConfig;
 
 	CX::Util::ofEventHelper<const DataContainer::NewData&> _newDataEventHelper;
@@ -365,15 +259,23 @@ private:
 };
 
 
-struct SyncPointClientData {
-	bool allReady;
-	SwapUnitPrediction pred;
-	StabilityVerifier::Status status;
-};
+
 
 struct SyncPoint {
+
+	struct ClientData {
+
+		ClientData(void) :
+			allReady(false)
+		{}
+
+		bool allReady;
+		SwapUnitPrediction pred;
+		StabilityVerifier::Status status;
+	};
+
 	TimePrediction time;
-	std::map<std::string, SyncPointClientData> clientData;
+	std::map<std::string, ClientData> clientData;
 
 	bool valid(void) const {
 		if (clientData.size() == 0) {
@@ -425,9 +327,6 @@ public:
 
 	private:
 
-		TimePrediction _predictTime(double swapUnit) const;
-
-
 		static double _getQT(int df); // maybe this should go into Private or just be a loose function in Sync
 		bool _fittedSuccessfully(bool warn = true) const;
 
@@ -448,8 +347,6 @@ public:
 
 	bool setup(const Configuration& config);
 	Configuration getConfiguration(void);
-
-	//bool setDataSource(DataContainer* dataSource, bool autoUpdate = true);
 
 	bool fitModel(const std::deque<SwapData>* data);
 	bool fitModel(DataContainer* store);
@@ -477,35 +374,6 @@ private:
 
 
 
-// synchronizes across multiple time domains
-class DomainSynchronizer {
-public:
-
-	void addDataClient(std::string clientName, DataClient* client);
-	void removeDataClient(std::string clientName);
-	void clearDataClients(void);
-
-	bool allReady(void);
-	bool waitUntilAllReady(CX_Millis timeout);
-	std::string getStatusString(void);
-
-	SyncPoint getSyncPoint(CX_Millis time);
-	SyncPoint getSyncPoint(std::string clientName, SwapUnit unit);
-
-	// why? Data Client Locked Pointer
-	typedef CX::Util::LockedPointer<DataClient, std::recursive_mutex> DCLP;
-	DCLP getDCLP(std::string clientName);
-
-private:
-	// no mutex for these guys, except when changing the contents of this container, not when accessing the pointers
-	std::recursive_mutex _mutex; // i don't think so. this doesn't work like this. this is a general mutex on _syncs
-	std::map<std::string, DataClient*> _clients;
-
-	DataClient* _getDataClient(std::string name);
-};
-
-
-
 class DataClient {
 public:
 
@@ -513,12 +381,24 @@ public:
 	StabilityVerifier verifier;
 
 	struct Configuration {
+
+		Configuration(void) :
+			dataContainer(nullptr),
+			dataCollectionDuration(CX_Seconds(1)),
+			autoUpdate(false),
+			swapPeriodTolerance(0.5),
+			stoppagePeriodMultiplier(3)
+		{}
+
+		// for both LM and verifier
 		DataContainer* dataContainer;
-		bool autoUpdate; // only updates LM, verifier always auto updates
+		CX_Millis dataCollectionDuration;
+		bool autoUpdate; 
 
-		double swapPeriodTolerance; // for verifier
-
-		CX_Millis dataCollectionDuration; // used for sample size for lm and verifier
+		// for verifier
+		double swapPeriodTolerance;
+		double stoppagePeriodMultiplier;
+		
 	};
 
 	bool setup(const Configuration& config);
@@ -536,15 +416,42 @@ public:
 	
 	SwapUnitPrediction predictSwapUnitAtTime(CX_Millis time);
 
-	
-
-
 private:
 	std::recursive_mutex _mutex;
 	Configuration _config;
 
 	Util::ofEventHelper<const std::deque<SwapData>&> _newDataEventHelper;
 };
+
+
+// synchronizes across multiple time domains
+class DomainSynchronizer {
+public:
+
+	void addDataClient(std::string clientName, DataClient* client);
+	void removeDataClient(std::string clientName);
+	void clearDataClients(void);
+
+	bool allReady(void);
+	bool waitUntilAllReady(CX_Millis timeout);
+	std::string getStatusString(void);
+
+	SyncPoint getSyncPoint(CX_Millis time);
+	SyncPoint getSyncPoint(std::string clientName, SwapUnit unit);
+
+	// Data Client Locked Pointer
+	typedef CX::Util::LockedPointer<DataClient, std::recursive_mutex> DCLP;
+	DCLP getDCLP(std::string clientName);
+
+private:
+	// no mutex for these guys, except when changing the contents of this container, not when accessing the pointers
+	std::recursive_mutex _mutex; // i don't think so. this doesn't work like this. this is a general mutex on _syncs
+	std::map<std::string, DataClient*> _clients;
+
+	DataClient* _getDataClient(std::string name);
+};
+
+
 
 class DataVisualizer {
 public:
