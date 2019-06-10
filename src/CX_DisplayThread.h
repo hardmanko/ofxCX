@@ -2,16 +2,16 @@
 
 #include "CX_Definitions.h"
 #include "CX_DataFrameCell.h"
-#include "CX_Private.h" // CX_GLFenceSync ???
 #include "CX_SynchronizationUtils.h"
 #include "CX_DisplaySwapper.h"
 
 namespace CX {
 
-	//class CX_CLASS(Display);
 	class CX_Display;
 
 	namespace Private {
+		class CX_GLFenceSync;
+
 		void swapVideoBuffers(bool glFinish);
 	}
 
@@ -63,7 +63,7 @@ namespace CX {
 		// Swap Lock //
 		///////////////
 
-		// don't need/move to display
+		// TODO: don't need/move to display
 		bool isSwappingStably(void); // dataUser
 		bool waitForStableSwapping(CX_Millis timeout); // dataUser
 
@@ -92,7 +92,7 @@ namespace CX {
 
 		bool enableFrameQueue(bool enable);
 
-		// These functions do the same thing
+		// TODO: These functions do the same thing
 		bool frameQueueEnabled(void);
 		bool threadOwnsRenderingContext(void);
 		

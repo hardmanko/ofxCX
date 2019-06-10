@@ -26,7 +26,7 @@
 
 namespace CX {
 
-/*! This namespace contains symbols that may be visible in user code but which should not be used by user code.
+/*! The Private namespace contains symbols that may be visible in user code but which should not be used by user code.
 */
 namespace Private {
 

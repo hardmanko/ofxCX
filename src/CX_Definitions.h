@@ -2,9 +2,9 @@
 
 #include "stdint.h"
 
-//#define CX_USE_FULL_NAMESPACE
+//#define CX_NOT_USING_NAMESPACE_CX
 
-#ifdef CX_USE_FULL_NAMESPACE
+#ifdef CX_NOT_USING_NAMESPACE_CX
 #define CX_TLC_NAME
 #else
 #define CX_TLC_NAME CX_

@@ -38,7 +38,7 @@ This namespace contains instances of some classes that are fundamental to the fu
 
 //This is the only place in a CX header file that the using directive is used with namespace CX or namespace CX::Instances,
 //so if you don't like the namespace pollution, just comment out these lines.
-#ifndef CX_USE_FULL_NAMESPACE
+#ifndef CX_NOT_USING_NAMESPACE_CX
 using namespace CX;
 using namespace CX::Instances;
 #endif

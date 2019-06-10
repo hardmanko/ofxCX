@@ -31,10 +31,10 @@ until an implementation is chosen.
 */
 bool CX_Clock::setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStartTime, unsigned int samples) {
 
-	// During setup, use a dummy clock impl
-	setImplementation<CX_DummyClock>();
-
 	if (impl == nullptr) {
+
+		// During setup, use a dummy clock impl
+		setImplementation<CX_DummyClock>();
 
 		std::string warning = "";
 		std::string baseStr = "The chosen clock implementation ";
@@ -57,9 +57,6 @@ bool CX_Clock::setup(std::shared_ptr<CX_BaseClockInterface> impl, bool resetStar
 		}
 
 		impl = clockImpl.first;
-
-		//CX::Instances::Log.notice("CX_Clock") << "setup(): The argument impl was nullptr, " <<
-		//	"so the best clock implementation will be chosen from the built-in clock implementations.";
 
 		if (impl == nullptr) {
 			CX::Instances::Log.error("CX_Clock") << "setup(): No clock implementation could be chosen.";
