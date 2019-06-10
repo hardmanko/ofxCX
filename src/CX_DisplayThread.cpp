@@ -656,7 +656,7 @@ void CX_DisplayThread::_queuedFramePostSwapTask(void) {
 		result.renderTimeValid = _currentQF.fenceSync.syncSuccess();
 
 		if (result.renderTimeValid) {
-			result.renderCompleteTime = _currentQF.fenceSync.getSyncTime();
+			result.renderCompleteTime = _currentQF.fenceSync.getCompleteTime();
 		}
 
 		_currentQF.frame->frameCompleteCallback(std::move(result));

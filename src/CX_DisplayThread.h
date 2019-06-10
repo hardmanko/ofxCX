@@ -10,8 +10,6 @@ namespace CX {
 	class CX_Display;
 
 	namespace Private {
-		class CX_GLFenceSync;
-
 		void swapVideoBuffers(bool glFinish);
 	}
 
@@ -140,13 +138,15 @@ namespace CX {
 
 
 		
+		///////////////////
+		// Queued frames //
+		///////////////////
 
-		// Queued frames
 		std::recursive_mutex _queuedFramesMutex;
 		std::deque<std::shared_ptr<QueuedFrame>> _queuedFrames;
 		struct {
 			std::shared_ptr<QueuedFrame> frame;
-			Private::CX_GLFenceSync fenceSync;
+			Sync::GLFenceSync fenceSync;
 		} _currentQF;
 
 		void _queuedFrameTask(void);

@@ -1,8 +1,5 @@
 #include "CX_SlideBuffer.h"
 
-#include "CX_Logger.h"
-#include "CX_Private.h"
-
 namespace CX {
 
 ///////////////////////////
@@ -11,9 +8,9 @@ namespace CX {
 
 void CX_SlideBuffer::Slide::renderSlide(CX_Display* disp) {
 
-	if (_status >= PresentationStatus::RenderStarted) {
+	//if (_status >= PresentationStatus::RenderStarted) {
 		//warn that slide was re-rendered?
-	}
+	//}
 
 	disp->beginDrawingToBackBuffer();
 
@@ -48,7 +45,7 @@ void CX_SlideBuffer::Slide::updateRenderStatus(void) {
 	if (_fenceSync.syncComplete()) {
 		this->presInfo.renderStartTime = _fenceSync.getStartTime();
 		if (_fenceSync.syncSuccess()) {
-			this->presInfo.renderCompleteTime = _fenceSync.getSyncTime();
+			this->presInfo.renderCompleteTime = _fenceSync.getCompleteTime();
 
 			// It seems like the rendering should be marked as complete regardless of success
 			// but not setting it to RenderComplete on sync failure allows other stuff to see

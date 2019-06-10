@@ -18,7 +18,6 @@
 #include "ofLog.h"
 #include "ofTypes.h"
 
-#include "CX_Clock.h"
 #include "CX_Time_t.h"
 
 /*! \defgroup errorLogging Message Logging

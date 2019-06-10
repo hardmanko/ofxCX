@@ -4,6 +4,8 @@
 
 #include "CX_Display.h"
 #include "CX_Time_t.h"
+#include "CX_Logger.h"
+#include "CX_SynchronizationUtils.h"
 
 namespace CX {
 
@@ -132,7 +134,7 @@ namespace CX {
 				Finished = 4
 			};
 
-			Private::CX_GLFenceSync _fenceSync;
+			Sync::GLFenceSync _fenceSync;
 			PresentationStatus _status;
 
 		};

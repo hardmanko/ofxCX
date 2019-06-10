@@ -28,7 +28,6 @@ void CX_Display::setup(void) {
 	_dispThread.setup(CX_DisplayThread::Configuration(), false);
 
 	_setUpSwapTracking();
-
 }
 
 void CX_Display::_setUpSwapTracking(void) {
@@ -50,6 +49,9 @@ void CX_Display::_setUpSwapTracking(void) {
 	dcc.dataCollectionDuration = CX_Millis(250);
 
 	swapClient.setup(dcc);
+
+	// Get a polled swap listener
+	_polledSwapListener = swapData.getPolledSwapListener();
 }
 
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
@@ -122,7 +124,6 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 		}
 	}
 }
-
 
 
 CX_DisplayThread* CX_Display::getDisplayThread(void) {

@@ -4,6 +4,7 @@
 
 #include "CX_Private.h"
 #include "CX_InputManager.h" // Instances::Input
+#include "CX_Logger.h" // Instances::Log
 
 namespace CX {
 

@@ -13,7 +13,6 @@
 #include "ofConstants.h"
 
 #include "CX_Utilities.h"
-#include "CX_Logger.h"
 #include "CX_Time_t.h"
 
 /*! \defgroup timing Timing

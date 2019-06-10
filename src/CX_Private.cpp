@@ -1,94 +1,9 @@
 #include "CX_Private.h"
 
-#include "GLFW/glfw3.h"
-
-#include "CX_Mouse.h"
+#include "CX_Logger.h"
 
 namespace CX {
 namespace Private {
-
-////////////////////
-// CX_GLFenceSync //
-////////////////////
-
-CX_GLFenceSync::CX_GLFenceSync(void) :
-	_syncSuccess(false),
-	_syncCompleteTime(-1),
-	_syncStart(-1),
-	_status(SyncStatus::NotStarted)
-{}
-
-void CX_GLFenceSync::startSync(void) {
-
-	stopSyncing();
-
-	_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-	glFlush(); //This glFlush assures that the fence sync object gets pushed into the command queue.
-
-	_syncStart = CX::Instances::Clock.now();
-
-	_status = SyncStatus::Syncing;
-}
-
-void CX_GLFenceSync::updateSync(void) {
-
-	if (_status != SyncStatus::Syncing) {
-		return;
-	}
-
-	GLenum result = glClientWaitSync(_fenceSyncObject, 0, 0);
-	if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
-
-		_syncCompleteTime = CX::Instances::Clock.now();
-		_status = SyncStatus::SyncComplete;
-		_syncSuccess = true;
-		
-	} else if (result == GL_WAIT_FAILED) {
-
-		_syncCompleteTime = CX_Millis(-1);
-		_status = SyncStatus::SyncComplete;
-		_syncSuccess = false;
-		
-	} 
-	//else if (result == GL_TIMEOUT_EXPIRED) {
-		//do nothing
-		//CX::Instances::Log.warning("CX_GLFenceSync") << "Sync timeout";
-	//}
-
-}
-
-void CX_GLFenceSync::stopSyncing(void) {
-	glDeleteSync(_fenceSyncObject);
-	_status = SyncStatus::NotStarted;
-}
-
-void CX_GLFenceSync::clear(void) {
-	stopSyncing();
-	_syncSuccess = false;
-	_syncCompleteTime = CX_Millis(-1);
-	_syncStart = CX_Millis(-1);
-}
-
-bool CX_GLFenceSync::isSyncing(void) const {
-	return _status == SyncStatus::Syncing;
-}
-
-bool CX_GLFenceSync::syncSuccess(void) const {
-	return _status == SyncStatus::SyncComplete && _syncSuccess;
-}
-
-bool CX_GLFenceSync::syncComplete(void) const {
-	return _status == SyncStatus::SyncComplete;
-}
-
-CX_Millis CX_GLFenceSync::getStartTime(void) const {
-	return _syncStart;
-}
-
-CX_Millis CX_GLFenceSync::getSyncTime(void) const {
-	return _syncCompleteTime;
-}
-
 
 ///////////////////////////
 // CX_GlfwContextManager //
@@ -111,6 +26,7 @@ bool CX_GlfwContextManager::trylock(void) {
 	if (isUnlocked()) {
 		_lockingThreadId = std::this_thread::get_id();
 
+		// TODO: Look into this for oF 0.10.1
 		glfwMakeContextCurrent(_glfwContext);
 		//glFinish();
 
