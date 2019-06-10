@@ -356,7 +356,7 @@ namespace Sync {
 		return thisDataPoint;
 	}
 
-	bool DataContainer::PolledSwapListener::waitForSwap(CX_Millis timeout, bool reset = true) {
+	bool DataContainer::PolledSwapListener::waitForSwap(CX_Millis timeout, bool reset) {
 
 		if (reset) {
 			hasSwappedSinceLastCheck();
@@ -1119,129 +1119,107 @@ namespace Sync {
 		return rval;
 	}
 
-	  ////////////////////
-	 // DataVisualizer //
+
+	////////////////////
+	// GLFenceSync //
 	////////////////////
 
-	void DataVisualizer::_newDataCallback(const Sync::DataContainer::NewData& nd) {
-		if (nd.empty()) {
+	GLFenceSync::GLFenceSync(void) :
+		//_syncSuccess(false),
+		_syncComplete(-1),
+		_syncStart(-1),
+		_status(SyncStatus::Idle)
+	{}
+
+	void GLFenceSync::startSync(CX_Millis timeout) {
+
+		clear();
+
+		_fenceSyncObject = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+		glFlush(); //This glFlush assures that the fence sync object gets pushed into the command queue.
+		// But maybe its redundant now that updateSync calls glClientWaitSync with flag GL_SYNC_FLUSH_COMMANDS_BIT?
+
+		_syncStart = CX::Instances::Clock.now();
+		_timeout = timeout;
+
+		_status = SyncStatus::Syncing;
+	}
+
+	void GLFenceSync::updateSync(void) {
+
+		if (_status != SyncStatus::Syncing) {
 			return;
 		}
 
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		GLenum result = glClientWaitSync(_fenceSyncObject, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+		if (result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED) {
 
-		if (_recording || _playingLive) {
-			_recordedSamples.push_back(nd.newest());
+			_syncComplete = CX::Instances::Clock.now();
+			_status = SyncStatus::SyncSuccess;
+
+		} else if (result == GL_WAIT_FAILED) {
+
+			// Log something? This is an OpenGL error
+			_syncComplete = CX::Instances::Clock.now();
+			_status = SyncStatus::SyncFailed;
+
 		}
+		//else if (result == GL_TIMEOUT_EXPIRED) {
+			//do nothing. This isn't supposed to be able to happen
+			//CX::Instances::Log.warning("GLFenceSync") << "Sync timeout";
+		//}
 
-		if (_playingLive) {
-			while (_recordedSamples.size() > _autoRecordSamples) {
-				_recordedSamples.pop_front();
-			}
-
-			_lmData.push_back(nd.newest());
-			while (_lmData.size() > _config.lmConfig.sampleSize) {
-				_lmData.pop_front();
+		// Check for timeout after checking the wait sync to give one last
+		// chance before timing out.
+		if (_timeout > CX_Millis(0)) {
+			CX_Millis t = CX::Instances::Clock.now();
+			if (t - _syncStart > _timeout) {
+				_syncComplete = t;
+				_status = SyncStatus::TimedOut;
 			}
 		}
-
 	}
 
-	void DataVisualizer::_drawDisplay(CX_Millis t, DrawConfig dc, const std::deque<SwapData>& fullData) {
+	void GLFenceSync::stopSyncing(void) {
+		// This may generate GL_INVALID_VALUE error if _fenceSyncObject is not initialized.
+		// But its silent, so you can ignore it.
+		glDeleteSync(_fenceSyncObject);
 
-		SwapData* nextSample = getNextSample();
-		if (nextSample && nextSample->time < t) {
-
-			_lmData.pop_front();
-			_lmData.push_back(*nextSample);
-
-			_lm.fitModel(&_lmData);
-
-			_currentSample++;
-
-		}
-
-
-
-		Sync::LinearModel::LockedFittedModel lfm = _lm.getLockedFittedModel();
-		ofPoint dataCenter(lfm->xBar, lfm->yBar);
-
-		float dataWidth = dc.baseDataWidth * dc.zoom;
-		float dataHeight = dc.baseDataHeight.millis() * dc.zoom;
-
-		ofRectangle dataRect;
-		dataRect.setFromCenter(dataCenter, dataWidth, dataHeight);
-
-		auto dataToView = [&dc, &dataRect](ofPoint dataPoint) -> ofPoint {
-			return Util::mapPointBetweenRectangles(dataPoint, dataRect, dc.viewport);
-		};
-
-		auto viewToData = [&dc, &dataRect](ofPoint viewPoint) -> ofPoint {
-			return Util::mapPointBetweenRectangles(viewPoint, dc.viewport, dataRect);
-		};
-
-
-
-
-		std::vector<ofPoint> viewDataPoints;
-
-		for (size_t i = 0; i < fullData.size(); i++) {
-
-			ofPoint dp(fullData[i].time.millis(), fullData[i].unit);
-			ofPoint vp = dataToView(dp);
-
-			if (dc.viewport.inside(vp)) {
-				viewDataPoints.push_back(vp);
-			}
-
-		}
-
-		std::vector<float> predGrid = Util::sequenceAlong<float>(dataRect.getLeft(), dataRect.getRight(), 40);
-
-		std::vector<ofPoint> lowerPredPoints;
-		std::vector<ofPoint> upperPredPoints;
-
-		for (const float& g : predGrid) {
-
-			SwapUnit gUnit = g;
-			Sync::TimePrediction tp = lfm->predictTime(gUnit);
-
-
-			ofPoint ldp = ofPoint(g, tp.lowerBound().millis());
-			ofPoint lvp = dataToView(ldp);
-			if (dc.viewport.inside(lvp)) {
-				lowerPredPoints.push_back(lvp);
-			}
-
-			ofPoint udp = ofPoint(g, tp.upperBound().millis());
-			ofPoint uvp = dataToView(udp);
-			if (dc.viewport.inside(uvp)) {
-				upperPredPoints.push_back(uvp);
-			}
-
-		}
-
-
-
-		ofSetColor(dc.dataPointCol);
-		for (const ofPoint& vdp : viewDataPoints) {
-			ofDrawCircle(vdp, dc.viewport.getWidth() / 40);
-		}
-
-		ofSetColor(dc.predLineCol);
-		Draw::lines(lowerPredPoints, dc.lineWidth);
-		Draw::lines(upperPredPoints, dc.lineWidth);
-
-
-
-		//const SwapData& oldestData = fullData.front();
-		//const SwapData& newestData = fullData.back();
-
-		//CX_Millis timeRange = newestData.time - oldestData.time;
-		//double swapUnitRange = newestData.
-
+		_status = SyncStatus::Idle;
 	}
 
+	void GLFenceSync::clear(void) {
+		stopSyncing();
+		_syncComplete = CX_Millis(-1);
+		_syncStart = CX_Millis(-1);
+		_timeout = CX_Millis(-1);
+	}
+
+	bool GLFenceSync::isSyncing(void) const {
+		return _status == SyncStatus::Syncing;
+	}
+
+	bool GLFenceSync::syncSuccess(void) const {
+		return _status == SyncStatus::SyncSuccess;
+	}
+
+	bool GLFenceSync::syncComplete(void) const {
+		return _status == SyncStatus::SyncSuccess ||
+			_status == SyncStatus::SyncFailed ||
+			_status == SyncStatus::TimedOut;
+	}
+
+	GLFenceSync::SyncStatus GLFenceSync::getStatus(void) const {
+		return _status;
+	}
+
+	CX_Millis GLFenceSync::getStartTime(void) const {
+		return _syncStart;
+	}
+
+	CX_Millis GLFenceSync::getCompleteTime(void) const {
+		return _syncComplete;
+	}
 
 } // namespace Sync
 } // namespace CX

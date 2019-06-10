@@ -63,6 +63,7 @@ bool initializeCX(CX_InitConfiguation config) {
 
 		if (config.framePeriodEstimationInterval != CX_Millis(0)) {
 			CX::Instances::Disp.estimateFramePeriod(config.framePeriodEstimationInterval);
+			CX::Instances::Disp.setFramePeriod(CX::Instances::Disp.getFramePeriod(), true);
 			CX::Instances::Log.notice("CX_EntryPoint") << "initializeCX(): Estimated frame period for display: " << CX::Instances::Disp.getFramePeriod().millis() << " ms.";
 		}
 

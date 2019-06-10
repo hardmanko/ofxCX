@@ -1,16 +1,14 @@
 #pragma once
 
-//This file should not be included in a location that will make its contents visible to user code.
+#include <sstream>
+#include <string>
 
 #include "ofUtils.h"
 #include "ofEvents.h"
 
 #include "GLFW/glfw3.h"
-#include <sstream>
-#include <string>
 
 #include "CX_AppWindow.h"
-#include "CX_Logger.h"
 
 
 #ifdef TARGET_LINUX
@@ -29,45 +27,6 @@ namespace CX {
 /*! The Private namespace contains symbols that may be visible in user code but which should not be used by user code.
 */
 namespace Private {
-
-	class CX_GLFenceSync {
-	public:
-
-		CX_GLFenceSync(void);
-
-		void startSync(void);
-		void updateSync(void);
-		void stopSyncing(void);
-
-		void clear(void);
-
-		bool isSyncing(void) const;
-		bool syncComplete(void) const;
-		bool syncSuccess(void) const;
-
-		CX_Millis getStartTime(void) const;
-		CX_Millis getSyncTime(void) const;
-
-	private:
-
-		enum class SyncStatus {
-			NotStarted,
-			Syncing,
-			SyncComplete
-		};
-
-		SyncStatus _status;
-
-		bool _syncSuccess;
-
-		GLsync _fenceSyncObject;
-
-		CX_Millis _syncStart;
-		CX_Millis _syncCompleteTime;
-
-	};
-
-
 
 	// Maybe CX_RenderingContextManager
 	class CX_GlfwContextManager {

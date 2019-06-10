@@ -452,109 +452,65 @@ private:
 };
 
 
+/*! OpenGL fence sync helper object. Fence syncs are a feature of OpenGL
+and are used to synchronize the CPU and GPU (video card).
 
-class DataVisualizer {
+CX uses this class internally. Users of CX are unlikely to need to use this class.
+
+See https://www.khronos.org/opengl/wiki/Sync_Object for more about
+fence syncs. You don't need to understand how to use the functions on 
+that page: This class wraps those functions.
+
+Use `startSync()` to insert a fence into the OpenGL command queue.
+
+As long as `isSyncing() == true`, call `updateSync()` regularly. Once `isSyncing() == false`,
+the sync will be complete.
+
+Alternately, you can call `updateSync()` then if `syncComplete() == true`, the sync is complete.
+
+Either way, check the status of the completed sync with `syncSuccess()` or `getStatus()`.
+
+Sync start and complete times can be accessed with `getStartTime()` and `getCompleteTime()`.
+*/
+class GLFenceSync {
 public:
 
-	struct Configuration {
-		Sync::DataContainer* data;
-
-		Sync::LinearModel::Configuration lmConfig;
+	enum class SyncStatus : int {
+		Idle,
+		Syncing,
+		SyncSuccess,
+		SyncFailed,
+		TimedOut
 	};
 
-	void setup(const Configuration& config) {
+	GLFenceSync(void);
 
-		_newDataHelper.setup<DataVisualizer>(&config.data->newDataEvent, this, &DataVisualizer::_newDataCallback);
+	void startSync(CX_Millis timeout = 0);
+	bool isSyncing(void) const;
+	void updateSync(void);
 
-		_lm.setup(config.lmConfig);
-	}
+	void stopSyncing(void);
+	void clear(void);
+	
+	SyncStatus getStatus(void) const;
+	bool syncComplete(void) const;
+	bool syncSuccess(void) const;
 
-	bool startRecording(void) {
-		_recording = true;
-	}
-
-	void stopRecording(void) {
-
-	}
-
-	void startPlaying(double speedMultiplier) {
-
-		_speedMultiplier = speedMultiplier;
-		_currentSample = -1;
-
-		_playing = true;
-
-		//_lmData.clear();
-		_lmData.assign(_recordedSamples.begin(), _recordedSamples.begin() + _config.lmConfig.sampleSize);
-		_lm.fitModel(&_lmData);
-	}
-
-	void playLive(CX_Millis autoRecordDuration) {
-
-		//_autoRecordSamples = 
-
-	}
-
-	void updatePlayback(void) {
-		_drawDisplay(Instances::Clock.now(), _drawConfig, _recordedSamples);
-	}
-
-
+	CX_Millis getStartTime(void) const;
+	CX_Millis getCompleteTime(void) const;
 
 private:
-	std::recursive_mutex _mutex;
 
-	Configuration _config;
+	SyncStatus _status;
 
-	bool _recording;
-	bool _playing;
-	bool _playingLive;
-	double _speedMultiplier;
-	CX_Millis _playbackStartTime;
-	size_t _autoRecordSamples;
+	GLsync _fenceSyncObject;
 
-	Sync::LinearModel _lm;
-	std::deque<SwapData> _lmData;
-	//Sync::DataContainer _lmDataContainer;
-
-	std::deque<SwapData> _recordedSamples;
-	int _currentSample;
-
-	SwapData* getNextSample(void) {
-		int next = _currentSample + 1;
-		if (next < 0 || next >= (int)_recordedSamples.size()) {
-			return nullptr;
-		}
-		return &_recordedSamples[next];
-	}
-
-
-	Util::ofEventHelper<const Sync::DataContainer::NewData&> _newDataHelper;
-	void _newDataCallback(const Sync::DataContainer::NewData& nd);
-
-	struct DrawConfig {
-		ofRectangle viewport;
-		ofPoint viewOffset;
-
-
-		float lineWidth;
-		ofColor slopeLineCol;
-		ofColor predLineCol;
-		ofColor gridLineCol;
-
-		ofColor dataPointCol;
-
-
-		SwapUnit baseDataWidth;
-		CX_Millis baseDataHeight;
-		float zoom;
-
-	} _drawConfig;
-
-	void _drawDisplay(CX_Millis t, DrawConfig dc, const std::deque<SwapData>& fullData);
-
+	CX_Millis _syncStart;
+	CX_Millis _syncComplete;
+	CX_Millis _timeout;
 
 };
+
 
 
 } // namespace Sync
