@@ -29,6 +29,11 @@ bool CX_SoundBufferPlayer::setup(CX_SoundStream *ss) {
 }
 
 bool CX_SoundBufferPlayer::setup(std::shared_ptr<CX_SoundStream> ss) {
+	
+	_cleanUpOldSoundStream();
+
+	_soundStream = ss;
+	
 	if (!ss) {
 		return false;
 	}
@@ -37,14 +42,10 @@ bool CX_SoundBufferPlayer::setup(std::shared_ptr<CX_SoundStream> ss) {
 		CX::Instances::Log.notice("CX_SoundBufferPlayer") << "setup(): Sound stream is not running.";
 	}
 
-	_cleanUpOldSoundStream();
-
-	_soundStream = ss;
-
 	_outputEventHelper.setup<CX_SoundBufferPlayer>(&ss->outputEvent, this, &CX_SoundBufferPlayer::_outputEventHandler);
 	_outputEventHelper.listenToStopEvent(&ss->destructEvent);
 
-	setSoundBuffer(_outData.soundBuffer);
+	setSoundBuffer(_outData.soundBuffer); // Re-set current sound buffer as new sound buffer
 
 	return true;
 }

@@ -27,15 +27,16 @@ void CX_Display::setup(void) {
 
 	_dispThread.setup(CX_DisplayThread::Configuration(), false);
 
-	_setUpSwapTracking();
+	// Use a plausible default frame period
+	_setupSwapTracking(CX_Seconds(1.0 / 60.0));
 }
 
-void CX_Display::_setUpSwapTracking(void) {
+void CX_Display::_setupSwapTracking(CX_Millis nominalFramePeriod) {
 	Sync::DataContainer::Configuration sdc;
 
 	sdc.latency = 0;
 	sdc.unitsPerSwap = 1;
-	sdc.nominalSwapPeriod = this->getFramePeriod();
+	sdc.nominalSwapPeriod = nominalFramePeriod;
 	sdc.sampleSize = 0; // let it be set by users
 
 	swapData.setup(sdc);
@@ -53,6 +54,7 @@ void CX_Display::_setUpSwapTracking(void) {
 	// Get a polled swap listener
 	_polledSwapListener = swapData.getPolledSwapListener();
 }
+
 
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
 due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
@@ -638,7 +640,8 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 
 		if (cleanedDurations.size() >= 2) {
 
-			setFramePeriod(Util::mean(cleanedDurations));
+			// Save the results
+			setFramePeriod(Util::mean(cleanedDurations), false);
 			_framePeriodStandardDeviation = CX_Millis::standardDeviation(cleanedDurations);
 
 		} else {
@@ -693,11 +696,13 @@ the video card doing vertical synchronization incorrectly. Thus, this may not fi
 \param knownPeriod The known refresh period of the monitor.
 \note This function sets the standard deviation of the frame period to 0.
 */
-void CX_Display::setFramePeriod(CX_Millis knownPeriod) {
+void CX_Display::setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking) {
 	_framePeriod = knownPeriod;
 	_framePeriodStandardDeviation = 0;
 
-	_setUpSwapTracking();
+	if (setupSwapTracking) {
+		_setupSwapTracking(knownPeriod);
+	}
 }
 
 /*! Epilepsy warning: This function causes your display to rapidly flash with high-contrast patterns.

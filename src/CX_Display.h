@@ -68,8 +68,8 @@ namespace CX {
 		//void swapAt(CX_Millis time); // blocking function for really basic synchronization?
 
 		// main class
-		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 40, float maxRefreshRate = 160);
-		void setFramePeriod(CX_Millis knownPeriod);
+		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 30, float maxRefreshRate = 150);
+		void setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking = false);
 		CX_Millis getFramePeriod(void) const;
 		CX_Millis getFramePeriodStandardDeviation(void) const;
 
@@ -134,12 +134,12 @@ namespace CX {
 
 		bool _softVSyncWithGLFinish;
 
+		void _setupSwapTracking(CX_Millis nominalFramePeriod);
+
 		// display thread stuff
 		CX_DisplayThread _dispThread;
 
 		std::unique_ptr<Sync::DataContainer::PolledSwapListener> _polledSwapListener;
-
-		void _setUpSwapTracking(void);
 
 		void _swapBuffers(void);
 

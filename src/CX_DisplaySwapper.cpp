@@ -16,7 +16,9 @@ bool CX_DisplaySwapper::setup(const Configuration& config) {
 	}
 
 	if (config.preSwapSafetyBuffer < CX_Millis(1)) {
-		Instances::Log.warning("CX_DisplaySwapper") << "setup(): config.preSwapSafetyBuffer was less than 1 millisecond. It is recommended that preSwapSafetyBuffer be at least one millisecond.";
+		Instances::Log.warning("CX_DisplaySwapper") << 
+			"setup(): config.preSwapSafetyBuffer was less than 1 millisecond. " <<
+			"It is recommended that preSwapSafetyBuffer be at least one millisecond.";
 		if (_config.preSwapSafetyBuffer < CX_Millis(0)) {
 			_config.preSwapSafetyBuffer = CX_Millis(0);
 		}

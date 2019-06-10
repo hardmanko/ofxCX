@@ -43,6 +43,10 @@ bool CX_SoundBufferRecorder::setup(std::shared_ptr<CX_SoundStream> ss) {
 		return false;
 	}
 
+	if (!ss->isStreamRunning()) {
+		CX::Instances::Log.notice("CX_SoundBufferRecorder") << "setup(): Sound stream is not running.";
+	}
+
 	_inputEventHelper.setup<CX_SoundBufferRecorder>(&ss->inputEvent, this, &CX_SoundBufferRecorder::_inputEventHandler);
 	_inputEventHelper.listenToStopEvent(&ss->destructEvent);
 

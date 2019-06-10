@@ -18,6 +18,11 @@ namespace CX {
 
 		struct Configuration {
 
+			Configuration(void) :
+				preSwapSafetyBuffer(2),
+				enableFrameQueue(false)
+			{}
+
 			CX_Millis preSwapSafetyBuffer;
 
 			//CX_Millis requiredSwapDuration; // duration of swaps required for data and swap lock
