@@ -32,6 +32,8 @@ void CX_Display::setup(void) {
 }
 
 void CX_Display::_setUpSwapTracking(void) {
+
+	// Set up swapData
 	Sync::DataContainer::Configuration sdc;
 
 	sdc.latency = 0;
@@ -42,6 +44,7 @@ void CX_Display::_setUpSwapTracking(void) {
 	swapData.setup(sdc);
 
 
+	// Set up swapClient
 	Sync::DataClient::Configuration dcc;
 
 	dcc.dataContainer = &swapData;
@@ -50,6 +53,10 @@ void CX_Display::_setUpSwapTracking(void) {
 	dcc.dataCollectionDuration = CX_Millis(250);
 
 	swapClient.setup(dcc);
+
+
+	// Initialize the polled swap listener
+	_polledSwapListener = swapData.getPolledSwapListener();
 }
 
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
