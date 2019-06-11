@@ -11,7 +11,6 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 
 #include <deque>
 
-#include "ofThread.h"
 #include "ofRectangle.h"
 #include "ofFbo.h"
 #include "ofGraphics.h"

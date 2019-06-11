@@ -183,11 +183,7 @@ number of front and back buffer swaps. It tracks buffer swaps that result from
 \return The number of the last frame. This value can only be compared with other values
 returned by this function. */
 FrameNumber CX_Display::getLastFrameNumber(void) {
-
 	return swapData.getLastSwapData().unit;
-
-	//std::lock_guard<std::recursive_mutex> lock(_swaps.mutex);
-	//return _swaps.lastFrameNumber;
 }
 
 
@@ -195,8 +191,6 @@ FrameNumber CX_Display::getLastFrameNumber(void) {
 \return A time value that can be compared with CX::Instances::Clock.now(). */
 CX_Millis CX_Display::getLastSwapTime(void) {
 	return swapData.getLastSwapData().time;
-	//std::lock_guard<std::recursive_mutex> lock(_swaps.mutex);
-	//return _swaps.lastSwapTime;
 }
 
 /*! Get an estimate of the next time the front and back buffers will be swapped.
