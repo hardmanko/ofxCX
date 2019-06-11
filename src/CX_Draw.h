@@ -11,7 +11,7 @@
 #include "CX_Algorithm.h"
 #include "CX_Synth.h"
 
-#include "CX_Gabor.h"
+#include "CX_DrawGabor.h"
 
 namespace CX {
 

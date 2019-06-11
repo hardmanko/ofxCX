@@ -45,7 +45,8 @@ void runExperiment(void) {
 }
 \endcode
 
-Advanced users:
+Custom Waveforms Advanced users:
+
 The Gabor class is meant to be somewhat extensible, so that you
 can add your own wave and envelope functions. To do so, you will need
 to write a function body that calculates wave amplitudes and envelope
@@ -62,7 +63,7 @@ waveform that you are calculating the amplitide for. The return value
 is the amplitude of the wave at `wp` and should be in the interval [0,1].
 An example of a function body that you could use to generate sine waves is
 
-	return (sin(wp * 6.283185307179586232) + 1) / 2;
+	return (sin(wp * 6.283185307179586232) + 1) / 2; // 6.28... = 2 * pi;
 
 where the returned value is scaled to be in the interval [0,1] instead of [-1,1].
 
@@ -84,6 +85,8 @@ pixels outside of the radius, so a function body might be:
 Due to how GLSL works, these function bodies can be written as strings
 in C++ source code and passed to the GLSL compiler as strings. In this
 case, you just need to pass the function bodies to Gabor::setup().
+
+See CX_DrawGabor.cpp for the function bodies in Gabor::Wave and Gabor::Envelope.
 
 */
 class Gabor {

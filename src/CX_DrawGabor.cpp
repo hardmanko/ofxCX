@@ -1,4 +1,4 @@
-#include "CX_Gabor.h"
+#include "CX_DrawGabor.h"
 
 
 #define STRINGIFY(x) #x
@@ -241,7 +241,7 @@ void Gabor::_draw(ofPoint center, float renderSurfaceHeightPx) {
 	_shader.begin();
 
 	_setUniforms();
-	ofCircle(center, radius);
+	ofDrawCircle(center, radius);
 
 	//ofRect(x, y, width, height); //Draw a rect containing the gabor
 
