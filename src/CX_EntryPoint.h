@@ -2,7 +2,47 @@
 
 #include "CX.h"
 
+#ifdef TARGET_LINUX
+//so apparently sysmacros.h defines some macros with these names on Linux...
+#ifdef major
+#undef major
+#endif
+
+#ifdef minor
+#undef minor
+#endif
+#endif
+
 namespace CX {
+
+	struct CX_GLVersion {
+		CX_GLVersion(void) :
+			major(0),
+			minor(0),
+			release(0)
+		{}
+
+		CX_GLVersion(int maj, int min, int rel) :
+			major(maj),
+			minor(min),
+			release(rel)
+		{}
+
+		int major;
+		int minor;
+		int release;
+
+		int compare(int maj, int min, int rel) const;
+		int compare(const CX_GLVersion& that) const;
+
+		bool supportsGLFenceSync(void) const;
+
+		CX_GLVersion getCorrespondingGLSLVersion(void) const;
+
+	};
+
+	void learnOpenGLVersion(void);
+	CX_GLVersion getOpenGLVersion(void);
 
 	/*! This structure is used to configure windows opened with CX::reopenWindow(). */
 	struct CX_WindowConfiguration {
@@ -31,7 +71,7 @@ namespace CX {
 
 		/*! \brief If you want to request a specific OpenGL version, you can provide this value.
 		If nothing is provided, the newest OpenGL version available is used. */
-		Private::CX_GLVersion desiredOpenGLVersion;
+		CX_GLVersion desiredOpenGLVersion;
 
 		/*! A title for the window that is opened. */
 		std::string windowTitle;

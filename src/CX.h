@@ -23,8 +23,6 @@
 #include "CX_Utilities.h"
 #include "CX_UnitConversion.h"
 
-#include "CX_Private.h"
-
 #include "CX_EntryPoint.h"
 
 

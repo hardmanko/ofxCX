@@ -10,10 +10,6 @@ typedef RtError RT_AUDIO_ERROR_TYPE;
 
 namespace CX {
 
-namespace Instances {
-	CX_SoundStream SoundStream;
-}
-
 /*! This function exists to serve a per-computer configuration function that is otherwise difficult to provide
 due to the fact that C++ programs are compiled to binaries and cannot be easily edited on the computer on which
 they are running. This function takes the file name of a specially constructed configuration file and reads the

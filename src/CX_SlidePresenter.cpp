@@ -1,6 +1,6 @@
 #include "CX_SlidePresenter.h"
 
-#include "CX_Private.h"
+#include "CX_EntryPoint.h"
 
 namespace CX {
 
@@ -37,7 +37,7 @@ bool CX_SlidePresenter::setup(const CX_SlidePresenter::Configuration &config) {
 
 	_garbageFbo.allocate(1, 1);
 
-	if (!CX::Private::glFenceSyncSupported()) {
+	if (!CX::getOpenGLVersion().supportsGLFenceSync()) {
 		_config.useFenceSync = false; //Override the setting
 		CX::Instances::Log.warning("CX_SlidePresenter") << "OpenGL fence sync not supported by the video card in this computer. This means that the slide"
 			" presenter will be unable to determine when rendering commands are complete. Normally, the slide presenter uses a fence sync"

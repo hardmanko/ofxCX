@@ -262,13 +262,13 @@ void lines(std::vector<ofPoint> points, float lineWidth, bool circleJoins) {
 	Draw::line(points[0], points[1], lineWidth);
 	for (unsigned int i = 1; i < points.size() - 1; i++) {
 		if (circleJoins) {
-			ofCircle(points[i], d);
+			ofDrawCircle(points[i], d);
 		}
 		Draw::line(points[i], points[i + 1], lineWidth);
 	}
 
 	if (circleJoins && (points.back() == points.front())) {
-		ofCircle(points.front(), d);
+		ofDrawCircle(points.front(), d);
 	}
 }
 
@@ -287,8 +287,8 @@ void line(ofPoint p1, ofPoint p2, float width) {
 	points[2] = ls[1].p1;
 	points[3] = ls[1].p2;
 
-	ofTriangle(points[0], points[1], points[2]);
-	ofTriangle(points[1], points[2], points[3]);
+	ofDrawTriangle(points[0], points[1], points[2]);
+	ofDrawTriangle(points[1], points[2], points[3]);
 }
 
 /*! This function draws a ring, i.e. an unfilled circle. The filled area of the ring is between `radius + width/2` and `radius - width/2`.

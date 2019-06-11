@@ -200,13 +200,4 @@ private:
 
 };
 
-namespace Instances {
-	/*! During CX initialization, `CX::Instances::SoundPlayer` and `CX::Instances::SoundRecorder`
-	are configured to use `SoundStream`. As a result, in order to use `SoundPlayer` and `SoundRecorder`,
-	the user is only required to set up `SoundStream`.
-	
-	\ingroup sound */
-	extern CX_SoundStream SoundStream;
-}
-
 } //namespace CX

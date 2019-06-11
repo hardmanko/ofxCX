@@ -4,10 +4,6 @@
 
 namespace CX {
 
-namespace Instances {
-	CX_SoundBufferPlayer SoundPlayer;
-}
-
 CX_SoundBufferPlayer::CX_SoundBufferPlayer(void) :
 	_soundStream(nullptr)
 {}

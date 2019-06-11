@@ -4,10 +4,6 @@
 
 namespace CX {
 
-namespace Instances {
-	CX_SoundBufferRecorder SoundRecorder;
-}
-
 CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
 	_soundStream(nullptr)
 {

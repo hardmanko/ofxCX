@@ -132,14 +132,4 @@ namespace CX {
 		void _prepareRecordBuffer(bool clear, std::string callingFunctionName);
 	};
 
-	namespace Instances {
-		/*! During CX initialization, `SoundRecorder` is configured to use 
-		`CX::Instances::SoundStream` as its `CX_SoundStream`.
-		This means that only `SoundStream` needs to be set up to use `SoundRecorder`.
-		`SoundRecorder` does not need to have `setup()` called.
-
-		\ingroup sound */
-		extern CX_SoundBufferRecorder SoundRecorder;
-	}
-
 }

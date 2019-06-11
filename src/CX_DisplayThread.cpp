@@ -4,16 +4,6 @@
 #include "CX_Private.h"
 
 namespace CX {
-namespace Private {
-
-	void swapVideoBuffers(bool glFinishAfterSwap) {
-		glfwSwapBuffers(CX::Private::glfwContext);
-		if (glFinishAfterSwap) {
-			glFinish();
-		}
-	}
-
-} // namespace Private
 
 CX_DisplayThread::~CX_DisplayThread(void) {
 	stopThread(true);

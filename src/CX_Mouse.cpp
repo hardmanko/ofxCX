@@ -79,7 +79,7 @@ void CX_Mouse::setCursorPosition(ofPoint pos) {
 	_cursorPos = pos;
 
 	// This use of the glfwContext does not appear to require the context to be current on the calling thread.
-	glfwSetCursorPos(CX::Private::glfwContext, pos.x, pos.y);
+	glfwSetCursorPos(CX::Private::glfwContextManager.get(), pos.x, pos.y);
 }
 
 /*! Get the cursor position within the program window. If the mouse has left the window,

@@ -126,7 +126,7 @@ namespace Draw {
 		angleEnd *= -PI / 180;
 
 		vector<ofFloatColor> convertedColors(colors.size());
-		for (int i = 0; i < convertedColors.size(); i++) {
+		for (size_t i = 0; i < convertedColors.size(); i++) {
 			convertedColors[i] = colors[i];
 		}
 

@@ -1,7 +1,5 @@
 #include "CX_InputManager.h"
 
-#include "CX_AppWindow.h" //glfwPollEvents()
-
 namespace CX {
 
 	namespace Private {

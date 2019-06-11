@@ -111,14 +111,4 @@ namespace CX  {
 		bool _checkPlaybackRequirements(std::string callerName);
 	};
 
-	namespace Instances {
-		/*! During CX initialization, `SoundPlayer` is configured to use
-		`CX::Instances::SoundStream` as its `CX_SoundStream`.
-		This means that only `SoundStream` needs to be set up to use `SoundPlayer`.
-		`SoundPlayer` does not need to have `setup()` called.
-		
-		\ingroup sound */
-		extern CX_SoundBufferPlayer SoundPlayer;
-	}
-
 }

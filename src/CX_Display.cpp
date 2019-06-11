@@ -305,7 +305,18 @@ void CX_Display::swapBuffers(void) {
 }
 
 void CX_Display::_swapBuffers(void) {
-	Private::swapVideoBuffers(_softVSyncWithGLFinish);
+
+	Private::CX_GlfwContextManager& cm = Private::glfwContextManager;
+	if (!cm.isLockedByThisThread()) {
+		Instances::Log.warning("CX_Display") << "swapBuffers(): Buffer swap requested in a thread that doesn't have a lock on the context.";
+		return;
+	}
+
+	glfwSwapBuffers(cm.get());
+	if (_softVSyncWithGLFinish) { // thread? std::atomic?
+		glFinish();
+	}
+
 	swapData.storeSwap(Instances::Clock.now());
 }
 
@@ -397,10 +408,19 @@ bool CX_Display::isFullscreen(void) {
 \param minimize If `true`, the window will be minimized. If `false`, the window will be restored.
 */
 void CX_Display::setMinimized(bool minimize) {
+
+	Private::CX_GlfwContextManager& cm = CX::Private::glfwContextManager;
+	
+	if (!cm.isMainThread() || (!cm.isLockedByThisThread() && cm.isLockedByAnyThread())) {
+		return;
+	}
+
+	GLFWwindow* ctx = Private::glfwContextManager.get();
+
 	if (minimize) {
-		glfwIconifyWindow(Private::glfwContext);
+		glfwIconifyWindow(ctx);
 	} else {
-		glfwRestoreWindow(Private::glfwContext);
+		glfwRestoreWindow(ctx);
 	}
 }
 
@@ -842,7 +862,7 @@ std::map<std::string, CX_DataFrame> CX_Display::testBufferSwapping(CX_Millis des
 		display->beginDrawingToBackBuffer();
 		ofBackground(background);
 		ofSetColor(rectColor);
-		ofRect(rect);
+		ofDrawRectangle(rect);
 		ofDrawBitmapStringHighlight(information, ofPoint(100, 50), ofColor::black, ofColor::white);
 		display->endDrawingToBackBuffer();
 	};

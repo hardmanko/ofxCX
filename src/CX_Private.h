@@ -5,24 +5,17 @@
 
 #include "ofUtils.h"
 #include "ofEvents.h"
+#include "ofAppGLFWWindow.h"
 
 #include "GLFW/glfw3.h"
 
-#include "CX_AppWindow.h"
 
 
-#ifdef TARGET_LINUX
-//so apparently sysmacros.h defines some macros with these names on Linux...
-#ifdef major
-#undef major
-#endif
-
-#ifdef minor
-#undef minor
-#endif
-#endif
 
 namespace CX {
+
+	// Forward declaration
+	struct CX_GLVersion;
 
 /*! The Private namespace contains symbols that may be visible in user code but which should not be used by user code.
 */
@@ -35,7 +28,7 @@ namespace Private {
 		void setup(GLFWwindow* context, std::thread::id mainThreadId); // Do not call: Only called in CX_EntryPoint
 
 		bool trylock(void);
-		void lock(void); // if isLockedByAnyThread() == true, it is a programming error to call lock()
+		void lock(void); // blocks until it can get a lock
 		void unlock(void); // if isLockedByThisThread() == false, it is a programming error to call unlock()
 
 		//bool isCurrentOnThisThread(void); // If the rendering context is current on the calling thread, returns true
@@ -64,37 +57,7 @@ namespace Private {
 
 	extern CX_GlfwContextManager glfwContextManager;
 
-	extern GLFWwindow* glfwContext;
-
-
 	extern std::shared_ptr<ofAppBaseWindow> appWindow;
-
-	struct CX_GLVersion {
-		CX_GLVersion(void) :
-			major(0),
-		    minor(0),
-			release(0)
-		{}
-
-		CX_GLVersion(int maj, int min, int rel) :
-			major(maj),
-			minor(min),
-			release(rel)
-		{}
-
-		int major;
-		int minor;
-		int release;
-	};
-
-	void learnOpenGLVersion(void);
-	CX_GLVersion getOpenGLVersion(void);
-	CX_GLVersion getGLSLVersion(void);
-	bool glFenceSyncSupported(void);
-	bool glVersionAtLeast(int desiredMajor, int desiredMinor, int desiredRelease = 0);
-	int glCompareVersions(CX_GLVersion a, CX_GLVersion b);
-
-	CX_GLVersion getGLSLVersionFromGLVersion(CX_GLVersion glVersion);
 
 	int stringToBooleint(std::string s);
 

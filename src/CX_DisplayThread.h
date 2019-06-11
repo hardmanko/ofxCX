@@ -9,10 +9,6 @@ namespace CX {
 
 	class CX_Display;
 
-	namespace Private {
-		void swapVideoBuffers(bool glFinish);
-	}
-
 	class CX_DisplayThread {
 	public:
 
@@ -36,13 +32,6 @@ namespace CX {
 
 		~CX_DisplayThread(void);
 
-		// I don't think that anything uses these functions, so they can probably be removed
-		bool tryLock(std::string lockOwner);
-		bool isLocked(void);
-		std::string getLockOwner(void);
-		void unlock(void);
-		
-
 		bool setup(const Configuration& config, bool startThread);
 		const Configuration& getConfiguration(void);
 
@@ -61,6 +50,11 @@ namespace CX {
 		//void waitForSwap(void);
 
 
+		// I don't think that anything uses these functions, so they can probably be removed
+		bool tryLock(std::string lockOwner);
+		bool isLocked(void);
+		std::string getLockOwner(void);
+		void unlock(void);
 
 		///////////////
 		// Swap Lock //
@@ -117,10 +111,11 @@ namespace CX {
 
 	private:
 
+		// Only CX_Display can construct CX_DisplayThread
 		friend class CX::CX_Display;
-
 		CX_DisplayThread(CX_Display* disp, std::function<void(CX_Display*)> swapFun);
 		
+
 		CX_Display* _display;
 		std::function<void(void)> _bufferSwapFunction;
 
