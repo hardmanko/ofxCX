@@ -2,7 +2,6 @@
 
 #include "ofUtils.cpp" //for whatever reason, the function I need (ofGetMonotonicTime) is not in the header, only in the .cpp
 
-//#include "CX_Private.h"
 #include "CX_InputManager.h" // Instances::Input
 #include "CX_Logger.h" // Instances::Log
 

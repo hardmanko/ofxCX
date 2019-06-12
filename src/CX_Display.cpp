@@ -1,7 +1,6 @@
 #include "CX_Display.h"
 
-//#include "CX_Private.h" //glfwContext
-
+#include "ofAppBaseWindow.h"
 
 #include "CX_EntryPoint.h"
 
@@ -95,7 +94,7 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 	std::map<std::string, std::string> kv = Util::readKeyValueFile(filename, delimiter, trimWhitespace, commentString);
 
 	if (kv.find("display.fullscreen") != kv.end()) {
-		int result = Private::stringToBooleint(kv["display.fullscreen"]);
+		int result = Util::stringToBooleint(kv["display.fullscreen"], true);
 		if (result != -1) {
 			this->setFullscreen(result == 1);
 		}
@@ -112,21 +111,21 @@ void CX_Display::configureFromFile(std::string filename, std::string delimiter, 
 	}
 
 	if (kv.find("display.hardwareVSync") != kv.end()) {
-		int result = Private::stringToBooleint(kv["display.hardwareVSync"]);
+		int result = Util::stringToBooleint(kv["display.hardwareVSync"], true);
 		if (result != -1) {
 			this->useHardwareVSync(result == 1);
 		}
 	}
 
 	if (kv.find("display.softwareVSync") != kv.end()) {
-		int result = Private::stringToBooleint(kv["display.softwareVSync"]);
+		int result = Util::stringToBooleint(kv["display.softwareVSync"], true);
 		if (result != -1) {
 			this->useSoftwareVSync(result == 1);
 		}
 	}
 
 	if (kv.find("display.swapAutomatically") != kv.end()) {
-		int result = Private::stringToBooleint(kv["display.swapAutomatically"]);
+		int result = Util::stringToBooleint(kv["display.swapAutomatically"], true);
 		if (result != -1) {
 			this->setAutomaticSwapping(result == 1);
 		}

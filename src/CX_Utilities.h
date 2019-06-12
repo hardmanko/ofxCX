@@ -63,12 +63,27 @@ namespace Util {
 		bool setProcessToHighPriority(void);
 	}
 #endif
+ 
+	/*! This turns a bare pointer into something that calls itself a 
+	`std::shared_ptr` but still acts like a bare pointer.
+	This is wrong and you should not do it, unless you have good reason.
+	
+	This works by creating a `shared_ptr` with no deleter, so when the
+	`shared_ptr` is destructed, it does not delete the pointed object.
+	
+	Example usage:
+	\code{.cpp}
+	CX_SoundBuffer buf;
+	CX_SoundBufferPlayer player;
 
-	// For when you want to use a shared_ptr improperly.
-	// Used like:
-	// T t; // somewhere
-	// shared_ptr<T> ptr = wrapPtr<T>(&t);
-	// It turns something that is called std::shared_ptr<T> into something that acts like a bare pointer, T*.
+	shared_ptr<CX_SoundBuffer> bufSP = Util::wrapPtr(&buf);
+
+	player.setSoundBuffer(bufSP);
+	\endcode
+	
+	\param ptr Pointer to be wrapped.
+	\return A `std::shared_ptr` containing the pointer but with no deleter.
+	*/
 	template <typename T>
 	std::shared_ptr<T> wrapPtr(T* ptr) {
 		auto nopDeleter = [](T* x) { return; };

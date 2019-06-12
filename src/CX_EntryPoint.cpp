@@ -5,7 +5,6 @@
 #include "ofAppGLFWWindow.h"
 #include "ofAppRunner.h"
 
-//#include "CX_Private.h"
 #include "CX_Display.h"
 #include "CX_Logger.h"
 #include "CX_InputManager.h"

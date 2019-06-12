@@ -3,7 +3,6 @@
 #include "ofMain.h"
 #include "ofConstants.h"
 
-//#include "CX_Private.h"
 #include "CX_Logger.h"
 
 namespace CX {
