@@ -36,6 +36,8 @@ namespace Util {
 	std::map<std::string, std::string> readKeyValueFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 	bool writeKeyValueFile(const std::map<std::string, std::string>& kv, std::string filename, std::string delimiter = "=");
 
+	int stringToBooleint(std::string s, bool log = true);
+
 	std::string wordWrap(std::string s, float width, ofTrueTypeFont& font);
 
 
@@ -48,12 +50,35 @@ namespace Util {
 	};
 	double round(double d, int roundingPower, Rounding rounding = Rounding::ToNearest);
 
-
+	// These two functions are insanely useful. It's worth the time to learn what they do.
 	float getAngleBetweenPoints(ofPoint p1, ofPoint p2);
 	ofPoint getRelativePointFromDistanceAndAngle(ofPoint start, float distance, float angle);
 
 
 	bool setProcessToHighPriority(void);
+
+#ifdef TARGET_WIN32
+	namespace Windows {
+		std::string convertErrorCodeToString(DWORD errorCode);
+		bool setProcessToHighPriority(void);
+	}
+#endif
+
+	// For when you want to use a shared_ptr improperly.
+	// Used like:
+	// T t; // somewhere
+	// shared_ptr<T> ptr = wrapPtr<T>(&t);
+	// It turns something that is called std::shared_ptr<T> into something that acts like a bare pointer, T*.
+	template <typename T>
+	std::shared_ptr<T> wrapPtr(T* ptr) {
+		auto nopDeleter = [](T* x) { return; };
+		return std::shared_ptr<T>(ptr, nopDeleter);
+	}
+
+	template <typename T>
+	std::shared_ptr<T> moveIntoPtr(T&& t) {
+		return std::make_shared<T>(std::move(t));
+	}
 
 
 	/*! Convert a string containing delimited RGB[A] coordinates to an ofColor.

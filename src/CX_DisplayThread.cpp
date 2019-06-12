@@ -2,7 +2,6 @@
 
 #include "CX_Display.h"
 #include "CX_EntryPoint.h"
-#include "CX_Private.h"
 
 namespace CX {
 

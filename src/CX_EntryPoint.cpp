@@ -5,7 +5,7 @@
 #include "ofAppGLFWWindow.h"
 #include "ofAppRunner.h"
 
-#include "CX_Private.h"
+//#include "CX_Private.h"
 #include "CX_Display.h"
 #include "CX_Logger.h"
 #include "CX_InputManager.h"
@@ -296,7 +296,7 @@ bool exitCallbackHandler(ofEventArgs& args) {
 
 	ofNotifyEvent(CX::Private::getEvents().exitEvent);
 
-	// terminateCX(); // ?
+	terminateCX(); // maybe have extra argument inExitCallback to terminateCX?
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 10 && OF_VERSION_PATCH == 0
 	glfwTerminate(); // This is not supposed to be called from callbacks

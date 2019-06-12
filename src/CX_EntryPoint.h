@@ -119,6 +119,8 @@ namespace CX {
 		unsigned int clockPrecisionTestIterations;
 	};
 
+	/*! The Private namespace contains symbols that may be visible in user code 
+	but which should not be used by user code (and expect good results). */
 	namespace Private {
 
 		struct CX_State {
@@ -129,7 +131,7 @@ namespace CX {
 
 			std::shared_ptr<ofAppBaseWindow> appWindow;
 
-			Util::CX_GlfwContextManager glfwContextManager;
+			Util::GlfwContextManager glfwContextManager;
 		};
 
 		extern CX_State State;

@@ -1,6 +1,5 @@
 #include "CX_SoundBufferPlayer.h"
 
-#include "CX_Private.h"
 #include "CX_Logger.h"
 
 namespace CX {
@@ -22,7 +21,7 @@ CX_SoundBufferPlayer::~CX_SoundBufferPlayer(void) {
 \param ss A pointer to a fully configured and started `CX_SoundStream`.
 \return `true` in all cases. */
 bool CX_SoundBufferPlayer::setup(CX_SoundStream *ss) {
-	return setup(CX::Private::wrapPtr(ss));
+	return setup(CX::Util::wrapPtr(ss));
 }
 
 bool CX_SoundBufferPlayer::setup(std::shared_ptr<CX_SoundStream> ss) {
@@ -379,7 +378,7 @@ bool CX_SoundBufferPlayer::setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer
 }
 
 bool CX_SoundBufferPlayer::setSoundBuffer(CX_SoundBuffer* buffer) {
-	std::shared_ptr<CX_SoundBuffer> buf = CX::Private::wrapPtr(buffer);
+	std::shared_ptr<CX_SoundBuffer> buf = CX::Util::wrapPtr(buffer);
 	return setSoundBuffer(buf);
 }
 

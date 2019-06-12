@@ -1,6 +1,8 @@
 #include "CX_Display.h"
 
-#include "CX_Private.h" //glfwContext
+//#include "CX_Private.h" //glfwContext
+
+
 #include "CX_EntryPoint.h"
 
 /*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
@@ -184,14 +186,14 @@ number of front and back buffer swaps. It tracks buffer swaps that result from
 \return The number of the last frame. This value can only be compared with other values
 returned by this function. */
 FrameNumber CX_Display::getLastFrameNumber(void) {
-	return swapData.getLastSwapData().unit;
+	return swapData.getLastSwapUnit();
 }
 
 
 /*! Get the last time at which the front and back buffers were swapped.
 \return A time value that can be compared with CX::Instances::Clock.now(). */
 CX_Millis CX_Display::getLastSwapTime(void) {
-	return swapData.getLastSwapData().time;
+	return swapData.getLastSwapTime();
 }
 
 /*! Get an estimate of the next time the front and back buffers will be swapped.
@@ -301,7 +303,7 @@ void CX_Display::swapBuffers(void) {
 
 void CX_Display::_swapBuffers(void) {
 
-	Util::CX_GlfwContextManager& cm = Private::State.glfwContextManager;
+	Util::GlfwContextManager& cm = Private::State.glfwContextManager;
 	if (!cm.isLockedByThisThread()) {
 		Instances::Log.warning("CX_Display") << "swapBuffers(): Buffer swap requested in a thread that doesn't have a lock on the context.";
 		return;
@@ -404,7 +406,7 @@ bool CX_Display::isFullscreen(void) {
 */
 void CX_Display::setMinimized(bool minimize) {
 
-	Util::CX_GlfwContextManager& cm = Private::State.glfwContextManager;
+	Util::GlfwContextManager& cm = Private::State.glfwContextManager;
 	
 	if (!cm.isMainThread() || (!cm.isLockedByThisThread() && cm.isLockedByAnyThread())) {
 		return;
@@ -583,7 +585,7 @@ void CX_Display::_blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates,
 
 Be careful when using this function because not all drawing functionality works correctly.
 
-\note Another way to work within a modified display coordinate system is CX::Util::CX_CoordinateConverter.
+\note Another way to work within a modified display coordinate system is CX::Util::CoordinateConverter.
 
 \param upwards If `true`, y-values will increase upwards. If `false`, y-values will increase downwards (the default).
 

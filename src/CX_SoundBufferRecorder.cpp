@@ -1,7 +1,5 @@
 #include "CX_SoundBufferRecorder.h"
 
-#include "CX_Private.h"
-
 namespace CX {
 
 CX_SoundBufferRecorder::CX_SoundBufferRecorder(void) :
@@ -26,7 +24,7 @@ CX_SoundBufferRecorder::~CX_SoundBufferRecorder(void) {
 \return `true` if setup was successful, `false` otherwise.
 */
 bool CX_SoundBufferRecorder::setup(CX_SoundStream* ss) {
-	return setup(CX::Private::wrapPtr(ss));
+	return setup(CX::Util::wrapPtr(ss));
 }
 
 bool CX_SoundBufferRecorder::setup(std::shared_ptr<CX_SoundStream> ss) {
@@ -111,7 +109,7 @@ bool CX_SoundBufferRecorder::setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buff
 
 /*! \copydoc CX::CX_SoundBufferRecorder::setSoundBuffer(std::shared_ptr<CX::CX_SoundBuffer>)  */
 bool CX_SoundBufferRecorder::setSoundBuffer(CX_SoundBuffer* buffer) {
-	std::shared_ptr<CX_SoundBuffer> buf = CX::Private::wrapPtr(buffer);
+	std::shared_ptr<CX_SoundBuffer> buf = CX::Util::wrapPtr(buffer);
 	return setSoundBuffer(buf);
 }
 

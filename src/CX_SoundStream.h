@@ -4,7 +4,6 @@
 
 #include "RtAudio.h"
 
-#include "ofConstants.h"
 #include "ofTypes.h"
 #include "ofEvents.h"
 

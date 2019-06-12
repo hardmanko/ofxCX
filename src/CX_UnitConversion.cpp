@@ -1,7 +1,5 @@
 #include "CX_UnitConversion.h"
 
-#include "CX_Private.h"
-
 namespace CX {
 namespace Util {
 
@@ -130,7 +128,7 @@ namespace Util {
 		}
 
 		if (kv.find("D2PC.roundResult") != kv.end()) {
-			int result = Private::stringToBooleint(kv["D2PC.roundResult"]);
+			int result = Util::stringToBooleint(kv["D2PC.roundResult"], true);
 			if (result != -1) {
 				_roundResult = (result == 1);
 			} else {
@@ -221,7 +219,7 @@ namespace Util {
 		}
 
 		if (kv.find("L2PC.roundResult") != kv.end()) {
-			int result = Private::stringToBooleint(kv["L2PC.roundResult"]);
+			int result = Util::stringToBooleint(kv["L2PC.roundResult"], true);
 			if (result != -1) {
 				_roundResult = (result == 1);
 			} else {

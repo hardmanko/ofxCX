@@ -3,26 +3,98 @@
 #include "ofMain.h"
 #include "ofConstants.h"
 
-#include "CX_Private.h"
+//#include "CX_Private.h"
 #include "CX_Logger.h"
 
 namespace CX {
 namespace Util {
 
+
+
+	/*! Boolean string fuzzy matching. 
+	Matches boolean values in common textual (case insensitive) and numeric forms.
+
+	\param s String to evaluate.
+	\param log Print log message on errors.
+	\return Evaluates to 1 for "true", "t", or "1".
+	Evaluates to 0 for "false", "f", or "0".
+	Evaluates to -1 otherwise and optionally logs an error.
+	 */
+	int stringToBooleint(std::string s, bool log) {
+		s = ofTrim(s);
+		s = ofToLower(s);
+		if ((s == "false") || (s == "f") || (s == "0")) {
+			return 0;
+		}
+		else if ((s == "true") || (s == "t") || (s == "1")) {
+			return 1;
+		}
+
+		if (log) {
+			CX::Instances::Log.error("Util") << "stringToBooleint(): Failure converting \"" << s << "\" to booleint. Returning -1";
+		}
+		return -1;
+	}
+
 	/*! Attempts to set the process that CX is running in to high priority.
 
-	Note: This function only works on Windows. 
-	
-	\return `false` if a known error is encountered.
-	*/
+Note: This function only works on Windows.
+
+\return `false` if a known error is encountered.
+*/
 	bool setProcessToHighPriority(void) {
 #ifdef TARGET_WIN32
-		return CX::Private::Windows::setProcessToHighPriority();
+		return CX::Util::Windows::setProcessToHighPriority();
 #else
 		CX::Instances::Log.error() << "setProcessToHighPriority(): CX does not support setting high process priority on your operating system.";
 		return false;
 #endif
 	}
+
+#ifdef TARGET_WIN32
+	namespace Windows {
+		std::string convertErrorCodeToString(DWORD errorCode) {
+
+			if (errorCode == 0) {
+				return "No error.";
+			}
+
+			LPSTR messageBuffer = nullptr;
+			size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+			std::string message(messageBuffer, size);
+
+			LocalFree(messageBuffer); //Free the buffer.
+
+			return message;
+		}
+
+		bool setProcessToHighPriority(void) {
+			//See https://msdn.microsoft.com/en-us/library/ms686219%28v=vs.85%29.aspx
+
+			DWORD dwError;
+			DWORD dwPriClass;
+
+			HANDLE thisProcess = GetCurrentProcess();
+
+			if (!SetPriorityClass(thisProcess, HIGH_PRIORITY_CLASS)) {
+				dwError = GetLastError();
+				CX::Instances::Log.error() << "Error setting process priority: " << convertErrorCodeToString(dwError);
+				return false;
+			}
+
+			dwPriClass = GetPriorityClass(GetCurrentProcess());
+
+			if (dwPriClass != HIGH_PRIORITY_CLASS) {
+				CX::Instances::Log.error() << "Failed to set priority to high.";
+				return false;
+			}
+			return true;
+		}
+	} //namespace Windows
+#endif
+
 
 	/*! Writes data to a file, either appending the data to an existing file or creating a new file, overwriting
 	any existing file with the given filename.
