@@ -1,5 +1,7 @@
 #include "CX_SoundBuffer.h"
 
+#include "ofFmodSoundPlayer.h"
+
 namespace CX {
 
 /*! Default constructor. */
@@ -38,12 +40,7 @@ bool CX_SoundBuffer::loadFile(std::string fileName) {
 #endif
 	if (!loadSuccessful) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "Error loading " << fileName;
-
-#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 		fmPlayer.unload(); //Just in case. This safety is probably unneccessary.
-#else
-		fmPlayer.unloadSound();
-#endif
 		return false;
 	}
 
@@ -59,11 +56,7 @@ bool CX_SoundBuffer::loadFile(std::string fileName) {
 	FMOD_RESULT formatResult = FMOD_Sound_GetFormat( fmSound, &soundType, &soundFormat, &channels, &bits );
 	if (formatResult != FMOD_OK) {
 		CX::Instances::Log.error("CX_SoundBuffer") << "Error getting sound format of " << fileName;
-#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 		fmPlayer.unload();
-#else
-		fmPlayer.unloadSound();
-#endif
 		return false;
 	}
 
@@ -147,11 +140,7 @@ bool CX_SoundBuffer::loadFile(std::string fileName) {
 	};
 
 	//Clean up by unloading this sound. Again, probably unneccessary. ofFmodPlayer unloads itself during destruction.
-#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
 	fmPlayer.unload();
-#else
-	fmPlayer.unloadSound();
-#endif
 
 	if (copySuccess) {
 		name = fileName;
@@ -241,9 +230,8 @@ bool CX_SoundBuffer::addSound(CX_SoundBuffer sb, CX_Millis timeOffset) {
 	//Copy over the new data, clamping as needed.
 	for (size_t i = 0; i < newData.size(); i++) {
 		float newVal = _data[insertionSample + i] + newData[i];
-		newVal = std::max(newVal, -1.0f);
-		newVal = std::min(newVal, 1.0f);
-		_data[insertionSample + i] = newVal;
+
+		_data[insertionSample + i] = Util::clamp<float>(newVal, -1.0f, 1.0f);
 	}
 
 	return true;
@@ -377,10 +365,7 @@ bool CX_SoundBuffer::insertChannel(CX_SoundBuffer sb, unsigned int channel) {
 	return true;
 }
 
-/*!
-
-
-*/
+// This function seems incomplete
 bool CX_SoundBuffer::setChannel(CX_SoundBuffer sb, unsigned int channel) {
 
 	/*
@@ -390,7 +375,15 @@ bool CX_SoundBuffer::setChannel(CX_SoundBuffer sb, unsigned int channel) {
 	}
 	*/
 
+	if (!sb.isReadyToPlay()) {
+		CX::Instances::Log.error("CX_SoundBuffer") << "insertChannel(): Sound buffer was not ready to play. It was not inserted.";
+		return false;
+	}
 
+	if (sb.getChannelCount() != 1) {
+		CX::Instances::Log.error("CX_SoundBuffer") << "insertChannel(): Sound buffer did not have exactly 1 channel. It was not inserted.";
+		return false;
+	}
 
 	const std::vector<float>& newData = sb.getRawDataReference();
 
@@ -412,12 +405,12 @@ bool CX_SoundBuffer::setChannel(CX_SoundBuffer sb, unsigned int channel) {
 	}
 
 	// If this is longer than the new data, zero end of channel
-	if (newData.size() < this->getLengthSF()) {
+	if (this->getLengthSF() > newData.size()) {
 		for (size_t sf = newData.size(); sf < getLengthSF(); sf++) {
 			size_t index = (sf * _channels) + channel;
 			_data[index] = 0;
 		}
-	}
+	}	
 
 	return true;
 }

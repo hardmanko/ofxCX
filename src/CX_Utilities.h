@@ -14,11 +14,9 @@
 #include "ofImage.h"
 #include "ofPoint.h"
 
-#include "CX_Logger.h"
-
 /*! \defgroup utility Utility */
 
-//More overbroadly-named macros to deal with...
+// Overbroadly-named macros
 #ifdef max
 #undef max
 #endif
@@ -29,19 +27,9 @@
 
 namespace CX {
 
-namespace Private {
-	void setMsaaSampleCount(unsigned int count);
-}
-
 /*! This namespace contains a variety of utility functions.
 \ingroup utility*/
 namespace Util {
-
-	bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log = true);
-
-	bool setProcessToHighPriority(void);
-
-	unsigned int getMsaaSampleCount(void); //Move to Draw ns?
 
 	bool writeToFile(std::string filename, std::string data, bool append = true, bool overwriteWarning = true);
 
@@ -50,6 +38,7 @@ namespace Util {
 
 	std::string wordWrap(std::string s, float width, ofTrueTypeFont& font);
 
+
 	/*! The way in which numbers should be rounded with CX::Util::round(). */
 	enum class Rounding {
 		ToNearest, //!< Round to the nearest number.
@@ -57,53 +46,14 @@ namespace Util {
 		Down, //!< Round to the number below the current number.
 		TowardZero //!< Round toward zero.
 	};
-
 	double round(double d, int roundingPower, Rounding rounding = Rounding::ToNearest);
+
 
 	float getAngleBetweenPoints(ofPoint p1, ofPoint p2);
 	ofPoint getRelativePointFromDistanceAndAngle(ofPoint start, float distance, float angle);
 
 
-	//template <typename T> T rgbStringToColor(std::string rgba, std::string delim = ",");
-
-	//template <typename T> std::vector<T> sequence(T start, T end, T stepSize);
-	//template <typename T> std::vector<T> sequenceSteps(T start, unsigned int steps, T stepSize);
-	//template <typename T> std::vector<T> sequenceAlong(T start, T end, unsigned int steps);
-
-	//template <typename T> std::vector<T> intVector(T start, T end);
-
-	//template <typename T> std::vector<T> repeat(T value, unsigned int times);
-	//template <typename T> std::vector<T> repeat(std::vector<T> values, unsigned int times, unsigned int each = 1);
-	//template <typename T> std::vector<T> repeat(std::vector<T> values, std::vector<unsigned int> each, unsigned int times = 1);
-
-	//template <typename T> std::string vectorToString(std::vector<T> values, std::string delimiter = ",", int significantDigits = 8);
-	//template <typename T> std::vector<T> stringToVector(std::string s, std::string delimiter);
-
-	//template <typename T> T clamp(T val, T minimum, T maximum);
-	//template <typename T> std::vector<T> clamp(std::vector<T> vals, T minimum, T maximum);
-
-	//template <typename T> std::vector<T> unique(std::vector<T> vals, bool keepOrder = false);
-	//template <typename T> std::vector<T> exclude(const std::vector<T>& vals, const std::vector<T>& exclude);
-
-	//template <typename T> std::vector<T> unionV(std::vector<T> a, std::vector<T> b);
-	//template <typename T> std::vector<T> intersectionV(std::vector<T> a, std::vector<T> b);
-
-	//template <typename T> std::vector<T> reorder(const std::vector<T>& v, const std::vector<T>& ordering);
-
-	//template <typename T> std::vector<T> concatenate(const std::vector<T>& A, const std::vector<T>& B);
-	//template <typename T> std::vector<T> concatenate(T A, const std::vector<T>& B);
-	//template <typename T> std::vector<T> concatenate(const std::vector<T>& A, T B);
-	//template <typename T> std::vector<T> concatenate(T A, T B);
-
-
-	//template <typename T> T max(std::vector<T> vals);
-	//template <typename T> T min(std::vector<T> vals);
-	//template <typename T> T mean(std::vector<T> vals);
-	//template <typename T_OUT, typename T_IN> T_OUT mean(std::vector<T_IN> vals);
-	//template <typename T> T var(std::vector<T> vals);
-	//template <typename T_OUT, typename T_IN> T_OUT var(std::vector<T_IN> vals);
-
-
+	bool setProcessToHighPriority(void);
 
 
 	/*! Convert a string containing delimited RGB[A] coordinates to an ofColor.
@@ -176,8 +126,8 @@ namespace Util {
 	Repeats the elements of values. Each element of values is repeated "each" times and then the process of repeating the elements is
 	repeated "times" times.
 	\param values Vector of values to be repeated.
-	\param each Number of times each element of values should be repeated. Must be the same length as values. If not, an error
-	is logged and an empty vector is returned.
+	\param each Number of times each element of values should be repeated. 
+	Must be the same length as values. If not, an empty vector is returned.
 	\param times The number of times the process should be performed.
 	\return A vector of the repeated values.
 	*/
@@ -186,7 +136,6 @@ namespace Util {
 		std::vector<T> rval;
 
 		if (values.size() != each.size()) {
-			//CX::Instances::Log.error("CX::Util::repeat") << "values.size() != each.size()"; //For some reason GCC doesn't like this error printout.
 			return rval;
 		}
 
@@ -535,25 +484,35 @@ namespace Util {
 		return rval;
 	}
 
-	/*! Reorders a vector `v` based on an ordering specified by `ordering`.
-	Values in `v` not found in `ordering` are discarded.
+	/*! Reorders a vector `v` based on an ordering specified by `order`.
+	Values are ignored if they are not found in both `v` and `order`.
 	Duplicate values in `v` are kept or discarded depending on the value of `keepDuplicates`.
 	
 	\param v A vector of items to be ordered.
-	\param ordering A vector of values providing the ordering. Values in this vector should be unique, but this is not enforced.
+	\param order A vector of values providing the ordering. 
+	Values in `order` should be unique, but if not only the first occurrence of a value in ordering is used.
 	\param keepDuplicates If `true`, duplicate values in `v` are kept. If `false`, duplicate values in `v` are ignored.
 	\return The reordered vector.
+
+	\code{.cpp}
+
+	vector<int> v = { 2, 4, 5, 3, 4 };
+	vector<int> order = { 3, 1, 5, 4 };
+	vector<int> reordered = Util::reorder(v, order, false);
+	// reordered == { 3, 5, 4 }
+
+	\endcode
 	*/
 	template <typename T> 
-	std::vector<T> reorder(const std::vector<T>& v, const std::vector<T>& ordering, bool keepDuplicates = false) {
-		std::set<T> usedValues;
+	std::vector<T> reorder(const std::vector<T>& v, const std::vector<T>& order, bool keepDuplicates = false) {
+		std::set<T> usedOrd;
 		std::vector<T> rval;
-		for (const T& ord : ordering) {
+		for (const T& ord : order) {
 
-			if (usedValues.count(ord) > 0) {
+			if (usedOrd.count(ord) > 0) {
 				continue;
 			}
-			usedValues.insert(ord);
+			usedOrd.insert(ord);
 
 			unsigned int count = std::count(v.begin(), v.end(), ord);
 			
@@ -631,19 +590,20 @@ namespace Util {
 		return kept;
 	}
 
-	// 3-4x slower than exclude()
+	/*! Gets the values from `values` that do not match `exclude`.
+	\param values The starting set of values.
+	\param exclude The value to exclude from `values`.
+	\return A vector containing the values that were not excluded. This vector may be empty. */
 	template <typename T>
-	std::vector<T> excludeEraser(std::vector<T> values, const std::vector<T>& exclude) {
+	std::vector<T> exclude(const std::vector<T>& values, const T& exclude) {
+		std::vector<T> kept;
 
-		for (auto it = values.begin(); it != values.end();) {
-			if (Util::contains(exclude, *it)) {
-				it = values.erase(it);
-			} else {
-				++it;
+		for (const T& val : values) {
+			if (val != exclude) {
+				kept.push_back(val);
 			}
 		}
-
-		return values;
+		return kept;
 	}
 
 	/*! Calculates a quantile for some data set `x`.

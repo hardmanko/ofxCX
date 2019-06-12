@@ -2,33 +2,40 @@
 
 #include "CX_SoundStream.h"
 #include "CX_SoundBuffer.h"
-#include "CX_ThreadUtils.h"
+#include "CX_Events.h"
 
 namespace CX {
 	/*! This class is used for recording audio data from, e.g., a microphone. The recorded data is
 	stored in a CX_SoundBuffer for further use. 
 
-
+	This code example demonstrates basic use of CX_SoundBufferRecorder to record for 5 seconds.
 	
 	\code{.cpp}
-	CX_SoundBufferRecorder recorder;
+	#include "CX.h"
 
-	CX_SoundBufferRecorder::Configuration recorderConfig;
-	recorderConfig.inputChannels = 1;
-	//You will probably need to configure more than just the number of input channels.
-	recorder.setup(recorderConfig);
+	void runExperiment(void) {
+		CX_SoundStream stream;
+		CX_SoundBufferRecorder recorder;
 
-	CX_SoundBuffer recording;
-	recorder.setSoundBuffer(&recording); //Associate a CX_SoundBuffer with the recorder so that the buffer can be recorded to.
+		// Set up the sound stream to have 1 input channel
+		CX_SoundStream::Configuration ssc;
+		ssc.inputChannels = 1;
+		// You will probably need to configure more than just the number of input channels.
+		stream.setup(ssc);
 
-	//Record for 5 seconds
-	recorder.start();
-	Clock.sleep(CX_Seconds(5));
-	recorder.stop();
+		// Setup creates a CX_SoundBuffer to record to based on the stream characteristics.
+		recorder.setup(&stream);
 
-	//Write the recording to a file
-	recording.writeToFile("recording.wav");
+		recorder.record();
+		Clock.sleep(CX_Seconds(5));
+		recorder.stop();
+
+		// Write the recording to a file
+		recorder.getSoundBuffer()->writeToFile("recording.wav");
+	}
 	\endcode
+
+	See examples/soundRecording for more examples.
 
 	\ingroup sound
 	*/
@@ -41,14 +48,13 @@ namespace CX {
 		// 1. Set up the recorder (choose one)
 		bool setup(CX_SoundStream* ss);
 		bool setup(std::shared_ptr<CX_SoundStream> ss);
-		//bool shutdown(void);
+		std::shared_ptr<CX_SoundStream> getSoundStream(void);
 
 		// 2. Set up a buffer to record to (choose one)
-		void createNewSoundBuffer(void);
 		void resetSoundBuffer(bool createBufferIfNeeded = true);
 		bool setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer);
 		bool setSoundBuffer(CX_SoundBuffer* buffer);
-
+		std::shared_ptr<CX_SoundBuffer> getSoundBuffer(void);
 
 		// 3. Record or queue recording
 		bool record(bool clear = false);
@@ -60,51 +66,31 @@ namespace CX {
 		bool isRecordingQueued(void);
 		bool isRecordingOrQueued(void);
 
-
 		// 4. Stop recording
 		void stop(void);
+
 		bool setAutoStopLength(CX_Millis recordingLength);
-
-		void pause(void);
-
-		
-
 
 		// 5. Get the recorded sound buffer and recording metadata
 		bool isRecordingComplete(void);
-		std::shared_ptr<CX_SoundBuffer> getSoundBuffer(void);
 		CX_Millis getRecordingStartTime(void);
 		CX_Millis getRecordingEndTime(void); // remove
 		CX_Millis getRecordingLength(void); // remove
 
-
 		// Misc functions
 		unsigned int getOverflowsSinceLastCheck(bool logOverflows = true);
 
-		std::shared_ptr<CX_SoundStream> getSoundStream(void);
-
 	private:
-
-		enum class RecordingState : int {
-			Ready,
-			Recording,
-			PreparingToRecord,
-			RecordingQueued,
-			RecordingComplete
-		};
 
 		struct InputEventData : public std::recursive_mutex {
 
 			InputEventData(void) :
-				//state(RecordingState::Ready),
 				recording(false),
 				startingRecording(false),
 				recordingQueued(false),
 				queuedRecordingStartSampleFrame(std::numeric_limits<SampleFrame>::max()),
 				overflowCount(0)
 			{}
-
-			//RecordingState state;
 
 			bool recording;
 			bool startingRecording;			

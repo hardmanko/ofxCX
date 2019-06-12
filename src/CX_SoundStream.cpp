@@ -1,12 +1,6 @@
 #include "CX_SoundStream.h"
 
-#if OF_VERSION_MAJOR >= 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
-typedef RtAudioError RT_AUDIO_ERROR_TYPE;
-#else
-typedef RtError RT_AUDIO_ERROR_TYPE;
-#endif
-
-
+#include "CX_Logger.h"
 
 namespace CX {
 
@@ -159,7 +153,7 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config, bool startStre
 
 	try {
 		_rtAudio = std::make_shared<RtAudio>(config.api);
-	} catch (RT_AUDIO_ERROR_TYPE err) {
+	} catch (RtAudioError err) {
 		CX::Instances::Log.error("CX_SoundStream") << "setup(): RtAudio threw an exception: " << err.getMessage();
 		_rtAudio = nullptr;
 		return false;
@@ -212,7 +206,7 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config, bool startStre
 
 		config.sampleRate = _rtAudio->getStreamSampleRate(); //Check that the desired sample rate was used.
 
-	} catch (RT_AUDIO_ERROR_TYPE err) {
+	} catch (RtAudioError err) {
 		CX::Instances::Log.error("CX_SoundStream") << "setup(): RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
@@ -276,7 +270,7 @@ bool CX_SoundStream::startStream(void) {
 
 	try {
 		_rtAudio->startStream();
-	} catch (RT_AUDIO_ERROR_TYPE &err) {
+	} catch (RtAudioError &err) {
 		CX::Instances::Log.error("CX_SoundStream") << "startStream(): RtAudio threw an exception: " << err.getMessage();
 		return false;
 	}
@@ -378,7 +372,7 @@ bool CX_SoundStream::stopStream (void) {
 		} else {
 			CX::Instances::Log.notice("CX_SoundStream") << "stopStream(): Stream was already stopped.";
 		}
-  	} catch (RT_AUDIO_ERROR_TYPE &err) {
+  	} catch (RtAudioError &err) {
    		CX::Instances::Log.error("CX_SoundStream") << "stopStream(): RtAudio threw an exception: " << err.getMessage();
 		return false;
  	}
@@ -400,7 +394,7 @@ bool CX_SoundStream::closeStream(void) {
 		} else {
 			CX::Instances::Log.notice("CX_SoundStream") << "closeStream(): Stream was already closed.";
 		}
-  	} catch (RT_AUDIO_ERROR_TYPE &err) {
+  	} catch (RtAudioError &err) {
    		CX::Instances::Log.error("CX_SoundStream") << "closeStream(): RtAudio threw an exception: " << err.getMessage();
 		rval = false;
  	}
@@ -626,7 +620,7 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api)
 
 	try {
 		tempRt = new RtAudio(api);
-	} catch (RT_AUDIO_ERROR_TYPE err) {
+	} catch (RtAudioError err) {
 		CX::Instances::Log.error("CX_SoundStream") << "getDeviceList(): Exception while getting device list: " << err.getMessage();
 		return devices;
 	}
@@ -635,7 +629,7 @@ std::vector<RtAudio::DeviceInfo> CX_SoundStream::getDeviceList(RtAudio::Api api)
 	for (unsigned int i = 0; i < deviceCount; i++) {
 		try {
 			devices.push_back( tempRt->getDeviceInfo(i) );
-		} catch (RT_AUDIO_ERROR_TYPE err) {
+		} catch (RtAudioError err) {
 			CX::Instances::Log.error("CX_SoundStream") << "getDeviceList(): Exception while getting device " << i << ": " << err.getMessage();
 			return devices;
 		}
@@ -694,18 +688,16 @@ std::string CX_SoundStream::listDevices(RtAudio::Api api) {
 
 int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status) {
 
+	// Get swap time immediately to be as close as possible to when the data request is made.
 	CX_Millis swapTime = CX::Instances::Clock.now();
 
-	// Enforce const configuration in callback
 	_callbackMutex.lock();
 
 		// The only time _config.inputChannels and outputChannels are written to is in setup when the config is copied in
 		int inputChannels = _config.inputChannels;
 		int outputChannels = _config.outputChannels;
 		
-		//SampleFrame thisBufferStartSampleFrame = swapData.getLastSwapData().unit + bufferSize; // swapData.getNextSwapUnit()
 		SampleFrame thisBufferStartSampleFrame = swapData.getNextSwapUnit();
-		//SampleFrame thisBufferStartSampleFrame = _lastBufferStartSampleFrame + bufferSize;
 	_callbackMutex.unlock();
 
 	bool usingInput  =  inputEvent.size() > 0 &&  inputChannels > 0;
@@ -725,7 +717,7 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 		callbackData.instance = this;
 		callbackData.bufferOverflow = (status & RTAUDIO_INPUT_OVERFLOW) == RTAUDIO_INPUT_OVERFLOW;
 
-		ofNotifyEvent(inputEvent, callbackData);
+		inputEvent.notify(callbackData);
 	}
 
 	if (usingOutput) {
@@ -742,20 +734,18 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 		callbackData.instance = this;
 		callbackData.bufferUnderflow = (status & RTAUDIO_OUTPUT_UNDERFLOW) == RTAUDIO_OUTPUT_UNDERFLOW;
 
-		ofNotifyEvent(outputEvent, callbackData);
+		outputEvent.notify(callbackData);
 
 		// Clamp the output to be a good samaritan
 		for (unsigned int i = 0; i < bufferSize; i++) {
 			callbackData.outputBuffer[i] = Util::clamp<float>(callbackData.outputBuffer[i], -1, 1);
 		}
 	}
+	
+	// Get swap time after processing to be as close as possible to when the data request is fulfilled.
+	//CX_Millis swapTime = CX::Instances::Clock.now();
 
-	// Update variables once the swap is complete
-	//_callbackMutex.lock();
-
-		swapData.storeSwap(swapTime);
-
-	//_callbackMutex.unlock();
+	swapData.storeSwap(swapTime);
 
 	return 0; //Return 0 to keep the stream going.
 }

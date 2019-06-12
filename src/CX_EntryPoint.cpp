@@ -1,50 +1,93 @@
 #include "CX_EntryPoint.h"
 
+#include "ofGLRenderer.h"
+#include "ofGLProgrammableRenderer.h"
 #include "ofAppGLFWWindow.h"
 #include "ofAppRunner.h"
 
 #include "CX_Private.h"
+#include "CX_Display.h"
+#include "CX_Logger.h"
+#include "CX_InputManager.h"
 
 
 namespace CX {
 
-CX_GLVersion glVersion;
-
-// Find out what version of openGL the graphics card supports, which requires the creation
-// of a GLFW window (or other initialization of openGL).
-void learnOpenGLVersion(void) {
-
-	glfwInit();
-	GLFWwindow *windowP;
-	glfwWindowHint(GLFW_VISIBLE, GL_FALSE); //Make the window invisible
-	windowP = glfwCreateWindow(1, 1, "", NULL, NULL); //Create the window
-	glfwMakeContextCurrent(windowP);
-
-	//Once GL is initialized, get the version number from the version number string.
-	std::string s = (char*)glGetString(GL_VERSION);
-
-	std::vector<std::string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space, so split it off.
-	std::vector<std::string> version = ofSplitString(versionVendor[0], "."); //Version numbers
-
-	glVersion.major = ofToInt(version[0]);
-	glVersion.minor = ofToInt(version[1]);
-	glVersion.release = (version.size() == 3) ? ofToInt(version[2]) : 0;
-
-	glfwDestroyWindow(windowP);
-	glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
-
+namespace Private {
+	CX_State State;
 }
 
-CX_GLVersion getOpenGLVersion(void) {
-	return glVersion;
-}
+namespace Util {
+
+	/*! This function retrieves the MSAA (http://en.wikipedia.org/wiki/Multisample_anti-aliasing)
+	sample count. The sample count can be set by calling CX::relaunchWindow() with the desired sample
+	count set in the argument to relaunchWindow(). */
+	unsigned int getMsaaSampleCount(void) {
+		return CX::Private::State.initConfig.windowConfig.msaaSampleCount;
+	};
+
+
+	// Find out what version of openGL the graphics card supports, which requires the creation
+	// of a GLFW window (or other initialization of openGL).
+	void learnHighestOpenGLVersion(void) {
+
+		if (glfwInit() != GLFW_TRUE) {
+			return;
+		}
+
+		GLFWwindow *windowP;
+		glfwWindowHint(GLFW_VISIBLE, GL_FALSE); //Make the window invisible
+		windowP = glfwCreateWindow(1, 1, "", NULL, NULL); //Create the window
+		glfwMakeContextCurrent(windowP);
+
+		//Once GL is initialized, get the version number from the version number string.
+		std::string s = (char*)glGetString(GL_VERSION);
+
+		std::vector<std::string> versionVendor = ofSplitString(s, " "); //Vendor specific information follows a space, so split it off.
+		std::vector<std::string> version = ofSplitString(versionVendor[0], "."); //Version numbers
+
+		CX::Private::State.maxGLVersion.major = ofToInt(version[0]);
+		CX::Private::State.maxGLVersion.minor = ofToInt(version[1]);
+		CX::Private::State.maxGLVersion.release = (version.size() == 3) ? ofToInt(version[2]) : 0;
+
+		glfwDestroyWindow(windowP);
+		glfwWindowHint(GLFW_VISIBLE, GL_TRUE); //Make the next created window visible
+
+	}
+
+	CX_GLVersion getHighestOpenGLVersion(void) {
+		return CX::Private::State.maxGLVersion;
+	}
+
+	/*! Checks that the version of openFrameworks that is used during compilation matches the requested version.
+
+	If the desired oF version is 0.8.1, call `checkOFVersion(0, 8, 1)`.
+
+	\param versionMajor The major version (the X in X.0.0).
+	\param versionMinor The minor version (0.X.0).
+	\param versionPatch The patch version (0.0.X).
+
+	\param log If `true`, a version mismatch will result in a warning being logged.
+	\return `true` if the versions match, `false` otherwise. */
+	bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log) {
+		if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
+			return true;
+		}
+		if (log) {
+			CX::Instances::Log.warning("CX::Util::checkOFVersion") <<
+				"openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
+		}
+		return false;
+	}
+
+} // namespace Util
 
 /*! Compare `CX_GLVersion`s.
-\param that CX_GLVersion to compare to.
-\return  
-`this > that: 1`
-`this == that: 0`
-`this < that: -1`
+\param that `CX_GLVersion` to compare to.
+\return One of:
++ `this > that: 1`
++ `this == that: 0`
++ `this < that: -1`
 */
 int CX_GLVersion::compare(int maj, int min, int rel) const {
 	return compare(CX_GLVersion(maj, min, rel));
@@ -76,14 +119,17 @@ int CX_GLVersion::compare(const CX_GLVersion& that) const {
 	return 0;
 }
 
+/*! Fence Sync is supported by OpenGL version 3.2.0 and higher.
+
+Fence sync is also supported by ARB_sync, but that means dealing 
+with potentially device-specific implementations. Only proper
+fence sync is supported, not ARB_sync.
+
+\return `true` if this is at least 3.2.0.
+*/
 bool CX_GLVersion::supportsGLFenceSync(void) const {
-	//Fence sync is also supported by ARB_sync, but that means dealing with potentially device-specific implementations.
 	return this->compare(3, 2, 0) >= 0;
 }
-
-
-
-
 
 // See https://www.khronos.org/opengl/wiki/Core_Language_(GLSL)#OpenGL_and_GLSL_versions
 // Also https://en.wikipedia.org/wiki/OpenGL_Shading_Language#Versions
@@ -136,6 +182,8 @@ bool initializeCX(CX_InitConfiguation config) {
 
 	config.clockPrecisionTestIterations = std::max<unsigned int>(config.clockPrecisionTestIterations, 10000);
 
+	CX::Private::State.initConfig = config;
+
 	ofInit();
 
 	ofSetEscapeQuitsApp(false);
@@ -148,7 +196,7 @@ bool initializeCX(CX_InitConfiguation config) {
 	CX::Instances::Log.levelForAllModules(CX_Logger::Level::LOG_ALL);
 	CX::Instances::Log.levelForModule(CX_Logger::Level::LOG_NOTICE, "ofShader"); //Try to eliminate some of the verbose shader gobbeldygook.
 
-	CX::learnOpenGLVersion(); //Should come before reopenWindow.
+	CX::Util::learnHighestOpenGLVersion(); //Should come before reopenWindow.
 
 	bool openedSucessfully = CX::reopenWindow(config.windowConfig); //or for the first time.
 
@@ -193,16 +241,15 @@ bool terminateCX(void) {
 
 namespace Private {
 
-	void setupGLRenderer(ofAppBaseWindow* window) {
+void setupGLRenderer(ofAppBaseWindow* window) {
 
-		std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
+	std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLRenderer(window));
 
-		std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
+	std::dynamic_pointer_cast<ofGLRenderer>(newRenderer)->setup();
+	ofSetCurrentRenderer(newRenderer, true);
 
-		ofSetCurrentRenderer(newRenderer, true);
-
-		window->renderer() = newRenderer; //This seems to be unnecessary as of 0.10.1
-	}
+	window->renderer() = newRenderer; //This seems to be unnecessary as of 0.10.1
+}
 
 void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRendererIfNoneDesired, ofAppBaseWindow* window) {
 
@@ -237,7 +284,7 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 		std::shared_ptr<ofBaseRenderer> newRenderer = std::shared_ptr<ofBaseRenderer>(new ofGLProgrammableRenderer(window));
 		std::dynamic_pointer_cast<ofGLProgrammableRenderer>(newRenderer)->setup(config.desiredOpenGLVersion.major, config.desiredOpenGLVersion.minor);
 		ofSetCurrentRenderer(newRenderer, true);
-		window->renderer() = newRenderer;
+		window->renderer() = newRenderer; //This seems to be unnecessary as of 0.10.1
 
 	} else {
 		setupGLRenderer(window);
@@ -248,6 +295,8 @@ void setDesiredRenderer(const CX_WindowConfiguration& config, bool setDefaultRen
 bool exitCallbackHandler(ofEventArgs& args) {
 
 	ofNotifyEvent(CX::Private::getEvents().exitEvent);
+
+	// terminateCX(); // ?
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 10 && OF_VERSION_PATCH == 0
 	glfwTerminate(); // This is not supposed to be called from callbacks
@@ -262,15 +311,15 @@ bool exitCallbackHandler(ofEventArgs& args) {
 
 void reopenWindow_0_10_0(CX_WindowConfiguration config) {
 
-	bool firstCall = (CX::Private::appWindow == nullptr);
+	bool firstCall = (CX::Private::State.appWindow == nullptr);
 
 	if (firstCall) {
-		CX::Private::appWindow = std::shared_ptr<ofAppBaseWindow>(new ofAppGLFWWindow);
+		CX::Private::State.appWindow = std::shared_ptr<ofAppBaseWindow>(new ofAppGLFWWindow);
 	} else {
-		CX::Private::appWindow->close();
+		CX::Private::State.appWindow->close();
 	}
 
-	std::shared_ptr<ofAppGLFWWindow> awp = std::dynamic_pointer_cast<ofAppGLFWWindow>(CX::Private::appWindow);
+	std::shared_ptr<ofAppGLFWWindow> awp = std::dynamic_pointer_cast<ofAppGLFWWindow>(CX::Private::State.appWindow);
 
 	ofGLFWWindowSettings settings;
 	settings.windowMode = config.mode;
@@ -290,7 +339,7 @@ void reopenWindow_0_10_0(CX_WindowConfiguration config) {
 
 	if (awp->getGLFWWindow() != nullptr) {
 
-		setDesiredRenderer(config, true, CX::Private::appWindow.get());
+		setDesiredRenderer(config, true, CX::Private::State.appWindow.get());
 
 		ofAddListener(ofEvents().exit, &exitCallbackHandler, ofEventOrder::OF_EVENT_ORDER_AFTER_APP);
 
@@ -355,10 +404,8 @@ has been opened.
 */
 bool reopenWindow(CX_WindowConfiguration config) {
 
-	Private::setMsaaSampleCount(config.msaaSampleCount);
-
 	if (config.desiredOpenGLVersion.major <= 0) {
-		config.desiredOpenGLVersion = CX::getOpenGLVersion();
+		config.desiredOpenGLVersion = CX::Util::getHighestOpenGLVersion();
 	}
 
 	try {
@@ -385,7 +432,7 @@ bool reopenWindow(CX_WindowConfiguration config) {
 		return false;
 	}
 
-	Private::glfwContextManager.setup(glfwGetCurrentContext(), std::this_thread::get_id());
+	CX::Private::State.glfwContextManager.setup(glfwGetCurrentContext(), std::this_thread::get_id());
 
 	//Setup the display for the new window
 	CX::Instances::Disp.setup();
@@ -400,7 +447,7 @@ bool reopenWindow(CX_WindowConfiguration config) {
 
 #ifndef CX_NO_MAIN
 int main(void) {
-	CX::initializeCX(CX_InitConfiguation());
+	CX::initializeCX(CX::CX_InitConfiguation());
 
 	CX::Instances::Clock.resetExperimentStartTime();
 

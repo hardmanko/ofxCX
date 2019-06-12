@@ -19,8 +19,6 @@ a potentially large vector of sound samples.
 
 #include <algorithm>
 
-#include "ofFmodSoundPlayer.h"
-
 #include "CX_Definitions.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"

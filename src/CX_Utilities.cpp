@@ -4,47 +4,10 @@
 #include "ofConstants.h"
 
 #include "CX_Private.h"
-
-static unsigned int multisamplingSampleCount = 4; //This is set during setup
+#include "CX_Logger.h"
 
 namespace CX {
-
-namespace Private {
-	//This should not be used in user code to set the MSAA sample count because if this is set
-	//after the window is opened, it only affects FBOs and not the primary buffers (e.g. GL_BACK,
-	//GL_FRONT). Use CX::relaunchWindow() to set the MSAA sample count.
-	void setMsaaSampleCount(unsigned int count) {
-		multisamplingSampleCount = count;
-	}
-
-} //namespace Private
-
 namespace Util {
-
-	/*! This function retrieves the MSAA (http://en.wikipedia.org/wiki/Multisample_anti-aliasing)
-	sample count. The sample count can be set by calling CX::relaunchWindow() with the desired sample
-	count set in the argument to relaunchWindow(). */
-	unsigned int getMsaaSampleCount(void) {
-		return multisamplingSampleCount;
-	};
-
-	/*! Checks that the version of oF that is used during compilation matches the requested version. If the desired version
-	was 0.8.1, simply input (0, 8, 1) for `versionMajor`, `versionMinor`, and `versionPatch`, respectively.
-	\param versionMajor The major version (the X in X.0.0).
-	\param versionMinor The minor version (0.X.0).
-	\param versionPatch The patch version (0.0.X).
-	\param log If `true`, a version mismatch will result in a warning being logged.
-	\return `true` if the versions match, `false` otherwise. */
-	bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log) {
-		if (versionMajor == OF_VERSION_MAJOR && versionMinor == OF_VERSION_MINOR && versionPatch == OF_VERSION_PATCH) {
-			return true;
-		}
-		if (log) {
-			CX::Instances::Log.warning("CX::Util::checkOFVersion") <<
-				"openFrameworks version does not match target version. Current oF version: " << ofGetVersionInfo();
-		}
-		return false;
-	}
 
 	/*! Attempts to set the process that CX is running in to high priority.
 

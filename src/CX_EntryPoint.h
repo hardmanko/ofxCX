@@ -1,6 +1,10 @@
 #pragma once
 
-#include "CX.h"
+#include "ofWindowSettings.h"
+#include "ofGLBaseTypes.h"
+
+#include "CX_Time_t.h"
+#include "CX_DisplayUtils.h"
 
 #ifdef TARGET_LINUX
 //so apparently sysmacros.h defines some macros with these names on Linux...
@@ -15,6 +19,26 @@
 
 namespace CX {
 
+	// defined later
+	struct CX_GLVersion; 
+	struct CX_WindowConfiguration;
+	struct CX_InitConfiguation;
+
+	bool initializeCX(CX_InitConfiguation config);
+	bool reopenWindow(CX_WindowConfiguration config);
+
+	namespace Util {
+
+		unsigned int getMsaaSampleCount(void);
+
+		void learnHighestOpenGLVersion(void);
+		CX_GLVersion getHighestOpenGLVersion(void);
+
+		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log = true);
+	}
+
+
+	/*! Stores openGL version numbers and has a few helper functions. */
 	struct CX_GLVersion {
 		CX_GLVersion(void) :
 			major(0),
@@ -36,15 +60,13 @@ namespace CX {
 		int compare(const CX_GLVersion& that) const;
 
 		bool supportsGLFenceSync(void) const;
+		//bool supportsGLProgrammableRenderer(void) const;
 
 		CX_GLVersion getCorrespondingGLSLVersion(void) const;
 
 	};
 
-	void learnOpenGLVersion(void);
-	CX_GLVersion getOpenGLVersion(void);
-
-	/*! This structure is used to configure windows opened with CX::reopenWindow(). */
+	/*! Configures windows opened with CX::reopenWindow(). */
 	struct CX_WindowConfiguration {
 		CX_WindowConfiguration(void) :
 			mode(ofWindowMode::OF_WINDOW),
@@ -52,8 +74,7 @@ namespace CX {
 			height(600),
 			resizeable(false),
 			msaaSampleCount(4),
-			windowTitle("CX Experiment"),
-			preOpeningUserFunction(nullptr)
+			windowTitle("CX Experiment")
 		{}
 
 		ofWindowMode mode; //!< The mode of the window. One of ofWindowMode::OF_WINDOW, ofWindowMode::OF_FULLSCREEN, or ofWindowMode::OF_GAME_MODE.
@@ -61,9 +82,11 @@ namespace CX {
 		int width; //!< The width of the window, in pixels.
 		int height; //!< The height of the window, in pixels.
 
-		bool resizeable; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges). Only works for oF 0.8.4 and newer.
+		bool resizeable; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges).
 
 		unsigned int msaaSampleCount; //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
+
+		std::string windowTitle; //!< A title for the window that is opened.
 
 		/*! \brief If you want to request a specific renderer, you can provide one here.
 		If nothing is provided, a reasonable default is assumed. */
@@ -72,13 +95,6 @@ namespace CX {
 		/*! \brief If you want to request a specific OpenGL version, you can provide this value.
 		If nothing is provided, the newest OpenGL version available is used. */
 		CX_GLVersion desiredOpenGLVersion;
-
-		/*! A title for the window that is opened. */
-		std::string windowTitle;
-
-		/*! A user-supplied function that will be called just before the GLFW window is opened. This allows you to
-		set window hints just before the window is opened. This only works if you are using oF version 0.8.4. */
-		std::function<void(void)> preOpeningUserFunction;
 	};
 
 	struct CX_InitConfiguation {
@@ -91,7 +107,7 @@ namespace CX {
 
 		CX_WindowConfiguration windowConfig; //!< The window configuration.
 
-		bool captureOFLogMessages; //!< If `true`, openFrameworks log messages are captured by CX::Instances::Log.
+		bool captureOFLogMessages; //!< If `true`, openFrameworks log messages are captured by CX::Instances::Log (recommend `true`).
 
 		/*! The amount of time to spend estimating the frame period. */
 		CX_Millis framePeriodEstimationInterval;
@@ -103,11 +119,23 @@ namespace CX {
 		unsigned int clockPrecisionTestIterations;
 	};
 
-	bool reopenWindow(CX_WindowConfiguration config);
+	namespace Private {
 
-	bool initializeCX(CX_InitConfiguation config);
+		struct CX_State {
 
-}
+			CX_GLVersion maxGLVersion;
+
+			CX_InitConfiguation initConfig;
+
+			std::shared_ptr<ofAppBaseWindow> appWindow;
+
+			Util::CX_GlfwContextManager glfwContextManager;
+		};
+
+		extern CX_State State;
+	}
+
+} // Namespace CX
 
 /*! \defgroup entryPoint Entry Point
 The entry point provides access to a few instances of classes that can be used by user code.
@@ -157,5 +185,5 @@ void runExperiment (void) {
 \ingroup entryPoint
 */
 #ifndef CX_NO_MAIN
-void runExperiment (void);
+void runExperiment(void);
 #endif

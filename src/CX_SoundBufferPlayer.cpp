@@ -1,6 +1,7 @@
 #include "CX_SoundBufferPlayer.h"
 
 #include "CX_Private.h"
+#include "CX_Logger.h"
 
 namespace CX {
 
@@ -313,18 +314,6 @@ unsigned int CX_SoundBufferPlayer::getUnderflowsSinceLastCheck(bool logUnderflow
 	return ovf;
 }
 
-/*! Returns the configuration used for this CX_SoundBufferPlayer. */
-/*
-const CX_SoundBufferPlayer::Configuration& CX_SoundBufferPlayer::getConfiguration(void) const {
-	if (_soundStream == nullptr) {
-		CX::Instances::Log.error("CX_SoundBufferPlayer") << "getConfiguration(): Could not get configuration, the sound stream was nonexistent. Have you forgotten to call setup()?";
-		return _defaultConfigReference;
-	}
-
-	return _soundStream->getConfiguration();
-}
-*/
-
 
 /*! Sets the `CX_SoundBuffer` that is used by the `CX_SoundBufferPlayer`.
 
@@ -365,21 +354,21 @@ bool CX_SoundBufferPlayer::setSoundBuffer(std::shared_ptr<CX_SoundBuffer> buffer
 
 	stop(); //Stop playback of the current sound.
 
-	const CX_SoundStream::Configuration &streamConfig = _soundStream->getConfiguration();
+	const CX_SoundStream::Configuration &ssc = _soundStream->getConfiguration();
 
 	unsigned int oldChannelCount = buffer->getChannelCount();
-	if (streamConfig.outputChannels != buffer->getChannelCount()) {
-		if (!buffer->setChannelCount(streamConfig.outputChannels)) {
+	if (ssc.outputChannels != buffer->getChannelCount()) {
+		if (!buffer->setChannelCount(ssc.outputChannels)) {
 			CX::Instances::Log.error("CX_SoundBufferPlayer") << "setSoundBuffer(): It was not possible to change the number of channels of the sound to the number used by the sound player.";
 			return false;
 		}
 		CX::Instances::Log.notice("CX_SoundBufferPlayer") << "setSoundBuffer(): Channel count changed from" <<
-			oldChannelCount << " to " << streamConfig.outputChannels << ", which is the sound stream's channel count.";
+			oldChannelCount << " to " << ssc.outputChannels << ", which is the sound stream's channel count.";
 	}
 
-	if (streamConfig.sampleRate != buffer->getSampleRate()) {
+	if (ssc.sampleRate != buffer->getSampleRate()) {
 		CX::Instances::Log.warning("CX_SoundBufferPlayer") << "setSoundBuffer(): Sound resampled. Sound fidelity may have been lost.";
-		buffer->resample((float)streamConfig.sampleRate);
+		buffer->resample((float)ssc.sampleRate);
 	}
 
 	std::lock_guard<std::recursive_mutex> outputLock(_outData);
@@ -492,17 +481,18 @@ void CX_SoundBufferPlayer::_outputEventHandler(const CX_SoundStream::OutputEvent
 
 	std::vector<float> &soundData = _outData.soundBuffer->getRawDataReference();
 	
-	const CX_SoundStream::Configuration &config = _soundStream->getConfiguration();
+	const CX_SoundStream::Configuration &ssc = _soundStream->getConfiguration();
 
 	//Copy over the data, adding to the existing data. Addition allows multiple CX_SoundBufferPlayers to play into
 	//the same sound stream at the same time.
 	if (sampleFramesToOutput > 0) {
-		int64_t rawSamplesToOutput = sampleFramesToOutput * config.outputChannels;
-		float *sourceData = soundData.data() + (_outData.soundPlaybackSampleFrame * config.outputChannels);
-		float *targetData = outputData.outputBuffer + (outputBufferOffsetSF * config.outputChannels);
+		int64_t rawSamplesToOutput = sampleFramesToOutput * ssc.outputChannels;
+		float *sourceData = soundData.data() + (_outData.soundPlaybackSampleFrame * ssc.outputChannels);
+		float *targetData = outputData.outputBuffer + (outputBufferOffsetSF * ssc.outputChannels);
 
 		for (int64_t i = 0; i < rawSamplesToOutput; i++) {
-			targetData[i] += sourceData[i]; // Add, not assign
+			// Add, not assign, because there may be more than one listener to the sound stream event
+			targetData[i] += sourceData[i];
 		}
 	}
 

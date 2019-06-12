@@ -1,5 +1,7 @@
 #include "CX_TimeUtilities.h"
 
+#include "CX_Logger.h"
+
 namespace CX {
 namespace Util {
 

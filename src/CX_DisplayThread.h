@@ -4,6 +4,7 @@
 #include "CX_DataFrameCell.h"
 #include "CX_SynchronizationUtils.h"
 #include "CX_DisplaySwapper.h"
+#include "CX_DisplayUtils.h"
 
 namespace CX {
 
@@ -146,7 +147,7 @@ namespace CX {
 		std::deque<std::shared_ptr<QueuedFrame>> _queuedFrames;
 		struct {
 			std::shared_ptr<QueuedFrame> frame;
-			Sync::GLFenceSync fenceSync;
+			Util::GLFenceSync fenceSync;
 		} _currentQF;
 
 		void _queuedFrameTask(void);

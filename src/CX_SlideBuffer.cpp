@@ -1,5 +1,7 @@
 #include "CX_SlideBuffer.h"
 
+#include "CX_EntryPoint.h"
+
 namespace CX {
 
 ///////////////////////////

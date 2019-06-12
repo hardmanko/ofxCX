@@ -5,7 +5,8 @@
 #include "CX_Display.h"
 #include "CX_Time_t.h"
 #include "CX_Logger.h"
-#include "CX_SynchronizationUtils.h"
+//#include "CX_SynchronizationUtils.h"
+#include "CX_DisplayUtils.h"
 
 namespace CX {
 
@@ -37,18 +38,16 @@ namespace CX {
 				renderCompleteTime(-1)
 			{}
 
-			bool swappedBeforeRenderingComplete;
+			bool swappedBeforeRenderingComplete; //!< If `true`, the slide swapped in before it finished rendering, which is an error.
 
-			/*! \brief The time at which the drawing operations for this slide finished.
+			/*! When rendering started for this slide. */
+			CX_Millis renderStartTime;
+
+			/*! When rendering finished for this slide.
 			This is pretty useful to determine if there was an error on the trial (e.g. framebuffer was copied late).
 			If this is greater than actual.startTime, the slide may not have been fully drawn at the time the
 			front and back buffers swapped. */
-			//CX_Millis copyToBackBufferCompleteTime; //CX_Millis renderingCompleteTime; //?
-
-			CX_Millis renderStartTime;
 			CX_Millis renderCompleteTime;
-
-			
 		};
 		
 		/*! This struct contains information related to slides to present on screen. */
@@ -134,7 +133,7 @@ namespace CX {
 				Finished = 4
 			};
 
-			Sync::GLFenceSync _fenceSync;
+			Util::GLFenceSync _fenceSync;
 			PresentationStatus _status;
 
 		};

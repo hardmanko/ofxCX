@@ -3,8 +3,8 @@
 #include "CX_InputManager.h"
 
 #include "GLFW/glfw3.h"
-#include "CX_Private.h"
 #include "CX_Display.h"
+#include "CX_EntryPoint.h"
 
 namespace CX {
 
@@ -79,7 +79,7 @@ void CX_Mouse::setCursorPosition(ofPoint pos) {
 	_cursorPos = pos;
 
 	// This use of the glfwContext does not appear to require the context to be current on the calling thread.
-	glfwSetCursorPos(CX::Private::glfwContextManager.get(), pos.x, pos.y);
+	glfwSetCursorPos(CX::Private::State.glfwContextManager.get(), pos.x, pos.y);
 }
 
 /*! Get the cursor position within the program window. If the mouse has left the window,

@@ -5,13 +5,11 @@
 #include "RtAudio.h"
 
 #include "ofConstants.h"
-//#include "ofBaseSoundStream.h"
 #include "ofTypes.h"
 #include "ofEvents.h"
 
 #include "CX_Definitions.h"
 #include "CX_Clock.h"
-#include "CX_Logger.h"
 #include "CX_SynchronizationUtils.h"
 
 namespace CX {
@@ -47,7 +45,6 @@ public:
 			inputDeviceId(-1),
 			outputDeviceId(-1)
 		{
-			//streamOptions.streamName = "CX_SoundStream";
 			streamOptions.numberOfBuffers = 2; // More buffers means higher latency but fewer glitches. Same applies to bufferSize.
 			streamOptions.flags = RTAUDIO_SCHEDULE_REALTIME; // | RTAUDIO_HOG_DEVICE | RTAUDIO_MINIMIZE_LATENCY;
 			streamOptions.priority = 1;
@@ -79,13 +76,13 @@ public:
 		+ WASAPI has good latency and works on any hardware.
 		+ DS: Direct Sound is old and has the worst latency. DS should be avoided as long ase WASAPI is available.
 
-		If you wanted to use WASAPI, you would provide `RtAudio::Api::WINDOWS_WASAPI` as the `api`.
+		For example, ff you want to use WASAPI, you should provide `RtAudio::Api::WINDOWS_WASAPI` as the `api`.
 		 */
 		RtAudio::Api api;
 
 		/*! See http://www.music.mcgill.ca/~gary/rtaudio/structRtAudio_1_1StreamOptions.html for more information.
 
-		It is recommended that `numberOfBuffers` should be 2, which is the default.
+		It is recommended that `numberOfBuffers` be 2, which is the default.
 
 		`flags` must not include `RTAUDIO_NONINTERLEAVED`: The audio data used by CX is interleaved.
 

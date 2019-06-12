@@ -199,14 +199,6 @@ void CX_SoundBufferRecorder::stop(void) {
 	_inData.startingRecording = false;
 }
 
-// See stop. I think it should be pause, not stop.
-void CX_SoundBufferRecorder::pause(void) {
-	std::lock_guard<std::recursive_mutex> inputLock(_inData);
-	_inData.recording = false;
-	_inData.recordingQueued = false;
-	_inData.startingRecording = false;
-}
-
 bool CX_SoundBufferRecorder::isRecordingComplete(void) {
 
 	bool success = !isRecordingOrQueued() && _inData.buffer && _inData.buffer->isReadyToPlay();

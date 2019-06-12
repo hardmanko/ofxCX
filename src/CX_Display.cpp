@@ -1,6 +1,7 @@
 #include "CX_Display.h"
 
 #include "CX_Private.h" //glfwContext
+#include "CX_EntryPoint.h"
 
 /*! An instance of CX::CX_Display that is lightly hooked into the CX backend. The only thing that happens outside of user code
 is that during CX setup, before reaching user code in runExperiment(), CX_Display::setup() is called.
@@ -23,7 +24,7 @@ CX_Display::~CX_Display(void) {
 This is called during CX setup; the user should not need to call it. */
 void CX_Display::setup(void) {
 
-	_renderer = CX::Private::appWindow->renderer();
+	_renderer = CX::Private::State.appWindow->renderer();
 
 	_dispThread.setup(CX_DisplayThread::Configuration(), false);
 
@@ -168,11 +169,11 @@ bool CX_Display::isAutomaticallySwapping(void) {
 
 
 bool CX_Display::renderingOnThisThread(void) {
-	return Private::glfwContextManager.isLockedByThisThread();
+	return Private::State.glfwContextManager.isLockedByThisThread();
 }
 
 bool CX_Display::renderingOnMainThread(void) {
-	return Private::glfwContextManager.isLockedByMainThread();
+	return Private::State.glfwContextManager.isLockedByMainThread();
 }
 
 
@@ -246,11 +247,11 @@ Disp.endDrawingToBackBuffer();
 */
 void CX_Display::beginDrawingToBackBuffer(void) {
 
-	if (!Private::glfwContextManager.isLockedByThisThread()) {
-		if (Private::glfwContextManager.isUnlocked()) {
+	if (!Private::State.glfwContextManager.isLockedByThisThread()) {
+		if (Private::State.glfwContextManager.isUnlocked()) {
 			Instances::Log.warning("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
 				" while the rendering context was unlocked. The rendering context was made current and locked.";
-			Private::glfwContextManager.lock();
+			Private::State.glfwContextManager.lock();
 		} else {
 			Instances::Log.error("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
 				" while the rendering context was locked by another thread. Nothing will be rendered.";
@@ -269,7 +270,7 @@ void CX_Display::beginDrawingToBackBuffer(void) {
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
 void CX_Display::endDrawingToBackBuffer(void) {
 
-	if (!Private::glfwContextManager.isLockedByThisThread()) {
+	if (!Private::State.glfwContextManager.isLockedByThisThread()) {
 		return;
 	}
 
@@ -300,14 +301,14 @@ void CX_Display::swapBuffers(void) {
 
 void CX_Display::_swapBuffers(void) {
 
-	Private::CX_GlfwContextManager& cm = Private::glfwContextManager;
+	Util::CX_GlfwContextManager& cm = Private::State.glfwContextManager;
 	if (!cm.isLockedByThisThread()) {
 		Instances::Log.warning("CX_Display") << "swapBuffers(): Buffer swap requested in a thread that doesn't have a lock on the context.";
 		return;
 	}
 
 	glfwSwapBuffers(cm.get());
-	if (_softVSyncWithGLFinish) { // thread? std::atomic?
+	if (_softVSyncWithGLFinish) { // TODO: how make thread safe? ignore beceause bool can't be in an invalid state? std::atomic?
 		glFinish();
 	}
 
@@ -403,13 +404,13 @@ bool CX_Display::isFullscreen(void) {
 */
 void CX_Display::setMinimized(bool minimize) {
 
-	Private::CX_GlfwContextManager& cm = CX::Private::glfwContextManager;
+	Util::CX_GlfwContextManager& cm = Private::State.glfwContextManager;
 	
 	if (!cm.isMainThread() || (!cm.isLockedByThisThread() && cm.isLockedByAnyThread())) {
 		return;
 	}
 
-	GLFWwindow* ctx = Private::glfwContextManager.get();
+	GLFWwindow* ctx = Private::State.glfwContextManager.get();
 
 	if (minimize) {
 		glfwIconifyWindow(ctx);
@@ -433,7 +434,7 @@ expected effect. OpenGL seems to struggle with VSync.
 
 \see See \ref visualStimuli for information on what Vsync is. */
 void CX_Display::useHardwareVSync(bool use) {
-	if (Private::glfwContextManager.isLockedByThisThread()) {
+	if (Private::State.glfwContextManager.isLockedByThisThread()) {
 		glfwSwapInterval(use ? 1 : 0);
 	} else if (_dispThread.threadOwnsRenderingContext()) {
 		_dispThread.commandSetSwapInterval(use, true);
@@ -451,8 +452,6 @@ better than only using one.
 \see See \ref visualStimuli for information on what Vsync is. */
 void CX_Display::useSoftwareVSync(bool use) {
 	_softVSyncWithGLFinish = use;
-
-	//_dispThread._setGLFinishAfterSwap(use);
 }
 
 //bool CX_Display::usingHardwareVSync(void) {
