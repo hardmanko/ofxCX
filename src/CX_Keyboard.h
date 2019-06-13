@@ -268,6 +268,7 @@ namespace CX {
 		void addShortcut(std::string name, const std::vector<int>& chord, std::function<void(void)> callback);
 		void removeShortcut(std::string name);
 		void clearShortcuts(void);
+		void addDefaultShortcuts(void);
 		std::vector<std::string> getShortcutNames(void) const;
 
 	private:

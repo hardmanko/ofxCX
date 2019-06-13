@@ -19,19 +19,19 @@
 
 namespace CX {
 
-	// defined later
+	// Forward delcarations: Defined later in this file
 	struct CX_GLVersion; 
 	struct CX_WindowConfiguration;
 	struct CX_InitConfiguation;
 
 	bool initializeCX(CX_InitConfiguation config);
 	bool reopenWindow(CX_WindowConfiguration config);
+	//bool terminateCX(void); // If this function did anything, you should make it public.
 
 	namespace Util {
 
 		unsigned int getMsaaSampleCount(void);
 
-		void learnHighestOpenGLVersion(void);
 		CX_GLVersion getHighestOpenGLVersion(void);
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log = true);
@@ -82,7 +82,7 @@ namespace CX {
 		int width; //!< The width of the window, in pixels.
 		int height; //!< The height of the window, in pixels.
 
-		bool resizeable; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges).
+		bool resizeable = false; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges).
 
 		unsigned int msaaSampleCount; //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
 
@@ -101,6 +101,7 @@ namespace CX {
 
 		CX_InitConfiguation(void) :
 			captureOFLogMessages(true),
+			resetStartTime(true),
 			framePeriodEstimationInterval(CX_Seconds(1)),
 			clockPrecisionTestIterations(100000)
 		{}
@@ -109,11 +110,13 @@ namespace CX {
 
 		bool captureOFLogMessages; //!< If `true`, openFrameworks log messages are captured by CX::Instances::Log (recommend `true`).
 
-		/*! The amount of time to spend estimating the frame period. */
+		bool resetStartTime; //!< If `true`, the experiment start time is reset.
+
+		/*! The amount of time to spend estimating the display frame period. Passed to CX_Display::estimateFramePeriod(). */
 		CX_Millis framePeriodEstimationInterval;
 
 		/*! The number of samples of clock timing data to use to test the clock precision.
-		Precision testing is very fast, so this can be in the range of 100,000 without problem.
+		Precision testing is very fast, so this can be in the range of 100,000 to 1,000,000 without problem.
 		Forced to be at least 10,000.
 		Passed to CX_Clock::chooseBestClockImplementation(). */
 		unsigned int clockPrecisionTestIterations;
@@ -123,19 +126,45 @@ namespace CX {
 	but which should not be used by user code (and expect good results). */
 	namespace Private {
 
-		struct CX_State {
+		class CX_GlobalState {
 
-			CX_GLVersion maxGLVersion;
+			friend std::shared_ptr<CX_GlobalState> globalStateFactory(void);
+			CX_GlobalState(void) :
+				_glVersionLearned(false)
+			{}
 
-			CX_InitConfiguation initConfig;
+			CX_InitConfiguation _initConfig;
 
-			std::shared_ptr<ofAppBaseWindow> appWindow;
+			bool _glVersionLearned;
+			CX_GLVersion _maxGLVersion;
 
+			std::shared_ptr<ofAppBaseWindow> _appWindow;
+
+		public:
+
+			void setInitConfig(const CX_InitConfiguation& cfg);
+			const CX_InitConfiguation& getInitConfig(void) const;
+			//bool cxIsInitialized(void) const;
+			unsigned int getMsaaSampleCount(void) const;
+
+			bool learnHighestOpenGLVersion(void);
+			//void setMaxGLVersion(const CX_GLVersion& ver);
+			const CX_GLVersion& getHighestOpenGLVersion(void) const;
+
+			void setAppWindow(std::shared_ptr<ofAppBaseWindow> wind);
+			std::shared_ptr<ofAppBaseWindow> getAppWindow(void) const;
+
+			// Doesn't need set/get
+			//std::unique_ptr<Util::GlfwContextManager> glfwContextManager;
 			Util::GlfwContextManager glfwContextManager;
+
 		};
 
-		extern CX_State State;
-	}
+		std::shared_ptr<CX_GlobalState> globalStateFactory(void);
+
+		extern std::shared_ptr<CX_GlobalState> State;
+
+	} // namespace Private
 
 } // Namespace CX
 

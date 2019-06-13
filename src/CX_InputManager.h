@@ -26,6 +26,8 @@ For interfacing with serial ports, use ofSerial
 
 namespace CX {
 
+	class CX_InputManager;
+
 	namespace Private {
 		CX_InputManager inputManagerFactory(void);
 	}

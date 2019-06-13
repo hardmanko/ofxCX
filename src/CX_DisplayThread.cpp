@@ -158,9 +158,9 @@ void CX_DisplayThread::_threadFunction(void) {
 	_mutex.unlock(); // --- UNLOCK
 
 	// failsafe
-	if (Private::State.glfwContextManager.isLockedByThisThread()) {
+	if (Private::State->glfwContextManager.isLockedByThisThread()) {
 		Instances::Log.warning("CX_DisplayThread") << "The rendering context was not already unlocked on thread exit. It was unlocked.";
-		Private::State.glfwContextManager.unlock();
+		Private::State->glfwContextManager.unlock();
 	}
 }
 
@@ -288,7 +288,7 @@ void CX_DisplayThread::_processQueuedCommands(void) {
 
 		switch (cmd->type) {
 		case CommandType::SetSwapInterval:
-			if (Private::State.glfwContextManager.isLockedByThisThread()) {
+			if (Private::State->glfwContextManager.isLockedByThisThread()) {
 				unsigned int swapInterval = cmd->values["swapInterval"];
 				swapInterval = Util::clamp<unsigned int>(swapInterval, 0, 1);
 				glfwSwapInterval(swapInterval);
@@ -342,7 +342,7 @@ void CX_DisplayThread::_processQueuedCommands(void) {
 bool CX_DisplayThread::threadOwnsRenderingContext(void) {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-	return Private::State.glfwContextManager.getLockingThreadId() == _thread.get_id();
+	return Private::State->glfwContextManager.getLockingThreadId() == _thread.get_id();
 
 	//return _threadOwnsRenderingContext;
 }
@@ -357,13 +357,13 @@ bool CX_DisplayThread::enableFrameQueue(bool enable) {
 		return false; // must be running
 	}
 
-	if (!Private::State.glfwContextManager.isMainThread()) {
+	if (!Private::State->glfwContextManager.isMainThread()) {
 		Instances::Log.notice("CX_DisplayThread") << "enableFrameQueue(): Called from non-main thread, returning.";
 		return false; // can't call from non-main thread
 	}
 
 	std::thread::id tid = _thread.get_id();
-	std::thread::id lockID = Private::State.glfwContextManager.getLockingThreadId();
+	std::thread::id lockID = Private::State->glfwContextManager.getLockingThreadId();
 	bool isLockedByDisplayThread = tid == lockID;
 
 	if (isLockedByDisplayThread == enable) {
@@ -378,7 +378,7 @@ bool CX_DisplayThread::enableFrameQueue(bool enable) {
 	//	return true;
 	//}
 
-	Util::GlfwContextManager& cm = Private::State.glfwContextManager;
+	Util::GlfwContextManager& cm = Private::State->glfwContextManager;
 
 	if (enable) {
 
@@ -433,7 +433,7 @@ bool CX_DisplayThread::_acquireRenderingContext(bool acquire) {
 		return true;
 	}
 
-	Util::GlfwContextManager& cm = Private::State.glfwContextManager;
+	Util::GlfwContextManager& cm = Private::State->glfwContextManager;
 
 	if (acquire) {
 		if (!cm.trylock()) {
@@ -686,7 +686,7 @@ void CX_DisplayThread::_drawQueuedFrameIfNeeded(void) {
 	}
 
 
-	if (!Private::State.glfwContextManager.isLockedByThisThread()) {
+	if (!Private::State->glfwContextManager.isLockedByThisThread()) {
 		// Error: Context is unavailable
 		Instances::Log.error("CX_DisplayThread") << "Rendering context unavailable.";
 		return;

@@ -14,7 +14,6 @@ void GlfwContextManager::setup(GLFWwindow* context, std::thread::id mainThreadId
 	_mainThreadId = mainThreadId;
 
 	this->lock();
-
 }
 
 bool GlfwContextManager::trylock(void) {
@@ -57,14 +56,6 @@ void GlfwContextManager::unlock(void) {
 	}
 }
 
-/*
-bool GlfwContextManager::isCurrentOnThisThread(void) {
-	std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-	return _glfwContext == glfwGetCurrentContext(); // glfwGetCurrentContext returns the context of any thread.
-}
-*/
-
 bool GlfwContextManager::isUnlocked(void) {
 	std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -96,6 +87,8 @@ std::thread::id GlfwContextManager::getLockingThreadId(void) {
 }
 
 GLFWwindow* GlfwContextManager::get(void) {
+	std::lock_guard<std::recursive_mutex> lock(_mutex);
+
 	GLFWwindow* rval = nullptr;
 	if (isLockedByThisThread()) {
 		rval = _glfwContext;

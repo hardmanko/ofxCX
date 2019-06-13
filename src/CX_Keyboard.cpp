@@ -1,6 +1,7 @@
 #include "CX_Keyboard.h"
 
 #include "CX_InputManager.h"
+#include "CX_Display.h"
 
 namespace CX {
 
@@ -9,6 +10,10 @@ CX_Keyboard::CX_Keyboard(CX_InputManager* owner) :
 	_enabled(false),
 	_listeningForEvents(false)
 {
+	addDefaultShortcuts(); 
+
+	// Don't call anything that enables as a side effect in the constructor. 
+	// Enabling uses ofEvents(), which apparently changes when the window is opened.
 }
 
 CX_Keyboard::~CX_Keyboard(void) {
@@ -281,15 +286,11 @@ in which input is awaited on. You just need to regularly call `Input.pollEvents(
 Given that most experiment code spends a lot of time waiting on input, using keyboard shortcuts should
 be easy.
 
-By default, CX is set up to use the shortcut `LEFT_ALT + F1` to toggle the fullscreen state of the display.
-Windows 10 appears to intercept alt-tab so that it never reaches the program, otherwise that would be
-the best choice. The shortcut is named "Toggle fullscreen: LEFT_ALT + F1".
+See CX_Keyboard::addDefaultShortcuts() for information about the default shortcuts.
 
 \param name The name of the shortcut. Each shortcut must have a unique name.
 \param chord A vector of keys that must be simultaneously held (and no other keys may be held) to trigger the shortcut.
 \param callback A function that takes and returns `void`.
-
-\note The keyboard is automatically enabled.
 
 \code{.cpp}
 
@@ -326,7 +327,6 @@ void runExperiment(void) {
 \endcode
 */
 void CX_Keyboard::addShortcut(std::string name, const std::vector<int>& chord, std::function<void(void)> callback) {
-	this->enable(true); // Automatically enable keyboard
 
 	KeyboardShortcut ks;
 	ks.chord.insert(chord.begin(), chord.end());
@@ -345,6 +345,25 @@ void CX_Keyboard::removeShortcut(std::string name) {
 /*! Clears all stored keyboard shortcuts. */
 void CX_Keyboard::clearShortcuts(void) {
 	_shortcuts.clear();
+}
+
+/*! Add the default keyboard shortcuts to the current shortcuts.
+
+By default, CX is set up to use the shortcut `LEFT_ALT + F1` to toggle the fullscreen state of the display.
+Windows 10 appears to intercept alt-tab so that it never reaches the program, otherwise that would be
+the best choice. The shortcut is named "Toggle fullscreen: LEFT_ALT + F1".
+
+*/
+void CX_Keyboard::addDefaultShortcuts(void) {
+
+	auto toggleFullscreen = [](void) {
+		Instances::Disp.setFullscreen(!Instances::Disp.isFullscreen());
+	};
+
+	this->addShortcut("Toggle fullscreen: LEFT_ALT + F1",
+		{ Keycode::LEFT_ALT, Keycode::F1 },
+		toggleFullscreen
+	);
 }
 
 /*! Get a vector of the names of shortcuts.

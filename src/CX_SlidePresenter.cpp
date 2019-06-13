@@ -253,7 +253,7 @@ void CX_SlidePresenter::beginDrawingNextSlide(CX_Millis slideDuration, std::stri
 	ofRectangle resolution = _config.display->getResolution();
 	_slides.back().framebuffer.allocate(resolution.x, resolution.y,
 										GL_RGB, //Because we are always drawing over the whole display, there is no reason to have an alpha channel
-										CX::Util::getMsaaSampleCount());
+										CX::Private::State->getMsaaSampleCount());
 	CX::Instances::Log.verbose("CX_SlidePresenter") << "Finished allocating.";
 
 	_slides.back().intended.duration = slideDuration;

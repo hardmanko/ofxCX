@@ -25,7 +25,7 @@ CX_Display::~CX_Display(void) {
 This is called during CX setup; the user should not need to call it. */
 void CX_Display::setup(void) {
 
-	_renderer = CX::Private::State.appWindow->renderer();
+	_renderer = CX::Private::State->getAppWindow()->renderer();
 
 	_dispThread.setup(CX_DisplayThread::Configuration(), false);
 
@@ -170,11 +170,11 @@ bool CX_Display::isAutomaticallySwapping(void) {
 
 
 bool CX_Display::renderingOnThisThread(void) {
-	return Private::State.glfwContextManager.isLockedByThisThread();
+	return Private::State->glfwContextManager.isLockedByThisThread();
 }
 
 bool CX_Display::renderingOnMainThread(void) {
-	return Private::State.glfwContextManager.isLockedByMainThread();
+	return Private::State->glfwContextManager.isLockedByMainThread();
 }
 
 
@@ -248,11 +248,13 @@ Disp.endDrawingToBackBuffer();
 */
 void CX_Display::beginDrawingToBackBuffer(void) {
 
-	if (!Private::State.glfwContextManager.isLockedByThisThread()) {
-		if (Private::State.glfwContextManager.isUnlocked()) {
+	Util::GlfwContextManager& cm = Private::State->glfwContextManager;
+
+	if (!cm.isLockedByThisThread()) {
+		if (cm.isUnlocked()) {
 			Instances::Log.warning("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
 				" while the rendering context was unlocked. The rendering context was made current and locked.";
-			Private::State.glfwContextManager.lock();
+			cm.lock();
 		} else {
 			Instances::Log.error("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
 				" while the rendering context was locked by another thread. Nothing will be rendered.";
@@ -271,7 +273,7 @@ void CX_Display::beginDrawingToBackBuffer(void) {
 /*! Finish rendering to the back buffer. Must be paired with a call to beginDrawingToBackBuffer(). */
 void CX_Display::endDrawingToBackBuffer(void) {
 
-	if (!Private::State.glfwContextManager.isLockedByThisThread()) {
+	if (!Private::State->glfwContextManager.isLockedByThisThread()) {
 		return;
 	}
 
@@ -302,7 +304,7 @@ void CX_Display::swapBuffers(void) {
 
 void CX_Display::_swapBuffers(void) {
 
-	Util::GlfwContextManager& cm = Private::State.glfwContextManager;
+	Util::GlfwContextManager& cm = Private::State->glfwContextManager;
 	if (!cm.isLockedByThisThread()) {
 		Instances::Log.warning("CX_Display") << "swapBuffers(): Buffer swap requested in a thread that doesn't have a lock on the context.";
 		return;
@@ -405,13 +407,13 @@ bool CX_Display::isFullscreen(void) {
 */
 void CX_Display::setMinimized(bool minimize) {
 
-	Util::GlfwContextManager& cm = Private::State.glfwContextManager;
+	Util::GlfwContextManager& cm = Private::State->glfwContextManager;
 	
 	if (!cm.isMainThread() || (!cm.isLockedByThisThread() && cm.isLockedByAnyThread())) {
 		return;
 	}
 
-	GLFWwindow* ctx = Private::State.glfwContextManager.get();
+	GLFWwindow* ctx = Private::State->glfwContextManager.get();
 
 	if (minimize) {
 		glfwIconifyWindow(ctx);
@@ -435,7 +437,7 @@ expected effect. OpenGL seems to struggle with VSync.
 
 \see See \ref visualStimuli for information on what Vsync is. */
 void CX_Display::useHardwareVSync(bool use) {
-	if (Private::State.glfwContextManager.isLockedByThisThread()) {
+	if (Private::State->glfwContextManager.isLockedByThisThread()) {
 		glfwSwapInterval(use ? 1 : 0);
 	} else if (_dispThread.threadOwnsRenderingContext()) {
 		_dispThread.commandSetSwapInterval(use, true);
@@ -473,7 +475,7 @@ the FBO will produce the same output as rendering into the back buffer.
 ofFbo CX_Display::makeFbo(void) {
 	ofFbo fbo;
 	ofRectangle dims = this->getResolution();
-	fbo.allocate(dims.width, dims.height, GL_RGBA, CX::Util::getMsaaSampleCount());
+	fbo.allocate(dims.width, dims.height, GL_RGBA, CX::Private::State->getMsaaSampleCount());
 	return fbo;
 }
 

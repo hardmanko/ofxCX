@@ -363,7 +363,7 @@ void CX_SlideBuffer::beginDrawingNextSlide(CX_Millis timeDuration, std::string s
 
 	_currentSlide->framebuffer->allocate(resolution.x, resolution.y,
 		GL_RGB, //Because we are always drawing over the whole display, there is no reason to have an alpha channel
-		CX::Util::getMsaaSampleCount());
+		CX::Private::State->getMsaaSampleCount());
 	Instances::Log.verbose("CX_SlideBuffer") << "Finished allocating.";
 
 		
