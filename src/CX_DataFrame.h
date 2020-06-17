@@ -56,7 +56,7 @@ public:
 			vectorElementDelimiter(";")
 		{}
 		std::string cellDelimiter; //!< The delimiter between cells of the data frame. Defaults to tab ("\t").
-		std::string vectorEncloser; //!< The string which surrounds a vector of data (i.e. one cell of data, which happens to be a vector). Defaults to double quote ("\"").
+		std::string vectorEncloser; //!< The string which surrounds a vector of data (i.e. one cell of data, which happens to be a vector). Defaults to double quote ("\""). Set to the empty string to ignore vectors while reading files.
 		std::string vectorElementDelimiter; //!< The string which delimits elements of a vector. Defaults to semicolon (";").
 	};
 
@@ -91,15 +91,17 @@ public:
 	CX_DataFrameCell operator() (std::string column, RowIndex row);
 	CX_DataFrameCell operator() (RowIndex row, std::string column);
 
-	CX_DataFrameCell at(RowIndex row, std::string column);
-	CX_DataFrameCell at(std::string column, RowIndex row);
+	CX_DataFrameCell at(std::string column, RowIndex row) const;
+	CX_DataFrameCell at(RowIndex row, std::string column) const;
 
+	
 
 	//Row operations
 	void appendRow(CX_DataFrameRow row);
 	void insertRow(CX_DataFrameRow row, RowIndex beforeIndex);
 	bool deleteRow(RowIndex row);
 	CX_DataFrameRow operator[] (RowIndex row);
+	const CX_DataFrameRow at(RowIndex row) const;
 
 	void setRowCount(RowIndex rowCount);
 	RowIndex getRowCount(void) const;
@@ -121,7 +123,10 @@ public:
 	bool deleteColumn(std::string columnName);
 
 	std::vector<std::string> getColumnNames(void) const;
+
 	bool columnExists(std::string columnName) const;
+	bool rowExists(RowIndex row) const;
+	bool cellExists(std::string column, RowIndex row) const;
 
 	//std::vector<CX_DataFrameCell>& getColumnReference(std::string columnName);
 
@@ -294,14 +299,18 @@ cout << df.print() << endl;
 \ingroup dataManagement */
 class CX_DataFrameRow {
 public:
-	CX_DataFrameRow (void);
-	CX_DataFrameCell operator[] (std::string column);
-	
-	void clear (void);
+	CX_DataFrameRow(void);
 
-	std::vector<std::string> names(void);
-	bool columnExists(const std::string& column);
+	CX_DataFrameCell operator[](std::string column);
+	CX_DataFrameCell at(const std::string& column) const;
+	
+	void clear(void);
+
+	std::vector<std::string> names(void) const;
+	bool columnExists(const std::string& column) const;
 	bool deleteColumn(const std::string& column);
+
+	CX_DataFrameRow& operator=(const CX_DataFrameRow& other);
 
 private:
 	friend class CX_DataFrame;
@@ -315,4 +324,4 @@ private:
 	
 };
 
-}
+} // namespace CX

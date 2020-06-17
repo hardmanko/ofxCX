@@ -4,7 +4,7 @@
 #include <set>
 
 #include "CX_Clock.h"
-#include "CX_Events.h"
+//#include "CX_Events.h"
 #include "CX_Utilities.h"
 
 #include "ofEvents.h"
@@ -34,7 +34,7 @@ namespace CX {
 			Dragged, //!< The mouse has been moved while at least one button was held. Event::button may not be meaningful because the held button
 			//!< can be changed during a drag, or multiple buttons may be held at once during a drag.
 			Scrolled //!< The mouse wheel has been scrolled. Check Event::y to get the change in the standard mouse wheel direction, or 
-				//!< Event::x if your mouse has a wheel that can move horizontally.
+				//!< Event::x if your mouse has a wheel that can move horizontally (usually tilting).
 		};
 
 		/*! This struct contains the results of a mouse event, which is any type of interaction with the mouse, be it
@@ -96,20 +96,16 @@ namespace CX {
 		std::set<int> _heldButtons;
 		std::deque<CX_Mouse::Event> _mouseEvents;
 
-		void _mouseButtonPressedEventHandler (ofMouseEventArgs &a);
-		void _mouseButtonReleasedEventHandler (ofMouseEventArgs &a);
-		void _mouseMovedEventHandler (ofMouseEventArgs &a);
-		void _mouseDraggedEventHandler (ofMouseEventArgs &a);
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 9 && OF_VERSION_PATCH >= 0
+		void _mouseButtonPressedEventHandler(ofMouseEventArgs &a);
+		void _mouseButtonReleasedEventHandler(ofMouseEventArgs &a);
+		void _mouseMovedEventHandler(ofMouseEventArgs &a);
+		void _mouseDraggedEventHandler(ofMouseEventArgs &a);
 		void _mouseWheelScrollHandler(ofMouseEventArgs &a);
-#else
-		void _mouseWheelScrollHandler (Private::CX_MouseScrollEventArgs_t &a);
-#endif
 
 		void _mouseEventHandler(ofMouseEventArgs& ofEvent);
 
 		bool _listeningForEvents;
-		void _listenForEvents (bool listen);
+		void _listenForEvents(bool listen);
 
 		ofPoint _cursorPos;
 

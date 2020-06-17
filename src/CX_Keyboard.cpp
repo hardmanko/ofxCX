@@ -202,19 +202,23 @@ void CX_Keyboard::_listenForEvents(bool listen) {
 	if (listen) {
 		ofAddListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
 		ofAddListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
-		ofAddListener(CX::Private::getEvents().keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
+		//ofAddListener(CX::Private::getEvents().keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
 	} else {
 		ofRemoveListener(ofEvents().keyPressed, this, &CX_Keyboard::_keyPressHandler);
 		ofRemoveListener(ofEvents().keyReleased, this, &CX_Keyboard::_keyReleaseHandler);
-		ofRemoveListener(CX::Private::getEvents().keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
+		//ofRemoveListener(CX::Private::getEvents().keyRepeatEvent, this, &CX_Keyboard::_keyRepeatHandler);
 	}
 	_listeningForEvents = listen;
 }
 
-void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
+void CX_Keyboard::_keyPressHandler(ofKeyEventArgs& a) {
 	CX_Keyboard::Event ev;
-	
+
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 10 && OF_VERSION_RELEASE >= 0
+	if (a.isRepeat) {
+#else
 	if (this->isKeyHeld(a.keycode)) {
+#endif
 		ev.type = CX_Keyboard::Repeat;
 	} else {
 		ev.type = CX_Keyboard::Pressed;
@@ -225,7 +229,7 @@ void CX_Keyboard::_keyPressHandler(ofKeyEventArgs &a) {
 	_keyEventHandler(ev);
 }
 
-void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
+void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs& a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::Released;
 
@@ -234,7 +238,8 @@ void CX_Keyboard::_keyReleaseHandler(ofKeyEventArgs &a) {
 	_keyEventHandler(ev);
 }
 
-void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
+/*
+void CX_Keyboard::_keyRepeatHandler(ofKeyEventArgs& a) {
 	CX_Keyboard::Event ev;
 	ev.type = CX_Keyboard::Repeat;
 
@@ -242,8 +247,9 @@ void CX_Keyboard::_keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a) {
 
 	_keyEventHandler(ev);
 }
+*/
 
-void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event &ev) {
+void CX_Keyboard::_keyEventHandler(CX_Keyboard::Event& ev) {
 	ev.time = CX::Instances::Clock.now();
 	ev.uncertainty = ev.time - _lastEventPollTime;
 

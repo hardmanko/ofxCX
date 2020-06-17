@@ -18,7 +18,7 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 #include "ofGLProgrammableRenderer.h"
 
 #include "CX_DisplayThread.h"
-#include "CX_DisplaySwapper.h"
+#include "CX_DisplayUtils.h"
 
 #include "CX_Clock.h"
 #include "CX_Logger.h"
@@ -26,6 +26,30 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 
 
 namespace CX {
+
+	struct CX_DisplaySwappingResults {
+
+		void setup(const std::vector<CX_Millis>& framePeriods);
+		void clear(void);
+
+		void filterByFramePeriod(CX_Millis minPeriod, CX_Millis maxPeriod);
+		void filterByFrameRate(double minRate, double maxRate);
+
+		std::vector<CX_Millis> includedPeriods;
+		std::vector<CX_Millis> excludedPeriods;
+
+		// For includedPeriods.
+		CX_Millis calcFramePeriodMean(void) const;
+		CX_Millis calcFramePeriodSD(void) const;
+		double calcFrameRateMean(void) const;
+
+		static std::vector<double> periodsToRates(const std::vector<CX_Millis>& periods);
+
+	protected:
+
+		std::vector<CX_Millis> _allPeriods;
+	};
+
 
 
 	/*! This class represents an abstract visual display surface, which is my way of saying that it doesn't
@@ -47,6 +71,13 @@ namespace CX {
 		void setup(void);
 		void configureFromFile(std::string filename, std::string delimiter = "=", bool trimWhitespace = true, std::string commentString = "//");
 
+
+		void beginDrawingToBackBuffer(void);
+		void endDrawingToBackBuffer(void);
+
+		void swapBuffers(void);
+		void waitForOpenGL(void);
+
 		void setFullscreen(bool fullscreen);
 		bool isFullscreen(void);
 		void setMinimized(bool minimize);
@@ -57,20 +88,17 @@ namespace CX {
 		//bool usingHardwareVSync(void);
 		bool usingSoftwareVSync(void);
 
-		void waitForOpenGL(void);
-		
-
-		void beginDrawingToBackBuffer(void);
-		void endDrawingToBackBuffer(void);
-
-		void swapBuffers(void);
-		//void swapAt(CX_Millis time); // blocking function for really basic synchronization?
 
 		// main class
 		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 30, float maxRefreshRate = 150);
 		void setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking = false);
 		CX_Millis getFramePeriod(void) const;
 		CX_Millis getFramePeriodStandardDeviation(void) const;
+		double getFrameRate(void) const;
+		// OR
+		void estimateFrameRate(CX_Millis estimationTime, double minFrameRate = 30, double maxFrameRate = 300);
+		void setKnownFrameRate(double frameRate, bool setupSwapTracking = false);
+		const CX_DisplaySwappingResults& getFramePeriodResults(void) const;
 
 
 		void setWindowResolution(int width, int height);
@@ -84,12 +112,10 @@ namespace CX {
 		CX_Millis getNextSwapTime(void);
 
 
-		// swapping in display thread, rendering in main thread
+		// These two functions are useful if you are swapping in display thread, rendering in main thread
 		bool hasSwappedSinceLastCheck(void);
 		bool waitForBufferSwap(CX_Millis timeout, bool reset = true);
 
-		
-		// strange function. maybe non-member function?
 		std::map<std::string, CX_DataFrame> testBufferSwapping(CX_Millis desiredTestDuration, bool testSecondaryThread);
 
 		ofFbo makeFbo(void);
@@ -101,7 +127,8 @@ namespace CX {
 		//void setYIncreasesUpwards(bool upwards);
 		//bool getYIncreasesUpwards(void) const;
 
-		std::shared_ptr<ofBaseRenderer> getRenderer(void);
+		//std::shared_ptr<ofBaseRenderer> getRenderer(void);
+		//void setRenderer(std::shared_ptr<ofBaseRenderer> renderer, bool setDefaults = false);
 		
 		Sync::DataContainer swapData;
 		Sync::DataClient swapClient;
@@ -125,9 +152,11 @@ namespace CX {
 
 		void _blitFboToBackBuffer(ofFbo& fbo, ofRectangle sourceCoordinates, ofRectangle destinationCoordinates);
 		
-		std::shared_ptr<ofBaseRenderer> _renderer; 
+		//std::shared_ptr<ofBaseRenderer> _renderer;
+		std::shared_ptr<ofAppBaseWindow> _window;
 
 		// From estimateFramePeriod()
+		//CX_DisplaySwappingResults _swappingResults;
 		CX_Millis _framePeriod;
 		CX_Millis _framePeriodStandardDeviation;
 

@@ -3,13 +3,13 @@
 #include "ofEvents.h"
 
 namespace CX {
-
 namespace Util {
 
 	/* Reduces the pain of using ofEvents, namely that listener classes must
 	to stop listening to events when the listening class is destructed.
 	ofEventHelper stops listening automatically when destructed.
 
+	Sometimes this class just does not work, I don't know why.
 	*/
 	template <typename EvType>
 	class ofEventHelper {
@@ -57,12 +57,14 @@ namespace Util {
 		}
 
 		void setup(ofEvent<EvType>* evp, std::function<void(EvType)> lfun, int priority = (int)Priority::Normal) {
+			stopListening();
 			setCallback(lfun);
 			_listenTo(evp, priority);
 		}
 
 		template <class Listener>
 		void setup(ofEvent<EvType>* evp, Listener* listener, std::function<void(Listener*, EvType)> cbMethod, int priority = (int)Priority::Normal) {
+			stopListening();
 			setCallback<Listener>(listener, cbMethod);
 			_listenTo(evp, priority);
 		}
@@ -127,14 +129,18 @@ namespace Util {
 			std::lock_guard<std::recursive_mutex> lock(_mutex);
 
 			if (_currentEvent) {
-				ofRemoveListener(*_currentEvent, this, &ofEventHelper::_listenFun, _currentPriority);
+				_currentEvent->remove(this, &ofEventHelper::_listenFun, _currentPriority);
+
+				//ofRemoveListener(*_currentEvent, this, &ofEventHelper::_listenFun, _currentPriority);
 				_currentEvent = nullptr;
 			}
 
 			if (ev) {
 				_currentEvent = ev;
 				_currentPriority = priority;
-				ofAddListener(*_currentEvent, this, &ofEventHelper::_listenFun, _currentPriority);
+				//ofAddListener(*_currentEvent, this, &ofEventHelper::_listenFun, _currentPriority);
+
+				_currentEvent->add(this, &ofEventHelper::_listenFun, _currentPriority);
 			}
 		}
 
@@ -186,12 +192,14 @@ namespace Util {
 		}
 
 		void setup(ofEvent<void>* evp, std::function<void(void)> lfun, int priority = (int)Priority::Normal) {
+			stopListening();
 			setCallback(lfun);
 			_listenTo(evp, priority);
 		}
 
 		template <class Listener>
 		void setup(ofEvent<void>* evp, Listener* listener, std::function<void(Listener*)> cbMethod, int priority = (int)Priority::Normal) {
+			stopListening();
 			setCallback<Listener>(listener, cbMethod);
 			_listenTo(evp, priority);
 		}
@@ -274,32 +282,8 @@ namespace Util {
 
 namespace Private {
 
-	struct CX_MouseScrollEventArgs_t {
-		CX_MouseScrollEventArgs_t(void) : x(0), y(0) {};
-		CX_MouseScrollEventArgs_t(double x_, double y_) : x(x_), y(y_) {}
-		double x;
-		double y;
-	};
-
-	struct CX_KeyRepeatEventArgs_t {
-		CX_KeyRepeatEventArgs_t(void) :
-			key(0),
-			keycode(0),
-			scancode(0),
-			codepoint(0)
-		{}
-
-		int key;
-		int keycode;
-		int scancode;
-		unsigned int codepoint;
-	};
-
 	class CX_Events {
 	public:
-		ofEvent<CX_MouseScrollEventArgs_t> scrollEvent;
-		ofEvent<CX_KeyRepeatEventArgs_t> keyRepeatEvent;
-
 		ofEvent<void> exitEvent;
 	};
 

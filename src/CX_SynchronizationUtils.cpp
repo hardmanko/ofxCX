@@ -68,9 +68,9 @@ namespace Sync {
 	// DataContainer //
 	///////////////////////
 
-	DataContainer::DataContainer(void) :
-		_timeStoreNextSwapUnit(0)
-	{}
+	//DataContainer::DataContainer(void) :
+	//	_timeStoreNextSwapUnit(0)
+	//{}
 
 	void DataContainer::setup(const Configuration& config) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
@@ -79,7 +79,8 @@ namespace Sync {
 
 		_config = config;
 
-		_timeStoreNextSwapUnit = 0;
+		//_timeStoreNextSwapUnit = 0;
+		_lastData = SwapData(CX_Millis(-1), 0); // invalid time, but valid swap unit
 	}
 
 	DataContainer::Configuration DataContainer::getConfiguration(void) {
@@ -95,6 +96,10 @@ namespace Sync {
 		_stopListeningToSources();
 
 		_containerSourceHelper.setup<DataContainer>(&container->newDataEvent, this, &DataContainer::_containerSourceCallback);
+	}
+
+	void DataContainer::receiveFrom(std::shared_ptr<DataContainer> container) {
+		this->receiveFrom(container.get());
 	}
 
 	void DataContainer::_containerSourceCallback(const NewData& data) {
@@ -140,8 +145,36 @@ namespace Sync {
 		_containerSourceHelper.stopListening();
 	}
 
+	void DataContainer::storeSwap(SwapData swap) {
 
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
+		// Higher latency values values mean more latency, so subtract latency to go back in time to when the event happened
+		swap.time -= _config.latency;
+
+		_lastData = swap;
+		_data.push_back(swap);
+
+		// remove excess data
+		while (_data.size() > _config.sampleSize) {
+			_data.pop_front();
+		}
+
+		this->newDataEvent.notify(NewData(_data));
+
+	}
+
+	void DataContainer::storeSwap(CX_Millis time) {
+
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		// Since a time was stored, the next swap unit has to be inferred, so increment by units per swap
+		SwapData nextData(time, _lastData.unit + _config.unitsPerSwap);
+
+		storeSwap(nextData);
+	}
+
+	/*
 	void DataContainer::storeSwap(CX_Millis time) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -149,7 +182,7 @@ namespace Sync {
 		time -= _config.latency; 
 
 		_data.push_back(SwapData(time, _timeStoreNextSwapUnit));
-		// Size a time was stored, the next swap unit has to be inferred, so increment by units per swap
+		// Since a time was stored, the next swap unit has to be inferred, so increment by units per swap
 		_timeStoreNextSwapUnit += _config.unitsPerSwap;
 
 		// remove excess data
@@ -177,6 +210,7 @@ namespace Sync {
 		this->newDataEvent.notify(NewData(_data));
 
 	}
+	*/
 
 	size_t DataContainer::size(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
@@ -191,27 +225,25 @@ namespace Sync {
 	void DataContainer::clear(bool keepLastSample, bool resetSwapUnit) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		SwapData last;
-		if (!_data.empty()) {
-			last = _data.back();
-		} else {
-			keepLastSample = false;
-		}
-
 		_data.clear();
 
 		if (resetSwapUnit) {
-			last.unit = 0; // reset last to 0
-			_timeStoreNextSwapUnit = _config.unitsPerSwap; // set next to 0 plus unitsPerSwap
+			_lastData.unit = 0;
 		}
 
 		if (keepLastSample) {
-			_data.push_back(std::move(last));
+			_data.push_back(_lastData);
 		}
 
 		this->newDataEvent.notify(NewData(_data));
 	}
 
+	/*! Set the latency for this DataContainer.
+	The latency is ultimately a characteristic of hardware, but
+	the DataContainer is a good place to track latency.
+
+	When the latency is set, stored swaps are updated based on the new latency.
+	*/
 	void DataContainer::setLatency(CX_Millis latency) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
@@ -220,7 +252,7 @@ namespace Sync {
 		for (SwapData& d : _data) {
 			d.time += latencyUpdate;
 		}
-		// Or should you just clear the data?
+		_lastData.time += latencyUpdate;
 
 		_config.latency = latency;
 
@@ -260,6 +292,18 @@ namespace Sync {
 		return _config.nominalSwapPeriod;
 	}
 
+	/*!
+	
+	Note that this clears all data if it changes the units per swap.
+	*/
+	void DataContainer::setUnitsPerSwap(SwapUnit units) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		if (_config.unitsPerSwap != units) {
+			this->clear(true, true);
+			_config.unitsPerSwap = units;
+		}
+	}
+
 	SwapUnit DataContainer::getUnitsPerSwap(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 		return _config.unitsPerSwap;
@@ -267,24 +311,7 @@ namespace Sync {
 
 	SwapUnit DataContainer::getNextSwapUnit(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		if (_data.empty()) {
-			// TODO: what to do?????
-		}
-
-		return getLastSwapData().unit + _config.unitsPerSwap;
-	}
-
-	DataContainer::LockedDataPointer DataContainer::getLockedDataPointer(void) {
-		return LockedDataPointer(&_data, _mutex);
-	}
-
-	// yeah, I'm just gonna go ahead and say that copying the data is not that costly. it's three 64 bit ints per one of maybe 100 samples.
-	std::deque<SwapData> DataContainer::copyData(void) {
-		_mutex.lock();
-		std::deque<SwapData> copy(_data);
-		_mutex.unlock();
-		return std::move(copy);
+		return _lastData.unit + _config.unitsPerSwap;
 	}
 
 	CX_Millis DataContainer::getLastSwapTime(void) {
@@ -297,11 +324,23 @@ namespace Sync {
 
 	SwapData DataContainer::getLastSwapData(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		return _lastData;
+	}
 
-		if (_data.empty()) {
-			return SwapData();
-		}
-		return _data.back();
+	DataContainer::LockedDataPointer DataContainer::getLockedDataPointer(void) {
+		return LockedDataPointer(&_data, _mutex);
+	}
+
+	DataContainer::LockedDataReference DataContainer::getLockedDataReference(void) {
+		return LockedDataReference(_data, _mutex);
+	}
+
+	// Copying the data won't be that costly because its only going to be a few hundred samples max.
+	std::vector<SwapData> DataContainer::copyData(void) {
+		_mutex.lock();
+		std::vector<SwapData> copy(_data.begin(), _data.end());
+		_mutex.unlock();
+		return copy;
 	}
 
 	////////////////////////////
@@ -531,48 +570,27 @@ namespace Sync {
 	}
 
 
-	/////////////////////
+	/////////////////
 	// LinearModel //
-	/////////////////////
+	/////////////////
 
 
 	bool LinearModel::setup(const Configuration& config) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		if (config.dataContainer == nullptr) {
-			_newDataEventHelper.stopListening();
-			return false;
-		}
-
 		_config = config;
 
 		_newDataAvailable = false;
+		_newFitAvailable = false;
 
-		_config.dataContainer->setMinimumSampleSize(_config.sampleSize);
+		if (_config.dataContainer) {
+			_config.dataContainer->setMinimumSampleSize(_config.sampleSize);
+		}
 
 		_newDataEventHelper.setup<LinearModel>(&_config.dataContainer->newDataEvent, this, &LinearModel::_newDataListener);
 
 		return true;
 	}
-
-	/*
-	bool LinearModel::setDataSource(DataContainer* dataSource, bool autoUpdate) {
-
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-
-		_newDataAvailable = false;
-
-		_config.dataSource = dataSource;
-		_config.autoUpdate = autoUpdate;
-
-		if (dataSource) {
-			_newDataEventHelper.setup<LinearModel>(&_config.dataSource->newDataEvent, this, &LinearModel::_newDataListener);
-		} else {
-			_newDataEventHelper.stopListening();
-		}
-
-	}
-	*/
 
 	LinearModel::Configuration LinearModel::getConfiguration(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
@@ -583,12 +601,16 @@ namespace Sync {
 		
 		fitModel(); // only fits if new data available
 
-		return LockedFittedModel(&_fm, _mutex);
+		_mutex.lock();
+		_newFitAvailable = false;
+
+		return LockedFittedModel(&_fm, _mutex, std::adopt_lock);
 	}
 
 	LinearModel::FittedModel LinearModel::copyFittedModel(void) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 		fitModel();
+		_newFitAvailable = false;
 		return _fm;
 	}
 
@@ -598,44 +620,89 @@ namespace Sync {
 		_newDataAvailable = true;
 
 		if (_config.autoUpdate) {
-			this->fitModel(&nd.data);
+			this->fitModel(nd.data);
 		}
 
 	}
 
-	bool LinearModel::fitModel(const std::deque<SwapData>* data) {
-		std::lock_guard<std::recursive_mutex> lock(_mutex);
-		_fm = _fitModel(*data);
-		_newDataAvailable = false;
-		return _fm.fittedSuccessfully;
-	}
-
-	bool LinearModel::fitModel(DataContainer* store) {
-		if (!store) {
-			return false;
-		}
-		auto lockedData = store->getLockedDataPointer();
-		return this->fitModel(lockedData.get());
+	// Cleared when the fitted model is accessed
+	bool LinearModel::newFitAvailable(void) {
+		_mutex.lock();
+		bool rval = _newFitAvailable;
+		_mutex.unlock();
+		return rval;
 	}
 
 	bool LinearModel::fitModel(void) {
-		if (_newDataAvailable && !_config.autoUpdate) {
+		{
+			std::lock_guard<std::recursive_mutex> lock(_mutex);
+			if (!_config.dataContainer) {
+				return false;
+			}
+			if (!_newDataAvailable) {
+				return false;
+			}
+			// ?
+			if (_config.autoUpdate) {
+				return false;
+			}
+		}
+
+
+		if (_newDataAvailable && _config.dataContainer && !_config.autoUpdate) {
 			return this->fitModel(_config.dataContainer);
 		}
-		return true;
+		return false; // model was not fit
 	}
 
-	LinearModel::FittedModel LinearModel::_fitModel(const std::deque<SwapData>& data) {
+	bool LinearModel::fitModel(std::shared_ptr<DataContainer> data) {
+		return this->fitModel(data.get());
+	}
 
-		_mutex.lock();
-		size_t sampleSize = _config.sampleSize;
-		_mutex.unlock();
+	bool LinearModel::fitModel(DataContainer* dc) {
+		if (!dc) {
+			return false;
+		}
+
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+		if (dc->size() < _config.sampleSize) {
+			Instances::Log.error("Sync::LinearModel") << "fitModel(): Insufficient data. Needed " <<
+				_config.sampleSize << " samples but had only " << dc->size() << " samples.";
+			return false;
+		}
+
+		auto lockedData = dc->getLockedDataReference();
+		return this->fitModel(lockedData.get());
+	}
+
+	bool LinearModel::fitModel(const std::deque<SwapData>& data) {
+		std::lock_guard<std::recursive_mutex> lock(_mutex);
+
+		_fm.fittedSuccessfully = false;
+
+		if (data.size() < _config.sampleSize) {
+			Instances::Log.error("Sync::LinearModel") << "fitModel(): Insufficient data. Needed " <<
+				_config.sampleSize << " samples but had only " << data.size() << " samples.";
+			return false;
+		}
+
+		_fm = _fitModel(data, _config.sampleSize);
+
+		_newFitAvailable = _fm.fittedSuccessfully;
+
+		_newDataAvailable = false;
+
+		return _fm.fittedSuccessfully;
+	}
+
+	LinearModel::FittedModel LinearModel::_fitModel(const std::deque<SwapData>& data, size_t sampleSize) {
 
 		FittedModel fm;
 		fm.fittedSuccessfully = false;
 
 		if (data.size() < sampleSize) {
-			Instances::Log.error("Sync::LinearModel") << "fitModel(): Insufficient data. Need " << sampleSize << " samples and have " << data.size() << " samples.";
+			Instances::Log.error("Sync::LinearModel") << "fitModel(): Insufficient data. Needed " << 
+				sampleSize << " samples but had only " << data.size() << " samples.";
 			return fm;
 		}
 
@@ -686,6 +753,7 @@ namespace Sync {
 
 		return fm;
 	}
+
 
 	//////////////////////////////////
 	// LinearModel::FittedModel //
@@ -798,10 +866,14 @@ namespace Sync {
 
 
 	void DomainSynchronizer::addDataClient(std::string clientName, DataClient* client) {
+		this->addDataClient(clientName, CX::Util::wrapPtr(client));
+	}
+
+	void DomainSynchronizer::addDataClient(std::string clientName, std::shared_ptr<DataClient> client) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 		auto it = _clients.find(clientName);
 		if (it != _clients.end()) {
-			Instances::Log.warning("DomainSynchronizer") << "addDataClient(): Synchronizer \"" << clientName << "\" replaced.";
+			Instances::Log.warning("DomainSynchronizer") << "addDataClient(): DataClient \"" << clientName << "\" replaced.";
 		}
 		_clients[clientName] = client;
 	}
@@ -811,9 +883,9 @@ namespace Sync {
 		auto it = _clients.find(clientName);
 		if (it != _clients.end()) {
 			_clients.erase(it);
-			Instances::Log.notice("DomainSynchronizer") << "removeDataClient(): Synchronizer \"" << clientName << "\" removed.";
+			Instances::Log.notice("DomainSynchronizer") << "removeDataClient(): DataClient \"" << clientName << "\" removed.";
 		} else {
-			Instances::Log.warning("DomainSynchronizer") << "removeDataClient(): Synchronizer \"" << clientName << "\" not found.";
+			Instances::Log.warning("DomainSynchronizer") << "removeDataClient(): DataClient \"" << clientName << "\" not found.";
 		}
 	}
 
@@ -881,7 +953,7 @@ namespace Sync {
 
 		for (auto& it : _clients) {
 			SyncPoint::ClientData& spd = sp.clientData[it.first];
-			DataClient* sync = it.second;
+			std::shared_ptr<DataClient> sync = it.second;
 
 			spd.allReady = sync->allReady();
 			spd.status = sync->verifier.getStatus();
@@ -902,30 +974,31 @@ namespace Sync {
 
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
-		SyncPoint sp;
+		SyncPoint rval;
 
 		{
 			// Predict time from this data client
-			DataClient* thisSync = _getDataClient(clientName);
+			std::shared_ptr<DataClient> thisSync = _getDataClient(clientName);
 			if (!thisSync) {
-				return sp;
+				return rval;
 			}
 
 			{
 				LinearModel::LockedFittedModel lfm = thisSync->lm.getLockedFittedModel();
-				sp.time = lfm->predictTime(unit);
+				rval.time = lfm->predictTime(unit);
 			}
 
-			SyncPoint::ClientData& spd = sp.clientData[clientName];
+			// Get reference and fill it out
+			SyncPoint::ClientData& spcd = rval.clientData[clientName];
 
-			// no uncertainty about the input unit. note that this is lossy!
-			spd.pred.usable = true;
-			spd.pred.fp.lower = unit;
-			spd.pred.fp.pred = unit;
-			spd.pred.fp.upper = unit;
+			// no uncertainty about the input unit. note that this is lossy: SwapUnit to double.
+			spcd.pred.usable = true;
+			spcd.pred.fp.lower = unit;
+			spcd.pred.fp.pred = unit;
+			spcd.pred.fp.upper = unit;
 
-			spd.allReady = thisSync->allReady();
-			spd.status = thisSync->verifier.getStatus();
+			spcd.allReady = thisSync->allReady();
+			spcd.status = thisSync->verifier.getStatus();
 		}
 
 
@@ -934,31 +1007,34 @@ namespace Sync {
 				continue;
 			}
 
-			SyncPoint::ClientData& spd = sp.clientData[it.first];
-			DataClient* sync = it.second;
+			// Get reference and fill it out
+			SyncPoint::ClientData& spcd = rval.clientData[it.first];
 
-			spd.allReady = sync->allReady();
-			spd.status = sync->verifier.getStatus();
+			std::shared_ptr<DataClient> dataClient = it.second;
 
-			if (!spd.allReady) {
+			spcd.allReady = dataClient->allReady();
+			spcd.status = dataClient->verifier.getStatus();
+
+			// Don't get fitted model if not ready.
+			if (!spcd.allReady) {
 				continue;
 			}
 
-			LinearModel::LockedFittedModel lfm = sync->lm.getLockedFittedModel();
-			spd.pred = lfm->predictSwapUnit(sp.time);
+			LinearModel::LockedFittedModel lfm = dataClient->lm.getLockedFittedModel();
+			spcd.pred = lfm->predictSwapUnit(rval.time);
 
 		}
 
-		return sp;
+		return rval;
 	}
 
 	DomainSynchronizer::DCLP DomainSynchronizer::getDCLP(std::string clientName) {
 		_mutex.lock();
-		DataClient* sync = _getDataClient(clientName);
-		return DCLP(sync, _mutex, std::adopt_lock);
+		std::shared_ptr<DataClient> sync = _getDataClient(clientName);
+		return DCLP(sync.get(), _mutex, std::adopt_lock);
 	}
 
-	DataClient* DomainSynchronizer::_getDataClient(std::string clientName) {
+	std::shared_ptr<DataClient> DomainSynchronizer::_getDataClient(std::string clientName) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 		auto it = _clients.find(clientName);
 		if (it == _clients.end()) {
@@ -1018,6 +1094,13 @@ namespace Sync {
 
 		return true;
 
+	}
+
+	/*! Gets the configuration being used by this DataClient. 
+	See also the `lm` and `verifier` members of DataClient.
+	*/
+	const DataClient::Configuration& DataClient::getConfiguration(void) const {
+		return _config;
 	}
 
 

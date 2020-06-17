@@ -28,11 +28,11 @@ bool CX_DisplayThread::setup(const Configuration& config, bool startThread) {
 		std::lock_guard<std::recursive_mutex> lock(_mutex);
 
 		
-		CX_DisplaySwapper::Configuration dsc;
+		Util::DisplaySwapper::Configuration dsc;
 		dsc.display = _display;
 		dsc.client = &_display->swapClient;
 		dsc.preSwapSafetyBuffer = config.preSwapSafetyBuffer;
-		dsc.mode = CX_DisplaySwapper::Mode::Prediction;
+		dsc.mode = Util::DisplaySwapper::Mode::Prediction;
 
 		if (!_displaySwapper.setup(dsc)) {
 			return false;

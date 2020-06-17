@@ -6,7 +6,7 @@
 #include "ofEvents.h"
 
 #include "CX_Clock.h"
-#include "CX_Events.h"
+//#include "CX_Events.h"
 
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
@@ -285,7 +285,7 @@ namespace CX {
 
 		void _keyPressHandler(ofKeyEventArgs &a);
 		void _keyReleaseHandler(ofKeyEventArgs &a);
-		void _keyRepeatHandler(CX::Private::CX_KeyRepeatEventArgs_t &a);
+		//void _keyRepeatHandler(ofKeyEventArgs &a);
 		void _keyEventHandler(CX_Keyboard::Event &a);
 
 		void _listenForEvents(bool listen);

@@ -79,11 +79,12 @@ struct SwapUnitPrediction {
 };
 
 
-
+// EventTracker and EventProcessor?
 class DataContainer {
 public:
 
 	typedef CX::Util::LockedPointer<const std::deque<SwapData>, std::recursive_mutex> LockedDataPointer;
+	using LockedDataReference = CX::Util::LockedReference<const std::deque<SwapData>, std::recursive_mutex>;
 
 	struct Configuration {
 
@@ -99,20 +100,24 @@ public:
 		CX_Millis latency;
 	};
 
-	DataContainer(void);
+	//DataContainer(void);
 
 	void setup(const Configuration& config);
 	Configuration getConfiguration(void);
 
-	void receiveFrom(DataContainer* container);
-	void receiveFrom(ofEvent<const SwapData&>* eventSource);
-	void receiveFrom(ofEvent<const CX_Millis&>* eventSource);
-
+	// Store swaps directly
 	void storeSwap(CX_Millis time);
 	void storeSwap(SwapData swapData);
 
-	size_t size(void);
-	bool full(void);
+	// Or receive swaps from somewhere else
+	void receiveFrom(DataContainer* container);
+	void receiveFrom(std::shared_ptr<DataContainer> container);
+	void receiveFrom(ofEvent<const SwapData&>* eventSource);
+	void receiveFrom(ofEvent<const CX_Millis&>* eventSource);
+
+
+	size_t size(void); // stored? storedCount?
+	bool full(void); // atCapacity?
 	void clear(bool keepLastSample = true, bool resetSwapUnit = true);
 
 
@@ -127,18 +132,20 @@ public:
 	void setNominalSwapPeriod(CX_Millis period);
 	CX_Millis getNominalSwapPeriod(void); // getConfiguration
 
-	// Units per swap cannot be set other than by setup. Why?
+	// Units per swap cannot be set other than by setup because it requires a clear
 	SwapUnit getUnitsPerSwap(void); // getConfiguration
-
-	
-	LockedDataPointer getLockedDataPointer(void);
-	std::deque<SwapData> copyData(void); // return vector<SwapData>?
+	void setUnitsPerSwap(SwapUnit units);
 
 	SwapData getLastSwapData(void);
 	CX_Millis getLastSwapTime(void);
 	SwapUnit getLastSwapUnit(void);
 
 	SwapUnit getNextSwapUnit(void);
+
+	
+	LockedDataPointer getLockedDataPointer(void);
+	LockedDataReference getLockedDataReference(void);
+	std::vector<SwapData> copyData(void);
 
 
 	struct NewData {
@@ -179,8 +186,9 @@ private:
 	Configuration _config;
 
 	std::deque<SwapData> _data;
+	SwapData _lastData;
 
-	SwapUnit _timeStoreNextSwapUnit; // TODO: This seems funky
+	//SwapUnit _timeStoreNextSwapUnit; // TODO: This seems funky
 
 	void _stopListeningToSources(void);
 
@@ -291,6 +299,10 @@ struct SyncPoint {
 	}
 };
 
+/*!
+
+
+*/
 class LinearModel {
 public:
 
@@ -339,19 +351,24 @@ public:
 
 	typedef CX::Util::LockedPointer<const FittedModel, std::recursive_mutex> LockedFittedModel;
 
-	struct Configuration {
-		DataContainer* dataContainer;
-		bool autoUpdate;
 
+	struct Configuration {
+		DataContainer* dataContainer; // can be nullptr
+		
 		size_t sampleSize; // will use the most recent sampleSize samples
+
+		bool autoUpdate;
 	};
 
 	bool setup(const Configuration& config);
 	Configuration getConfiguration(void);
 
-	bool fitModel(const std::deque<SwapData>* data);
-	bool fitModel(DataContainer* store);
-	bool fitModel(void); // uses data store from config
+	bool fitModel(void); // uses DataContainer from config
+	bool fitModel(const std::deque<SwapData>& data);
+	bool fitModel(DataContainer* data);
+	bool fitModel(std::shared_ptr<DataContainer> data);
+
+	bool newFitAvailable(void);
 
 	LockedFittedModel getLockedFittedModel(void);
 	FittedModel copyFittedModel(void);
@@ -369,7 +386,8 @@ private:
 	void _newDataListener(const DataContainer::NewData& dp);
 	CX::Util::ofEventHelper<const DataContainer::NewData&> _newDataEventHelper;
 
-	FittedModel _fitModel(const std::deque<SwapData>& data);
+	FittedModel _fitModel(const std::deque<SwapData>& data, size_t sampleSize);
+	bool _newFitAvailable;
 };
 
 
@@ -403,6 +421,8 @@ public:
 	};
 
 	bool setup(const Configuration& config);
+	const Configuration& getConfiguration(void) const;
+
 
 	bool allReady(void);
 	bool waitUntilAllReady(CX_Millis timeout);
@@ -430,6 +450,7 @@ class DomainSynchronizer {
 public:
 
 	void addDataClient(std::string clientName, DataClient* client);
+	void addDataClient(std::string clientName, std::shared_ptr<DataClient> client);
 	void removeDataClient(std::string clientName);
 	void clearDataClients(void);
 
@@ -445,11 +466,11 @@ public:
 	DCLP getDCLP(std::string clientName);
 
 private:
-	// no mutex for these guys, except when changing the contents of this container, not when accessing the pointers
-	std::recursive_mutex _mutex; // i don't think so. this doesn't work like this. this is a general mutex on _syncs
-	std::map<std::string, DataClient*> _clients;
 
-	DataClient* _getDataClient(std::string name);
+	std::recursive_mutex _mutex;
+	std::map<std::string, std::shared_ptr<DataClient>> _clients;
+
+	std::shared_ptr<DataClient> _getDataClient(std::string name);
 };
 
 

@@ -205,9 +205,12 @@ template <typename DataType, typename MutexType = std::recursive_mutex>
 class ThreadsafeObject {
 public:
 
-	ThreadsafeObject(void) {}
+	ThreadsafeObject(void) {
+		_mutex = std::make_unique<MutexType>();
+	}
 
 	ThreadsafeObject(DataType d) :
+		ThreadsafeObject(),
 		_data(d)
 	{}
 
@@ -217,27 +220,31 @@ public:
 	}
 
 	void set(DataType d) {
-		_mutex.lock();
+		_mutex->lock();
 		_data = d;
-		_mutex.unlock();
+		_mutex->unlock();
 	}
 
 	DataType get(void) {
-		_mutex.lock();
+		_mutex->lock();
 		DataType rval = _data;
-		_mutex.unlock();
+		_mutex->unlock();
 		return rval;
 	}
 
 	LockedPointer<DataType, MutexType> getLockedPointer(void) {
-		return LockedPointer<DataType, MutexType>(&_data, _mutex);
+		return LockedPointer<DataType, MutexType>(&_data, _mutexRef());
+	}
+
+	LockedReference<DataType, MutexType> getLockedReference(void) {
+		return LockedReference<DataType, MutexType>(_data, _mutexRef());
 	}
 
 	template <typename MT>
 	ThreadsafeObject& operator=(ThreadsafeObject<DataType, MT>& rhs) {
 		// Lock both mutexes in non-deadlocking way
-		std::unique_lock<MutexType> lhsLock(this->_mutex, std::defer_lock);
-		std::unique_lock<MutexType> rhsLock(rhs._mutex, std::defer_lock);
+		std::unique_lock<MutexType> lhsLock(this->_mutexRef(), std::defer_lock);
+		std::unique_lock<MutexType> rhsLock(rhs._mutexRef(), std::defer_lock);
 
 		std::lock(lhsLock, rhsLock);
 
@@ -250,11 +257,85 @@ public:
 		return this->operator=<MutexType>(rhs);
 	}
 
-private:
+protected:
 
-	MutexType _mutex;
+	std::unique_ptr<MutexType> _mutex;
 	DataType _data;
 
+	MutexType& _mutexRef(void) {
+		return *_mutex.get();
+	}
+
+};
+
+/* Assumes that push() and pop() are called from one thread each.
+
+*/
+template <typename T>
+class MessageQueue {
+public:
+
+	MessageQueue(void) {
+		_mutex = std::make_unique<std::recursive_mutex>();
+	}
+
+	// push in one thread
+	void push(const T& t) {
+		_mutex->lock();
+		_mq.push_back(t);
+		_mutex->unlock();
+	}
+
+	// check if any are available and, if so, pop them one at a time
+	// you may not pop in more than one thread, but you may push in more than one thread
+	// multiple-producer, single-consumer
+	size_t available(void) {
+		_mutex->lock();
+		size_t rval = _mq.size();
+		_mutex->unlock();
+		return rval;
+	}
+
+	T pop(void) {
+		_mutex->lock();
+		T copy = _mq.front();
+		_mq.pop_front();
+		_mutex->unlock();
+		return copy;
+	}
+
+	void clear(void) {
+		_mutex->lock();
+		_mq.clear();
+		_mutex->unlock();
+	}
+
+	LockedReference<std::deque<T>, std::recursive_mutex> getLockedQueue(void) {
+		return LockedReference<std::deque<T>, std::recursive_mutex>(_mq, _mutex);
+	}
+
+private:
+	std::unique_ptr<std::recursive_mutex> _mutex;
+	std::deque<T> _mq;
+};
+
+
+template <>
+class MessageQueue<void> {
+public:
+
+	MessageQueue(void);
+
+	void push(void);
+
+	size_t available(void);
+
+	void pop(void);
+
+	void clear(void);
+
+private:
+	std::atomic<size_t> _available;
 };
 
 

@@ -49,6 +49,8 @@ The messageLogging example contains examples of how to:
 See examples/messageLogging/src/messageLogging.cpp
 */
 
+#define CX_LOGGER_FILE_LINE_STR "File: " << __FILE__ << ", Line: " << __LINE__
+
 namespace CX {
 
 	//Forward declarations of internally used structs and classes

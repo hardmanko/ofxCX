@@ -11,6 +11,76 @@ CX::CX_Display CX::Instances::Disp;
 
 namespace CX {
 
+////////////////////////////
+// CX_DisplaySwappingResults //
+////////////////////////////
+
+void CX_DisplaySwappingResults::setup(const std::vector<CX_Millis>& framePeriods) {
+	this->clear();
+	_allPeriods = framePeriods;
+}
+
+void CX_DisplaySwappingResults::clear(void) {
+	_allPeriods.clear();
+	includedPeriods.clear();
+	excludedPeriods.clear();
+}
+
+void CX_DisplaySwappingResults::filterByFramePeriod(CX_Millis minPeriod, CX_Millis maxPeriod) {
+
+	includedPeriods.clear();
+	excludedPeriods.clear();
+
+	for (const CX_Millis& fp : _allPeriods) {
+		if (minPeriod <= fp && fp <= maxPeriod) {
+			includedPeriods.push_back(fp);
+		} else {
+			excludedPeriods.push_back(fp);
+		}
+	}
+
+}
+
+void CX_DisplaySwappingResults::filterByFrameRate(double minRate, double maxRate) {
+
+	// switcheroo, criss-cross
+	CX_Millis minPeriod = CX_Seconds(1.0 / maxRate);
+	CX_Millis maxPeriod = CX_Seconds(1.0 / minRate);
+
+	filterByFramePeriod(minPeriod, maxPeriod);
+}
+
+std::vector<double> CX_DisplaySwappingResults::periodsToRates(const std::vector<CX_Millis>& periods) {
+	std::vector<double> rates(periods.size());
+
+	for (size_t i = 0; i < periods.size(); i++) {
+		rates[i] = 1.0 / periods[i].seconds();
+	}
+
+	return rates;
+}
+
+CX_Millis CX_DisplaySwappingResults::calcFramePeriodMean(void) const {
+	return CX::Util::mean(this->includedPeriods);
+}
+
+CX_Millis CX_DisplaySwappingResults::calcFramePeriodSD(void) const {
+	return CX_Millis::standardDeviation(this->includedPeriods);
+}
+
+double CX_DisplaySwappingResults::calcFrameRateMean(void) const {
+	std::vector<double> rates = CX_DisplaySwappingResults::periodsToRates(includedPeriods);
+	return CX::Util::mean(rates);
+
+	return 1.0 / calcFramePeriodMean().seconds();
+}
+
+
+
+////////////////
+// CX_Display //
+////////////////
+
 CX_Display::CX_Display(void) :
 	_framePeriod(0),
 	_framePeriodStandardDeviation(0),
@@ -22,10 +92,10 @@ CX_Display::~CX_Display(void) {
 }
 
 /*! Set up the display. Must be called for the display to function correctly. 
-This is called during CX setup; the user should not need to call it. */
+This is called during CX initialization for CX::Instances::Disp; the user should not need to call it. */
 void CX_Display::setup(void) {
 
-	_renderer = CX::Private::State->getAppWindow()->renderer();
+	//_renderer = CX::Private::State->getAppWindow()->renderer();
 
 	_dispThread.setup(CX_DisplayThread::Configuration(), false);
 
@@ -196,19 +266,16 @@ CX_Millis CX_Display::getLastSwapTime(void) {
 }
 
 /*! Get an estimate of the next time the front and back buffers will be swapped.
-This function depends on the precision of the frame period as estimated using
-estimateFramePeriod(). 
+The estimate is the last swap time plus the frame period estimated with `estimateFramePeriod()`.
+This depends on the accuracy of the estimated frame period.
 
-If the front and back buffers are not swapped every frame (e.g. as a result of 
-calling `setAutomaticSwapping(true)`), the result of this function is meaningless 
+If the front and back buffers are not swapped every frame, the result of this function is meaningless 
 because it uses the last buffer swap time as a reference.
 
 \return A time value that can be compared to CX::Instances::Clock.now(). */
 CX_Millis CX_Display::getNextSwapTime(void) {
 	return this->getLastSwapTime() + this->getFramePeriod();
 }
-
-
 
 /*! Check to see if the display has swapped the front and back buffers since the last call to this function.
 This is generally used in conjuction with automatic swapping of the buffers (`setAutomaticSwapping()`)
@@ -252,19 +319,26 @@ void CX_Display::beginDrawingToBackBuffer(void) {
 
 	if (!cm.isLockedByThisThread()) {
 		if (cm.isUnlocked()) {
-			Instances::Log.warning("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
+			CX::Instances::Log.warning("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
 				" while the rendering context was unlocked. The rendering context was made current and locked.";
 			cm.lock();
 		} else {
-			Instances::Log.error("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
+			CX::Instances::Log.error("CX_Display") << "beginDrawingToBackBuffer() called on a thread in which the rendering context was not current"
 				" while the rendering context was locked by another thread. Nothing will be rendered.";
 			return;
 		}
 	}
 
-	if (_renderer) {
-		_renderer->startRender();
+	//if (_renderer) {
+	//	_renderer->startRender();
+	//}
+	
+	std::shared_ptr<ofAppBaseWindow> curWin = ofGetMainLoop()->getCurrentWindow();
+	if (!curWin) {
+		CX::Instances::Log.error("CX_Display") << "beginDrawingToBackBuffer(): No current window: Cannot begin render.";
+		return;
 	}
+	curWin->startRender();
 
 	ofViewport();
 	ofSetupScreen();
@@ -274,12 +348,20 @@ void CX_Display::beginDrawingToBackBuffer(void) {
 void CX_Display::endDrawingToBackBuffer(void) {
 
 	if (!Private::State->glfwContextManager.isLockedByThisThread()) {
+		CX::Instances::Log.error("CX_Display") << "endDrawingToBackBuffer(): Rendering context is not current on this thread.";
 		return;
 	}
 
-	if (_renderer) {
-		_renderer->finishRender();
+	//if (_renderer) {
+	//	_renderer->finishRender();
+	//}
+
+	std::shared_ptr<ofAppBaseWindow> curWin = ofGetMainLoop()->getCurrentWindow();
+	if (!curWin) {
+		CX::Instances::Log.error("CX_Display") << "endDrawingToBackBuffer(): No current window: Cannot end render.";
+		return;
 	}
+	curWin->finishRender();
 
 	glFlush(); // This is very important, because it seems like commands are buffered in a thread-local fashion initially.
 		// As a result, if a swap is requested from a different thread than the rendering thread, the automatic flush
@@ -476,6 +558,7 @@ ofFbo CX_Display::makeFbo(void) {
 	ofFbo fbo;
 	ofRectangle dims = this->getResolution();
 	fbo.allocate(dims.width, dims.height, GL_RGBA, CX::Private::State->getMsaaSampleCount());
+	
 	return fbo;
 }
 
@@ -604,9 +687,17 @@ bool CX_Display::getYIncreasesUpwards(void) const {
 */
 
 /*! \brief Get a `shared_ptr` to the renderer used by the CX_Display. */
+/*
 std::shared_ptr<ofBaseRenderer> CX_Display::getRenderer(void) {
 	return _renderer;
 }
+
+void CX_Display::setRenderer(std::shared_ptr<ofBaseRenderer> renderer, bool setDefaults) {
+	ofSetCurrentRenderer(renderer, setDefaults);
+
+	_renderer = ofGetCurrentRenderer();
+}
+*/
 
 /*! This function estimates the typical period of the display refresh.
 This function blocks for estimationInterval while the swapping thread swaps in the background (see \ref blockingCode).
@@ -621,8 +712,8 @@ it will be ignored for purposes of estimating the frame period.
 it will be ignored for purposes of estimating the frame period.
 */
 void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate, float maxRefreshRate) {
-	bool wasSwapping = isAutomaticallySwapping();
-	setAutomaticSwapping(false);
+	bool wasSwapping = this->isAutomaticallySwapping();
+	this->setAutomaticSwapping(false);
 
 	std::vector<CX_Millis> swapTimes;
 
@@ -632,12 +723,12 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
 	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
 	for (int i = 0; i < 3; i++) {
-		swapBuffers();
+		this->swapBuffers();
 	}
 
 	CX_Millis startTime = CX::Instances::Clock.now();
 	while (CX::Instances::Clock.now() - startTime < estimationInterval) {
-		swapBuffers();
+		this->swapBuffers();
 		swapTimes.push_back(CX::Instances::Clock.now());
 	}
 
@@ -690,7 +781,7 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 			"you should try making it longer.";
 	}
 
-	setAutomaticSwapping(wasSwapping);
+	this->setAutomaticSwapping(wasSwapping);
 }
 
 /*! Gets the estimate of the frame period estimated with CX_Display::estimateFramePeriod(). */
@@ -701,6 +792,14 @@ CX_Millis CX_Display::getFramePeriod(void) const {
 /*! Gets the sample standard deviation of the frame period estimated with CX_Display::estimateFramePeriod(). */
 CX_Millis CX_Display::getFramePeriodStandardDeviation(void) const {
 	return _framePeriodStandardDeviation;
+}
+
+/*! Get the frame rate (frames per second).
+Frame rate = (1 / frame period). 
+See CX_Display::estimateFramePeriod() to estimate the frame rate.
+*/
+double CX_Display::getFrameRate(void) const {
+	return 1.0 / getFramePeriod().seconds();
 }
 
 /*! During setup, CX tries to estimate the frame period of the display using CX::CX_Display::estimateFramePeriod().
@@ -723,6 +822,92 @@ void CX_Display::setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking) {
 		_setupSwapTracking(knownPeriod);
 	}
 }
+
+/*
+void CX_Display::estimateFrameRate(CX_Millis estimationTime, double minFrameRate, double maxFrameRate) {
+
+	bool wasSwapping = this->isAutomaticallySwapping();
+	this->setAutomaticSwapping(false);
+
+	std::vector<CX_Millis> swapTimes;
+
+	//CX_Millis minFramePeriod = CX_Seconds((1.0 / maxFrameRate));
+	//CX_Millis maxFramePeriod = CX_Seconds((1.0 / minFrameRate));
+
+	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
+	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
+	for (int i = 0; i < 3; i++) {
+		this->swapBuffers();
+	}
+
+	CX_Millis startTime = CX::Instances::Clock.now();
+	while (CX::Instances::Clock.now() - startTime < estimationTime) {
+		this->swapBuffers();
+		swapTimes.push_back(CX::Instances::Clock.now());
+	}
+
+	
+
+	if (swapTimes.size() < 3) {
+		CX::Instances::Log.error("CX_Display") << "estimateFrameRate(): Not enough buffer swaps occurred during the " <<
+			estimationTime.seconds() << " second estimation interval. At least 3 swaps are needed.";
+		_swappingResults.clear();
+		this->setAutomaticSwapping(wasSwapping);
+		return;
+	}
+
+	std::vector<CX_Millis> swapPeriods(swapTimes.size() - 1);
+	for (size_t i = 1; i < swapTimes.size(); i++) {
+		swapPeriods[i - 1] = swapTimes[i] - swapTimes[i - 1];
+	}
+
+	_swappingResults.setup(swapPeriods);
+	_swappingResults.filterByFrameRate(minFrameRate, maxFrameRate);
+
+	if (_swappingResults.includedPeriods.size() >= 2) {
+
+		
+
+		// Save the results
+		setKnownFrameRate()
+		setFramePeriod(_swappingResults.calcFramePeriodMean(), false);
+		_framePeriodStandardDeviation = CX_Millis::standardDeviation(cleanedDurations);
+
+	} else {
+		CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough valid swaps occurred during the " <<
+			estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 50 ms), you "
+			"could try making it longer. If the estimation interval was longer, this is an indication that there is something "
+			"wrong with the video card configuration. Try using CX_Display::testBufferSwapping() to narrow down the source "
+			"of the problems.";
+	}
+
+	if (excludedDurations.size() > 0) {
+		unsigned int totalExcludedDurations = excludedDurations.size();
+
+		if (excludedDurations.size() > 20) {
+			excludedDurations.resize(20);
+		}
+		CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod(): " << totalExcludedDurations << " buffer swap durations were " <<
+			"outside of the allowed range of " << minFramePeriod << " ms to " << maxFramePeriod << " ms. The" <<
+			((totalExcludedDurations == excludedDurations.size()) ? "" : " first 20") << " excluded durations were: " <<
+			CX::Util::vectorToString(excludedDurations, ", ", 5);
+	}
+
+
+
+
+	this->setAutomaticSwapping(wasSwapping);
+
+}
+
+void CX_Display::setKnownFrameRate(double frameRate, bool setupSwapTracking = false) {
+
+}
+
+const CX_DisplaySwappingResults& CX_Display::getFramePeriodResults(void) const {
+	return _swappingResults;
+}
+*/
 
 /*! Epilepsy warning: This function causes your display to rapidly flash with high-contrast patterns.
 

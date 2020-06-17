@@ -3,7 +3,6 @@
 #include "CX_Definitions.h"
 #include "CX_DataFrameCell.h"
 #include "CX_SynchronizationUtils.h"
-#include "CX_DisplaySwapper.h"
 #include "CX_DisplayUtils.h"
 
 namespace CX {
@@ -120,7 +119,7 @@ namespace CX {
 		CX_Display* _display;
 		std::function<void(void)> _bufferSwapFunction;
 
-		CX_DisplaySwapper _displaySwapper;
+		Util::DisplaySwapper _displaySwapper;
 
 		std::recursive_mutex _mutex;
 		
@@ -147,7 +146,7 @@ namespace CX {
 		std::deque<std::shared_ptr<QueuedFrame>> _queuedFrames;
 		struct {
 			std::shared_ptr<QueuedFrame> frame;
-			Util::GLFenceSync fenceSync;
+			Util::GLSyncHelper fenceSync;
 		} _currentQF;
 
 		void _queuedFrameTask(void);

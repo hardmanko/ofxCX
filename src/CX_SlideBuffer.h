@@ -133,7 +133,7 @@ namespace CX {
 				Finished = 4
 			};
 
-			Util::GLFenceSync _fenceSync;
+			Util::GLSyncHelper _fenceSync;
 			PresentationStatus _status;
 
 		};

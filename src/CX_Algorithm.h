@@ -27,7 +27,7 @@ namespace CX {
 		template <typename T>
 		CX_DataFrame fullyCross(std::map<std::string, std::vector<T>>& factors);
 
-		/*! This class provides a way to work with Latin squares in a relatively easy way. 
+		/*! LatinSquare provides a way to work with Latin squares in a relatively easy way. 
 
 		The constructed Latin squares use 0-indexed integers for the values, 
 		meaning that a 3x3 square will have the values 0, 1, and 2 in various orders.
@@ -101,88 +101,7 @@ namespace CX {
 		};
 
 
-		/*! This class implements a simple linear regression model that 
-		1. Collects samples of data over time using the store() function.
-		2. Calculates new parameter values when updateModel() is called.
-		3. The availability of valid parameter values can be checked with modelValid().
-		4. With valid parameter values, calculates predicted x and y values with getX() and getY().
-		5. Does all of this in a thread-safe way.
-
-		This class is semi-internal to CX and is not well-documented, but is publicly available.
-
-		\code{.cpp}
-		Algo::RollingLinearModel rlm;
-
-		rlm.setup(false, 10, 3);
-
-		vector<double> x = { 0, 2, 4, 6, 9 };
-		vector<double> y = { 15, 6, 8, 3, 0 };
-
-		for (unsigned int i = 0; i < x.size(); i++) {
-			rlm.store(x[i], y[i]);
-		}
-
-		if (rlm.modelReady()) {
-			double predY = rlm.getY(5);
-			double predX = rlm.getX(10);
-		}
-		\endcode
-		*/
-		class RollingLinearModel {
-		public:
-
-			RollingLinearModel(void);
-
-			void setup(bool autoUpdate, unsigned int maxSamples, unsigned int minSamples = 3);
-
-			void store(double x, double y);
-			void storeMultiple(const std::vector<double>& x, const std::vector<double>& y);
-			unsigned int storedSamples(void);
-			void clear(void);
-
-			bool updateModel(void);
-			bool updateModelOnSubset(unsigned int start, unsigned int end);
-
-			bool modelReady(void);
-
-			double getY(double x);
-			double getX(double y);
-
-			double getSlope(void);
-			double getIntercept(void);
-
-			struct Datum {
-
-				Datum(double x_, double y_) :
-					x(x_),
-					y(y_)
-				{}
-
-				double x;
-				double y;
-			};
-
-			std::deque<Datum>& getData(void);
-
-		private:
-
-			std::recursive_mutex _mutex;
-
-			bool _autoUpdate;
-			bool _modelNeedsUpdate;
-
-			unsigned int _minSamples;
-			unsigned int _maxSamples;
-
-			double _slope;
-			double _intercept;
-
-			std::deque<Datum> _data;
-
-		};
-
-
-		/*! This class helps with the case where a set of V values must be sampled randomly
+		/*! BlockSampler helps with the case where a set of V values must be sampled randomly
 		with the constraint that each block of V samples should have each value in the set.
 		For example, if you want to	present a number of trials in four different conditions, 
 		where the conditions are intermixed, but you want to observe all four trial types 

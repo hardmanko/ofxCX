@@ -21,6 +21,23 @@ namespace Util {
 		ofPoint b2a(ofPoint bp) const {
 			return mapPointBetweenRectangles(bp, b, a);
 		}
+
+		float wa2b(float aw) const {
+			return aw * b.getWidth() / a.getWidth();
+		}
+
+		float ha2b(float ah) const {
+			return ah * b.getHeight() / a.getHeight();
+		}
+
+		float wb2a(float bw) const {
+			return bw * a.getWidth() / b.getWidth();
+		}
+
+		float hb2a(float bh) const {
+			return bh * a.getHeight() / b.getHeight();
+		}
+
 	};
 
 	float degreesToPixels(float degrees, float pixelsPerUnit, float viewingDistance);

@@ -60,16 +60,22 @@ CX_DataFrameCell CX_DataFrame::operator() (RowIndex row, std::string column) {
 
 /*! Access the cell at the given row and column with bounds checking. Throws a `std::out_of_range`
 exception and logs an error if either the row or column is out of bounds.
+
+See `cellExists()` for a way to test before calling `at()`.
+
+Note: Although `at()` is declared const, if you modify the returned 
+`CX_DataFrameCell`, it will modify the contents of `this`.
+
 \param row The row number.
 \param column The column name.
 \return A CX_DataFrameCell that can be read from or written to.
 */
-CX_DataFrameCell CX_DataFrame::at(RowIndex row, std::string column) {
+CX_DataFrameCell CX_DataFrame::at(RowIndex row, std::string column) const {
 	return at(column, row);
 }
 
 /*! Equivalent to `CX::CX_DataFrame::at(RowIndex, std::string)`. */
-CX_DataFrameCell CX_DataFrame::at(std::string column, RowIndex row) {
+CX_DataFrameCell CX_DataFrame::at(std::string column, RowIndex row) const {
 	try {
 		return _data.at(column).at(row);
 	} catch (...) {
@@ -100,12 +106,21 @@ CX_DataFrameColumn CX_DataFrame::operator[] (std::string column) {
 copy of the original row. Rather, it represents the original row so that
 if the returned row is modified, it will also modify the original data in the
 parent data frame. If you want a copy of the row rather than a reference to 
-the row, use copyRow().
+the row, use `copyRow()`.
 \param row The index of the row to extract.
-\return A CX_DataFrameRow.
+\return A `CX_DataFrameRow`.
 */
 CX_DataFrameRow CX_DataFrame::operator[] (RowIndex row) {
 	return CX_DataFrameRow(this, row);
+}
+
+const CX_DataFrameRow CX_DataFrame::at(RowIndex row) const {
+	if (row >= this->getRowCount()) {
+		CX_DataFrameRow(nullptr, std::numeric_limits<RowIndex>::max());
+	}
+
+	// This casting away of const in the argument is ok because the rval is const CX_DataFrameRow
+	return CX_DataFrameRow((CX_DataFrame*)this, row);
 }
 
 /*! \brief Reduced argument version of print(). Prints all rows and columns. */
@@ -428,7 +443,7 @@ std::vector< std::vector<std::string> > CX_DataFrame::_fileLineToVectors(std::st
 				continue;
 			}
 
-		} else if (isSymbolAtPosition(line, i, opt.vectorEncloser)) {
+		} else if (opt.vectorEncloser != "" && isSymbolAtPosition(line, i, opt.vectorEncloser)) {
 
 			if (!inEncloser) {
 				nextVector = true;
@@ -445,7 +460,8 @@ std::vector< std::vector<std::string> > CX_DataFrame::_fileLineToVectors(std::st
 	}
 
 	if (inEncloser) {
-		//warning: EOL reached in encloser.
+		//warning: EOL reached in vector encloser.
+		Instances::Log.warning("CX_DataFrame") << "_fileLineToVectors(): End of line reached while still within vector encloser.";
 	}
 
 	storeNextPart();
@@ -773,9 +789,20 @@ void CX_DataFrame::append(CX_DataFrame df) {
 	}
 }
 
+
 /*! \brief Returns `true` if the named column exists in the `CX_DataFrame`. */
 bool CX_DataFrame::columnExists(std::string columnName) const {
 	return _data.find(columnName) != _data.end();
+}
+
+/*! \brief Returns `true` if the row exists in the `CX_DataFrame`. */
+bool CX_DataFrame::rowExists(RowIndex row) const {
+	return row < this->getRowCount();
+}
+
+/*! \brief Returns `true` if the cell defined by `column` and `row` exists in the `CX_DataFrame`. */
+bool CX_DataFrame::cellExists(std::string column, RowIndex row) const {
+	return columnExists(column) && rowExists(row);
 }
 
 /*! \brief Returns `true` if the named column contains any cells which contain vectors (i.e.
@@ -1040,21 +1067,29 @@ CX_DataFrameCell CX_DataFrameRow::operator[] (std::string column) {
 	}
 }
 
-/*! \brief Returns a vector containing the names of the columns in this row. */
-std::vector<std::string> CX_DataFrameRow::names(void) {
+CX_DataFrameCell CX_DataFrameRow::at(const std::string& column) const {
 	if (_df) {
-		return _df->getColumnNames();
-	} else {
-		return _orderToName;
+		return _df->at(column, _rowNumber);
 	}
+
+	return _data.at(column);
 }
 
-bool CX_DataFrameRow::columnExists(const std::string& column) {
+/*! \brief Returns a vector containing the names of the columns in this row. */
+std::vector<std::string> CX_DataFrameRow::names(void) const {
+	if (_df) {
+		return _df->getColumnNames();
+	}
+	
+	return _orderToName;
+}
+
+bool CX_DataFrameRow::columnExists(const std::string& column) const {
 	if (_df) {
 		return _df->columnExists(column);
-	} else {
-		return _data.find(column) != _data.end();
 	}
+	
+	return _data.find(column) != _data.end();
 }
 
 bool CX_DataFrameRow::deleteColumn(const std::string& column) {
@@ -1088,6 +1123,21 @@ void CX_DataFrameRow::clear(void) {
 		_data.clear();
 		_orderToName.clear();
 	}
+}
+
+CX_DataFrameRow& CX_DataFrameRow::operator=(const CX_DataFrameRow& other) {
+
+	if (other._df == nullptr) {
+		// copy data
+		this->_data = other._data;
+		this->_orderToName = other._orderToName;
+	} else {
+		// copy pointer
+		this->_df = other._df;
+		this->_rowNumber = other._rowNumber;
+	}
+
+	return *this;
 }
 
 } //namespace CX

@@ -705,7 +705,7 @@ struct CornerPoint {
 // \endcond
 
 /*! This function is an experimental attempt to draw a collection of lines in an idealized way. */
-ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode) {
+ofPath linesToPath(std::vector<ofPoint> points, float width, LineCornerMode cornerMode) {
 	bool isClosed = (points.front() == points.back());
 
 

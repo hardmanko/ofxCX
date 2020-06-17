@@ -20,51 +20,24 @@
 namespace CX {
 
 	// Forward delcarations: Defined later in this file
-	struct CX_GLVersion; 
 	struct CX_WindowConfiguration;
 	struct CX_InitConfiguation;
 
-	bool initializeCX(CX_InitConfiguation config);
-	bool reopenWindow(CX_WindowConfiguration config);
-	//bool terminateCX(void); // If this function did anything, you should make it public.
+	bool initCX(CX_InitConfiguation config);
+	bool isCXInitialized(void);
+	bool exitCX(bool force = false);
 
 	namespace Util {
 
+		bool reopenWindow(CX_WindowConfiguration config);
+
 		unsigned int getMsaaSampleCount(void);
 
-		CX_GLVersion getHighestOpenGLVersion(void);
+		GLVersion getHighestOpenGLVersion(void);
 
 		bool checkOFVersion(int versionMajor, int versionMinor, int versionPatch, bool log = true);
 	}
 
-
-	/*! Stores openGL version numbers and has a few helper functions. */
-	struct CX_GLVersion {
-		CX_GLVersion(void) :
-			major(0),
-			minor(0),
-			release(0)
-		{}
-
-		CX_GLVersion(int maj, int min, int rel) :
-			major(maj),
-			minor(min),
-			release(rel)
-		{}
-
-		int major;
-		int minor;
-		int release;
-
-		int compare(int maj, int min, int rel) const;
-		int compare(const CX_GLVersion& that) const;
-
-		bool supportsGLFenceSync(void) const;
-		//bool supportsGLProgrammableRenderer(void) const;
-
-		CX_GLVersion getCorrespondingGLSLVersion(void) const;
-
-	};
 
 	/*! Configures windows opened with CX::reopenWindow(). */
 	struct CX_WindowConfiguration {
@@ -82,7 +55,7 @@ namespace CX {
 		int width; //!< The width of the window, in pixels.
 		int height; //!< The height of the window, in pixels.
 
-		bool resizeable = false; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges).
+		bool resizeable; //!< Whether or not the window can be resized by the user (i.e. by clicking and dragging the edges). Recommend `false`.
 
 		unsigned int msaaSampleCount; //!< See CX::Util::getMsaaSampleCount(). If this value is too high, some types of drawing take a really long time.
 
@@ -94,7 +67,7 @@ namespace CX {
 
 		/*! \brief If you want to request a specific OpenGL version, you can provide this value.
 		If nothing is provided, the newest OpenGL version available is used. */
-		CX_GLVersion desiredOpenGLVersion;
+		Util::GLVersion desiredOpenGLVersion;
 	};
 
 	struct CX_InitConfiguation {
@@ -130,17 +103,25 @@ namespace CX {
 
 			friend std::shared_ptr<CX_GlobalState> globalStateFactory(void);
 			CX_GlobalState(void) :
+				_firstInitialization(true),
+				_cxIsInitialized(false),
 				_glVersionLearned(false)
 			{}
 
+			bool _firstInitialization;
+			bool _cxIsInitialized;
 			CX_InitConfiguation _initConfig;
 
 			bool _glVersionLearned;
-			CX_GLVersion _maxGLVersion;
+			Util::GLVersion _maxGLVersion;
 
 			std::shared_ptr<ofAppBaseWindow> _appWindow;
 
 		public:
+
+			void setCXIntialization(bool cxInitialized);
+			bool isCXInitialized(void) const;
+			bool hasCXBeenInitialized(void) const;
 
 			void setInitConfig(const CX_InitConfiguation& cfg);
 			const CX_InitConfiguation& getInitConfig(void) const;
@@ -149,7 +130,7 @@ namespace CX {
 
 			bool learnHighestOpenGLVersion(void);
 			//void setMaxGLVersion(const CX_GLVersion& ver);
-			const CX_GLVersion& getHighestOpenGLVersion(void) const;
+			const Util::GLVersion& getHighestOpenGLVersion(void) const;
 
 			void setAppWindow(std::shared_ptr<ofAppBaseWindow> wind);
 			std::shared_ptr<ofAppBaseWindow> getAppWindow(void) const;
@@ -186,7 +167,7 @@ A `main` function can be as simple as:
 
 \code{cpp}
 void main (void) {
-CX::initializeCX(CX_InitConfiguation());
+CX::initCX(CX_InitConfiguation());
 
 // Your experiment goes here...
 

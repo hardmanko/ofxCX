@@ -19,6 +19,8 @@ a potentially large vector of sound samples.
 
 #include <algorithm>
 
+#include "ofSoundBuffer.h"
+
 #include "CX_Definitions.h"
 #include "CX_Clock.h"
 #include "CX_Logger.h"
@@ -47,7 +49,7 @@ namespace CX {
 		void clear(void);
 
 
-
+		// add insert copy
 		bool addSound(std::string fileName, CX_Millis timeOffset);
 		bool addSound(CX_SoundBuffer sb, CX_Millis timeOffset);
 
@@ -60,17 +62,21 @@ namespace CX {
 		CX_SoundBuffer copyChannel(unsigned int channel) const;
 		CX_SoundBuffer copySection(CX_Millis start, CX_Millis end) const;
 
+
+		// Clear and delete
+		void deleteAmount(CX_Millis duration, bool fromBeginning);
+		void deleteSection(CX_Millis start, CX_Millis end);
+		bool deleteChannel(unsigned int channel);
+		bool clearChannel(unsigned int channel);
 		
-
-
-
 		// Amplitude
-		bool applyGain(float gain, int channel = -1);
-		bool multiplyAmplitudeBy (float amount, int channel = -1);
+		bool applyGain(float decibels, int channel = -1);
+		bool multiplyAmplitudeBy(float amount, int channel = -1);
 		void normalize(float amount = 1.0);
 
 		float getPositivePeak(void);
 		float getNegativePeak(void);
+
 
 		// Length
 		void setLength(CX_Millis length);
@@ -79,17 +85,26 @@ namespace CX {
 		void setLengthSF(SampleFrame sf);
 		SampleFrame getLengthSF(void) const;
 
+		template <typename T> void setLength(T length) = delete;
+		template <> void setLength(CX_Millis length);
+		template <> void setLength(SampleFrame length);
+
+		template <typename T> T getLength(void) const = delete;
+		template <> CX_Millis getLength(void) const;
+		template <>	SampleFrame getLength(void) const;
+
 		size_t getLengthSamples(void) const;
 
+		SampleFrame timeToSF(CX_Millis time) const;
+		CX_Millis sfToTime(SampleFrame sf) const;
 
+
+		// Silence
 		void stripLeadingSilence (float tolerance);
 		void addSilence(CX_Millis duration, bool atBeginning);
 		void addSilenceSF(SampleFrame sf, bool atBeginning);
+		void silenceSection(SampleFrame begin, SampleFrame end);
 
-		void deleteAmount(CX_Millis duration, bool fromBeginning);
-		void deleteSection(CX_Millis start, CX_Millis end);
-		bool deleteChannel(unsigned int channel);
-		bool clearChannel(unsigned int channel);
 		
 		void reverse(void);
 
@@ -107,13 +122,12 @@ namespace CX {
 		float getSample(unsigned int channel, SampleFrame sf) const;
 		void setSample(unsigned int channel, SampleFrame sf, float val);
 
-		//void setMetadata(unsigned int channels, float sampleRate);
 
-
-		SampleFrame getSampleFrameAt(CX_Millis time) const;
-		// OR
-		SampleFrame timeToSF(CX_Millis time) const;
-		CX_Millis sfToTime(SampleFrame sf) const;
+		// ofSoundBuffer
+		ofSoundBuffer toOfSoundBuffer(void);
+		bool fromOfSoundBuffer(const ofSoundBuffer& buf);
+		//CX_SoundBuffer& operator=(const ofSoundBuffer& buf);
+		//operator ofSoundBuffer(void);
 
 	private:
 

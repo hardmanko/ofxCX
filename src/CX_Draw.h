@@ -24,14 +24,15 @@ namespace Draw {
 	std::vector<double> convertColors(std::string conversionFormula, double S1, double S2, double S3);
 	ofFloatColor convertToRGB(std::string inputColorSpace, double S1, double S2, double S3);
 
-	/*! Settings for how the corners are drawn for the lines() function. */
+	/*! Settings for how the corners are drawn for the linesToPath() function. */
 	enum class LineCornerMode {
 		OUTER_POINT,
 		BEZIER_ARC,
 		STRAIGHT_LINE //,
 		//ARC //unimplemented
 	};
-	ofPath lines(std::vector<ofPoint> points, float width, LineCornerMode cornerMode);
+	ofPath linesToPath(std::vector<ofPoint> points, float width, LineCornerMode cornerMode);
+
 	void lines(std::vector<ofPoint> points, float lineWidth, bool circleJoins = true);
 	void line(ofPoint p1, ofPoint p2, float width);
 
