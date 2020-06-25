@@ -61,8 +61,8 @@ namespace CX {
 		///////////////
 
 		// TODO: don't need/move to display
-		bool isSwappingStably(void); // dataUser
-		bool waitForStableSwapping(CX_Millis timeout); // dataUser
+		//bool isSwappingStably(void); // dataUser
+		//bool waitForStableSwapping(CX_Millis timeout); // dataUser
 
 		///////////////////
 		// Queued frames //

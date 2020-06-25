@@ -11,71 +11,6 @@ CX::CX_Display CX::Instances::Disp;
 
 namespace CX {
 
-////////////////////////////
-// CX_DisplaySwappingResults //
-////////////////////////////
-
-void CX_DisplaySwappingResults::setup(const std::vector<CX_Millis>& framePeriods) {
-	this->clear();
-	_allPeriods = framePeriods;
-}
-
-void CX_DisplaySwappingResults::clear(void) {
-	_allPeriods.clear();
-	includedPeriods.clear();
-	excludedPeriods.clear();
-}
-
-void CX_DisplaySwappingResults::filterByFramePeriod(CX_Millis minPeriod, CX_Millis maxPeriod) {
-
-	includedPeriods.clear();
-	excludedPeriods.clear();
-
-	for (const CX_Millis& fp : _allPeriods) {
-		if (minPeriod <= fp && fp <= maxPeriod) {
-			includedPeriods.push_back(fp);
-		} else {
-			excludedPeriods.push_back(fp);
-		}
-	}
-
-}
-
-void CX_DisplaySwappingResults::filterByFrameRate(double minRate, double maxRate) {
-
-	// switcheroo, criss-cross
-	CX_Millis minPeriod = CX_Seconds(1.0 / maxRate);
-	CX_Millis maxPeriod = CX_Seconds(1.0 / minRate);
-
-	filterByFramePeriod(minPeriod, maxPeriod);
-}
-
-std::vector<double> CX_DisplaySwappingResults::periodsToRates(const std::vector<CX_Millis>& periods) {
-	std::vector<double> rates(periods.size());
-
-	for (size_t i = 0; i < periods.size(); i++) {
-		rates[i] = 1.0 / periods[i].seconds();
-	}
-
-	return rates;
-}
-
-CX_Millis CX_DisplaySwappingResults::calcFramePeriodMean(void) const {
-	return CX::Util::mean(this->includedPeriods);
-}
-
-CX_Millis CX_DisplaySwappingResults::calcFramePeriodSD(void) const {
-	return CX_Millis::standardDeviation(this->includedPeriods);
-}
-
-double CX_DisplaySwappingResults::calcFrameRateMean(void) const {
-	std::vector<double> rates = CX_DisplaySwappingResults::periodsToRates(includedPeriods);
-	return CX::Util::mean(rates);
-
-	return 1.0 / calcFramePeriodMean().seconds();
-}
-
-
 
 ////////////////
 // CX_Display //
@@ -751,7 +686,7 @@ void CX_Display::estimateFramePeriod(CX_Millis estimationInterval, float minRefr
 		if (cleanedDurations.size() >= 2) {
 
 			// Save the results
-			setFramePeriod(Util::mean(cleanedDurations), false);
+			setKnownFramePeriod(Util::mean(cleanedDurations), false);
 			_framePeriodStandardDeviation = CX_Millis::standardDeviation(cleanedDurations);
 
 		} else {
@@ -803,10 +738,10 @@ double CX_Display::getFrameRate(void) const {
 }
 
 /*! During setup, CX tries to estimate the frame period of the display using CX::CX_Display::estimateFramePeriod().
-However, this does not always work, and the estimated value is wrong.
+This does not always work, however, and the estimated value is wrong.
 If you know that this is happening, you can use this function to set the correct frame period. A typical call might be
 \code{.cpp}
-Disp.setFramePeriod(CX_Seconds(1.0/60.0));
+Disp.setKnownFramePeriod(CX_Seconds(1.0/60.0));
 \endcode
 to set the frame period for a 60 Hz refresh cycle. However, note that this will not fix the underlying problem
 that prevented the frame period from being estimated correctly, which usually has to do with problems with
@@ -814,7 +749,7 @@ the video card doing vertical synchronization incorrectly. Thus, this may not fi
 \param knownPeriod The known refresh period of the monitor.
 \note This function sets the standard deviation of the frame period to 0.
 */
-void CX_Display::setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking) {
+void CX_Display::setKnownFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking) {
 	_framePeriod = knownPeriod;
 	_framePeriodStandardDeviation = 0;
 
@@ -823,9 +758,22 @@ void CX_Display::setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking) {
 	}
 }
 
-/*
-void CX_Display::estimateFrameRate(CX_Millis estimationTime, double minFrameRate, double maxFrameRate) {
+void CX_Display::setKnownFrameRate(double frameRate, bool setupSwapTracking = false) {
+	setKnownFramePeriod(CX_Seconds(1.0 / frameRate), setupSwapTracking);
+}
 
+
+/*! Estimate the frame rate of your display.
+
+This function blocks for `estCfg.estimationTime` while the display buffer is repeatedly swapped (see \ref blockingCode).
+
+This function is called during CX initialization, so there will always be some information about the frame period. 
+If more precision of the estimate is desired, this function can be called again with a longer `estimationTime`.
+
+\param estCfg Configuration for frame rate estimation.
+
+*/
+void CX_Display::estimateFrameRate(const Util::FrameRateEstimationConfig& estCfg) {
 	bool wasSwapping = this->isAutomaticallySwapping();
 	this->setAutomaticSwapping(false);
 
@@ -834,23 +782,22 @@ void CX_Display::estimateFrameRate(CX_Millis estimationTime, double minFrameRate
 	//CX_Millis minFramePeriod = CX_Seconds((1.0 / maxFrameRate));
 	//CX_Millis maxFramePeriod = CX_Seconds((1.0 / minFrameRate));
 
-	//For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
-	//if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
+	// For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
+	// if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
 	for (int i = 0; i < 3; i++) {
 		this->swapBuffers();
 	}
 
 	CX_Millis startTime = CX::Instances::Clock.now();
-	while (CX::Instances::Clock.now() - startTime < estimationTime) {
+	while (CX::Instances::Clock.now() - startTime < estCfg.estimationTime) {
 		this->swapBuffers();
 		swapTimes.push_back(CX::Instances::Clock.now());
 	}
 
-	
-
 	if (swapTimes.size() < 3) {
 		CX::Instances::Log.error("CX_Display") << "estimateFrameRate(): Not enough buffer swaps occurred during the " <<
-			estimationTime.seconds() << " second estimation interval. At least 3 swaps are needed.";
+			estCfg.estimationTime.seconds() << " second estimation interval. At least 3 swaps are needed to calculate anything.";
+
 		_swappingResults.clear();
 		this->setAutomaticSwapping(wasSwapping);
 		return;
@@ -861,63 +808,69 @@ void CX_Display::estimateFrameRate(CX_Millis estimationTime, double minFrameRate
 		swapPeriods[i - 1] = swapTimes[i] - swapTimes[i - 1];
 	}
 
-	_swappingResults.setup(swapPeriods);
-	_swappingResults.filterByFrameRate(minFrameRate, maxFrameRate);
+	_swappingResults.setSwapPeriods(swapPeriods);
+	_swappingResults.filterByFrameRate(estCfg.minFrameRate, estCfg.maxFrameRate);
 
-	if (_swappingResults.includedPeriods.size() >= 2) {
+	if (_swappingResults.includedPeriods.size() >= estCfg.minGoodIntervals) {
 
-		
+		//setKnownFrameRate(_swappingResults.calcFrameRateMean(), false);
 
 		// Save the results
-		setKnownFrameRate()
-		setFramePeriod(_swappingResults.calcFramePeriodMean(), false);
-		_framePeriodStandardDeviation = CX_Millis::standardDeviation(cleanedDurations);
+		//setKnownFrameRate()
+		setKnownFramePeriod(_swappingResults.calcFramePeriodMean(), false);
+		_framePeriodStandardDeviation = _swappingResults.calcFramePeriodSD();
+
 
 	} else {
+
+
+
 		CX::Instances::Log.error("CX_Display") << "estimateFramePeriod(): Not enough valid swaps occurred during the " <<
-			estimationInterval << " ms estimation interval. If the estimation interval was very short (less than 50 ms), you "
+			estCfg.estimationTime.millis() << " ms estimation interval. If the estimation interval was very short (less than 50 ms), you "
 			"could try making it longer. If the estimation interval was longer, this is an indication that there is something "
 			"wrong with the video card configuration. Try using CX_Display::testBufferSwapping() to narrow down the source "
 			"of the problems.";
 	}
 
-	if (excludedDurations.size() > 0) {
-		unsigned int totalExcludedDurations = excludedDurations.size();
 
-		if (excludedDurations.size() > 20) {
-			excludedDurations.resize(20);
+
+	if (_swappingResults.excludedPeriods.size() > 0) {
+
+		size_t totalExcluded = _swappingResults.excludedPeriods.size();
+
+		size_t usedExcluded = std::min<size_t>(totalExcluded, 20);
+		std::string usedStr = (usedExcluded == totalExcluded) ? "" : " first 20";
+
+		std::vector<double> usedMs(usedExcluded);
+		for (size_t i = 0; i < usedExcluded; i++) {
+			usedMs[i] = _swappingResults.excludedPeriods[i].millis();
 		}
-		CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod(): " << totalExcludedDurations << " buffer swap durations were " <<
-			"outside of the allowed range of " << minFramePeriod << " ms to " << maxFramePeriod << " ms. The" <<
-			((totalExcludedDurations == excludedDurations.size()) ? "" : " first 20") << " excluded durations were: " <<
-			CX::Util::vectorToString(excludedDurations, ", ", 5);
+
+		CX::Instances::Log.warning("CX_Display") << "estimateFramePeriod(): " << totalExcluded << " buffer swap durations were " <<
+			"outside of the allowed range of " << estCfg.minFrameRate << " to " << estCfg.maxFrameRate << " fps. The" << usedStr <<
+			" excluded durations were: " << CX::Util::vectorToString(usedMs, ", ", 5);
 	}
 
 
-
-
 	this->setAutomaticSwapping(wasSwapping);
-
 }
 
-void CX_Display::setKnownFrameRate(double frameRate, bool setupSwapTracking = false) {
 
-}
-
-const CX_DisplaySwappingResults& CX_Display::getFramePeriodResults(void) const {
+const Util::FrameEstimationResult& CX_Display::getFrameRateResults(void) const {
 	return _swappingResults;
 }
-*/
+
 
 /*! Epilepsy warning: This function causes your display to rapidly flash with high-contrast patterns.
 
 This function tests buffer swapping under various combinations of Vsync setting and whether the swaps
 are requested in the main thread or in a secondary thread. The tests combine visual inspection and automated
-time measurement. The visual inspection is important because what the computer is told to put on the screen
-and what is actually drawn on the screen are not always the same. It is best to run the tests in full screen
-mode, although that is not enforced. At the end of the tests, the results of the tests are provided to
-you to interpret based on the guidelines described here. The outcome of the test will usually be that there
-are some modes that work better than others for the tested computer.
+time measurement. The visual inspection is important because what the computer is told to draw,
+what the computer thinks it drew, and what is actually drawn are not always the same. 
+
+It is best to run the tests in full screen mode, although that is not enforced. 
+At the end of the tests, the results of the tests are provided to you to interpret based on the guidelines described here.
+The outcome of the test will usually be that there are some modes that work better than others for the tested computer.
 
 In the resulting data, there are three test conditions. "thread" indicates whether the main thread or a 
 secondary thread was used. "hardVSync" and "softVSync" indicate whether hardware or software Vsync were 

@@ -1,6 +1,4 @@
-#include "CX.h"
-
-/* This task is an implementation of an N-back task. In an N-Back task, participants must report whether
+/* Example implementation of an N-back task. In an N-Back task, participants must report whether
 the current stimulus is the same as the stimulus that was presented N stimuli back. Assume that in
 a 2-back task, the stimulus sequence is the letters (presented one at a time):
 
@@ -41,9 +39,11 @@ advanced options of the CX_SlidePresenter that should make it possible to improv
 of an N-Back (or similar) task.
 */
 
+#include "CX.h"
+
 //Set up some variables that will be used throughout
 CX_DataFrame df; //All task data will be stored in this
-CX_DataFrame::rowIndex_t trialNumber = 0; //Tracks the current trial number for storing and retrieving data
+CX_DataFrame::RowIndex trialNumber = 0; //Tracks the current trial number for storing and retrieving data
 int trialCount = 10; //The total number of trials
 int nBack = 2; //Targets will be nBack trials back from the current stimulus, so this will be a 2-back task
 
@@ -187,7 +187,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_Keyboard::Event kev = Input.Keyboard.getNextEvent();
-			if ((kev.time >= stimulusOnset) && (kev.type == CX_Keyboard::PRESSED) && (kev.key == targetKey || kev.key == nonTargetKey)) {
+			if ((kev.time >= stimulusOnset) && (kev.type == CX_Keyboard::Pressed) && (kev.key == targetKey || kev.key == nonTargetKey)) {
 
 				if (kev.key == targetKey) {
 					df(trialNumber, "responseType") = "target";

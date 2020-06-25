@@ -59,6 +59,7 @@ namespace Private {
 	}
 
 	std::shared_ptr<ofAppBaseWindow> CX_GlobalState::getAppWindow(void) const {
+		//return ofGetMainLoop()->getCurrentWindow();
 		return _appWindow;
 	}
 
@@ -191,7 +192,7 @@ bool initCX(CX_InitConfiguation config) {
 		if (config.framePeriodEstimationInterval > CX_Millis(0)) {
 			CX::Instances::Disp.estimateFramePeriod(config.framePeriodEstimationInterval);
 
-			CX::Instances::Disp.setFramePeriod(CX::Instances::Disp.getFramePeriod(), true);
+			CX::Instances::Disp.setKnownFramePeriod(CX::Instances::Disp.getFramePeriod(), true);
 
 			CX::Instances::Log.notice("CX_EntryPoint") << "initCX(): Estimated display frame rate " <<
 				CX::Instances::Disp.getFrameRate() << " frames per second (" <<
@@ -310,9 +311,8 @@ bool exitCallbackHandler(ofEventArgs& args) {
 
 #if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 10 && OF_VERSION_PATCH >= 0
 
+// Seems to work for 0.10.x and 0.11.x
 void reopenWindow_0_10_0(const CX_WindowConfiguration& config) {
-	
-	ofWindowSettings winSet;
 	
 
 	ofGLFWWindowSettings settings;
@@ -323,21 +323,21 @@ void reopenWindow_0_10_0(const CX_WindowConfiguration& config) {
 	settings.resizable = config.resizeable;
 	settings.setSize(config.width, config.height);
 
-	
-
+	// fill more?
 	//settings.multiMonitorFullScreen = true; // bad timing
 	//settings.monitor = 1;
 	//settings.shareContextWith = //other window
 	//settings.stereo = true; // wow
 	//settings.visible = true;
-	// fill more?
+	
 
 	std::shared_ptr<ofAppBaseWindow> curWin = ofGetMainLoop()->getCurrentWindow();
 	if (!curWin) {
 		ofGetMainLoop()->createWindow(settings);
 		curWin = ofGetMainLoop()->getCurrentWindow();
 		if (!curWin) {
-			// uh oh
+			Instances::Log.error("CX::Util::reopenWindow()") << "Unable to get a current window.";
+			return;
 		}
 	} else {
 		curWin->close();
@@ -461,7 +461,7 @@ bool Util::reopenWindow(CX_WindowConfiguration config) {
 	}
 
 	try {
-#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 10 && OF_VERSION_PATCH >= 0
+#if OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR >= 10 && OF_VERSION_PATCH >= 0
 		CX::Private::reopenWindow_0_10_0(config);
 #elif OF_VERSION_MAJOR == 0 && OF_VERSION_MINOR == 9 && OF_VERSION_PATCH >= 0
 		CX::Private::reopenWindow_0_9_0(config);

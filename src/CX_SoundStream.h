@@ -60,8 +60,7 @@ public:
 		if there are two channels and buffer size is set to 256, the actual buffer size will be 512 samples). */
 		unsigned int bufferSize;
 
-		/*! The API here is the audio API used by the operating system to transfer 
-		audio data between audio hardware and your CX program.
+		/*! Audio API used by the operating system to transfer audio data between audio hardware and your CX program.
 		The choice of API does not affect how you use this class, but it may affect the performance of sound playback.
 		
 		The API depends on your operating system. 
@@ -73,9 +72,9 @@ public:
 
 		+ ASIO has the best latency, but needs pro audio hardware with custom drivers.
 		+ WASAPI has good latency and works on any hardware.
-		+ DS: Direct Sound is old and has the worst latency. DS should be avoided as long ase WASAPI is available.
+		+ DS: Direct Sound is old and has the worst latency. DS should be avoided as long as WASAPI is available.
 
-		For example, ff you want to use WASAPI, you should provide `RtAudio::Api::WINDOWS_WASAPI` as the `api`.
+		For example, if you want to use WASAPI, you should provide `RtAudio::Api::WINDOWS_WASAPI` as the `api`.
 		 */
 		RtAudio::Api api;
 
@@ -178,21 +177,25 @@ public:
 
 private:
 
+	//std::recursive_mutex _callbackMutex;
+	Configuration _config;
+
+	std::shared_ptr<RtAudio> _rtAudio;
+
+	std::unique_ptr<Sync::DataContainer::PolledSwapListener> _polledSwapListener;
+	
+	struct SyncConfig {
+		CX_Millis latency = 0;
+		CX_Millis dataCollectionDuration = 250; 
+		double framePeriodTolerance = 0.5; // high tolerance for sound
+	};
+	bool _configureSyncUtils(const SyncConfig& scfg);
+
 	static unsigned int _getBestSampleRate(unsigned int requestedSampleRate, RtAudio::Api api, int deviceIndex);
 
 	static int _rtAudioCallback(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status, void *data);
 
 	int _rtAudioCallbackHandler(void *outputBuffer, void *inputBuffer, unsigned int bufferSize, double streamTime, RtAudioStreamStatus status);
-
-	std::shared_ptr<RtAudio> _rtAudio;
-	
-	Configuration _config;
-
-	std::unique_ptr<Sync::DataContainer::PolledSwapListener> _polledSwapListener;
-
-	std::recursive_mutex _callbackMutex;
-
-	//SampleFrame _lastBufferStartSampleFrame;
 
 };
 

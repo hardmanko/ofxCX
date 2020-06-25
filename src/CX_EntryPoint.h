@@ -81,9 +81,9 @@ namespace CX {
 
 		CX_WindowConfiguration windowConfig; //!< The window configuration.
 
-		bool captureOFLogMessages; //!< If `true`, openFrameworks log messages are captured by CX::Instances::Log (recommend `true`).
+		bool captureOFLogMessages; //!< If `true`, openFrameworks log messages are captured by CX::Instances::Log. Default `true` and recommend `true`.
 
-		bool resetStartTime; //!< If `true`, the experiment start time is reset.
+		bool resetStartTime; //!< If `true`, the experiment start time is reset on initialization. Default `true`.
 
 		/*! The amount of time to spend estimating the display frame period. Passed to CX_Display::estimateFramePeriod(). */
 		CX_Millis framePeriodEstimationInterval;

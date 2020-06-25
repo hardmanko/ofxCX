@@ -1,5 +1,3 @@
-#include "CX.h"
-
 /* This example is a more advanced version of basicNBack.cpp, so reading that example first
 is recommended.
 
@@ -51,12 +49,14 @@ implementation. This idea is discussed further in the documentation for CX::CX_S
 with a code example.
 */
 
+#include "CX.h"
+
 //If true, the standard framebuffer approach will be used. If false, drawing functions will be used.
 //Try with both settings and look at the output in the console (or the log file in data/logfiles).
 bool useFramebuffersForStimuli = false; 
 
 CX_DataFrame df;
-CX_DataFrame::rowIndex_t trialNumber = 0;
+CX_DataFrame::RowIndex trialNumber = 0;
 int trialCount = 10;
 int nBack = 2;
 
@@ -113,7 +113,7 @@ void runExperiment(void) {
 	}
 
 	Log.levelForFile(CX_Logger::Level::LOG_ALL, "Last run.txt");
-	Log.level(CX_Logger::Level::LOG_ALL, "CX_SlidePresenter");
+	Log.levelForModule(CX_Logger::Level::LOG_ALL, "CX_SlidePresenter");
 
 	Log.notice() << "Frame period: " << Disp.getFramePeriod() << " (" << Disp.getFramePeriodStandardDeviation() << ")";
 	
@@ -214,7 +214,7 @@ void finalSlideFunction(CX_SlidePresenter::FinalSlideFunctionArgs& info) {
 
 		while (Input.Keyboard.availableEvents() > 0) {
 			CX_Keyboard::Event kev = Input.Keyboard.getNextEvent();
-			if ((kev.time >= stimulusOnset) && (kev.type == CX_Keyboard::PRESSED) && (kev.key == targetKey || kev.key == nonTargetKey)) {
+			if ((kev.time >= stimulusOnset) && (kev.type == CX_Keyboard::Pressed) && (kev.key == targetKey || kev.key == nonTargetKey)) {
 
 				if (kev.key == targetKey) {
 					df(trialNumber, "responseType") = "target";

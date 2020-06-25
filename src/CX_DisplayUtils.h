@@ -15,6 +15,68 @@ class CX_Display;
 
 namespace Util {
 
+std::vector<double> framePeriodToFrameRate(const std::vector<CX_Millis>& periods);
+
+struct FrameRateEstimationConfig {
+
+	FrameRateEstimationConfig(void);
+
+	CX_Display* disp;
+
+	CX_Millis estimationTime = 1000; //!< The length of time to spend estimating the frame period.
+
+	//bool saveResults = true;
+
+	double minFrameRate = 30; //!< Min allowed frame rate. If an observed duration is less than `1 / minFrameRate` seconds, it will be ignored for purposes of estimating the frame period.
+	double maxFrameRate = 1000; //!< Max allowed frame rate.
+
+	int minGoodIntervals = 4; //!< Min frame periods within range defined by `minFrameRate` and `maxFrameRate` for the results to be saved.
+	int maxBadIntervalsPrinted = 20; //!< When there are excluded swap intervals, this sets the max number of bad time intervals printed to the console.
+
+
+};
+
+struct FrameEstimationResult {
+
+	bool success = false;
+	std::vector<std::string> messages;
+
+	//void setSwapPeriods(const std::vector<CX_Millis>& framePeriods);
+
+	//const std::vector<CX_Millis>& getSwapPeriods(void) const;
+	void clear(void);
+
+	std::vector<CX_Millis> allPeriods;
+
+	void filterByFramePeriod(CX_Millis minPeriod, CX_Millis maxPeriod);
+	void filterByFrameRate(double minRate, double maxRate);
+
+
+	
+	std::vector<CX_Millis> includedPeriods;
+	std::vector<CX_Millis> excludedPeriods;
+
+	// For includedPeriods.
+	CX_Millis calcFramePeriodMean(void) const;
+	CX_Millis calcFramePeriodSD(void) const;
+	double calcFrameRateMean(void) const;
+	// frame rate SD is an odd concept
+
+};
+
+FrameEstimationResult estimateFrameRate(const FrameRateEstimationConfig& estCfg);
+
+struct FrameRateEstimator {
+
+	using Configuration = FrameRateEstimationConfig;
+
+	using Results = FrameEstimationResult;
+
+	bool setup(const Configuration& cfg);
+
+};
+
+
 /*! Stores openGL version numbers and has a few helper functions. */
 struct GLVersion {
 	GLVersion(void) :
@@ -173,7 +235,6 @@ private:
 	bool _Prediction_shouldSwap(void) const;
 
 };
-
 
 } // namespace Util
 } // namespace CX

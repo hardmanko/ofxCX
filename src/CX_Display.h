@@ -27,30 +27,6 @@ draw stimuli with openFrameworks: See the graphics and 3d sections of this page:
 
 namespace CX {
 
-	struct CX_DisplaySwappingResults {
-
-		void setup(const std::vector<CX_Millis>& framePeriods);
-		void clear(void);
-
-		void filterByFramePeriod(CX_Millis minPeriod, CX_Millis maxPeriod);
-		void filterByFrameRate(double minRate, double maxRate);
-
-		std::vector<CX_Millis> includedPeriods;
-		std::vector<CX_Millis> excludedPeriods;
-
-		// For includedPeriods.
-		CX_Millis calcFramePeriodMean(void) const;
-		CX_Millis calcFramePeriodSD(void) const;
-		double calcFrameRateMean(void) const;
-
-		static std::vector<double> periodsToRates(const std::vector<CX_Millis>& periods);
-
-	protected:
-
-		std::vector<CX_Millis> _allPeriods;
-	};
-
-
 
 	/*! This class represents an abstract visual display surface, which is my way of saying that it doesn't
 	necessarily represent a monitor. The display surface can either be a window or, if full screen, the whole
@@ -91,14 +67,14 @@ namespace CX {
 
 		// main class
 		void estimateFramePeriod(CX_Millis estimationInterval, float minRefreshRate = 30, float maxRefreshRate = 150);
-		void setFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking = false);
+		void setKnownFramePeriod(CX_Millis knownPeriod, bool setupSwapTracking = false);
 		CX_Millis getFramePeriod(void) const;
 		CX_Millis getFramePeriodStandardDeviation(void) const;
 		double getFrameRate(void) const;
 		// OR
-		void estimateFrameRate(CX_Millis estimationTime, double minFrameRate = 30, double maxFrameRate = 300);
+		void estimateFrameRate(const Util::FrameRateEstimationConfig& estCfg);
 		void setKnownFrameRate(double frameRate, bool setupSwapTracking = false);
-		const CX_DisplaySwappingResults& getFramePeriodResults(void) const;
+		const Util::FrameEstimationResult& getFrameRateResults(void) const;
 
 
 		void setWindowResolution(int width, int height);
@@ -156,9 +132,11 @@ namespace CX {
 		std::shared_ptr<ofAppBaseWindow> _window;
 
 		// From estimateFramePeriod()
-		//CX_DisplaySwappingResults _swappingResults;
 		CX_Millis _framePeriod;
 		CX_Millis _framePeriodStandardDeviation;
+
+		// From estimateFrameRate
+		Util::FrameEstimationResult _swappingResults;
 
 		bool _softVSyncWithGLFinish;
 

@@ -106,7 +106,7 @@ bool CX_DisplayThread::isThreadRunning(void) {
 	return _threadRunning;
 }
 
-
+/*
 bool CX_DisplayThread::isSwappingStably(void) {
 	// don't need to lock mutex because _display cannot change
 	return this->_display->swapClient.verifier.isSwappingStably();
@@ -115,6 +115,7 @@ bool CX_DisplayThread::isSwappingStably(void) {
 bool CX_DisplayThread::waitForStableSwapping(CX_Millis timeout) {
 	return this->_display->swapClient.verifier.waitForStableSwapping(timeout);
 }
+*/
 
 
 void CX_DisplayThread::_threadFunction(void) {

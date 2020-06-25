@@ -5,6 +5,167 @@
 namespace CX {
 namespace Util {
 
+	std::vector<double> framePeriodToFrameRate(const std::vector<CX_Millis>& periods) {
+		std::vector<double> rates(periods.size());
+
+		for (size_t i = 0; i < periods.size(); i++) {
+			rates[i] = 1.0 / periods[i].seconds();
+		}
+
+		return rates;
+	}
+
+	FrameRateEstimationConfig::FrameRateEstimationConfig(void) :
+		disp(&CX::Instances::Disp)
+	{}
+
+
+	///////////////////////////
+	// FrameEstimationResult //
+	///////////////////////////
+
+	void FrameEstimationResult::clear(void) {
+		this->success = false;
+		this->messages.clear();
+
+		allPeriods.clear();
+		includedPeriods.clear();
+		excludedPeriods.clear();
+	}
+
+	void FrameEstimationResult::filterByFramePeriod(CX_Millis minPeriod, CX_Millis maxPeriod) {
+
+		includedPeriods.clear();
+		excludedPeriods.clear();
+
+		for (const CX_Millis& fp : allPeriods) {
+			if (minPeriod <= fp && fp <= maxPeriod) {
+				includedPeriods.push_back(fp);
+			} else {
+				excludedPeriods.push_back(fp);
+			}
+		}
+
+	}
+
+	void FrameEstimationResult::filterByFrameRate(double minRate, double maxRate) {
+
+		CX_Millis minPeriod = CX_Seconds(1.0 / maxRate);
+		CX_Millis maxPeriod = CX_Seconds(1.0 / minRate);
+
+		filterByFramePeriod(minPeriod, maxPeriod);
+	}
+
+	CX_Millis FrameEstimationResult::calcFramePeriodMean(void) const {
+		return CX::Util::mean(this->includedPeriods);
+	}
+
+	CX_Millis FrameEstimationResult::calcFramePeriodSD(void) const {
+		return CX_Millis::standardDeviation(this->includedPeriods);
+	}
+
+	double FrameEstimationResult::calcFrameRateMean(void) const {
+		std::vector<double> rates = CX::Util::framePeriodToFrameRate(includedPeriods);
+		return CX::Util::mean(rates);
+
+		//return 1.0 / calcFramePeriodMean().seconds();
+	}
+
+
+
+	FrameEstimationResult estimateFrameRate(const FrameRateEstimationConfig& estCfg) {
+
+		FrameEstimationResult rval;
+		rval.success = true; // it can only be set to false in the function
+
+		CX_Display* disp = estCfg.disp;
+
+		bool wasSwapping = disp->isAutomaticallySwapping();
+		disp->setAutomaticSwapping(false);
+
+		std::vector<CX_Millis> swapTimes;
+
+		//CX_Millis minFramePeriod = CX_Seconds((1.0 / maxFrameRate));
+		//CX_Millis maxFramePeriod = CX_Seconds((1.0 / minFrameRate));
+
+		// For some reason, frame period estimation gets screwed up because the first few swaps are way too fast
+		// if the buffers haven't been swapping for some time, so swap a few times to clear out the "bad" initial swaps.
+		for (int i = 0; i < 3; i++) {
+			disp->swapBuffers();
+		}
+
+		CX_Millis startTime = CX::Instances::Clock.now();
+		while (CX::Instances::Clock.now() - startTime < estCfg.estimationTime) {
+			disp->swapBuffers();
+			swapTimes.push_back(CX::Instances::Clock.now());
+		}
+
+		if (swapTimes.size() < 3) {
+			std::ostringstream oss;
+
+			oss << "Error: Not enough buffer swaps occurred during the " <<
+				estCfg.estimationTime.seconds() << 
+				" second estimation interval. At least 3 swaps are needed to calculate anything.";
+
+			rval.success = false;
+			rval.messages.push_back(oss.str());
+
+			disp->setAutomaticSwapping(wasSwapping);
+
+			return rval;
+		}
+
+		//std::vector<CX_Millis> swapPeriods(swapTimes.size() - 1);
+		rval.allPeriods.resize(swapTimes.size() - 1);
+		for (size_t i = 0; i < rval.allPeriods.size(); i++) {
+			rval.allPeriods[i] = swapTimes[i + 1] - swapTimes[i];
+		}
+
+		rval.filterByFrameRate(estCfg.minFrameRate, estCfg.maxFrameRate);
+
+		if (rval.includedPeriods.size() < estCfg.minGoodIntervals) {
+			
+			std::ostringstream oss;
+			oss << "Error: Not enough valid swaps occurred during the " <<
+				estCfg.estimationTime.millis() << " ms estimation interval. If the estimation interval was very short (less than 50 ms), you "
+				"could try making it longer. If the estimation interval was longer, this is an indication that there is something "
+				"wrong with the video card configuration. Try using CX_Display::testBufferSwapping() to narrow down the source "
+				"of the problems.";
+
+			rval.success = false;
+			rval.messages.push_back(oss.str());
+		}
+
+		if (rval.excludedPeriods.size() > 0) {
+
+			size_t totalExcluded = rval.excludedPeriods.size();
+
+			size_t usedExcluded = std::min<size_t>(totalExcluded, estCfg.maxBadIntervalsPrinted);
+			std::string usedStr = (usedExcluded == totalExcluded) ? "" : (" first " + ofToString(usedExcluded));
+
+			std::vector<double> usedMs(usedExcluded);
+			for (size_t i = 0; i < usedExcluded; i++) {
+				usedMs[i] = rval.excludedPeriods[i].millis();
+			}
+
+			std::ostringstream oss;
+			oss << "Warning: " << totalExcluded << " buffer swap durations were " <<
+				"outside of the allowed range of " << estCfg.minFrameRate << " to " << estCfg.maxFrameRate << " fps. The" << usedStr <<
+				" excluded durations were: " << CX::Util::vectorToString(usedMs, ", ", 5);
+
+			//rval.success = false; // does not cause failure
+			rval.messages.push_back(oss.str());
+		}
+
+		disp->setAutomaticSwapping(wasSwapping);
+
+		return rval;
+	}
+
+	///////////////
+	// GLVersion //
+	///////////////
+
 	/*! Compare `GLVersion`s.
 	\param that `GLVersion` to compare to.
 	\return One of:
@@ -177,9 +338,9 @@ bool GlfwContextManager::isMainThread(void) {
 	return std::this_thread::get_id() == _mainThreadId;
 }
 
-////////////////////
+//////////////////
 // GLSyncHelper //
-////////////////////
+//////////////////
 
 GLSyncHelper::GLSyncHelper(void) :
 	//_syncSuccess(false),

@@ -123,7 +123,6 @@ bool CX_SoundStream::Configuration::setFromFile(std::string filename, std::strin
 
 CX_SoundStream::CX_SoundStream(void) :
 	_rtAudio(nullptr)
-	//_lastBufferStartSampleFrame(0)
 {
 	_polledSwapListener = swapData.getPolledSwapListener();
 }
@@ -211,15 +210,41 @@ bool CX_SoundStream::setup(CX_SoundStream::Configuration &config, bool startStre
 		return false;
 	}
 
-	_callbackMutex.lock();
-	_config = config; //Store the updated settings.
-	_callbackMutex.unlock();
+
+	//_callbackMutex.lock();
+
+		_config = config; //Store the updated settings.
+	
+		// needs _config to be set
+		_configureSyncUtils(SyncConfig());
+
+	//_callbackMutex.unlock();
 
 	bool success = true;
 	if (startStream) {
 		success = this->startStream();
 	}
 	return success;
+}
+
+bool CX_SoundStream::_configureSyncUtils(const SyncConfig& scfg) {
+
+	Sync::DataContainer::Configuration sdcc;
+	sdcc.unitsPerSwap = _config.bufferSize;
+	sdcc.latency = scfg.latency;
+	sdcc.nominalSwapPeriod = CX_Seconds((double)_config.bufferSize / _config.sampleRate);
+	//sdcc.swapEvent = nullptr;
+	sdcc.sampleSize = std::ceil(scfg.dataCollectionDuration / sdcc.nominalSwapPeriod);
+
+	swapData.setup(sdcc);
+
+	Sync::DataClient::Configuration sduc;
+	sduc.autoUpdate = false;
+	sduc.dataContainer = &swapData;
+	sduc.dataCollectionDuration = scfg.dataCollectionDuration;
+	sduc.swapPeriodTolerance = scfg.framePeriodTolerance;
+
+	return swapClient.setup(sduc);
 }
 
 /*! Starts the sound stream. The stream must already be have been set up (see setup()).
@@ -241,32 +266,7 @@ bool CX_SoundStream::startStream(void) {
 		return true;
 	}
 
-
-	//_lastBufferStartSampleFrame = 0;
-
-
-
-	//TODO: Where is this configured?
-	// _callbackMutex ???
-	{
-		Sync::DataContainer::Configuration sdcc;
-		sdcc.unitsPerSwap = _config.bufferSize;
-		sdcc.latency = 0;
-		sdcc.nominalSwapPeriod = CX_Seconds((double)_config.bufferSize / _config.sampleRate);
-		//sdcc.swapEvent = nullptr;
-		sdcc.sampleSize = std::ceil(CX_Millis(250) / sdcc.nominalSwapPeriod);
-
-		swapData.setup(sdcc);
-
-		Sync::DataClient::Configuration sduc;
-		sduc.autoUpdate = false;
-		sduc.dataContainer = &swapData;
-		sduc.dataCollectionDuration = CX_Millis(250);
-		sduc.swapPeriodTolerance = 0.5; // realy high tolerance
-
-		swapClient.setup(sduc);
-	}
-
+	swapData.clear();
 
 	try {
 		_rtAudio->startStream();
@@ -277,6 +277,7 @@ bool CX_SoundStream::startStream(void) {
 
 	return true;
 }
+
 
 /*! Check whether the sound stream is running.
 \return `false` if the stream is not setup or not running or if `RtAudio` has not been initialized. Returns `true` if the stream is running. */
@@ -691,14 +692,19 @@ int CX_SoundStream::_rtAudioCallbackHandler(void *outputBuffer, void *inputBuffe
 	// Get swap time immediately to be as close as possible to when the data request is made.
 	CX_Millis swapTime = CX::Instances::Clock.now();
 
-	_callbackMutex.lock();
+	//_callbackMutex.lock();
 
-		// The only time _config.inputChannels and outputChannels are written to is in setup when the config is copied in
-		int inputChannels = _config.inputChannels;
-		int outputChannels = _config.outputChannels;
+	// The only time _config.inputChannels and outputChannels are written to is in setup when the config is copied in.
+	// At that time, the previous stream, if any, has been closed and the new stream is not yet open.
+	// No mutex is needed.
+	int inputChannels = _config.inputChannels;
+	int outputChannels = _config.outputChannels;
 		
-		SampleFrame thisBufferStartSampleFrame = swapData.getNextSwapUnit();
-	_callbackMutex.unlock();
+		
+	//_callbackMutex.unlock();
+
+	// swapData has own mutex
+	SampleFrame thisBufferStartSampleFrame = swapData.getNextSwapUnit();
 
 	bool usingInput  =  inputEvent.size() > 0 &&  inputChannels > 0;
 	bool usingOutput = outputEvent.size() > 0 && outputChannels > 0;

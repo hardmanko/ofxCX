@@ -10,6 +10,66 @@
 #include "CX_UnitConversion.h"
 #include "CX_Events.h"
 
+/* \namespace CX::Sync
+
+This namespace contains utilities related to synchronizing stimulus events, specifically audio and visual stimuli, but the method generalizes to other stimuli.
+
+It is conceptually important to analyze the components of a computer into:
+1. The CPU, which knows what time it is.
+2. Stimulus presenting hardware/software stacks. The video stack includes the graphics API software (OpenGL for CX), additional operating system software, drivers (software at OS level), the video card (hardware), additional software running on the video card, and the monitor hardware/firmware.
+
+CPU -> Massive data bus -> Chipset (on motherboard) -> PCIe bus -> video card (including the software running on the video card) -> cable to monitor (VGA/DVI/HDMI/DP/etc.) -> monitor (including software running on the monitor)
+
+
+
+Both sound and video are presented by computers using a buffer swapping approach. 
+For video, a single frame is a whole buffer, presented at a rate of 30 - 240 frames per second (with a rapidly increasing upper limit circa 2020).
+For sound, a buffer typically contains around one thousand audio samples that are presented at a rate of 48 to 192 thousand samples per second.
+
+The monitor displaying video stimuli knows when it has swapped in a new frame, but the CPU does not.
+Similarly, the sound card may know when it is playing a particular sample, but again, the CPU does not.
+Software does not yet fully connect all of the components of a computer.
+There are not standard ways for the CPU to learn about the monitor's frame presentations.
+
+The best information that the CPU has about when stimuli are presented is when the stimulus buffers swap.
+For example, with sound, typically 2 buffers are used alternately. While the sound samples in one buffer are being
+presented by the sound card (i.e. being converted from digital to analog, specifically analog voltages that drive physical speakers),
+the other buffer is available to have the next set of sound samples written to it by the CPU.
+
+Video hardware/software works analagously to sound, with an active frame that is displayed on screen (in OpenGL terms, the "front buffer"),
+and an inactive buffer that is available to be written to ("back buffer").
+
+I can't make strong statements about the exact nature of buffer swapping across various hardwares and softwares,
+but buffer swapping is ubiquitous and works similarly across platforms.
+
+There are time constraints on the buffer swapping processes:
+TC1. The back buffer must have all of the necessary stimulus data written to it by the CPU before it is swapped in (becomes the front buffer).
+TC2. The front buffer must have all of its information read out of it by the stimulus hardware/software before it is swapped out.
+TC3. The amount of time it takes for the CPU to fill a buffer
+
+Timeline:
+Assume that the front buffer (FB) contains valid stimulus information and is currently being presented (this tends to be true).
+
+The CPU works on filling the back buffer (BB) with stimulus information. 
+Whenever the CPU is done (the scene is fully drawn or the next batch of sound samples are loaded), it notifies the stimulus hardware/software stack.
+
+BB is filled by CPU.
+BB is released by CPU, given to simulus hardware.
+Whenever the hardware is done with the old FB, it swaps the buffers: The old FB becomes the new BB and while 
+FB is filled by CPU.
+FB is given by CPU to stimulus hardware.
+
+
+
+
+To capture a timestamp related to stimulus presentation, it makes most sense to use the time at which the stimulus hardware makes an empty buffer (the old front buffer) available to the CPU.
+The time at which the back buffer has been filled and is given to stimulus hardware is less appropriate because the amount of time it takes to fill the back buffer depends on what is being put into the back buffer 
+(for sound, at least the way CX is designed, each buffer filling should take the same amount of time, but visual stimuli will take varying amounts of time).
+
+
+
+*/
+
 namespace CX {
 namespace Sync {
 
@@ -25,6 +85,10 @@ const CX_Millis PredictionIntervalWarning = CX_Minutes(1);
 
 const SwapUnit SwapUnitError = std::numeric_limits<SwapUnit>::max(); // I don't expect swap events to ever be able count up to the max value
 
+
+bool areTimesWithinTolerance(const CX_Millis& a, const CX_Millis& b, const CX_Millis& tolerance);
+
+/*! Contains data about a stimulus buffer swap. */
 struct SwapData {
 
 	SwapData(void) :
@@ -37,14 +101,12 @@ struct SwapData {
 		unit(u)
 	{}
 
-	CX_Millis time;
-	SwapUnit unit;
+	CX_Millis time; //!< The CPU time at which the swap happened.
+	SwapUnit unit; //!< A non-decreasing integral value. For video, this counts presented frames. For audio, this counts presented sample frames, of which many sample frames are presented per buffer swap. This means that `unit` does not count buffer swaps!
 };
 
-
-bool areTimesWithinTolerance(const CX_Millis& a, const CX_Millis& b, const CX_Millis& tolerance);
-
-
+/*! Stores information about a time prediction and has helper functions that return the 
+predicted value and lower and upper bounds on the prediction interval. */
 struct TimePrediction {
 
 	TimePrediction(void);
@@ -299,13 +361,17 @@ struct SyncPoint {
 	}
 };
 
-/*!
-
+/*! Implements a basic bivariate linear model.
 
 */
 class LinearModel {
 public:
 
+	/*! Contains information about a model fitted with `LinearModel`.
+
+	The special functionality provided by `FittedModel` is help with predicting swap times/units.
+	
+	*/
 	struct FittedModel {
 
 		bool fittedSuccessfully;
